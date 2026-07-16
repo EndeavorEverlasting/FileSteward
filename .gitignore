@@ -1,0 +1,127 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+.hypothesis/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Packaging and build output
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# Test and coverage output
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# FileSteward runtime data
+# These paths may contain private filenames, absolute paths, hashes,
+# classifications, extracted metadata, queue decisions, or file contents.
+var/
+runtime/
+local-data/
+review-queues/
+quarantine/
+organized/
+scan-exports/
+private-inventory/
+content-cache/
+
+# Default generated artifacts
+downloads_review_queue.csv
+action_log.jsonl
+scan_summary.json
+duplicate_report.json
+restore_manifest.jsonl
+
+# Timestamped or alternate generated artifacts
+*_review_queue.csv
+*_action_log.jsonl
+*_scan_summary.json
+*_duplicate_report.json
+*_restore_manifest.jsonl
+
+# WinDirStat and normalized inventory exports
+windirstat-export.csv
+windirstat-export.json
+windirstat-*.csv
+windirstat-*.json
+
+# Local databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs and temporary files
+*.log
+logs/
+tmp/
+temp/
+.cache/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Incomplete downloads accidentally copied into the repository
+*.crdownload
+*.part
+*.partial
+*.download
+
+# Editors and development tools
+.vscode/
+.idea/
+*.code-workspace
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux desktop metadata
+.directory
+.Trash-*
+
+# Intentionally not ignored:
+# - examples/ contains sanitized examples safe to commit.
+# - tests/fixtures/ contains synthetic fixtures safe to commit.
+# - schemas/ contains versioned output contracts.
+# - CSV, JSON, PDF, and archive extensions are not ignored globally.
