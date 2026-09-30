@@ -1,10 +1,10 @@
 # FileSteward C:-Drive Cleanup Program — P04 Factoring Plan
 
-**Status:** ACTIVE / IMPLEMENTATION-READY  
-**Repository:** `EndeavorEverlasting/FileSteward`  
-**Foundation floor:** `agent/repository-foundation@7ca41c45e3d92aae7963d2fc6713cb88b98fa2c2`  
-**Plan branch:** `plan/c-drive-cleanup-p04-20260930`  
-**Execution host:** `LOCAL_AGENT_RUNTIME` (OpenCode on the operator workstation)  
+**Status:** ACTIVE / IMPLEMENTATION-READY
+**Repository:** `EndeavorEverlasting/FileSteward`
+**Foundation floor:** `agent/repository-foundation@7ca41c45e3d92aae7963d2fc6713cb88b98fa2c2`
+**Plan branch:** `plan/c-drive-cleanup-p04-20260930`
+**Execution host:** `LOCAL_AGENT_RUNTIME` (OpenCode on the operator workstation)
 **Proof ceiling of this plan:** durable design/factoring only; no real `C:\` data observed, classified, moved, quarantined, deleted, or reclaimed.
 
 Read first:
@@ -501,40 +501,40 @@ Do not manufacture parallel lanes merely because multiple files exist.
 
 ### L0 — Contract + package floor
 
-**Mission:** establish package/CLI skeleton and exact domain contracts before logic.  
-**Owned:** `pyproject.toml`, package skeleton, `models.py`, policy constants, test skeleton.  
-**Forbidden:** real disk traversal, apply/quarantine, live private artifacts.  
+**Mission:** establish package/CLI skeleton and exact domain contracts before logic.
+**Owned:** `pyproject.toml`, package skeleton, `models.py`, policy constants, test skeleton.
+**Forbidden:** real disk traversal, apply/quarantine, live private artifacts.
 **Proof:** CLI entry point executes; model enums/states tested; runtime path resolves under ignored `var/`.
 
 ### L1 — Inventory + Windows safety + protection
 
-**Depends on:** L0.  
-**Mission:** implement streaming inventory and protection semantics.  
-**Owned:** inventory/protect modules + focused tests.  
-**Proof:** S2, S7-S12, relevant S14 components green.  
+**Depends on:** L0.
+**Mission:** implement streaming inventory and protection semantics.
+**Owned:** inventory/protect modules + focused tests.
+**Proof:** S2, S7-S12, relevant S14 components green.
 **Forbidden:** reclaim judgment beyond protection/scan completeness.
 
 ### L2 — Deterministic disposition + challenge
 
-**Depends on:** L1.  
-**Mission:** implement rules/gates and independent downgrade challenge.  
-**Owned:** classify modules + focused tests.  
-**Proof:** S3-S6 and fail-closed conflicts green.  
+**Depends on:** L1.
+**Mission:** implement rules/gates and independent downgrade challenge.
+**Owned:** classify modules + focused tests.
+**Proof:** S3-S6 and fail-closed conflicts green.
 **Forbidden:** human semantic resolution, approval, apply.
 
 ### L3 — Orchestration + artifacts
 
-**Depends on:** L2.  
-**Mission:** wire read-only run, artifact schemas/writers, free-space projection.  
-**Owned:** run/CLI/artifact modules + tests.  
+**Depends on:** L2.
+**Mission:** wire read-only run, artifact schemas/writers, free-space projection.
+**Owned:** run/CLI/artifact modules + tests.
 **Proof:** cleanup plan contains only `RECLAIM_PROVEN`; review/protected queues reconcile; CLI path works end-to-end on synthetic fixture.
 
 ### L4 — Integration proof + critique
 
-**Depends on:** L3.  
-**Mission:** run complete S1-S14 matrix, mutation snapshot, CLI smoke, repository checks, adversarial architecture critique; perform at most bounded refactor(s) required by actual findings.  
-**Owned:** tests/docs and necessary bounded repairs.  
-**Proof:** acceptance checklist below green.  
+**Depends on:** L3.
+**Mission:** run complete S1-S14 matrix, mutation snapshot, CLI smoke, repository checks, adversarial architecture critique; perform at most bounded refactor(s) required by actual findings.
+**Owned:** tests/docs and necessary bounded repairs.
+**Proof:** acceptance checklist below green.
 **Stop:** no live `C:` scan.
 
 ## 18. Phase 1-4 acceptance checklist
