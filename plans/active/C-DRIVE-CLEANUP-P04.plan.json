@@ -1,0 +1,252 @@
+{
+  "schema_version": "filesteward.p04-plan/v1",
+  "plan_id": "C-DRIVE-CLEANUP-P04-20260930",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "foundation": {
+    "branch": "agent/repository-foundation",
+    "sha": "7ca41c45e3d92aae7963d2fc6713cb88b98fa2c2"
+  },
+  "plan_branch": "plan/c-drive-cleanup-p04-20260930",
+  "mission": "Implement synthetic-only read-only cleanup analysis machinery with explicit human ambiguity ownership and no live C: traversal.",
+  "proof_ceiling": "Phase 1-4 implementation + local synthetic validation only; no live audit, approval, apply, deletion, quarantine, or verified reclaim.",
+  "runtime_partition": {
+    "host": "LOCAL_AGENT_RUNTIME",
+    "provider_access": [
+      "GitHub via locally authenticated gh when provider truth is required"
+    ],
+    "forbidden_hosts_for_local_fs": [
+      "CURRENT_CHAT_RUNTIME"
+    ],
+    "private_runtime_root": "var/runs/<run_id>/",
+    "live_c_drive_access": "FORBIDDEN_PHASE_1_4"
+  },
+  "parallel_execution": {
+    "dependency_graph_width": 1,
+    "disposition": "NOT_APPLICABLE",
+    "reason": "Shared safety/domain contracts are consumed by each later layer; integration-safe mutation order is contract/package -> inventory/protection -> disposition/challenge -> orchestration/artifacts -> integration proof.",
+    "operator_manual_scheduling_required": false
+  },
+  "global_forbidden": [
+    "main branch mutation",
+    "real C: traversal",
+    "real private inventory commit",
+    "semantic resolution of HUMAN_REVIEW",
+    "promotion of UNKNOWN or PROTECTED to reclaim",
+    "agent self-approval",
+    "permanent deletion implementation",
+    "real quarantine/apply",
+    "weakening tests or safety gates to pass"
+  ],
+  "evidence_inputs": [
+    {
+      "type": "repository_contract",
+      "owner": "FileSteward",
+      "ref": "README.md",
+      "freshness": "branch-local",
+      "proof_ceiling": "tracked product/safety contract"
+    },
+    {
+      "type": "agent_governance",
+      "owner": "FileSteward",
+      "ref": "AGENTS.md",
+      "freshness": "branch-local",
+      "proof_ceiling": "tracked agent entry contract"
+    },
+    {
+      "type": "local_agent_protections",
+      "owner": "FileSteward",
+      "ref": "docs/agent/LOCAL-AGENT-PROTECTIONS.md",
+      "freshness": "branch-local",
+      "proof_ceiling": "tracked fail-closed local-agent contract"
+    },
+    {
+      "type": "p04_plan",
+      "owner": "FileSteward",
+      "ref": "plans/active/C-DRIVE-CLEANUP-P04.md",
+      "freshness": "branch-local",
+      "proof_ceiling": "durable factoring/acceptance plan"
+    }
+  ],
+  "lanes": [
+    {
+      "lane_id": "L0",
+      "title": "Contract and package floor",
+      "mission": "Establish Python package, CLI entry point, domain states, runtime path policy, and test skeleton before cleanup logic.",
+      "dependencies": [],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "provider_access": [],
+      "owned": [
+        "pyproject.toml",
+        "src/filesteward/__init__.py",
+        "src/filesteward/models.py",
+        "src/filesteward/policy/**",
+        "package/CLI skeleton required by this lane",
+        "focused tests for package/models/runtime path"
+      ],
+      "forbidden": [
+        "real filesystem audit",
+        "reclaim judgment",
+        "apply/quarantine",
+        "live private artifacts"
+      ],
+      "validation": [
+        "console entry point executes",
+        "domain enum/state tests pass",
+        "runtime path resolves beneath ignored var/",
+        "python -m pytest -q focused tests"
+      ],
+      "convergence_owner": "L4",
+      "status": "READY"
+    },
+    {
+      "lane_id": "L1",
+      "title": "Inventory Windows safety and protection",
+      "mission": "Implement streaming inventory, Windows traversal boundaries, Git/worktree protection semantics, and explicit scan gaps.",
+      "dependencies": [
+        "L0"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "provider_access": [],
+      "owned": [
+        "src/filesteward/inventory/**",
+        "src/filesteward/protect/**",
+        "focused inventory/protection tests"
+      ],
+      "forbidden": [
+        "semantic cleanup judgment",
+        "approval/apply",
+        "real C: traversal"
+      ],
+      "validation": [
+        "S2",
+        "S7",
+        "S8",
+        "S9",
+        "S10",
+        "S11",
+        "S12",
+        "relevant S14 scan completeness behavior"
+      ],
+      "convergence_owner": "L4",
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "L2",
+      "title": "Disposition gates and adversarial downgrade",
+      "mission": "Implement deterministic evidence gates, provisional reclaim nomination, fail-closed conflicts, and independent downgrade challenge.",
+      "dependencies": [
+        "L1"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "provider_access": [],
+      "owned": [
+        "src/filesteward/classify/**",
+        "focused disposition/challenge tests"
+      ],
+      "forbidden": [
+        "operator semantic judgment",
+        "upward challenge promotion",
+        "approval/apply",
+        "real data"
+      ],
+      "validation": [
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "protection conflict fail-closed",
+        "no age/size/name/location-only reclaim rule"
+      ],
+      "convergence_owner": "L4",
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "L3",
+      "title": "Orchestration CLI and artifacts",
+      "mission": "Wire synthetic read-only runs, artifact writers, stable item reconciliation, and honest free-space projection.",
+      "dependencies": [
+        "L2"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "provider_access": [],
+      "owned": [
+        "src/filesteward/run.py",
+        "src/filesteward/cli.py",
+        "src/filesteward/manifest/**",
+        "artifact/CLI tests",
+        "synthetic runtime outputs only"
+      ],
+      "forbidden": [
+        "operator approval generation",
+        "real apply",
+        "permanent delete",
+        "real C: traversal"
+      ],
+      "validation": [
+        "S1",
+        "cleanup-plan contains only RECLAIM_PROVEN",
+        "human-review has no delete score",
+        "protected exclusions reconcile",
+        "stop-point math uses baseline_free + cumulative_reclaim >= target_free"
+      ],
+      "convergence_owner": "L4",
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "L4",
+      "title": "Integration proof critique and bounded repair",
+      "mission": "Run S1-S14, no-mutation snapshot, CLI smoke, repository checks, adversarial design critique, and bounded refactor if evidence finds a defect.",
+      "dependencies": [
+        "L3"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "provider_access": [
+        "GitHub via gh for refreshed branch/PR truth only"
+      ],
+      "owned": [
+        "tests/**",
+        "docs/program/cleanup-program-design.md",
+        "docs/program/next-sprint-live-audit.md",
+        "bounded implementation repairs required by failed gates"
+      ],
+      "forbidden": [
+        "live C: traversal",
+        "real private artifacts",
+        "apply/quarantine/delete",
+        "merge without explicit operator instruction"
+      ],
+      "validation": [
+        "S1-S14 pass or precise environment-specific skip with no false proof claim",
+        "fixture filesystem unchanged",
+        "python -m pytest -q",
+        "CLI smoke",
+        "git diff --check",
+        "critique resolved or explicit no-defect evidence",
+        "git/provider state refreshed"
+      ],
+      "convergence_owner": "L4",
+      "status": "WAITING"
+    }
+  ],
+  "hard_stop_after": "L4",
+  "phase_5_gate": {
+    "name": "Real workstation read-only audit",
+    "authorization": "EXPLICIT_OPERATOR_REQUIRED",
+    "preconditions": [
+      "Phase 1-4 acceptance checklist green",
+      "exact read-only command shown",
+      "no unresolved proof inflation"
+    ],
+    "forbidden_without_authorization": [
+      "scan C:\\",
+      "produce real path/hash inventory",
+      "continue because read-only seems safe"
+    ]
+  },
+  "final_report_required_states": {
+    "live_audit": "NOT_RUN",
+    "operator_approval": "NOT_GRANTED",
+    "apply": "NOT_RUN",
+    "verified_reclaim_bytes": 0
+  }
+}
