@@ -8,11 +8,16 @@ import pytest
 
 from filesteward.policy.paths import (
     FORBIDDEN_ROOT_NAMES,
+    is_lexically_within,
     is_under_forbidden_root,
+    normalize_declared_path,
+    prove_run_dir_under_runtime,
     repository_root,
+    resolve_run_dir_argument,
     run_dir,
     runtime_root,
 )
+import os
 
 
 class TestRepositoryRoot:
@@ -122,3 +127,44 @@ class TestForbiddenRoots:
     )
     def test_ordinary_paths_not_flagged(self, path: str) -> None:
         assert not is_under_forbidden_root(path)
+
+
+class TestNormalizeAndContainment:
+    def test_relative_path_becomes_absolute(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "sub").mkdir()
+        normalized = normalize_declared_path("sub")
+        assert normalized.is_absolute()
+        assert normalized == (tmp_path / "sub").resolve()
+
+    def test_parent_segments_collapse(self, tmp_path: Path) -> None:
+        nested = tmp_path / "a" / "b"
+        nested.mkdir(parents=True)
+        normalized = normalize_declared_path(nested / ".." / ".." / "a")
+        assert normalized == (tmp_path / "a").resolve()
+        assert ".." not in normalized.parts
+
+    def test_relative_run_dir_joins_repository_root(self) -> None:
+        resolved = resolve_run_dir_argument("var/runs/cli-relative-check")
+        assert resolved == normalize_declared_path(
+            repository_root() / "var" / "runs" / "cli-relative-check"
+        )
+
+    def test_lexical_within_and_outside(self, tmp_path: Path) -> None:
+        parent = tmp_path / "var" / "runs"
+        child = parent / "r1"
+        sibling = tmp_path / "other"
+        parent.mkdir(parents=True)
+        child.mkdir()
+        sibling.mkdir()
+        assert is_lexically_within(child, parent)
+        assert not is_lexically_within(sibling, parent)
+
+    def test_prove_run_dir_rejects_outside_runtime(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="runtime tree"):
+            prove_run_dir_under_runtime(tmp_path / "escape")
+
+    def test_prove_run_dir_accepts_canonical_path(self) -> None:
+        target = run_dir(f"path-proof-{os.getpid()}")
+        proved = prove_run_dir_under_runtime(target)
+        assert proved == normalize_declared_path(target)

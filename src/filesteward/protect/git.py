@@ -11,6 +11,8 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
+from filesteward.inventory import windows
+
 __all__ = ["GIT_MARKER", "is_git_repository", "iter_git_roots"]
 
 GIT_MARKER = ".git"
@@ -33,7 +35,10 @@ def _close(iterator: Any) -> None:
 
 
 def iter_git_roots(
-    root: Any, *, scandir: Callable[[str], Any] = os.scandir
+    root: Any,
+    *,
+    scandir: Callable[[str], Any] = os.scandir,
+    stat: Callable[..., Any] = os.stat,
 ) -> Iterator[Path]:
     """Stream repository/worktree roots beneath ``root``.
 
@@ -60,6 +65,13 @@ def iter_git_roots(
                     if entry.is_symlink():
                         continue
                     if not entry.is_dir(follow_symlinks=False):
+                        continue
+                    try:
+                        st = entry.stat(follow_symlinks=False)
+                    except (AttributeError, TypeError, OSError):
+                        st = stat(os.fspath(entry.path), follow_symlinks=False)
+                    if windows.is_reparse_point(st):
+                        # Junctions/mount points: never traverse.
                         continue
                 except OSError:
                     continue

@@ -33,19 +33,33 @@ substitutes for it (`plans/active/C-DRIVE-CLEANUP-P04.md` §19).
 
 ## Exact proposed Phase 5 command (read-only)
 
-```powershell
-# 1. first real read-only workstation audit (requires explicit authorization)
-filesteward scan C:\ --run-dir var\runs\phase5-cdrive-readonly-001
+Resolve the canonical checkout first. Prefer absolute `--run-dir` paths
+derived from that checkout so CWD cannot relocate runtime output.
+Relative `--run-dir` values are resolved against the repository root
+(not the process CWD).
 
-# 2. mechanical validation of the produced artifacts
-filesteward validate var\runs\phase5-cdrive-readonly-001
+```powershell
+# 1. enter the canonical checkout (runtime-derived; never hard-code a username)
+Set-Location (Join-Path $env:USERPROFILE 'dev\FileSteward')
+
+# 2. first real read-only workstation audit (requires explicit authorization)
+$runDir = Join-Path (Get-Location) 'var\runs\phase5-cdrive-readonly-001'
+filesteward scan C:\ --run-dir $runDir
+
+# 3. mechanical validation of the produced artifacts
+filesteward validate $runDir
 ```
+
+When scanning an ancestor volume such as `C:\`, the canonical runtime
+subtree under `<checkout>\var\` is admitted only through the runtime-output
+rule (realpath proof under `var\runs\`, no symlink/reparse escape) and is
+excluded from inventory before traversal begins. Arbitrary siblings inside
+the scan namespace remain rejected.
 
 Optional operator-supplied inputs (never guessed by the tool):
 
 ```powershell
-# explicit cache contracts, protected roots, managed-path marks:
-filesteward scan C:\ --run-dir var\runs\phase5-cdrive-readonly-001 `
+filesteward scan C:\ --run-dir $runDir `
     --contract <path-prefix> --protect <path> --managed <path> `
     --target-free-bytes <n>
 ```
@@ -58,8 +72,7 @@ Does:
 - never open file content (cloud placeholders cannot hydrate);
 - refuse scan roots beneath `Desktop`/`Documents`/`OneDrive`/`Backups`
   (component-wise, case-insensitive);
-- write UNAPPROVED evidence artifacts only into
-  `var\runs\phase5-cdrive-readonly-001`;
+- write UNAPPROVED evidence artifacts only into the proven run directory;
 - self-validate the artifacts and exit non-zero on any inconsistency.
 
 Does not:
@@ -78,8 +91,9 @@ If the operator prefers a bounded first observation, substitute a
 smaller real root in the same command shape, for example:
 
 ```powershell
-filesteward scan C:\Users\<profile>\AppData\Local `
-    --run-dir var\runs\phase5-appdata-readonly-001
+Set-Location (Join-Path $env:USERPROFILE 'dev\FileSteward')
+$runDir = Join-Path (Get-Location) 'var\runs\phase5-appdata-readonly-001'
+filesteward scan (Join-Path $env:USERPROFILE 'AppData\Local') --run-dir $runDir
 ```
 
 Any such root is still a real-path observation and still requires the

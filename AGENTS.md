@@ -5,7 +5,7 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 ## Read before mutation
 
 1. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
-2. `docs/agent/CANONICAL-PATHS.md`
+2. `docs/agent/CANONICAL-PATHS.md` (including §4.1 recovery discoverability)
 3. The active plan under `plans/active/` for the requested sprint
 4. `README.md` safety, privacy, and MVP boundaries
 

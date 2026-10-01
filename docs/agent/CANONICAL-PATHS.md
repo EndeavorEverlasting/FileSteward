@@ -39,8 +39,35 @@ Each role has exactly one owner. Do not collapse roles.
 | Canonical worktree root | `$worktreeRoot\<lane>` — created only via `git -C $repo worktree add` |
 | Canonical production/use path | the `filesteward` console entry point declared in `pyproject.toml` |
 | Canonical entry point | `filesteward` (CLI vocabulary is owned by the active plan, section 10) |
+| Agent/operator recovery context | OpenCode config/data paths below — recovery aids only; Git/provider state remains durable implementation authority |
 
 The production/use path is an entry point, not a directory. It resolves through the active Python environment to an installed copy or an editable link to the checkout. The relation must be observed and recorded (section 5), never assumed.
+
+### 4.1 Recovery discoverability (runtime-derived only)
+
+When an agent session is interrupted, reconstruct context from Git and provider state first. OpenCode history is recovery/context only.
+
+Runtime-derived paths (PowerShell; username is never a tracked constant):
+
+```powershell
+$repo            = Join-Path $env:USERPROFILE 'dev\FileSteward'
+$opencodeExe     = 'C:\Program Files\OpenCode\opencode.exe'   # install location; not under USERPROFILE
+$opencodeConfig  = Join-Path $env:USERPROFILE '.config\opencode'
+$opencodeData    = Join-Path $env:USERPROFILE '.local\share\opencode'
+$opencodeHistory = Join-Path $opencodeData 'opencode.db'
+```
+
+List / find / resume OpenCode sessions by ID (do not commit a specific historical session id):
+
+```powershell
+# Inspect local OpenCode data for session ids when recovery is needed.
+# Exact listing UX may evolve with OpenCode; prefer the product's session list.
+& $opencodeExe  # then use the product UI/CLI to list sessions
+# Historical resume shape (when a session id is known from local data):
+#   opencode -s <session-id>
+```
+
+Do not move OpenCode or FileSteward layouts to "fix" recovery. Do not fossilize machine-specific usernames or one-off session ids into tracked content.
 
 ## 5. Path relation and production state — record, never collapse
 

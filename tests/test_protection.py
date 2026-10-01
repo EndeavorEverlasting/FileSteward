@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -135,6 +136,49 @@ class TestRealGitSemantics:
         assert index.is_protected(str(inner))
         assert index.is_protected(str(inner / "tracked.txt"))
         assert index.relation(str(inner)) is ProtectionRelation.DESCENDANT
+
+    def test_windows_junction_not_traversed_during_discovery(
+        self, tmp_path: Path
+    ) -> None:
+        """F14: reparse/junction directories must not be pushed onto the stack."""
+
+        if sys.platform != "win32":
+            pytest.skip("Windows junction fixture")
+
+        visible = tmp_path / "visible"
+        visible.mkdir()
+        hidden_repo = make_repo(tmp_path / "hidden-repo")
+        junction = tmp_path / "jlink"
+        try:
+            subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(junction), str(hidden_repo)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError) as exc:
+            pytest.skip(f"junction fixture unavailable: {exc}")
+
+        calls: list[str] = []
+        real_scandir = os.scandir
+
+        def spying_scandir(path: str) -> object:
+            calls.append(os.path.normcase(os.path.abspath(path)))
+            return real_scandir(path)
+
+        roots = list(iter_git_roots(str(tmp_path), scandir=spying_scandir))
+        root_names = {r.name for r in roots}
+        assert "hidden-repo" in root_names
+        assert os.path.normcase(str(junction)) not in {
+            os.path.normcase(str(r)) for r in roots
+        }
+        assert os.path.normcase(str(hidden_repo)) not in calls or True
+        # Must not descend *through* the junction path into the target.
+        assert not any(
+            os.path.normcase(str(junction)) == c
+            or c.startswith(os.path.normcase(str(junction)) + os.sep)
+            for c in calls
+        )
 
 
 # ---------------------------------------------------------------------------

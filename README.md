@@ -192,16 +192,21 @@ Selected metadata or extracted content may be sent to a configured external mode
 
 ## Planned command-line shape
 
-The command names below describe the intended interface; they are not install instructions until the CLI is implemented and validated.
+P04 ships a read-only analysis CLI. Current behavior:
 
 ```powershell
-filesteward scan "$env:USERPROFILE\Downloads" --queue .\var\downloads-review.csv
-filesteward validate .\var\downloads-review.csv
-filesteward apply .\var\downloads-review.csv
-filesteward apply .\var\downloads-review.csv --execute
+filesteward scan <root> --run-dir <path-under-var\runs>
+filesteward validate <run-dir>
+filesteward apply <manifest>            # refusal seam; exit 3
+filesteward apply <manifest> --execute  # still refused; --execute is never honored
 ```
 
-`apply` should remain a dry run unless the explicit execution flag is present.
+`apply` always refuses in the current implementation. Real apply/quarantine
+execution is future work and is not enabled by `--execute`. See
+`docs/program/cleanup-program-design.md`.
+
+Older Downloads-queue examples remain design intent for a separate triage
+lane and must not be read as claiming live mutation exists today.
 
 ## Planned repository layout
 

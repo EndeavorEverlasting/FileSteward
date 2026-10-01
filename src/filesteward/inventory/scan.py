@@ -15,7 +15,7 @@ from __future__ import annotations
 import hashlib
 import os
 from dataclasses import dataclass
-from typing import Any, Callable, Iterator, Optional
+from typing import Any, Callable, Iterator, Optional, Sequence
 
 from filesteward.inventory import windows
 from filesteward.models import EntryType, InventoryItem, ScanCompleteness
@@ -123,24 +123,50 @@ def _make_item(
 
 
 def iter_inventory(
-    root: str, *, deps: Optional[ScanDeps] = None
+    root: str,
+    *,
+    deps: Optional[ScanDeps] = None,
+    exclude_roots: Optional[Sequence[str]] = None,
 ) -> Iterator[InventoryItem]:
     """Yield an inventory of ``root`` without following links.
 
     Order is depth-first, children before parents (post-order), so a
     directory's completeness is known only after its enumeration
     finished. ``root`` is always yielded, even when it cannot be read.
+
+    ``exclude_roots`` are absolute (or abspath-normalized) directory
+    prefixes that must not be inventoried or descended into. Used to keep
+    the scanner from observing its own runtime output when an ancestor
+    volume is scanned.
     """
 
     deps = deps or ScanDeps()
     root_str = os.fspath(root)
     root_abs = os.path.abspath(root_str)
+    excluded = tuple(
+        os.path.normcase(os.path.abspath(os.fspath(path)))
+        for path in (exclude_roots or ())
+    )
+
+    def _is_excluded(path: str) -> bool:
+        candidate = os.path.normcase(os.path.abspath(path))
+        for prefix in excluded:
+            if candidate == prefix:
+                return True
+            if candidate.startswith(prefix + os.sep):
+                return True
+        return False
+
     stack: list[_Frame] = [_Frame(root_abs)]
 
     while stack:
         frame = stack[-1]
 
         if frame.state == "pending":
+            if frame.path != root_abs and _is_excluded(frame.path):
+                # Excluded subtree: do not yield or descend.
+                stack.pop()
+                continue
             try:
                 frame.iterator = deps.scandir(frame.path)
             except OSError as exc:
@@ -169,11 +195,15 @@ def iter_inventory(
             stack.pop()
             continue
 
+        entry_path = os.fspath(entry.path)
+        if _is_excluded(entry_path):
+            continue
+
         try:
             symlink = bool(entry.is_symlink())
         except OSError as exc:
             yield _make_item(
-                os.fspath(entry.path), root_abs, entry_type=EntryType.OTHER, error=exc
+                entry_path, root_abs, entry_type=EntryType.OTHER, error=exc
             )
             continue
 
@@ -181,13 +211,13 @@ def iter_inventory(
             st = entry.stat(follow_symlinks=False)
         except OSError as exc:
             yield _make_item(
-                os.fspath(entry.path), root_abs, entry_type=EntryType.OTHER, error=exc
+                entry_path, root_abs, entry_type=EntryType.OTHER, error=exc
             )
             continue
 
         if symlink:
             yield _make_item(
-                os.fspath(entry.path),
+                entry_path,
                 root_abs,
                 entry_type=EntryType.SYMLINK,
                 st=st,
@@ -199,22 +229,34 @@ def iter_inventory(
             # Junctions, mount points, cloud reparse entries: recorded,
             # never followed.
             yield _make_item(
-                os.fspath(entry.path),
+                entry_path,
                 root_abs,
                 entry_type=EntryType.REPARSE_POINT,
                 st=st,
             )
             continue
 
-        is_dir = bool(entry.is_dir(follow_symlinks=False))
-        is_file = bool(entry.is_file(follow_symlinks=False))
+        try:
+            is_dir = bool(entry.is_dir(follow_symlinks=False))
+            is_file = bool(entry.is_file(follow_symlinks=False))
+        except OSError as exc:
+            # Race / permission change after stat: record incomplete
+            # evidence for this entry; do not abort the walk.
+            yield _make_item(
+                entry_path,
+                root_abs,
+                entry_type=EntryType.OTHER,
+                st=st,
+                error=exc,
+            )
+            continue
         if is_dir:
-            stack.append(_Frame(os.fspath(entry.path), entry_type=EntryType.DIRECTORY))
+            stack.append(_Frame(entry_path, entry_type=EntryType.DIRECTORY))
         elif is_file:
             yield _make_item(
-                os.fspath(entry.path), root_abs, entry_type=EntryType.FILE, st=st
+                entry_path, root_abs, entry_type=EntryType.FILE, st=st
             )
         else:
             yield _make_item(
-                os.fspath(entry.path), root_abs, entry_type=EntryType.OTHER, st=st
+                entry_path, root_abs, entry_type=EntryType.OTHER, st=st
             )

@@ -32,6 +32,7 @@ from filesteward.manifest import (
 )
 from filesteward.policy.paths import run_dir as policy_run_dir
 from filesteward.run import CleanupRun
+import filesteward.inventory.scan as scan_module
 
 _CACHE_CONTRACT_ID = "synthetic.cache"
 _ZONE_CONTRACT_ID = "synthetic.zone"
@@ -430,7 +431,19 @@ class TestStopPointMath:
                 baseline=1_000_000,
                 target=1_001_500,
             )
-            assert result.stop_row == 2
+            gap = 1_500
+            plan = _read_rows(run_path / "cleanup-plan.csv")
+            running = 0
+            expected: Optional[int] = None
+            for index, row in enumerate(plan, start=1):
+                projected = row["projected_reclaim_bytes"]
+                if projected != "":
+                    running += int(projected)
+                if running >= gap:
+                    expected = index
+                    break
+            assert expected is not None, "fixture must cover the 1500-byte gap"
+            assert result.stop_row == expected
             assert validate_run(run_path) == []
         finally:
             shutil.rmtree(run_path, ignore_errors=True)
@@ -553,6 +566,38 @@ class TestValidateTampering:
         errors = validate_run(copy)
         assert any("forbidden phrase" in error for error in errors)
 
+    def test_forbidden_phrase_in_exclusion_detected(
+        self, produced_run, tmp_path: Path
+    ) -> None:
+        _, run_path, _ = produced_run
+        copy = self._copy(run_path, tmp_path)
+        rows = _read_rows(copy / "protected-exclusions.csv")
+        if not rows:
+            pytest.skip("fixture produced no protected exclusions")
+        rows[0]["protection_reason"] = "recommended for deletion by habit"
+        self._rewrite_rows(copy / "protected-exclusions.csv", rows)
+        errors = validate_run(copy)
+        assert any(
+            "protected-exclusions.csv" in error and "forbidden phrase" in error
+            for error in errors
+        )
+
+    def test_score_language_in_exclusion_detected(
+        self, produced_run, tmp_path: Path
+    ) -> None:
+        _, run_path, _ = produced_run
+        copy = self._copy(run_path, tmp_path)
+        rows = _read_rows(copy / "protected-exclusions.csv")
+        if not rows:
+            pytest.skip("fixture produced no protected exclusions")
+        rows[0]["protection_source"] = "legacy delete score import"
+        self._rewrite_rows(copy / "protected-exclusions.csv", rows)
+        errors = validate_run(copy)
+        assert any(
+            "protected-exclusions.csv" in error and "score language" in error
+            for error in errors
+        )
+
     def test_score_language_detected(self, produced_run, tmp_path: Path) -> None:
         _, run_path, _ = produced_run
         copy = self._copy(run_path, tmp_path)
@@ -561,6 +606,41 @@ class TestValidateTampering:
         self._rewrite_rows(copy / "human-review.csv", rows)
         errors = validate_run(copy)
         assert any("score language" in error for error in errors)
+
+    def test_queue_path_mismatch_detected(
+        self, produced_run, tmp_path: Path
+    ) -> None:
+        _, run_path, _ = produced_run
+        copy = self._copy(run_path, tmp_path)
+        rows = _read_rows(copy / "cleanup-plan.csv")
+        rows[0]["path"] = rows[0]["path"] + ".tampered"
+        self._rewrite_rows(copy / "cleanup-plan.csv", rows)
+        errors = validate_run(copy)
+        assert any("queued path" in error for error in errors)
+
+    def test_queue_size_mismatch_detected(
+        self, produced_run, tmp_path: Path
+    ) -> None:
+        _, run_path, _ = produced_run
+        copy = self._copy(run_path, tmp_path)
+        rows = _read_rows(copy / "cleanup-plan.csv")
+        rows[0]["logical_size_bytes"] = "1"
+        self._rewrite_rows(copy / "cleanup-plan.csv", rows)
+        errors = validate_run(copy)
+        assert any("queued logical_size_bytes" in error for error in errors)
+
+    def test_empty_metadata_object_rejected(
+        self, produced_run, tmp_path: Path
+    ) -> None:
+        _, run_path, _ = produced_run
+        copy = self._copy(run_path, tmp_path)
+        (copy / "run.json").write_text("{}\n", encoding="utf-8")
+        errors = validate_run(copy)
+        assert any("empty metadata" in error for error in errors)
+        assert any(
+            "authorization" in error.lower() or "empty metadata" in error
+            for error in errors
+        )
 
     def test_wrong_cumulative_detected(self, produced_run, tmp_path: Path) -> None:
         _, run_path, _ = produced_run
@@ -657,6 +737,108 @@ class TestRunGuards:
         try:
             with pytest.raises(ValueError, match="forbidden root"):
                 CleanupRun(root, run_path).execute()
+        finally:
+            shutil.rmtree(run_path, ignore_errors=True)
+
+    def test_nonempty_existing_run_dir_rejected(self, tmp_path: Path) -> None:
+        root = tmp_path / "root"
+        root.mkdir()
+        run_path = policy_run_dir(f"test-reuse-{uuid.uuid4().hex[:10]}")
+        try:
+            run_path.mkdir(parents=True)
+            (run_path / "stale.csv").write_text("old\n", encoding="utf-8")
+            with pytest.raises(ValueError, match="not empty"):
+                CleanupRun(root, run_path).execute()
+        finally:
+            shutil.rmtree(run_path, ignore_errors=True)
+
+    def test_symlink_scan_root_rejected(self, tmp_path: Path) -> None:
+        real = tmp_path / "real-root"
+        real.mkdir()
+        link = tmp_path / "linked-root"
+        try:
+            link.symlink_to(real, target_is_directory=True)
+        except OSError as exc:
+            pytest.skip(f"symlink fixture unavailable: {exc}")
+        run_path = policy_run_dir(f"test-linkroot-{uuid.uuid4().hex[:10]}")
+        try:
+            with pytest.raises(ValueError, match="symlink/reparse"):
+                CleanupRun(link, run_path).execute()
+        finally:
+            shutil.rmtree(run_path, ignore_errors=True)
+
+    def test_relative_protect_matches_absolute_inventory(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        root = tmp_path / "root"
+        protected = root / "keep"
+        protected.mkdir(parents=True)
+        (protected / "a.txt").write_text("x", encoding="utf-8")
+        monkeypatch.chdir(root)
+        run_path = policy_run_dir(f"test-relprot-{uuid.uuid4().hex[:10]}")
+        try:
+            result = CleanupRun(
+                root, run_path, protected_roots=("keep",)
+            ).execute()
+            assert validate_run(run_path) == []
+            exclusions = _read_rows(run_path / "protected-exclusions.csv")
+            assert exclusions, "relative protect must match absolute inventory"
+            assert result.inventory_items >= 2
+        finally:
+            shutil.rmtree(run_path, ignore_errors=True)
+
+    def test_orchestration_does_not_list_inventory_stream(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        root = tmp_path / "root"
+        root.mkdir()
+        (root / "a.txt").write_text("a", encoding="utf-8")
+        run_path = policy_run_dir(f"test-stream-{uuid.uuid4().hex[:10]}")
+        calls = {"listed": 0}
+        real_iter = scan_module.iter_inventory
+
+        def wrapped(*args, **kwargs):
+            stream = real_iter(*args, **kwargs)
+            assert not isinstance(stream, list)
+            original_list = list
+
+            class Guard:
+                def __iter__(self):
+                    return iter(stream)
+
+                def __len__(self):  # pragma: no cover - failure path
+                    calls["listed"] += 1
+                    raise AssertionError("inventory stream was fully sized")
+
+            return Guard()
+
+        monkeypatch.setattr(scan_module, "iter_inventory", wrapped)
+        monkeypatch.setattr(
+            "filesteward.run.iter_inventory", wrapped
+        )
+        try:
+            CleanupRun(root, run_path).execute()
+            assert calls["listed"] == 0
+            assert validate_run(run_path) == []
+        finally:
+            shutil.rmtree(run_path, ignore_errors=True)
+
+    def test_failed_new_run_cannot_validate_as_mixed_old(
+        self, tmp_path: Path
+    ) -> None:
+        root = tmp_path / "root"
+        root.mkdir()
+        (root / "a.txt").write_text("a", encoding="utf-8")
+        run_path = policy_run_dir(f"test-mixed-{uuid.uuid4().hex[:10]}")
+        try:
+            CleanupRun(root, run_path).execute()
+            assert validate_run(run_path) == []
+            # Simulate a partial new attempt against the nonempty dir.
+            with pytest.raises(ValueError, match="not empty"):
+                CleanupRun(root, run_path).execute()
+            # Stale successful artifacts remain self-consistent; the guard
+            # prevents a failed overwrite from mixing with them.
+            assert validate_run(run_path) == []
         finally:
             shutil.rmtree(run_path, ignore_errors=True)
 

@@ -139,6 +139,17 @@ _PLAN_TEXT_COLUMNS = (
     "canonical_survivor",
     "proposed_action",
 )
+_EXCLUSION_TEXT_COLUMNS = (
+    "protection_reason",
+    "protection_source",
+)
+
+#: Shared identity fields that must not drift between inventory and queues.
+_QUEUE_IDENTITY_COLUMNS = (
+    "path",
+    "logical_size_bytes",
+    "allocated_size_bytes",
+)
 
 _ARTIFACT_NAMES = (
     "cleanup-plan.csv",
@@ -360,29 +371,33 @@ def write_summary(path: Path, model: SummaryModel) -> None:
 def _read_csv(
     path: Path, columns: Sequence[str], errors: list[str]
 ) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle)
-        try:
-            header = tuple(next(reader))
-        except StopIteration:
-            errors.append(f"{path.name}: file is empty")
-            return []
-        if header != tuple(columns):
-            errors.append(
-                f"{path.name}: header mismatch; expected {list(columns)}, "
-                f"found {list(header)}"
-            )
-            return []
-        rows: list[dict[str, str]] = []
-        for number, raw in enumerate(reader, start=2):
-            if len(raw) != len(columns):
+    try:
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.reader(handle)
+            try:
+                header = tuple(next(reader))
+            except StopIteration:
+                errors.append(f"{path.name}: file is empty")
+                return []
+            if header != tuple(columns):
                 errors.append(
-                    f"{path.name}: row {number} has {len(raw)} fields, "
-                    f"expected {len(columns)}"
+                    f"{path.name}: header mismatch; expected {list(columns)}, "
+                    f"found {list(header)}"
                 )
-                continue
-            rows.append(dict(zip(columns, raw)))
-        return rows
+                return []
+            rows: list[dict[str, str]] = []
+            for number, raw in enumerate(reader, start=2):
+                if len(raw) != len(columns):
+                    errors.append(
+                        f"{path.name}: row {number} has {len(raw)} fields, "
+                        f"expected {len(columns)}"
+                    )
+                    continue
+                rows.append(dict(zip(columns, raw)))
+            return rows
+    except (OSError, UnicodeError, csv.Error, TypeError, ValueError) as exc:
+        errors.append(f"{path.name}: unreadable ({exc})")
+        return []
 
 
 def _opt_int(text: str) -> Optional[int]:
@@ -499,12 +514,17 @@ def validate_run(run_dir: Path) -> list[str]:
                     f"protected-exclusions.csv: row {number} empty {column}"
                 )
 
-    # Forbidden language in prose columns.
+    # Forbidden language in prose columns (plan/review/exclusion).
     errors.extend(
         _scan_cells("cleanup-plan.csv", plan, _PLAN_TEXT_COLUMNS)
     )
     errors.extend(
         _scan_cells("human-review.csv", review, _REVIEW_TEXT_COLUMNS)
+    )
+    errors.extend(
+        _scan_cells(
+            "protected-exclusions.csv", exclusions, _EXCLUSION_TEXT_COLUMNS
+        )
     )
 
     # Plan arithmetic: priorities and cumulative column.
@@ -598,6 +618,15 @@ def validate_run(run_dir: Path) -> list[str]:
                 f"{queued['disposition']!r} does not match inventory "
                 f"{inv['disposition']!r}"
             )
+        for column in _QUEUE_IDENTITY_COLUMNS:
+            if column not in queued:
+                continue
+            if queued[column] != inv.get(column, ""):
+                errors.append(
+                    f"item {item_id}: queued {column} "
+                    f"{queued[column]!r} does not match inventory "
+                    f"{inv.get(column, '')!r}"
+                )
         if bucket == "protected-exclusions.csv":
             if queued["relationship"] != inv["protection_relation"]:
                 errors.append(
@@ -614,13 +643,23 @@ def validate_run(run_dir: Path) -> list[str]:
             f"{len(inventory)}"
         )
 
-    # run.json facts.
+    # run.json facts. Present-but-empty metadata is invalid, not absent.
     try:
         metadata = json.loads(paths["run.json"].read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
         errors.append(f"run.json: unreadable ({exc})")
-        metadata = {}
-    if metadata:
+        metadata = None
+    if not isinstance(metadata, dict):
+        if metadata is not None:
+            errors.append(
+                f"run.json: expected a JSON object, got {type(metadata).__name__}"
+            )
+    elif not metadata:
+        errors.append(
+            "run.json: empty metadata object; required authorization and "
+            "totals fields are missing"
+        )
+    else:
         if metadata.get("authorization_state") != "UNAPPROVED":
             errors.append("run.json: authorization_state must be UNAPPROVED")
         recorded_cumulative = metadata.get(
@@ -648,23 +687,30 @@ def validate_run(run_dir: Path) -> list[str]:
         target = metadata.get("target_free_bytes")
         stop_row = metadata.get("stop_row")
         if baseline is not None and target is not None:
-            gap = max(0, int(target) - int(baseline))
-            expected: Optional[int] = 0
-            if gap > 0:
-                expected = None
-                running = 0
-                for index, row in enumerate(plan, start=1):
-                    projected = _opt_int(row["projected_reclaim_bytes"])
-                    if projected is not None:
-                        running += projected
-                    if running >= gap:
-                        expected = index
-                        break
-            if stop_row != expected:
+            try:
+                gap = max(0, int(target) - int(baseline))
+            except (TypeError, ValueError) as exc:
                 errors.append(
-                    f"run.json: stop_row {stop_row!r} does not match "
-                    f"recomputed {expected!r}"
+                    f"run.json: baseline/target not usable integers ({exc})"
                 )
+                gap = None
+            if gap is not None:
+                expected: Optional[int] = 0
+                if gap > 0:
+                    expected = None
+                    running = 0
+                    for index, row in enumerate(plan, start=1):
+                        projected = _opt_int(row["projected_reclaim_bytes"])
+                        if projected is not None:
+                            running += projected
+                        if running >= gap:
+                            expected = index
+                            break
+                if stop_row != expected:
+                    errors.append(
+                        f"run.json: stop_row {stop_row!r} does not match "
+                        f"recomputed {expected!r}"
+                    )
         elif stop_row is not None:
             errors.append(
                 "run.json: stop_row must be null when baseline or target "
@@ -672,7 +718,11 @@ def validate_run(run_dir: Path) -> list[str]:
             )
 
     # Summary structure.
-    summary_text = paths["cleanup-summary.md"].read_text(encoding="utf-8")
+    try:
+        summary_text = paths["cleanup-summary.md"].read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        errors.append(f"cleanup-summary.md: unreadable ({exc})")
+        return errors
     for section in REQUIRED_SUMMARY_SECTIONS:
         if section not in summary_text:
             errors.append(f"cleanup-summary.md: missing section {section!r}")

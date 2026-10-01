@@ -12,6 +12,7 @@ import hashlib
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
@@ -295,6 +296,67 @@ class TestUnreadableIsExplicit:
         assert items[0].scan_completeness is ScanCompleteness.INCOMPLETE
         assert items[0].scan_error is not None
 
+    def test_type_probe_race_becomes_incomplete_evidence(self) -> None:
+        """F2: is_dir/is_file OSError must not abort the whole scan."""
+
+        class FakeStat:
+            st_size = 10
+            st_mtime = 1.0
+            st_nlink = 1
+            st_file_attributes = 0
+
+        class RacingEntry:
+            def __init__(self, path: str) -> None:
+                self.path = path
+
+            def is_symlink(self) -> bool:
+                return False
+
+            def stat(self, *, follow_symlinks: bool = True) -> FakeStat:
+                return FakeStat()
+
+            def is_dir(self, *, follow_symlinks: bool = True) -> bool:
+                raise FileNotFoundError(2, "vanished", self.path)
+
+            def is_file(self, *, follow_symlinks: bool = True) -> bool:
+                raise FileNotFoundError(2, "vanished", self.path)
+
+        class StableFile:
+            def __init__(self, path: str) -> None:
+                self.path = path
+
+            def is_symlink(self) -> bool:
+                return False
+
+            def stat(self, *, follow_symlinks: bool = True) -> FakeStat:
+                return FakeStat()
+
+            def is_dir(self, *, follow_symlinks: bool = True) -> bool:
+                return False
+
+            def is_file(self, *, follow_symlinks: bool = True) -> bool:
+                return True
+
+        root = os.path.abspath("C:/synthetic/race-root")
+
+        def fake_scandir(path: str) -> Iterator[Any]:
+            assert path == root
+            return iter(
+                [
+                    RacingEntry(os.path.join(root, "vanishing.bin")),
+                    StableFile(os.path.join(root, "stable.bin")),
+                ]
+            )
+
+        items = list(iter_inventory(root, deps=ScanDeps(scandir=fake_scandir)))
+        by_name = {os.path.basename(i.path): i for i in items if i.path != root}
+        assert "vanishing.bin" in by_name
+        assert by_name["vanishing.bin"].scan_completeness is ScanCompleteness.INCOMPLETE
+        assert "FileNotFoundError" in (by_name["vanishing.bin"].scan_error or "")
+        assert "stable.bin" in by_name
+        assert by_name["stable.bin"].entry_type is EntryType.FILE
+        assert by_name["stable.bin"].scan_completeness is ScanCompleteness.COMPLETE
+
     def test_mid_iteration_failure_marks_directory_incomplete(self) -> None:
         """S14: a partially enumerated directory is not COMPLETE."""
 
@@ -485,6 +547,8 @@ class TestCloudPlaceholder:
     def test_real_offline_flag_file_detected_without_mutation(
         self, tmp_path: Path
     ) -> None:
+        if sys.platform != "win32":
+            pytest.skip("Win32 attributes API")
         target = tmp_path / "placeholder.bin"
         payload = b"payload" * 1000
         target.write_bytes(payload)

@@ -366,6 +366,56 @@ class TestCliExitCodes:
         assert code == EXIT_INVALID
         assert "missing artifact" in capsys.readouterr().err
 
+    def test_validate_malformed_run_json_exits_invalid_no_traceback(
+        self, tmp_path: Path, s1_run_dir: Path, capsys
+    ) -> None:
+        root = (tmp_path / "root").resolve()
+        build_s1_fixture(root)
+        assert (
+            main(
+                [
+                    "scan",
+                    str(root),
+                    "--run-dir",
+                    str(s1_run_dir),
+                    "--contract",
+                    str(root / "cache" / "pip"),
+                ]
+            )
+            == EXIT_OK
+        )
+        # Positive control: intact run validates.
+        assert main(["validate", str(s1_run_dir)]) == EXIT_OK
+        (s1_run_dir / "run.json").write_bytes(b"\xff\xfe not-json \x00")
+        code = main(["validate", str(s1_run_dir)])
+        assert code == EXIT_INVALID
+        err = capsys.readouterr().err
+        assert "Traceback" not in err
+        assert "problem" in err or "unreadable" in err or "run.json" in err
+
+    def test_validate_empty_metadata_exits_invalid(
+        self, tmp_path: Path, s1_run_dir: Path, capsys
+    ) -> None:
+        root = (tmp_path / "root").resolve()
+        build_s1_fixture(root)
+        assert (
+            main(
+                [
+                    "scan",
+                    str(root),
+                    "--run-dir",
+                    str(s1_run_dir),
+                    "--contract",
+                    str(root / "cache" / "pip"),
+                ]
+            )
+            == EXIT_OK
+        )
+        (s1_run_dir / "run.json").write_text("{}\n", encoding="utf-8")
+        code = main(["validate", str(s1_run_dir)])
+        assert code == EXIT_INVALID
+        assert "empty metadata" in capsys.readouterr().err
+
 
 class TestEntryPointExecutesOutOfProcess:
     def test_module_invocation_reports_version(self) -> None:

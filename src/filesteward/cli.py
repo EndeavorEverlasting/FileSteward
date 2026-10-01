@@ -18,6 +18,7 @@ from typing import Optional, Sequence
 import filesteward
 from filesteward.classify import CacheContract
 from filesteward.manifest import validate_run
+from filesteward.policy.paths import resolve_run_dir_argument
 from filesteward.run import CleanupRun, RunResult
 
 __all__ = [
@@ -139,7 +140,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     try:
         result: RunResult = CleanupRun(
             args.root,
-            args.run_dir,
+            resolve_run_dir_argument(args.run_dir),
             contracts=contracts,
             protected_roots=tuple(args.protect),
             managed_paths=tuple(args.managed),
@@ -185,7 +186,11 @@ def _run_validate(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return EXIT_INVALID
-    errors = validate_run(target)
+    try:
+        errors = validate_run(target)
+    except (ValueError, TypeError, OSError, UnicodeError, RuntimeError) as exc:
+        print(f"filesteward validate: {exc}", file=sys.stderr)
+        return EXIT_INVALID
     if errors:
         print(
             f"filesteward validate: {len(errors)} problem(s) found:",

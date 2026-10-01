@@ -84,6 +84,19 @@ def test_s5_hard_link_sharing_defeats_reclaim() -> None:
     assert any("hard-link" in note for note in result.challenge_notes)
 
 
+def test_s5_unknown_link_count_defeats_reclaim() -> None:
+    result = review(make_item(link_count=None))
+    assert result.final_disposition is CleanupDisposition.HUMAN_REVIEW
+    assert result.sustained is False
+    assert any("unknown link_count" in note for note in result.challenge_notes)
+
+
+def test_s5_known_single_link_still_sustains() -> None:
+    result = review(make_item(link_count=1))
+    assert result.final_disposition is CleanupDisposition.RECLAIM_PROVEN
+    assert result.sustained is True
+
+
 def test_s5_cloud_placeholder_content_not_verifiable() -> None:
     result = review(make_item(is_cloud_placeholder=True))
     assert result.final_disposition is CleanupDisposition.HUMAN_REVIEW
