@@ -659,3 +659,69 @@ class TestRunGuards:
                 CleanupRun(root, run_path).execute()
         finally:
             shutil.rmtree(run_path, ignore_errors=True)
+
+
+# --- S13: system/application-managed mutation exclusion at run level -----
+
+
+class TestS13ManagedExclusion:
+    """S13: a marked managed path is inventoried but never becomes an
+    automatic mutation candidate without an explicit adapter/contract."""
+
+    def test_managed_path_inventoried_but_never_planned(
+        self, tmp_path: Path, artifact_run_dir: Path
+    ) -> None:
+        root = (tmp_path / "root").resolve()
+        (root / "sys").mkdir(parents=True)
+        (root / "sys" / "app.db").write_bytes(b"D" * 500)
+        (root / "cache").mkdir()
+        (root / "cache" / "hit.bin").write_bytes(b"C" * 900)
+        contract = CacheContract(
+            contract_id=_CACHE_CONTRACT_ID,
+            path_prefix=str(root / "cache"),
+            description="synthetic cache contract",
+        )
+        result = CleanupRun(
+            root,
+            artifact_run_dir,
+            contracts=(contract,),
+            managed_paths=(str(root / "sys"),),
+            baseline_free_bytes=0,
+            target_free_bytes=1,
+        ).execute()
+        assert result.inventory_items == 5
+
+        inventory = _read_rows(artifact_run_dir / "inventory.csv")
+        plan = _read_rows(artifact_run_dir / "cleanup-plan.csv")
+        review = _read_rows(artifact_run_dir / "human-review.csv")
+
+        managed_prefix = str(root / "sys")
+        sys_db = str(root / "sys" / "app.db")
+        inv_paths = {row["path"] for row in inventory}
+        assert sys_db in inv_paths, "managed path must still be inventoried"
+
+        plan_paths = {row["path"] for row in plan}
+        assert sys_db not in plan_paths
+        assert not any(
+            path == managed_prefix or path.startswith(managed_prefix + os.sep)
+            for path in plan_paths
+        ), "no marked managed path may appear in cleanup-plan"
+
+        review_by_path = {row["path"]: row for row in review}
+        assert sys_db in review_by_path
+        assert (
+            "system/application-managed"
+            in review_by_path[sys_db]["why_ambiguous"]
+        )
+        assert managed_prefix in review_by_path, (
+            "the marked managed directory is queued for review"
+        )
+
+        # An explicit contract at an unrelated prefix still nominates.
+        assert str(root / "cache" / "hit.bin") in plan_paths
+
+        metadata = json.loads(
+            (artifact_run_dir / "run.json").read_text(encoding="utf-8")
+        )
+        assert metadata["managed_paths"] == [managed_prefix]
+        assert validate_run(artifact_run_dir) == []

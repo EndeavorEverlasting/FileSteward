@@ -258,6 +258,32 @@ class TestS1CliEndToEnd:
             == EXIT_OK
         )
 
+    def test_s13_managed_flag_keeps_system_path_out_of_plan(
+        self, tmp_path: Path, s1_run_dir: Path
+    ) -> None:
+        root = (tmp_path / "root").resolve()
+        (root / "sys").mkdir(parents=True)
+        (root / "sys" / "app.db").write_bytes(b"D" * 500)
+        (root / "cache").mkdir()
+        (root / "cache" / "hit.bin").write_bytes(b"C" * 900)
+        code = main(
+            [
+                "scan",
+                str(root),
+                "--run-dir",
+                str(s1_run_dir),
+                "--contract",
+                str(root / "cache"),
+                "--managed",
+                str(root / "sys"),
+            ]
+        )
+        assert code == EXIT_OK
+        plan = read_rows(s1_run_dir / "cleanup-plan.csv")
+        plan_paths = {row["path"] for row in plan}
+        assert str(root / "sys" / "app.db") not in plan_paths
+        assert str(root / "cache" / "hit.bin") in plan_paths
+
     def test_scan_reports_counts_and_unapproved_statement(
         self, tmp_path: Path, s1_run_dir: Path, capsys
     ) -> None:

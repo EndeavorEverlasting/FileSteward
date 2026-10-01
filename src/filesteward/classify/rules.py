@@ -18,6 +18,7 @@ from filesteward.protect.index import ProtectionRelation
 __all__ = [
     "CacheContract",
     "evaluate_gates",
+    "is_managed",
     "match_contract",
     "nominate",
     "resolve_directory_disposition",
@@ -54,6 +55,10 @@ def _norm(path: str) -> str:
     return path.replace("\\", "/").rstrip("/").casefold()
 
 
+def _prefix_matches(path: str, prefix: str) -> bool:
+    return path == prefix or path.startswith(prefix + "/")
+
+
 def match_contract(
     item: InventoryItem, contracts: Iterable[CacheContract]
 ) -> Optional[CacheContract]:
@@ -67,10 +72,29 @@ def match_contract(
 
     path = _norm(item.path)
     for contract in contracts:
-        prefix = _norm(contract.path_prefix)
-        if path == prefix or path.startswith(prefix + "/"):
+        if _prefix_matches(path, _norm(contract.path_prefix)):
             return contract
     return None
+
+
+def is_managed(
+    item: InventoryItem, managed_paths: Iterable[str]
+) -> bool:
+    """True when the item sits beneath a declared system/application-
+    managed prefix.
+
+    The marking is declared by an adapter or the operator and supplied
+    as input, exactly like a contract; nothing here infers "managed"
+    from observed characteristics of a file. Lookup is boundary-aware
+    with the same semantics as :func:`match_contract`.
+    """
+
+    path = _norm(item.path)
+    for raw_prefix in managed_paths:
+        prefix = _norm(raw_prefix)
+        if prefix and _prefix_matches(path, prefix):
+            return True
+    return False
 
 
 def evaluate_gates(
@@ -78,6 +102,7 @@ def evaluate_gates(
     *,
     protection: ProtectionRelation = ProtectionRelation.UNRELATED,
     contracts: Sequence[CacheContract] = (),
+    managed_paths: Sequence[str] = (),
     descendant_complete: bool = True,
 ) -> GateResults:
     """Derive normalized deterministic gate facts for one item.
@@ -87,6 +112,7 @@ def evaluate_gates(
     """
 
     contract = match_contract(item, contracts)
+    managed = is_managed(item, managed_paths)
     observation_complete = bool(
         item.scan_completeness is ScanCompleteness.COMPLETE and descendant_complete
     )
@@ -95,6 +121,7 @@ def evaluate_gates(
         f"scan={item.scan_completeness.value}",
         f"descendants_complete={descendant_complete}",
         f"contract={contract.contract_id if contract else 'none'}",
+        f"system_managed={managed}",
     )
     return GateResults(
         item_id=item.item_id,
@@ -106,6 +133,7 @@ def evaluate_gates(
             contract and contract.recoverability_documented
         ),
         regenerable=bool(contract and contract.regenerable),
+        managed=managed,
         notes=notes,
     )
 
@@ -114,10 +142,13 @@ def nominate(gates: GateResults) -> ProvisionalDisposition:
     """Fail-closed deterministic nomination from gate facts.
 
     Precedence: protection beats everything; incomplete observation is
-    `UNKNOWN`; missing contract or undocumented provenance/recoverability
-    is `HUMAN_REVIEW`; documented non-regenerable content is
-    `KEEP_PROVEN`; only then may `RECLAIM_PROVEN` be nominated — and it
-    remains provisional until the independent challenge sustains it.
+    `UNKNOWN`; a system/application-managed mark without an explicit
+    adapter/contract is `HUMAN_REVIEW` (never an automatic mutation
+    candidate); missing contract or undocumented provenance/
+    recoverability is `HUMAN_REVIEW`; documented non-regenerable
+    content is `KEEP_PROVEN`; only then may `RECLAIM_PROVEN` be
+    nominated — and it remains provisional until the independent
+    challenge sustains it.
     """
 
     if gates.protection in (
@@ -142,6 +173,16 @@ def nominate(gates: GateResults) -> ProvisionalDisposition:
             item_id=gates.item_id,
             disposition=CleanupDisposition.UNKNOWN,
             basis="observation incomplete",
+            gates=gates,
+        )
+    if gates.managed and gates.contract_id is None:
+        return ProvisionalDisposition(
+            item_id=gates.item_id,
+            disposition=CleanupDisposition.HUMAN_REVIEW,
+            basis=(
+                "system/application-managed; excluded from automatic "
+                "mutation candidacy without an explicit adapter/contract"
+            ),
             gates=gates,
         )
     if gates.contract_id is None:

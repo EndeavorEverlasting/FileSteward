@@ -35,6 +35,7 @@ class GateResults:
     provenance_documented: bool
     recoverability_documented: bool
     regenerable: bool
+    managed: bool = False
     notes: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:

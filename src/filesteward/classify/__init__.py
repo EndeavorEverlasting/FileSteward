@@ -5,6 +5,7 @@ from filesteward.classify.gates import GateResults, ProvisionalDisposition
 from filesteward.classify.rules import (
     CacheContract,
     evaluate_gates,
+    is_managed,
     match_contract,
     nominate,
     resolve_directory_disposition,
@@ -17,6 +18,7 @@ __all__ = [
     "GateResults",
     "ProvisionalDisposition",
     "evaluate_gates",
+    "is_managed",
     "match_contract",
     "nominate",
     "resolve_directory_disposition",

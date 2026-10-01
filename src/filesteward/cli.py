@@ -80,6 +80,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="operator-declared protected root to exclude (repeatable)",
     )
     scan.add_argument(
+        "--managed",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help=(
+            "path declared system/application-managed: inventoried, but "
+            "never an automatic mutation candidate without an explicit "
+            "contract (repeatable)"
+        ),
+    )
+    scan.add_argument(
         "--target-free-bytes",
         type=int,
         dest="target_free_bytes",
@@ -131,6 +142,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             args.run_dir,
             contracts=contracts,
             protected_roots=tuple(args.protect),
+            managed_paths=tuple(args.managed),
             target_free_bytes=args.target_free_bytes,
             baseline_free_bytes=args.baseline_free_bytes,
         ).execute()

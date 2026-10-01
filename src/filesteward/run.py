@@ -88,6 +88,7 @@ class CleanupRun:
         *,
         contracts: Sequence[CacheContract] = (),
         protected_roots: Sequence[os.PathLike[str] | str] = (),
+        managed_paths: Sequence[os.PathLike[str] | str] = (),
         target_free_bytes: Optional[int] = None,
         baseline_free_bytes: Optional[int] = None,
         scan_deps: Optional[ScanDeps] = None,
@@ -104,6 +105,9 @@ class CleanupRun:
         self._protected_roots = tuple(
             ProtectedRoot(path=os.fspath(path), source="operator-declared")
             for path in protected_roots
+        )
+        self._managed_paths = tuple(
+            os.fspath(path) for path in managed_paths
         )
         self._target_free_bytes = target_free_bytes
         self._baseline_free_bytes = baseline_free_bytes
@@ -159,6 +163,7 @@ class CleanupRun:
                 item,
                 protection=relation,
                 contracts=self._contracts,
+                managed_paths=self._managed_paths,
                 descendant_complete=all(
                     subtree_complete[child] for child in kids
                 ),
@@ -271,6 +276,7 @@ class CleanupRun:
                 {"path": protected.path, "source": protected.source}
                 for protected in index
             ],
+            "managed_paths": list(self._managed_paths),
         }
         artifacts.write_run_metadata(run_dir / "run.json", metadata)
 
@@ -520,7 +526,8 @@ class CleanupRun:
                             f"protection={relation.value}; "
                             f"contract={gates.contract_id or 'none'}; "
                             f"link_count={item.link_count}; "
-                            f"placeholder={item.is_cloud_placeholder}"
+                            f"placeholder={item.is_cloud_placeholder}; "
+                            f"system_managed={gates.managed}"
                         ),
                         "risk_if_acted_on": risk,
                     }

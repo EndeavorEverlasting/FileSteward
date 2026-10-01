@@ -349,3 +349,50 @@ def test_s6_directory_composition(
 def test_directory_composition_rejects_non_dispositions() -> None:
     with pytest.raises(TypeError):
         resolve_directory_disposition(["RECLAIM_PROVEN"])  # type: ignore[list-item]
+
+
+# --- S13: system/application-managed mutation exclusion -------------------
+
+MANAGED_PREFIX = "C:/synthetic/AppData/Local/Adobe/SystemCache"
+
+
+def test_s13_managed_marker_without_contract_is_human_review() -> None:
+    blob = make_item(path=f"{MANAGED_PREFIX}/blob.dat")
+    result = nominate(gates_for(blob, managed_paths=(MANAGED_PREFIX,)))
+    assert result.disposition is CleanupDisposition.HUMAN_REVIEW
+    assert "system/application-managed" in result.basis
+    assert "without an explicit adapter/contract" in result.basis
+
+
+def test_s13_managed_marker_with_explicit_contract_may_nominate() -> None:
+    blob = make_item(path=f"{MANAGED_PREFIX}/blob.dat")
+    contract = CacheContract(
+        contract_id="synthetic.managed-cache",
+        path_prefix=MANAGED_PREFIX,
+        description="synthetic managed artifact with explicit contract",
+    )
+    result = nominate(
+        gates_for(
+            blob, contracts=(contract,), managed_paths=(MANAGED_PREFIX,)
+        )
+    )
+    assert result.disposition is CleanupDisposition.RECLAIM_PROVEN
+
+
+def test_s13_managed_lookup_is_boundary_aware() -> None:
+    item = make_item(path="C:/synthetic/syslog/x.dat")
+    result = nominate(gates_for(item, managed_paths=("C:/synthetic/sys",)))
+    assert result.disposition is CleanupDisposition.HUMAN_REVIEW
+    assert result.basis == "no explicit contract evidence"
+
+
+def test_s13_protection_still_beats_managed_marker() -> None:
+    blob = make_item(path=f"{MANAGED_PREFIX}/blob.dat")
+    result = nominate(
+        gates_for(
+            blob,
+            protection=ProtectionRelation.DESCENDANT,
+            managed_paths=(MANAGED_PREFIX,),
+        )
+    )
+    assert result.disposition is CleanupDisposition.PROTECTED
