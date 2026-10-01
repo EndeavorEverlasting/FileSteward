@@ -1,6 +1,6 @@
 # OpenCode Handoff — Execute FileSteward Phase 1-4 Only
 
-CONTINUE THE FILESTEWARD C:-DRIVE CLEANUP PROGRAM. IMPLEMENT PHASE 1-4 ONLY.
+CONTINUE THE FILESTEWARD C:-DRIVE CLEANUP PROGRAM. EXECUTE B0, THEN PHASE 1-4 ONLY. THIS IS AN EXECUTION REQUEST, NOT A REQUEST TO RETURN ANOTHER PLAN.
 
 **THIS FILE IS A POINTER TO THE TRACKED CONTRACTS, NOT A LICENSE TO REINTERPRET THEM.**
 
@@ -8,12 +8,17 @@ CONTINUE THE FILESTEWARD C:-DRIVE CLEANUP PROGRAM. IMPLEMENT PHASE 1-4 ONLY.
 
 The tracked repository files are authoritative. Chat text is convenience only.
 
-### Safety floor — may be strengthened, never relaxed
+### Safety authority — may be strengthened, never relaxed
 
 1. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
 2. `AGENTS.md`
 3. `README.md`
-4. `docs/agent/CANONICAL-PATHS.md`
+
+These own safety, ambiguity handling, privacy, and authorization semantics.
+
+### Path authority — exclusive
+
+`docs/agent/CANONICAL-PATHS.md` exclusively owns repository, worktree, runtime, and entry-point path resolution. Within a path dispute, `CANONICAL-PATHS.md` wins. Path authority may never weaken the safety authority above.
 
 ### Execution detail — owned scope, forbidden scope, lanes, and gates
 
@@ -64,20 +69,85 @@ Instead, bootstrap must prove all of the following:
 3. the only tracked delta from `de08acde...` to the fetched remote head before implementation begins is exactly these approved governance files:
    `AGENTS.md`,
    `docs/agent/CANONICAL-PATHS.md`,
-   `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`;
+   `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`
+   (this is the single-use launch gate — see **B0.C**);
 4. after checkout/pull, local HEAD exactly equals the fetched remote head.
 
 Any other pre-existing delta => STOP.
 
-## Bootstrap
+## Canonical session bootstrap
 
 PowerShell-oriented commands follow because the execution host is Windows.
 
-All bootstrap inspection is non-destructive. Any mismatch => STOP. Do not stash, reset, clean, force, amend, rebase, or "repair" the discrepancy.
+Path resolution is owned exclusively by `docs/agent/CANONICAL-PATHS.md` (section 3). All bootstrap inspection is non-destructive. Any mismatch => STOP. Do not stash, reset, clean, force, amend, rebase, reclone, rewrite the remote, or "repair" the discrepancy.
+
+### Canonical directory
+
+Open every session from the canonical checkout:
 
 ```powershell
-# Path rule is owned by docs/agent/CANONICAL-PATHS.md (section 3).
 $repo = Join-Path $env:USERPROFILE 'dev\FileSteward'
+Set-Location -LiteralPath $repo
+git rev-parse --show-toplevel   # B0.B identity gate — before any fetch
+git remote get-url origin       # B0.B identity gate — before any fetch
+git fetch --all --prune --tags
+git status --short --branch
+git rev-parse HEAD
+git remote get-url origin
+```
+
+Expected checkout shape:
+
+| Shape | State |
+|---|---|
+| `$env:USERPROFILE\dev\FileSteward` | canonical — the execution owner |
+| `...\dev\_worktrees\...` | not this continuation |
+| `...\dev\_upstreams\...` | not this continuation |
+| `...\Desktop\Dev\...` | forbidden root |
+| `...\OneDrive\...` | forbidden root |
+
+`$env:USERPROFILE\dev\worktrees\FileSteward` is the reserved worktree root. It exists in the contract only. Do not `Set-Location` there for this continuation; the normal canonical checkout already exists and is the execution owner.
+
+### B0.B — existing-checkout identity, before fetch/checkout/pull
+
+Prove identity before any `fetch`, `checkout`, or `pull` against an existing checkout. The two identity lines in the canonical block above are the raw commands; this is their machine-checkable form, executed before the `fetch` line:
+
+```powershell
+Set-Location -LiteralPath $repo
+
+$top = (git rev-parse --show-toplevel).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $top) { throw 'git rev-parse --show-toplevel failed. STOP.' }
+
+$canonical = (Resolve-Path -LiteralPath $repo).Path
+if (($top -replace '/', '\') -ne ($canonical -replace '/', '\')) {
+    throw "Resolved worktree root $top does not equal canonical checkout $canonical. STOP."
+}
+
+$origin = (git remote get-url origin).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $origin) { throw 'git remote get-url origin failed. STOP.' }
+
+$normalizedOrigin = $origin -replace '\.git$', '' -replace '^https://github\.com/', '' -replace '^git@github\.com:', ''
+if ($normalizedOrigin -ne 'EndeavorEverlasting/FileSteward') {
+    throw "Origin $origin does not identify EndeavorEverlasting/FileSteward. STOP."
+}
+```
+
+Required proofs, all four:
+
+1. `git rev-parse --show-toplevel` succeeds;
+2. the resolved root equals the canonical checkout exactly (normalized);
+3. `git remote get-url origin` succeeds;
+4. the normalized origin identifies `EndeavorEverlasting/FileSteward`.
+
+A directory named `FileSteward` is not sufficient identity proof.
+
+Mismatch => STOP. Do not rewrite the remote, reclone over the directory, reset, move, or repair the checkout.
+
+### Pin, execution-start SHA, and single-use launch gate
+
+Only after the identity gate passes, using the `fetch` and `status` already performed in the canonical block above:
+
+```powershell
 $branch = 'plan/c-drive-cleanup-p04-20260930'
 $floor = 'de08acde37aa6f865c233aa9459a3a378f0dc34e'
 $approvedDelta = @(
@@ -86,23 +156,34 @@ $approvedDelta = @(
     'plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md'
 )
 
-if (-not (Test-Path -LiteralPath $repo)) {
-    $parent = Split-Path -Parent $repo
-    New-Item -ItemType Directory -Force -Path $parent | Out-Null
-    git clone https://github.com/EndeavorEverlasting/FileSteward.git $repo
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
-
-git -C $repo fetch --all --prune --tags
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-$remoteHead = (git -C $repo rev-parse "refs/remotes/origin/$branch").Trim()
+$remoteHead = (git rev-parse "refs/remotes/origin/$branch").Trim()
 if ($LASTEXITCODE -ne 0 -or -not $remoteHead) { throw 'Remote plan branch head could not be resolved.' }
 
-git -C $repo merge-base --is-ancestor $floor $remoteHead
+$expectedPin = '<exact remote HEAD stated in the operator continuation instruction>'
+if ($remoteHead -ne $expectedPin) {
+    throw "Provider truth moved: remote head $remoteHead does not equal supplied pin $expectedPin. STOP before mutation and report the new truth."
+}
+
+$executionStartSha = $remoteHead
+```
+
+The operator's continuation instruction carries the exact expected remote plan-branch pin. At the time this handoff was last written that pin was:
+
+```text
+19f54d0791e113ab2101df80021bde5899c1d715
+```
+
+It is superseded the moment B0 pushes a commit; the post-B0 continuation instruction carries the refreshed pin. Never substitute a remembered pin for the supplied one.
+
+`execution-start SHA` must be recorded and named in every stop or continuation report.
+
+Then the launch gate — this exact-three-file check is SINGLE USE and applies only while no implementation commit exists on the branch (see B0.C):
+
+```powershell
+git merge-base --is-ancestor $floor $remoteHead
 if ($LASTEXITCODE -ne 0) { throw "Remote head $remoteHead is not descended from immutable floor $floor." }
 
-$preImplementationDelta = @(git -C $repo diff --name-only "$floor..$remoteHead")
+$preImplementationDelta = @(git diff --name-only "$floor..$remoteHead")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $unexpected = @($preImplementationDelta | Where-Object { $_ -notin $approvedDelta })
 $missing = @($approvedDelta | Where-Object { $_ -notin $preImplementationDelta })
@@ -111,18 +192,18 @@ if ($preImplementationDelta.Count -ne $approvedDelta.Count -or $unexpected.Count
     throw 'Plan branch changed beyond the approved handoff update. STOP.'
 }
 
-git -C $repo checkout $branch
+git checkout $branch
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-git -C $repo pull --ff-only
+git pull --ff-only
 if ($LASTEXITCODE -ne 0) { throw 'Plan branch did not fast-forward cleanly. STOP.' }
 
-$localHead = (git -C $repo rev-parse HEAD).Trim()
+$localHead = (git rev-parse HEAD).Trim()
 if ($localHead -ne $remoteHead) {
     throw "Local HEAD $localHead does not equal fetched remote head $remoteHead."
 }
 
-git -C $repo status --short --branch
+git status --short --branch
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 ```
 
@@ -173,10 +254,20 @@ These are execution contracts, not suggestions.
 - Never merge anything in this sprint.
 - Never open a new PR in this sprint.
 - Dependency graph width is 1.
-- Execute `L0 -> L1 -> L2 -> L3 -> L4` strictly serially.
+- Execute `B0 -> L0 -> L1 -> L2 -> L3 -> L4` strictly serially, in this session, without pausing to re-plan between lanes.
 - No subagents.
 - No parallel mutation workers.
 - No "many files means many agents."
+
+Hard-forbidden throughout B0 and L0-L4:
+
+- No real `C:\` traversal, including "read-only."
+- No real quarantine.
+- No real apply.
+- No deletion of any kind.
+- No PR #1 mutation.
+- No `main` mutation.
+- No merge.
 
 Commit bounded coherent work per lane:
 
@@ -198,6 +289,8 @@ git push origin plan/c-drive-cleanup-p04-20260930
 ```
 
 ### Read-only contract files during implementation
+
+B0 is the one sanctioned edit window for `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`, and it may only encode the three corrections in **B0** above. From L0 onward this file joins the read-only list below.
 
 The following are read-only during L0-L4 unless the **Bounded Correction** rule below explicitly applies:
 
@@ -251,6 +344,54 @@ Protection applies             => PROTECTED
 Do not re-reason an ambiguous item until you convince yourself it is safe.
 
 There is no "think harder until it becomes RECLAIM_PROVEN."
+
+## B0 — execution door hardening
+
+B0 is a bounded governance gate that runs after bootstrap and before L0. It is not a plan JSON lane; `C-DRIVE-CLEANUP-P04.plan.json` remains canonical for L0-L4 and is not edited for B0. B0 touches exactly one file: this handoff.
+
+### A. Path authority
+
+Encoded in **Authority and precedence** above:
+
+- `LOCAL-AGENT-PROTECTIONS.md` / `AGENTS.md` / `README.md` own safety, ambiguity, privacy, and authorization semantics;
+- `docs/agent/CANONICAL-PATHS.md` exclusively owns repository, worktree, runtime, and entry-point path resolution;
+- within a path dispute, `CANONICAL-PATHS.md` wins;
+- path authority may never weaken the safety authority.
+
+### B. Existing-checkout identity
+
+Encoded in the bootstrap above: before any fetch/checkout/pull, prove toplevel success, canonical equality, origin command success, and normalized origin identity. A directory named `FileSteward` is not sufficient identity proof. Mismatch => STOP with no rewrite, reclone, reset, move, or repair.
+
+### C. Bootstrap lifecycle — single-use launch gate
+
+The immutable floor + approved three-file governance delta is an **INITIAL L0-L4 LAUNCH GATE ONLY**.
+
+- Before the first implementation commit exists, the pre-implementation delta from the floor must be exactly the approved files. Any other delta => STOP.
+- After the first implementation commit exists, implementation files are expected to extend the floor-to-HEAD delta. That is normal. The exact-three-file gate no longer applies to them.
+- If this agent loses context, restarts, or hands the run to another agent after implementation begins:
+  - DO NOT widen the initial `approvedDelta`;
+  - DO NOT guess which implementation commits are legitimate;
+  - STOP;
+  - report local HEAD, remote HEAD, `git status`, last completed lane, and commits since this run's execution-start SHA;
+  - require a freshly pinned continuation handoff.
+
+This is intentional fail-closed continuity behavior. A widened allowlist is never an acceptable continuity repair.
+
+If a continuation already finds corrections A-C present in this file, verify them read-only, record B0 as already landed, and proceed to L0. Do not create a second governance commit.
+
+### B0 validation
+
+- `git diff --cached --check` exits 0;
+- final newline present on every touched tracked file;
+- no literal operator `USERPROFILE` path or username in tracked content (`git grep` exit 1 is the expected no-match pass state);
+- `main` untouched;
+- PR #1 untouched;
+- commit and push only `plan/c-drive-cleanup-p04-20260930`;
+- refresh and report the exact remote HEAD after push.
+
+### B0 -> L0
+
+After B0 succeeds, CONTINUE IN THIS SAME EXECUTION SESSION. Do not fall back into planning merely because the branch HEAD changed. Refresh the exact branch HEAD, record it as the new pin for any future continuation, and proceed to L0.
 
 ## Canonical lane execution
 
@@ -544,12 +685,15 @@ SKIPPED CHECKS AND WHY
 UNRESOLVED GAPS / RISKS
 ARTIFACT / LOG / REPORT PATHS
 BRANCH
+EXECUTION-START SHA
+LAST COMPLETED LANE
 COMMITS
   git log --oneline 7ca41c45e3d92aae7963d2fc6713cb88b98fa2c2...HEAD
 PUSH STATE
 PR STATE
 GIT STATUS
 
+B0 STATE: <NOT RUN | LANDED @ <sha>>
 LIVE AUDIT STATE: NOT RUN
 OPERATOR APPROVAL STATE: NOT GRANTED
 APPLY STATE: NOT RUN
