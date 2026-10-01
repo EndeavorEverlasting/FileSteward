@@ -13,6 +13,7 @@ The tracked repository files are authoritative. Chat text is convenience only.
 1. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
 2. `AGENTS.md`
 3. `README.md`
+4. `docs/agent/CANONICAL-PATHS.md`
 
 ### Execution detail — owned scope, forbidden scope, lanes, and gates
 
@@ -60,7 +61,9 @@ Instead, bootstrap must prove all of the following:
 
 1. fetched remote branch head exists;
 2. `de08acde...` is an ancestor of that remote head;
-3. the only tracked delta from `de08acde...` to the fetched remote head before implementation begins is this file:
+3. the only tracked delta from `de08acde...` to the fetched remote head before implementation begins is exactly these approved governance files:
+   `AGENTS.md`,
+   `docs/agent/CANONICAL-PATHS.md`,
    `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`;
 4. after checkout/pull, local HEAD exactly equals the fetched remote head.
 
@@ -73,10 +76,15 @@ PowerShell-oriented commands follow because the execution host is Windows.
 All bootstrap inspection is non-destructive. Any mismatch => STOP. Do not stash, reset, clean, force, amend, rebase, or "repair" the discrepancy.
 
 ```powershell
+# Path rule is owned by docs/agent/CANONICAL-PATHS.md (section 3).
 $repo = Join-Path $env:USERPROFILE 'dev\FileSteward'
 $branch = 'plan/c-drive-cleanup-p04-20260930'
 $floor = 'de08acde37aa6f865c233aa9459a3a378f0dc34e'
-$handoff = 'plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md'
+$approvedDelta = @(
+    'AGENTS.md',
+    'docs/agent/CANONICAL-PATHS.md',
+    'plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md'
+)
 
 if (-not (Test-Path -LiteralPath $repo)) {
     $parent = Split-Path -Parent $repo
@@ -96,7 +104,9 @@ if ($LASTEXITCODE -ne 0) { throw "Remote head $remoteHead is not descended from 
 
 $preImplementationDelta = @(git -C $repo diff --name-only "$floor..$remoteHead")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-if ($preImplementationDelta.Count -ne 1 -or $preImplementationDelta[0] -ne $handoff) {
+$unexpected = @($preImplementationDelta | Where-Object { $_ -notin $approvedDelta })
+$missing = @($approvedDelta | Where-Object { $_ -notin $preImplementationDelta })
+if ($preImplementationDelta.Count -ne $approvedDelta.Count -or $unexpected.Count -ne 0 -or $missing.Count -ne 0) {
     $preImplementationDelta | ForEach-Object { Write-Error "Unexpected pre-implementation delta: $_" }
     throw 'Plan branch changed beyond the approved handoff update. STOP.'
 }
@@ -145,10 +155,11 @@ Read the full files, not summaries:
 
 1. `AGENTS.md`
 2. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
-3. `README.md`
-4. `plans/active/C-DRIVE-CLEANUP-P04.md`
-5. `plans/active/C-DRIVE-CLEANUP-P04.plan.json`
-6. `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`
+3. `docs/agent/CANONICAL-PATHS.md`
+4. `README.md`
+5. `plans/active/C-DRIVE-CLEANUP-P04.md`
+6. `plans/active/C-DRIVE-CLEANUP-P04.plan.json`
+7. `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`
 
 Missing, unreadable, contradictory, or materially stale safety contract => STOP.
 
@@ -192,6 +203,7 @@ The following are read-only during L0-L4 unless the **Bounded Correction** rule 
 
 - `AGENTS.md`
 - `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
+- `docs/agent/CANONICAL-PATHS.md`
 - `README.md`
 - `plans/active/C-DRIVE-CLEANUP-P04.md`
 - `plans/active/C-DRIVE-CLEANUP-P04.plan.json`
