@@ -86,7 +86,20 @@ def _make_item(
         mtime = getattr(st, "st_mtime", None)
         modified = float(mtime) if mtime is not None else None
         nlink = getattr(st, "st_nlink", None)
-        links = int(nlink) if isinstance(nlink, int) and nlink >= 0 else None
+        links = int(nlink) if isinstance(nlink, int) and nlink > 0 else None
+        if links is None:
+            # On Windows, DirEntry.stat(follow_symlinks=False) is built
+            # from WIN32_FIND_DATA, which carries no link count, and the
+            # API reports st_nlink=0. Zero links is not a real filesystem
+            # value, so re-observe it with a no-follow os.stat; when that
+            # also fails, record unknown — never a false zero.
+            try:
+                alt = os.stat(path, follow_symlinks=False)
+                alt_nlink = getattr(alt, "st_nlink", None)
+                if isinstance(alt_nlink, int) and alt_nlink > 0:
+                    links = alt_nlink
+            except OSError:
+                links = None
         reparse = windows.is_reparse_point(st) or symlink
         placeholder = windows.is_cloud_placeholder(st)
     return InventoryItem(

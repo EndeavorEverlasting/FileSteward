@@ -74,7 +74,11 @@ class AdversarialChallenge:
             triggers.append("observation incomplete")
         if not gates.passes_content_gates():
             triggers.append("gate evidence insufficient for reclaim")
-        if item.link_count is not None and item.link_count > 1:
+        if (
+            item.entry_type is EntryType.FILE
+            and item.link_count is not None
+            and item.link_count > 1
+        ):
             triggers.append(
                 f"shared hard-link content (link_count={item.link_count}); "
                 "canonical survivor not proven"
