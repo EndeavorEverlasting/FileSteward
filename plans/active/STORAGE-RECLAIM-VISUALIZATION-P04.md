@@ -295,6 +295,6 @@ Minimum product acceptance:
 
 ## 9. Next implementation command
 
-F0–F4 are implemented. Next owner is F5 accessibility/adversarial polish, then F6 real-receipt proof only with an explicit operator privacy gate.
+F0 remains proven. PR #10 repairs the P100 incident against PR #9 (including follow-on artifact-overwrite, stale-selection, and locale-independent search findings) with focused + full local pytest observed green on the repair head. After PR #10 integrates, F5 accessibility/adversarial polish is the next implementation slice. F6 remains later and still requires its privacy/runtime gate.
 
 Do not reopen P95/P97/F0–F4 visual-language or architecture decisions unless new evidence falsifies them.

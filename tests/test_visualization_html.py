@@ -143,3 +143,34 @@ def test_rects_and_atomic_write(tmp_path: Path) -> None:
     assert "UNAPPROVED" in out.read_text(encoding="utf-8")
     leftovers = list(tmp_path.glob(".report.html.*.tmp"))
     assert leftovers == []
+
+
+def test_filter_and_search_controls_are_wired() -> None:
+    html = render_report_html(_model())
+    assert "const applyFilters" in html
+    assert "data-filter" in html
+    assert 'aria-pressed="true"' in html
+    assert 'aria-pressed="false"' in html
+    assert "search.addEventListener('input'" in html
+    assert "meta.disposition === activeFilter" in html
+    assert "meta.search.includes(query)" in html
+    assert "No items match these filters." in html
+
+
+def test_empty_filter_clears_stale_selection_class() -> None:
+    html = render_report_html(_model())
+    assert "classList.remove('selected')" in html
+    assert ".nav-row.selected, .map-node.selected" in html
+
+
+def test_search_uses_locale_independent_lowercase() -> None:
+    html = render_report_html(_model())
+    assert "toLowerCase()" in html
+    assert "toLocaleLowerCase()" not in html
+
+
+def test_filter_payload_escapes_markup_like_receipt_text() -> None:
+    html = render_report_html(_model())
+    # Dynamic filter/search metadata must not create executable markup.
+    assert r"\u003cscript\u003ealert(1)\u003c/script\u003e" in html
+    assert html.count("<script>alert(1)</script>") == 0

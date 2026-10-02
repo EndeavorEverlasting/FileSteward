@@ -6,6 +6,7 @@ Does not infer evidence or layout treemap geometry.
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -32,15 +33,15 @@ def render_report_html(
         title=title or "FileSteward Storage Decision Map",
         selected_id=selected_id,
     )
-    # Inject display-only filter/search controls into the navigator pane head.
+    # Inject functional filter/search controls into the navigator pane head.
     controls = """
       <div class="filters" role="group" aria-label="Evidence filters">
-        <button type="button" class="filter-chip active" data-filter="ALL">All</button>
-        <button type="button" class="filter-chip" data-filter="HUMAN_REVIEW">Human review</button>
-        <button type="button" class="filter-chip" data-filter="RECLAIM_PROVEN">Reclaim proven</button>
-        <button type="button" class="filter-chip" data-filter="PROTECTED">Protected</button>
-        <button type="button" class="filter-chip" data-filter="UNKNOWN">Unknown</button>
-        <button type="button" class="filter-chip" data-filter="KEEP_PROVEN">Keep</button>
+        <button type="button" class="filter-chip active" data-filter="ALL" aria-pressed="true">All</button>
+        <button type="button" class="filter-chip" data-filter="HUMAN_REVIEW" aria-pressed="false">Human review</button>
+        <button type="button" class="filter-chip" data-filter="RECLAIM_PROVEN" aria-pressed="false">Reclaim proven</button>
+        <button type="button" class="filter-chip" data-filter="PROTECTED" aria-pressed="false">Protected</button>
+        <button type="button" class="filter-chip" data-filter="UNKNOWN" aria-pressed="false">Unknown</button>
+        <button type="button" class="filter-chip" data-filter="KEEP_PROVEN" aria-pressed="false">Keep</button>
       </div>
       <label class="search-label">Search paths and groups
         <input type="search" class="search-field" height="36" style="height:36px;width:100%;"
@@ -62,6 +63,90 @@ def render_report_html(
             '<div class="pane-head"><h2>Storage navigator</h2></div>' + controls,
             1,
         )
+
+    filter_data = {
+        node.node_id: {
+            "disposition": node.disposition.value,
+            "search": f"{node.display_name} {node.path}".lower(),
+        }
+        for node in model.nodes
+    }
+    payload = (
+        json.dumps(filter_data, ensure_ascii=True, separators=(",", ":"))
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
+    behavior = f"""
+<script>
+(() => {{
+  const nodeMeta = {payload};
+  let activeFilter = "ALL";
+  let query = "";
+
+  const visibleFor = (id) => {{
+    const meta = nodeMeta[id];
+    if (!meta) return true;
+    const stateMatch = activeFilter === "ALL" || meta.disposition === activeFilter;
+    const searchMatch = !query || meta.search.includes(query);
+    return stateMatch && searchMatch;
+  }};
+
+  const applyFilters = () => {{
+    document.querySelectorAll('[data-node-id]').forEach((el) => {{
+      const id = el.getAttribute('data-node-id');
+      el.hidden = !visibleFor(id);
+    }});
+
+    document.querySelectorAll('.filter-chip').forEach((chip) => {{
+      const active = chip.getAttribute('data-filter') === activeFilter;
+      chip.classList.toggle('active', active);
+      chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }});
+
+    const selected = document.querySelector('.nav-row.selected:not([hidden])');
+    if (!selected) {{
+      const first = document.querySelector('.nav-row:not([hidden])');
+      if (first) {{
+        first.click();
+      }} else {{
+        // Clear stale selection so restoring filters rebinds a visible row.
+        document.querySelectorAll('.nav-row.selected, .map-node.selected, [data-node-id].selected').forEach((el) => {{
+          el.classList.remove('selected');
+        }});
+        const inspector = document.getElementById('inspector-body');
+        if (inspector) {{
+          inspector.innerHTML = '<p class="empty">No items match these filters.</p>';
+        }}
+      }}
+    }}
+  }};
+
+  document.querySelectorAll('.filter-chip').forEach((chip) => {{
+    chip.setAttribute(
+      'aria-pressed',
+      chip.getAttribute('data-filter') === activeFilter ? 'true' : 'false'
+    );
+    chip.addEventListener('click', () => {{
+      activeFilter = chip.getAttribute('data-filter') || 'ALL';
+      applyFilters();
+    }});
+  }});
+
+  const search = document.querySelector('.search-field');
+  if (search) {{
+    search.addEventListener('input', () => {{
+      // Locale-independent lowercasing to match Python str.lower()/nodeMeta.
+      query = search.value.trim().toLowerCase();
+      applyFilters();
+    }});
+  }}
+  applyFilters();
+}})();
+</script>
+"""
+    if "</body>" in html:
+        html = html.replace("</body>", behavior + "</body>", 1)
     return html
 
 
