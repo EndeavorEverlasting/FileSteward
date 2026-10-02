@@ -74,6 +74,7 @@ def test_visualize_refuses_outside_runtime(tmp_path: Path) -> None:
         "../escaped.html",
         r"..\escaped.html",
         r"C:\escaped.html",
+        "report:stream.html",
     ],
 )
 def test_visualize_rejects_output_name_path_escape(
