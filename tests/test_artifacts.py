@@ -30,7 +30,10 @@ from filesteward.manifest import (
     write_human_review,
     write_protected_exclusions,
 )
-from filesteward.policy.paths import run_dir as policy_run_dir
+from filesteward.policy.paths import (
+    run_dir as policy_run_dir,
+    runtime_root,
+)
 from filesteward.run import CleanupRun
 import filesteward.inventory.scan as scan_module
 
@@ -721,6 +724,48 @@ class TestRunGuards:
                 CleanupRun(root, root / "out").execute()
         finally:
             shutil.rmtree(holder, ignore_errors=True)
+
+    def test_run_dir_parent_traversal_escape_rejected(
+        self, tmp_path: Path
+    ) -> None:
+        # var/runs/<id>/../../../<escape> collapses to <repo>/<escape>,
+        # outside var/, but the literal parents still contain var/runs.
+        root = tmp_path / "root"
+        root.mkdir()
+        token = uuid.uuid4().hex[:10]
+        escape = (
+            policy_run_dir(f"test-aesc-{token}")
+            / ".."
+            / ".."
+            / ".."
+            / f"test-aesc-{token}-escape"
+        )
+        try:
+            with pytest.raises(
+                ValueError,
+                match="must live beneath the ignored runtime tree",
+            ):
+                CleanupRun(root, escape).execute()
+        finally:
+            shutil.rmtree(
+                runtime_root().parent / f"test-aesc-{token}-escape",
+                ignore_errors=True,
+            )
+            shutil.rmtree(
+                policy_run_dir(f"test-aesc-{token}"), ignore_errors=True
+            )
+
+    def test_scan_root_runtime_self_scan_rejected(self) -> None:
+        # var/runs/.. collapses to the runtime tree itself, which
+        # contains the run-dir, so the containment guard must reject it.
+        runs = runtime_root() / "runs"
+        runs.mkdir(parents=True, exist_ok=True)
+        run_path = runs / f"test-atwo-{uuid.uuid4().hex[:10]}"
+        try:
+            with pytest.raises(ValueError, match="inside the scan root"):
+                CleanupRun(runs / "..", run_path).execute()
+        finally:
+            shutil.rmtree(run_path, ignore_errors=True)
 
     def test_missing_scan_root_rejected(self, tmp_path: Path) -> None:
         run_path = policy_run_dir(f"test-guard-{uuid.uuid4().hex[:10]}")
