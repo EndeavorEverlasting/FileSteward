@@ -10,6 +10,8 @@ FileSteward is a human-in-the-loop file triage project for Downloads and other u
 
 The repository currently defines the product and safety contract. The scanner, review queue, executor, WinDirStat adapter, duplicate analysis, and optional AI enrichment are planned work unless a later release and its validation evidence state otherwise.
 
+For agent-session crash recovery — where tooling state lives, how to resume a lost session, and how to prove repository state after an interruption — see [`docs/agent/RECOVERY.md`](docs/agent/RECOVERY.md).
+
 ## Why FileSteward exists
 
 Downloads folders mix temporary installers, important records, project artifacts, archives, duplicates, incomplete downloads, and files whose purpose is unclear. A simple keyword sorter can move the wrong item, while an automatic cleaner can destroy information before its value is understood.
