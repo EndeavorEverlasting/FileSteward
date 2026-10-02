@@ -30,6 +30,7 @@ Isolate → Build → Prove → Stop/Ship.
 - Use synthetic fixtures for implementation proof.
 - Crossing from synthetic proof into real `C:` observation requires an explicit operator gate.
 - Do not stop at a green branch/PR merely to ask for ceremonial merge permission. When the exact validated head is current, required repository-owned gates/reviews/dependencies/protection rules are green, no explicit prohibition exists, and merge authority is available, integrate it into the refreshed default branch and verify containment/content.
+- Before any PR merge, refresh the exact PR head and enumerate unresolved review threads. Every material finding must be either disproven against that exact head or repaired and resolved. A passing local test suite never overrides unresolved material review evidence.
 - Release/deploy follows the repository's explicit promotion contract. When that contract already authorizes the promotion and its gates are green, no extra conversational confirmation is required; an explicit operator prohibition or named external gate still wins.
 
 ## Execution, Entire, and provider policy
