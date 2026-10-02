@@ -49,7 +49,13 @@ class TestEntryPointIdentity:
             if isinstance(action, argparse._SubParsersAction)
         )
         assert subparsers_action.choices is not None
-        assert set(subparsers_action.choices) == {"scan", "validate", "plan", "apply"}
+        assert set(subparsers_action.choices) == {
+            "scan",
+            "validate",
+            "plan",
+            "visualize",
+            "apply",
+        }
 
     def test_scan_requires_run_dir(self) -> None:
         with pytest.raises(SystemExit) as exc:

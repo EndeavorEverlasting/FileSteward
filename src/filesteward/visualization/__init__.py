@@ -20,12 +20,14 @@ from filesteward.visualization.css import render_token_css
 from filesteward.visualization.html import render_report_html, write_report_html_atomically
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.model import build_presentation_model
+from filesteward.visualization.report import REPORT_FILENAME, VisualizeResult, visualize_run_dir
 from filesteward.visualization.selection import SelectionController
 from filesteward.visualization.shell import render_report_shell
 from filesteward.visualization.tokens import disposition_css_stem, load_tokens
 from filesteward.visualization.treemap import layout_treemap
 
 __all__ = [
+    "REPORT_FILENAME",
     "GateStep",
     "GateStepStatus",
     "PresentationModel",
@@ -34,6 +36,7 @@ __all__ = [
     "ShellMetrics",
     "TreemapRect",
     "ViewportMode",
+    "VisualizeResult",
     "build_presentation_model",
     "disposition_css_stem",
     "escape_attr",
@@ -43,5 +46,6 @@ __all__ = [
     "render_report_html",
     "render_report_shell",
     "render_token_css",
+    "visualize_run_dir",
     "write_report_html_atomically",
 ]

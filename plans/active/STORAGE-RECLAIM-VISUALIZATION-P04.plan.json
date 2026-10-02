@@ -134,7 +134,7 @@
         "protected+incomplete precedence fixture",
         "hostile markup-like path fixture"
       ],
-      "status": "READY"
+      "status": "PROVEN"
     },
     {
       "lane_id": "F2",
@@ -160,7 +160,7 @@
         "no external assets/network calls",
         "responsive no-clipping at intermediate widths"
       ],
-      "status": "READY"
+      "status": "PROVEN"
     },
     {
       "lane_id": "F3",
@@ -185,7 +185,7 @@
         "zero/unknown-size handling explicit",
         "zoom/selection coordinates reproducible"
       ],
-      "status": "READY"
+      "status": "PROVEN"
     },
     {
       "lane_id": "F4",
@@ -213,7 +213,7 @@
         "scan/validate/plan/apply behavior remains green",
         "full repository local test floor green"
       ],
-      "status": "WAITING"
+      "status": "PROVEN"
     },
     {
       "lane_id": "F5",
@@ -238,7 +238,7 @@
         "state not color-only",
         "first failing gate dominant"
       ],
-      "status": "WAITING"
+      "status": "READY"
     },
     {
       "lane_id": "F6",
@@ -350,7 +350,7 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07",
-    "first_action": "After F0 is on refreshed main: run entire status --json when available; create isolated F1/F2/F3 worktrees from that base; F1 fills PresentationModel, F2 expands shell.py into html.py, F3 emits TreemapRect; execute concurrently when three writers exist; converge through F4."
+    "prompt": "P07 / F5",
+    "first_action": "After F4 integration on main: run accessibility/adversarial polish (keyboard-only, 1024px, hostile text, high-contrast, first unresolved gate dominance) then F6 real-receipt proof only with explicit operator gate."
   }
 }
