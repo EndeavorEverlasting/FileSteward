@@ -17,6 +17,7 @@ from filesteward.visualization.contracts import (
 )
 from filesteward.visualization.css import render_token_css
 from filesteward.visualization.literal import escape_attr, escape_text
+from filesteward.visualization.model import build_presentation_model
 from filesteward.visualization.selection import SelectionController
 from filesteward.visualization.shell import render_report_shell
 from filesteward.visualization.tokens import disposition_css_stem, load_tokens
@@ -29,6 +30,7 @@ __all__ = [
     "SelectionController",
     "ShellMetrics",
     "ViewportMode",
+    "build_presentation_model",
     "disposition_css_stem",
     "escape_attr",
     "escape_text",
