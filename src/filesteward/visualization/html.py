@@ -6,6 +6,7 @@ Does not infer evidence or layout treemap geometry.
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -62,6 +63,78 @@ def render_report_html(
             '<div class="pane-head"><h2>Storage navigator</h2></div>' + controls,
             1,
         )
+
+    filter_data = {
+        node.node_id: {
+            "disposition": node.disposition.value,
+            "search": f"{node.display_name} {node.path}".casefold(),
+        }
+        for node in model.nodes
+    }
+    payload = (
+        json.dumps(filter_data, ensure_ascii=True, separators=(",", ":"))
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
+    behavior = f"""
+<script>
+(() => {{
+  const nodeMeta = {payload};
+  let activeFilter = "ALL";
+  let query = "";
+
+  const visibleFor = (id) => {{
+    const meta = nodeMeta[id];
+    if (!meta) return true;
+    const stateMatch = activeFilter === "ALL" || meta.disposition === activeFilter;
+    const searchMatch = !query || meta.search.includes(query);
+    return stateMatch && searchMatch;
+  }};
+
+  const applyFilters = () => {{
+    document.querySelectorAll('[data-node-id]').forEach((el) => {{
+      const id = el.getAttribute('data-node-id');
+      el.hidden = !visibleFor(id);
+    }});
+
+    document.querySelectorAll('.filter-chip').forEach((chip) => {{
+      const active = chip.getAttribute('data-filter') === activeFilter;
+      chip.classList.toggle('active', active);
+      chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }});
+
+    const selected = document.querySelector('.nav-row.selected:not([hidden])');
+    if (!selected) {{
+      const first = document.querySelector('.nav-row:not([hidden])');
+      if (first) first.click();
+    }}
+  }};
+
+  document.querySelectorAll('.filter-chip').forEach((chip) => {{
+    chip.setAttribute(
+      'aria-pressed',
+      chip.getAttribute('data-filter') === activeFilter ? 'true' : 'false'
+    );
+    chip.addEventListener('click', () => {{
+      activeFilter = chip.getAttribute('data-filter') || 'ALL';
+      applyFilters();
+    }});
+  }});
+
+  const search = document.querySelector('.search-field');
+  if (search) {{
+    search.addEventListener('input', () => {{
+      query = search.value.trim().toLocaleLowerCase();
+      applyFilters();
+    }});
+  }}
+  applyFilters();
+}})();
+</script>
+"""
+    if "</body>" in html:
+        html = html.replace("</body>", behavior + "</body>", 1)
     return html
 
 
