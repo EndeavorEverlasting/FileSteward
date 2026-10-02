@@ -1,13 +1,14 @@
 """``filesteward`` console entry point.
 
-Command vocabulary is owned by ``plans/active/C-DRIVE-CLEANUP-P04.md``
-section 10: ``scan`` / ``validate`` / ``plan`` / ``apply``. This module
-must not invent a competing command system, and it contains no cleanup
-judgment: it only parses arguments, invokes ``CleanupRun``/
-``validate_run``/``triage_run_dir``, and maps outcomes to exit codes.
+Command vocabulary is owned by the active plan: ``scan`` / ``validate`` /
+``plan`` / ``visualize`` / ``apply``. This module must not invent a competing
+command system, and it contains no cleanup judgment: it only parses
+arguments, invokes ``CleanupRun``/``validate_run``/``triage_run_dir``/
+``visualize_run_dir``, and maps outcomes to exit codes.
 ``apply`` is a refusal seam — it never mutates anything. ``plan`` is
 read-only receipt triage (path-prefix buckets); it never nominates
-reclaim or grants approval.
+reclaim or grants approval. ``visualize`` is read-only report publication
+from validated artifacts; it never mutates source inventory.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from filesteward.policy.paths import (
     resolve_run_dir_argument,
 )
 from filesteward.run import CleanupRun, RunResult
+from filesteward.visualization.report import visualize_run_dir
 
 __all__ = [
     "EXIT_INVALID",
@@ -136,6 +138,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=20,
         help="how many largest buckets to print (default: 20)",
+    )
+
+    visualize = subparsers.add_parser(
+        "visualize",
+        help=(
+            "read-only offline HTML decision map for a validated run; "
+            "publishes under the run directory without mutating source artifacts"
+        ),
+    )
+    visualize.add_argument(
+        "target",
+        help="run directory beneath the canonical ignored var/runs/ tree",
     )
 
     apply_parser = subparsers.add_parser(
@@ -264,6 +278,24 @@ def _run_plan(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _run_visualize(args: argparse.Namespace) -> int:
+    try:
+        target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
+        result = visualize_run_dir(target)
+    except (ValueError, OSError, UnicodeError, TypeError, RuntimeError) as exc:
+        print(f"filesteward visualize: {exc}", file=sys.stderr)
+        return EXIT_INVALID
+
+    print(
+        f"filesteward visualize: {result.node_count} nodes -> {result.report_path}"
+    )
+    print(
+        "Report is read-only UNAPPROVED evidence for operator review; "
+        "this command produced no contract, no approval, no apply, and no deletion."
+    )
+    return EXIT_OK
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -274,6 +306,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return _run_validate(args)
     if args.command == "plan":
         return _run_plan(args)
+    if args.command == "visualize":
+        return _run_visualize(args)
 
     status = _LANE_STATUS[args.command]
     print(

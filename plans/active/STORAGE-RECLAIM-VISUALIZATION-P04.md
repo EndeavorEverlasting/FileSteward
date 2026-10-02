@@ -295,10 +295,6 @@ Minimum product acceptance:
 
 ## 9. Next implementation command
 
-F0 visual-system freeze is proven. The next execution owner is P07. It must refresh `main`, run `entire status --json` when available, create isolated lanes for F1/F2/F3 from the same refreshed base (after F0 containment), and execute those three lanes concurrently when three isolated writers are actually available.
+F0–F4 are implemented. Next owner is F5 accessibility/adversarial polish, then F6 real-receipt proof only with an explicit operator privacy gate.
 
-- F1: build `model.py` against `visualization.contracts.PresentationNode` without prose parsing.
-- F2: expand `shell.py` into owned `html.py`; keep `render_token_css` / `escape_*` call stacks.
-- F3: implement `treemap.py` emitting `TreemapRect` only.
-
-Do not reopen P95/P97/F0 visual-language decisions unless new evidence falsifies them.
+Do not reopen P95/P97/F0–F4 visual-language or architecture decisions unless new evidence falsifies them.
