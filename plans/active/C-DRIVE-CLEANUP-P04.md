@@ -256,8 +256,13 @@ Required Phase 1-4 executable seams:
 ```text
 filesteward scan <synthetic-root> --run-dir <runtime-dir>
 filesteward validate <run-or-manifest>
-filesteward plan <inventory-or-run>     # only if this extra command is needed
+filesteward plan <run-dir> [--depth N] [--top N]   # read-only HUMAN_REVIEW path-prefix triage
 ```
+
+`filesteward plan` aggregates an existing run's `human-review.csv` into
+prefix buckets (`human-review-buckets.csv` / `.md`). It never nominates
+reclaim, never grants approval, and never mutates inventoried source files.
+See `docs/program/storage-reclaim-path.md`.
 
 `filesteward apply` may exist only as a dry-run/refusal seam if needed by tests. It must not perform real permanent deletion.
 
@@ -563,8 +568,7 @@ The sprint is PASS only when every applicable item is proven.
 - [ ] supported Python floor declared.
 - [ ] package discovery works.
 - [ ] `filesteward` console entry point executes.
-- [ ] existing scan/validate/apply vocabulary is not silently replaced.
-- [ ] any new `plan` command is justified and documented.
+- [ ] existing scan/validate/apply vocabulary is preserved; `plan` is the documented receipt-triage command.
 
 ### Safety semantics
 

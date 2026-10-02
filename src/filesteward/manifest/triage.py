@@ -1,0 +1,249 @@
+"""Read-only HUMAN_REVIEW receipt triage: path-prefix buckets only.
+
+This module never nominates reclaim, never mutates source files, and never
+promotes bucket hints into ``RECLAIM_PROVEN``. Hints are operator-facing
+contract candidates derived from deterministic path substrings only.
+"""
+
+from __future__ import annotations
+
+import csv
+from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path, PurePath
+from typing import Iterable, Mapping, Optional, Sequence
+
+from filesteward.models import CleanupDisposition
+
+__all__ = [
+    "BUCKET_COLUMNS",
+    "BucketRow",
+    "TriageResult",
+    "aggregate_human_review_buckets",
+    "write_bucket_artifacts",
+]
+
+BUCKET_COLUMNS = (
+    "prefix",
+    "depth",
+    "item_count",
+    "logical_bytes_known",
+    "unknown_size_count",
+    "contract_hint_tags",
+)
+
+# Deterministic path-part hints only. Never disposition authority.
+_HINT_PARTS: dict[str, frozenset[str]] = {
+    "temp": frozenset({"temp", "tmp", "temporary internet files"}),
+    "cache": frozenset({"cache", "caches", ".cache"}),
+    "npm": frozenset({"npm-cache", "node_modules"}),
+    "pip": frozenset({"pip"}),
+    "nuget": frozenset({"nuget", ".nuget"}),
+    "cargo": frozenset({"cargo"}),
+    "build": frozenset({"obj", ".tox"}),
+}
+
+
+@dataclass(frozen=True)
+class BucketRow:
+    prefix: str
+    depth: int
+    item_count: int
+    logical_bytes_known: int
+    unknown_size_count: int
+    contract_hint_tags: tuple[str, ...]
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "prefix": self.prefix,
+            "depth": self.depth,
+            "item_count": self.item_count,
+            "logical_bytes_known": self.logical_bytes_known,
+            "unknown_size_count": self.unknown_size_count,
+            "contract_hint_tags": ",".join(self.contract_hint_tags),
+        }
+
+
+@dataclass(frozen=True)
+class TriageResult:
+    run_dir: Path
+    depth: int
+    human_review_rows: int
+    buckets: tuple[BucketRow, ...]
+    csv_path: Path
+    markdown_path: Path
+
+
+def _normalize_path(raw: str) -> PurePath:
+    text = (raw or "").strip()
+    if not text:
+        raise ValueError("human-review path must be non-empty")
+    return PurePath(text)
+
+
+def path_prefix(path: PurePath, depth: int) -> str:
+    """Return the first ``depth`` path parts joined as a prefix string."""
+
+    if depth < 1:
+        raise ValueError("depth must be >= 1")
+    parts = path.parts
+    if not parts:
+        raise ValueError("path has no parts")
+    take = min(depth, len(parts))
+    return str(type(path)(*parts[:take]))
+
+
+def contract_hint_tags(prefix: str) -> tuple[str, ...]:
+    parts = {part.lower() for part in PurePath(prefix).parts}
+    tags = tuple(tag for tag, needles in _HINT_PARTS.items() if parts & needles)
+    return tags
+
+
+def _parse_size(raw: object) -> tuple[Optional[int], bool]:
+    text = "" if raw is None else str(raw).strip()
+    if not text:
+        return None, True
+    try:
+        value = int(text)
+    except ValueError as exc:
+        raise ValueError(f"invalid logical_size_bytes: {raw!r}") from exc
+    if value < 0:
+        raise ValueError(f"logical_size_bytes must be >= 0; got {value}")
+    return value, False
+
+
+def aggregate_human_review_buckets(
+    review_rows: Iterable[Mapping[str, object]],
+    *,
+    depth: int,
+) -> tuple[BucketRow, ...]:
+    """Aggregate HUMAN_REVIEW/UNKNOWN review rows into path-prefix buckets."""
+
+    if depth < 1:
+        raise ValueError("depth must be >= 1")
+
+    totals: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0])
+    # totals[prefix] = [item_count, logical_bytes_known, unknown_size_count]
+
+    for row in review_rows:
+        disposition = str(row.get("disposition") or "").strip()
+        if disposition not in (
+            CleanupDisposition.HUMAN_REVIEW.value,
+            CleanupDisposition.UNKNOWN.value,
+        ):
+            continue
+        prefix = path_prefix(_normalize_path(str(row.get("path") or "")), depth)
+        size, unknown = _parse_size(row.get("logical_size_bytes"))
+        bucket = totals[prefix]
+        bucket[0] += 1
+        if unknown or size is None:
+            bucket[2] += 1
+        else:
+            bucket[1] += size
+
+    rows = [
+        BucketRow(
+            prefix=prefix,
+            depth=depth,
+            item_count=counts[0],
+            logical_bytes_known=counts[1],
+            unknown_size_count=counts[2],
+            contract_hint_tags=contract_hint_tags(prefix),
+        )
+        for prefix, counts in totals.items()
+    ]
+    rows.sort(key=lambda item: (-item.logical_bytes_known, -item.item_count, item.prefix))
+    return tuple(rows)
+
+
+def write_bucket_artifacts(
+    run_dir: Path,
+    buckets: Sequence[BucketRow],
+    *,
+    depth: int,
+    human_review_rows: int,
+) -> tuple[Path, Path]:
+    """Write bucket CSV + markdown under an existing run directory."""
+
+    run_dir = Path(run_dir)
+    if not run_dir.is_dir():
+        raise ValueError(f"run directory not found: {run_dir}")
+
+    csv_path = run_dir / "human-review-buckets.csv"
+    md_path = run_dir / "human-review-buckets.md"
+
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(BUCKET_COLUMNS))
+        writer.writeheader()
+        for row in buckets:
+            writer.writerow(row.as_mapping())
+
+    lines = [
+        f"# HUMAN_REVIEW path-prefix triage — depth {depth}",
+        "",
+        "Read-only bucket totals only. No reclaim nomination, no approval,",
+        "no apply, and no deletion. `contract_hint_tags` are deterministic",
+        "path-substring candidates for operator `--contract` decisions;",
+        "they are **not** reclaim authority.",
+        "",
+        f"- human-review/unknown rows considered: {human_review_rows}",
+        f"- buckets: {len(buckets)}",
+        f"- depth: {depth}",
+        "",
+        "| prefix | items | logical_bytes_known | unknown_size_count | contract_hint_tags |",
+        "|---|---:|---:|---:|---|",
+    ]
+    for row in buckets[:50]:
+        tags = ",".join(row.contract_hint_tags) if row.contract_hint_tags else ""
+        lines.append(
+            f"| `{row.prefix}` | {row.item_count} | {row.logical_bytes_known} | "
+            f"{row.unknown_size_count} | {tags} |"
+        )
+    if len(buckets) > 50:
+        lines.append("")
+        lines.append(f"_Showing top 50 of {len(buckets)} buckets by logical_bytes_known._")
+    lines.append("")
+    lines.append(
+        "Next gate: operator declares regenerable `--contract` prefixes and "
+        "optional `--target-free-bytes`, then a fresh read-only rescan."
+    )
+    lines.append("")
+    md_path.write_text("\n".join(lines), encoding="utf-8")
+    return csv_path, md_path
+
+
+def triage_run_dir(run_dir: Path, *, depth: int = 2) -> TriageResult:
+    """Load ``human-review.csv`` from a run directory and write bucket artifacts."""
+
+    run_dir = Path(run_dir)
+    review_path = run_dir / "human-review.csv"
+    if not review_path.is_file():
+        raise ValueError(f"human-review.csv not found under {run_dir}")
+
+    with review_path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    considered = [
+        row
+        for row in rows
+        if str(row.get("disposition") or "").strip()
+        in (
+            CleanupDisposition.HUMAN_REVIEW.value,
+            CleanupDisposition.UNKNOWN.value,
+        )
+    ]
+    buckets = aggregate_human_review_buckets(considered, depth=depth)
+    csv_path, md_path = write_bucket_artifacts(
+        run_dir,
+        buckets,
+        depth=depth,
+        human_review_rows=len(considered),
+    )
+    return TriageResult(
+        run_dir=run_dir,
+        depth=depth,
+        human_review_rows=len(considered),
+        buckets=buckets,
+        csv_path=csv_path,
+        markdown_path=md_path,
+    )
