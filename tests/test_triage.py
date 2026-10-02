@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import csv
-from pathlib import Path
+import shutil
+import uuid
+from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Iterator
 
 import pytest
 
@@ -12,9 +15,18 @@ from filesteward.manifest.triage import (
     aggregate_human_review_buckets,
     contract_hint_tags,
     path_prefix,
+    receipt_path_class,
     triage_run_dir,
 )
-from pathlib import PureWindowsPath, PurePosixPath
+from filesteward.policy.paths import run_dir as policy_run_dir
+
+
+@pytest.fixture
+def triage_run() -> Iterator[Path]:
+    path = policy_run_dir(f"test-triage-{uuid.uuid4().hex[:10]}")
+    path.mkdir(parents=True, exist_ok=True)
+    yield path
+    shutil.rmtree(path, ignore_errors=True)
 
 
 def test_path_prefix_windows_depth() -> None:
@@ -27,6 +39,14 @@ def test_path_prefix_posix_depth() -> None:
     path = PurePosixPath("/home/example/.cache/pip/http/x")
     assert path_prefix(path, 3) == "/home/example"
     assert path_prefix(path, 4) == "/home/example/.cache"
+
+
+def test_receipt_path_class_preserves_windows_flavor_on_any_host() -> None:
+    assert receipt_path_class(r"C:\Users\x\cache\a") is PureWindowsPath
+    assert receipt_path_class("/home/x/.cache/a") is PurePosixPath
+    parsed = receipt_path_class(r"C:\Users\x\cache\a")(r"C:\Users\x\cache\a")
+    assert path_prefix(parsed, 3) == r"C:\Users\x"
+    assert "cache" in contract_hint_tags(r"C:\Users\x\cache")
 
 
 def test_contract_hint_tags_are_non_authoritative_substrings() -> None:
@@ -74,39 +94,40 @@ def test_aggregate_sorts_by_logical_bytes() -> None:
     assert "temp" in buckets[1].contract_hint_tags
 
 
-def test_triage_run_dir_writes_bucket_artifacts(tmp_path: Path) -> None:
-    review = tmp_path / "human-review.csv"
-    with review.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=[
-                "item_id",
-                "path",
-                "disposition",
-                "logical_size_bytes",
-                "allocated_size_bytes",
-                "why_ambiguous",
-                "what_operator_should_check",
-                "known_context",
-                "risk_if_acted_on",
-            ],
-        )
+def _write_review(path: Path, *, include_disposition: bool = True) -> None:
+    fields = [
+        "item_id",
+        "path",
+        "logical_size_bytes",
+        "allocated_size_bytes",
+        "why_ambiguous",
+        "what_operator_should_check",
+        "known_context",
+        "risk_if_acted_on",
+    ]
+    if include_disposition:
+        fields.insert(2, "disposition")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
-        writer.writerow(
-            {
-                "item_id": "1",
-                "path": r"C:\cache\pip\http\a",
-                "disposition": "HUMAN_REVIEW",
-                "logical_size_bytes": "42",
-                "allocated_size_bytes": "",
-                "why_ambiguous": "no explicit contract evidence",
-                "what_operator_should_check": "whether regenerable",
-                "known_context": "",
-                "risk_if_acted_on": "unknown",
-            }
-        )
+        row = {
+            "item_id": "1",
+            "path": r"C:\cache\pip\http\a",
+            "logical_size_bytes": "42",
+            "allocated_size_bytes": "",
+            "why_ambiguous": "no explicit contract evidence",
+            "what_operator_should_check": "whether regenerable",
+            "known_context": "",
+            "risk_if_acted_on": "unknown",
+        }
+        if include_disposition:
+            row["disposition"] = "HUMAN_REVIEW"
+        writer.writerow(row)
 
-    result = triage_run_dir(tmp_path, depth=2)
+
+def test_triage_run_dir_writes_bucket_artifacts(triage_run: Path) -> None:
+    _write_review(triage_run / "human-review.csv")
+    result = triage_run_dir(triage_run, depth=2)
     assert result.human_review_rows == 1
     assert result.csv_path.is_file()
     assert result.markdown_path.is_file()
@@ -116,23 +137,29 @@ def test_triage_run_dir_writes_bucket_artifacts(tmp_path: Path) -> None:
     assert "no approval" in text
 
 
-def test_cli_plan_happy_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    review = tmp_path / "human-review.csv"
-    review.write_text(
-        "item_id,path,disposition,logical_size_bytes,allocated_size_bytes,"
-        "why_ambiguous,what_operator_should_check,known_context,risk_if_acted_on\n"
-        "1,C:\\cache\\pip\\x,HUMAN_REVIEW,10,,, ,,\n",
-        encoding="utf-8",
-    )
-    code = main(["plan", str(tmp_path), "--depth", "2", "--top", "5"])
+def test_triage_rejects_missing_disposition_column(triage_run: Path) -> None:
+    _write_review(triage_run / "human-review.csv", include_disposition=False)
+    with pytest.raises(ValueError, match="missing required columns"):
+        triage_run_dir(triage_run, depth=2)
+
+
+def test_cli_plan_happy_path(
+    triage_run: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _write_review(triage_run / "human-review.csv")
+    code = main(["plan", str(triage_run), "--depth", "2", "--top", "5"])
     assert code == EXIT_OK
     out = capsys.readouterr().out
     assert "buckets" in out
     assert "no reclaim nomination" in out
-    assert (tmp_path / "human-review-buckets.csv").is_file()
+    assert (triage_run / "human-review-buckets.csv").is_file()
 
 
-def test_cli_plan_missing_dir(capsys: pytest.CaptureFixture[str]) -> None:
-    code = main(["plan", "C:/definitely-missing-filesteward-run-dir"])
+def test_cli_plan_rejects_outside_runtime(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    review = tmp_path / "human-review.csv"
+    _write_review(review)
+    code = main(["plan", str(tmp_path)])
     assert code == EXIT_INVALID
-    assert "not found" in capsys.readouterr().err
+    assert "runtime tree" in capsys.readouterr().err

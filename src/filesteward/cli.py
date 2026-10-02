@@ -21,7 +21,10 @@ from typing import Optional, Sequence
 import filesteward
 from filesteward.classify import CacheContract
 from filesteward.manifest import triage_run_dir, validate_run
-from filesteward.policy.paths import resolve_run_dir_argument
+from filesteward.policy.paths import (
+    prove_run_dir_under_runtime,
+    resolve_run_dir_argument,
+)
 from filesteward.run import CleanupRun, RunResult
 
 __all__ = [
@@ -228,13 +231,6 @@ def _run_validate(args: argparse.Namespace) -> int:
 
 
 def _run_plan(args: argparse.Namespace) -> int:
-    target = Path(args.target)
-    if not target.is_dir():
-        print(
-            f"filesteward plan: run directory not found: {target}",
-            file=sys.stderr,
-        )
-        return EXIT_INVALID
     if args.depth < 1:
         print("filesteward plan: --depth must be >= 1", file=sys.stderr)
         return EXIT_INVALID
@@ -242,6 +238,7 @@ def _run_plan(args: argparse.Namespace) -> int:
         print("filesteward plan: --top must be >= 1", file=sys.stderr)
         return EXIT_INVALID
     try:
+        target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
         result = triage_run_dir(target, depth=args.depth)
     except (ValueError, OSError, UnicodeError, csv.Error) as exc:
         print(f"filesteward plan: {exc}", file=sys.stderr)

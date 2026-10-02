@@ -31,10 +31,13 @@ filesteward plan $runDir --depth 2 --top 30
 filesteward plan $runDir --depth 4 --top 40
 ```
 
-Artifacts written under the run directory (ignored `var/` tree only):
+Artifacts written under the proven run directory beneath ignored `var/runs/`
+(enforced by the same runtime path policy as `scan`):
 
 - `human-review-buckets.csv`
 - `human-review-buckets.md`
+
+`filesteward plan` refuses targets outside the canonical runtime tree.
 
 Bucket rows are counts and logical-byte totals by prefix. Optional
 `contract_hint_tags` are deterministic path-substring labels for operator
