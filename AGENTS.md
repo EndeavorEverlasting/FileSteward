@@ -29,7 +29,24 @@ Isolate → Build → Prove → Stop/Ship.
 - Preserve the existing quality floor. Failed or skipped validation is not completion.
 - Use synthetic fixtures for implementation proof.
 - Crossing from synthetic proof into real `C:` observation requires an explicit operator gate.
-- Merge or release only on explicit operator instruction.
+- Do not stop at a green branch/PR merely to ask for ceremonial merge permission. When the exact validated head is current, required repository-owned gates/reviews/dependencies/protection rules are green, no explicit prohibition exists, and merge authority is available, integrate it into the refreshed default branch and verify containment/content.
+- Release/deploy follows the repository's explicit promotion contract. When that contract already authorizes the promotion and its gates are green, no extra conversational confirmation is required; an explicit operator prohibition or named external gate still wins.
+
+## Execution, Entire, and provider policy
+
+Repository-owned local commands are the semantic proof floor. GitHub Actions are optional provider-side execution/independent evidence, not the canonical owner of tests, validators, build profiles, or merge readiness. Do not add or require Actions merely to create a green badge.
+
+On an operator development host where Entire CLI is available, use Entire as the Git-native agent/session/context and mirror layer:
+
+1. run `entire status --json` during repository orientation;
+2. preserve Entire session/checkpoint integration across agent handoffs;
+3. use Entire mirror/clone transport when configured by the operator;
+4. never substitute GitHub Actions for missing local proof or Entire continuity;
+5. never promote Entire session context into repository truth without Git/provider/content verification.
+
+If Entire is expected by the repository/operator but unavailable on the current host, report the tooling gap and continue every safe repository-owned local proof that remains possible. Do not invent an Actions workflow as a fallback.
+
+GitHub remains the remote provider for PR/review/merge state where this repository is hosted there. Provider status is reconciled with, not substituted for, repository-owned proof.
 
 ## Evidence language
 
