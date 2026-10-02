@@ -259,4 +259,4 @@ A native Windows shell can wrap the same presentation model later if operator us
 **RUNTIME/REAL-RECEIPT PROOF:** no  
 **MUTATION AUTHORITY:** none
 
-**Next owner:** consume the P04 factoring plan. P07 executes F1/F2/F3 from one refreshed base in isolated non-overlapping lanes, converges through F4, then runs F5 polish before any real-receipt proof. The P04 plan also owns the modern FileSteward visual-language contract; do not revive WinDirStat's legacy aesthetic.
+**Next owner:** F0 visual-system freeze is in `docs/program/storage-reclaim-visual-system.md` (+ tokens/interfaces + `src/filesteward/visualization/` seams). P07 executes F1/F2/F3 from one refreshed base in isolated non-overlapping lanes, converges through F4, then runs F5 polish before any real-receipt proof. Do not revive WinDirStat's legacy aesthetic.
