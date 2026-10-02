@@ -221,7 +221,7 @@ Before mutation:
 7. report skipped/failed checks honestly;
 8. stop at the requested proof boundary.
 
-Do not merge, release, live-scan, or cross into a more sensitive phase merely because the preceding phase passed.
+Do not live-scan or cross into a more sensitive data/mutation phase merely because the preceding phase passed. Repository integration is different: an exact validated head should merge into the refreshed default branch when required repository-owned gates/reviews/dependencies/protection rules are green, merge authority is available, and no explicit prohibition remains. Release/deploy follows its own repository promotion contract; do not invent an extra conversational confirmation gate when that contract already authorizes promotion.
 
 ## 13. Real-data gate
 

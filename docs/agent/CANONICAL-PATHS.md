@@ -69,6 +69,30 @@ List / find / resume OpenCode sessions by ID (do not commit a specific historica
 
 Do not move OpenCode or FileSteward layouts to "fix" recovery. Do not fossilize machine-specific usernames or one-off session ids into tracked content.
 
+## 4.2 Entire CLI continuity and mirror policy
+
+Entire CLI is the preferred Git-native agent/session/context layer on operator development hosts. Resolve it from `PATH`; do not hard-code an installation directory.
+
+PowerShell orientation:
+
+```powershell
+$entire = Get-Command entire -ErrorAction SilentlyContinue
+if ($null -eq $entire) {
+    Write-Output 'ENTIRE_STATE: UNAVAILABLE_ON_HOST'
+} else {
+    entire status --json
+}
+```
+
+Rules:
+
+- `entire status --json` establishes the repository's Entire enablement/context state when the tool is available.
+- Entire checkpoints/session context are continuity evidence, not a replacement for Git/provider/content truth.
+- An Entire mirror/clone is a transport/context mechanism. It does not change the canonical mutable checkout path in section 3 unless this contract is explicitly revised.
+- Prefer Entire mirror/clone transport when the operator has configured it; do not create GitHub Actions merely because hosted execution is convenient.
+- Repository-owned local tests/validators/build commands remain the semantic proof owner. GitHub Actions, when present, are optional provider-side execution/independent proof.
+- If Entire is expected but unavailable on the current host, report `ENTIRE_STATE: UNAVAILABLE_ON_HOST`; do not silently substitute another continuity system or infer that Entire is disabled in the repository.
+
 ## 5. Path relation and production state — record, never collapse
 
 Observed receipt (state as of this contract):

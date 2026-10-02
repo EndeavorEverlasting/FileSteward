@@ -2,7 +2,8 @@
 
 **Status:** DESIGN PROVEN BY SYNTHETIC INTERACTION PROTOTYPE; production integration not started  
 **Prior art:** `docs/program/storage-reclaim-visualization-prior-art.md`  
-**Program owner:** `docs/program/storage-reclaim-path.md`
+**Program owner:** `docs/program/storage-reclaim-path.md`  
+**Factored implementation owner:** `plans/active/STORAGE-RECLAIM-VISUALIZATION-P04.md` + `.plan.json`
 
 ## 1. Outcome
 
@@ -258,4 +259,4 @@ A native Windows shell can wrap the same presentation model later if operator us
 **RUNTIME/REAL-RECEIPT PROOF:** no  
 **MUTATION AUTHORITY:** none
 
-**Next owner:** P07 bounded implementation of the presentation-model + HTML generator + `filesteward visualize` seam, followed by synthetic and browser smoke proof.
+**Next owner:** consume the P04 factoring plan. P07 executes F1/F2/F3 from one refreshed base in isolated non-overlapping lanes, converges through F4, then runs F5 polish before any real-receipt proof. The P04 plan also owns the modern FileSteward visual-language contract; do not revive WinDirStat's legacy aesthetic.

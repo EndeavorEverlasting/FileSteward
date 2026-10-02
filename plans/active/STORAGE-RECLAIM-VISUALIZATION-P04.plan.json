@@ -1,0 +1,348 @@
+{
+  "schema_version": "filesteward.p04-plan/v1",
+  "plan_id": "STORAGE-RECLAIM-VISUALIZATION-P04-20261002",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "base": {
+    "branch": "main",
+    "sha": "b2b312bca0076fc9459b6355eb659a24d037e2a2"
+  },
+  "plan_branch": "plan/storage-visualization-p04-20261002",
+  "mission": "Factor the modern FileSteward storage visualization into bounded evidence-model, visual-shell, treemap-engine, convergence, polish, and later operator-decision lanes without carrying forward WinDirStat's legacy visual language.",
+  "proof_ceiling": "Durable factoring/design-system/integration-policy only; no production visualization implementation, real receipt rendering, contract declaration, apply, quarantine, deletion, or verified reclaim.",
+  "runtime_partition": {
+    "implementation_host": "LOCAL_AGENT_RUNTIME",
+    "agent_continuity": "ENTIRE_CLI_WHEN_AVAILABLE",
+    "semantic_proof_owner": "REPOSITORY_LOCAL_COMMANDS",
+    "provider_role": "GITHUB_PR_REVIEW_MERGE_STATE",
+    "github_actions_role": "OPTIONAL_INDEPENDENT_PROOF_NOT_REQUIRED",
+    "private_runtime_root": "var/runs/<run_id>/"
+  },
+  "parallel_execution": {
+    "dependency_graph_width": 3,
+    "parallel_stage": [
+      "F1",
+      "F2",
+      "F3"
+    ],
+    "required_isolation": "separate worktree/branch and non-overlapping owned files",
+    "convergence_owner": "F4",
+    "operator_manual_scheduling_required": false
+  },
+  "integration_policy": {
+    "default_branch": "main",
+    "auto_integrate_when_green": true,
+    "requires_extra_conversational_merge_confirmation": false,
+    "required_conditions": [
+      "exact validated head is current",
+      "repository-owned required checks green",
+      "material review findings resolved",
+      "dependencies satisfied",
+      "no conflicts/protection blocker",
+      "merge authority available",
+      "no explicit operator prohibition"
+    ],
+    "post_merge_proof": [
+      "refresh default branch",
+      "prove validated head or merge commit is contained",
+      "verify intended content/contracts remain present"
+    ]
+  },
+  "modern_visual_system": {
+    "typography": [
+      "Segoe UI Variable",
+      "Segoe UI",
+      "system sans-serif"
+    ],
+    "spacing_grid_px": 8,
+    "principles": [
+      "modern Windows productivity aesthetic",
+      "flat layered surfaces with subtle borders/elevation",
+      "dark/light system preference",
+      "high information density with clear hierarchy",
+      "semantic state uses text/icon plus color",
+      "keyboard-visible focus",
+      "reduced-motion safe",
+      "no bevels or faux-3D cushion aesthetic",
+      "no extension-rainbow as primary meaning",
+      "no blur/glass dependency for correctness"
+    ],
+    "primary_layout": "storage navigator + treemap + decision inspector",
+    "responsive": "tri-pane desktop; inspector-below medium; sequential narrow"
+  },
+  "global_forbidden": [
+    "copy third-party UI source/assets into MIT codebase",
+    "infer disposability from size/color/type/age/location",
+    "parse free-form prose into authority facts",
+    "reclassify historical evidence in the viewer",
+    "commit real receipt paths/data",
+    "create GitHub Actions merely to manufacture provider-green status",
+    "apply/quarantine/delete in F0-F6",
+    "permanent deletion in current MVP"
+  ],
+  "lanes": [
+    {
+      "lane_id": "F0",
+      "title": "UI contract freeze",
+      "dependencies": [],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "presentation-model contract",
+        "design token/interface contract",
+        "event/state interface"
+      ],
+      "forbidden": [
+        "production implementation",
+        "real receipt data"
+      ],
+      "validation": [
+        "no contradiction with FileSteward disposition/authorization rules",
+        "P95/P97 decisions preserved",
+        "F1/F2/F3 ownership is non-overlapping"
+      ],
+      "status": "READY"
+    },
+    {
+      "lane_id": "F1",
+      "title": "Structured presentation/evidence model",
+      "dependencies": [
+        "F0"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/model.py",
+        "focused model/schema tests",
+        "minimal structured-evidence persistence changes required by model"
+      ],
+      "forbidden": [
+        "HTML/CSS",
+        "treemap algorithm",
+        "CLI wiring"
+      ],
+      "validation": [
+        "no prose parsing",
+        "no reclassification",
+        "projection fields preserved",
+        "missing evidence renders unknown",
+        "protected+incomplete precedence fixture",
+        "hostile markup-like path fixture"
+      ],
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "F2",
+      "title": "Modern visual system and report shell",
+      "dependencies": [
+        "F0"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/html.py",
+        "renderer/style tests"
+      ],
+      "forbidden": [
+        "evidence inference",
+        "treemap algorithm",
+        "CLI wiring"
+      ],
+      "validation": [
+        "dark/light system preference",
+        "keyboard-visible focus",
+        "reduced-motion safe",
+        "literal dynamic text",
+        "no external assets/network calls",
+        "responsive no-clipping at intermediate widths"
+      ],
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "F3",
+      "title": "Deterministic treemap engine",
+      "dependencies": [
+        "F0"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/treemap.py",
+        "focused geometry tests"
+      ],
+      "forbidden": [
+        "HTML shell",
+        "evidence judgment",
+        "CLI wiring"
+      ],
+      "validation": [
+        "same input gives same rectangles",
+        "no negative or overlapping geometry",
+        "stable node identity",
+        "zero/unknown-size handling explicit",
+        "zoom/selection coordinates reproducible"
+      ],
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "F4",
+      "title": "Generator and CLI convergence",
+      "dependencies": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/cli.py",
+        "visualization package integration",
+        "integration tests"
+      ],
+      "forbidden": [
+        "source filesystem mutation",
+        "contract authoring",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "filesteward visualize <run-dir> works on synthetic run",
+        "existing run validator executes first",
+        "atomic offline HTML publication",
+        "scan/validate/plan/apply behavior remains green",
+        "full repository local test floor green"
+      ],
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "F5",
+      "title": "Accessibility and adversarial polish",
+      "dependencies": [
+        "F4"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "focused accessibility/responsive/security repairs",
+        "browser/manual smoke receipts"
+      ],
+      "forbidden": [
+        "new product scope unrelated to acceptance defects"
+      ],
+      "validation": [
+        "keyboard-only selection workflow",
+        "screen-reader labeling",
+        "100%-200% zoom",
+        "1024px/intermediate viewport",
+        "literal hostile text",
+        "state not color-only",
+        "first failing gate dominant"
+      ],
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "F6",
+      "title": "Real Phase 5 receipt read-only visualization",
+      "dependencies": [
+        "F5"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "ignored local generated visualization/report only"
+      ],
+      "forbidden": [
+        "commit private paths/data",
+        "contract declaration",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "real receipt renders at scale",
+        "operator can identify largest decision buckets",
+        "acceptable memory/runtime",
+        "zero source mutation"
+      ],
+      "status": "WAITING"
+    },
+    {
+      "lane_id": "F7",
+      "title": "Contract-selection UX",
+      "dependencies": [
+        "F6"
+      ],
+      "execution_environment": "SUCCESSOR_PRODUCT_LANE",
+      "owned": [
+        "operator draft-contract decision surface"
+      ],
+      "forbidden": [
+        "implicit contract creation",
+        "mutation"
+      ],
+      "validation": [
+        "exact prefix scope visible",
+        "provenance/recoverability explicit",
+        "draft decision cannot self-authorize"
+      ],
+      "status": "REQUIRED_SUCCESSOR_WORK"
+    },
+    {
+      "lane_id": "F8",
+      "title": "Manifest-bound approval UX",
+      "dependencies": [
+        "F7",
+        "contract-backed rescan"
+      ],
+      "execution_environment": "SUCCESSOR_PRODUCT_LANE",
+      "owned": [
+        "exact run/manifest/row approval surface"
+      ],
+      "forbidden": [
+        "stale evidence approval",
+        "implicit mutation"
+      ],
+      "validation": [
+        "approval bound to exact digest/run/rows",
+        "projection quality visible",
+        "stale input fails closed"
+      ],
+      "status": "REQUIRED_SUCCESSOR_WORK"
+    },
+    {
+      "lane_id": "F9",
+      "title": "Quarantine/apply and verification",
+      "dependencies": [
+        "F8",
+        "separately authorized apply contract"
+      ],
+      "execution_environment": "SUCCESSOR_MUTATION_LANE",
+      "owned": [
+        "future bounded quarantine/apply implementation"
+      ],
+      "forbidden": [
+        "permanent deletion"
+      ],
+      "validation": [
+        "revalidation before mutation",
+        "restore receipt",
+        "verified free-space change"
+      ],
+      "status": "REQUIRED_SUCCESSOR_WORK"
+    },
+    {
+      "lane_id": "F10",
+      "title": "Retention and permanent deletion policy",
+      "dependencies": [
+        "F9",
+        "proven restore/quarantine lifecycle"
+      ],
+      "execution_environment": "FUTURE_POLICY_LANE",
+      "owned": [
+        "future retention/deletion policy only"
+      ],
+      "forbidden": [
+        "silent deletion",
+        "using quarantine approval as permanent-delete approval"
+      ],
+      "validation": [
+        "second explicit lifecycle",
+        "independent evidence/approval gate"
+      ],
+      "status": "REQUIRED_SUCCESSOR_WORK"
+    }
+  ],
+  "next_owner": {
+    "prompt": "P07",
+    "first_action": "Refresh main; run entire status --json when available; create isolated F1/F2/F3 worktrees from the same refreshed base; execute the three non-overlapping lanes concurrently; converge through F4."
+  }
+}

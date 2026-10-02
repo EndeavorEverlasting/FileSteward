@@ -2,6 +2,8 @@
 
 Durable map of agent-tooling state so a crashed session never requires forensic digging.
 
+**Preferred continuity order on the operator host:** Git/provider truth -> Entire CLI checkpoint/session context -> agent-native history (for example OpenCode). Entire is the cross-agent Git-native continuity layer; agent-native history remains a useful fallback/context surface.
+
 This file adds tooling-recovery knowledge only. It does not restate, weaken, or conflict with any safety, path, or scope contract.
 
 ## 1. Where tooling state lives
@@ -29,7 +31,30 @@ Rules:
 
 ## 2. Recovering a lost session
 
-Sessions are keyed to the project directory they ran in: resume from the same project directory the session was started in. Commands below are PowerShell; flags verified against `opencode --help` (the help output is authoritative if they evolve).
+### 2.1 Entire CLI first
+
+From the canonical checkout:
+
+```powershell
+$repo = Join-Path $env:USERPROFILE 'dev\FileSteward'
+Set-Location -LiteralPath $repo
+entire status --json
+entire session list
+```
+
+If the relevant branch/session is checkpointed, resume its metadata with:
+
+```powershell
+entire session resume <branch>
+```
+
+Entire restores checkpointed session metadata and prints the continuation command(s). Checkpoint/session context is recovery evidence only: refresh Git/provider/content truth before acting on remembered state.
+
+If Entire is unavailable on the host, report `ENTIRE_STATE: UNAVAILABLE_ON_HOST` and continue with the agent-native fallback below. Do not create a GitHub Actions workflow as a recovery substitute.
+
+### 2.2 OpenCode fallback / agent-native recovery
+
+OpenCode sessions are keyed to the project directory they ran in: resume from the same project directory the session was started in. Commands below are PowerShell; flags verified against `opencode --help` (the help output is authoritative if they evolve).
 
 1. Locate the canonical checkout (path contract: `docs/agent/CANONICAL-PATHS.md` section 3):
 

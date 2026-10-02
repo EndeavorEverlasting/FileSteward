@@ -96,7 +96,7 @@
         "python -m pytest -q focused tests"
       ],
       "convergence_owner": "L4",
-      "status": "READY"
+      "status": "HISTORICAL_COMPLETE"
     },
     {
       "lane_id": "L1",
@@ -128,7 +128,7 @@
         "relevant S14 scan completeness behavior"
       ],
       "convergence_owner": "L4",
-      "status": "WAITING"
+      "status": "HISTORICAL_COMPLETE"
     },
     {
       "lane_id": "L2",
@@ -158,7 +158,7 @@
         "no age/size/name/location-only reclaim rule"
       ],
       "convergence_owner": "L4",
-      "status": "WAITING"
+      "status": "HISTORICAL_COMPLETE"
     },
     {
       "lane_id": "L3",
@@ -190,7 +190,7 @@
         "stop-point math uses baseline_free + cumulative_reclaim >= target_free"
       ],
       "convergence_owner": "L4",
-      "status": "WAITING"
+      "status": "HISTORICAL_COMPLETE"
     },
     {
       "lane_id": "L4",
@@ -212,8 +212,7 @@
       "forbidden": [
         "live C: traversal",
         "real private artifacts",
-        "apply/quarantine/delete",
-        "merge without explicit operator instruction"
+        "apply/quarantine/delete"
       ],
       "validation": [
         "S1-S14 pass or precise environment-specific skip with no false proof claim",
@@ -225,7 +224,7 @@
         "git/provider state refreshed"
       ],
       "convergence_owner": "L4",
-      "status": "WAITING"
+      "status": "HISTORICAL_COMPLETE"
     }
   ],
   "hard_stop_after": "L4",
@@ -248,5 +247,11 @@
     "operator_approval": "NOT_GRANTED",
     "apply": "NOT_RUN",
     "verified_reclaim_bytes": 0
+  },
+  "status": "INTEGRATED_SUPERSEDED_EXECUTION_LANE",
+  "continuity": {
+    "do_not_replay": true,
+    "current_successor": "STORAGE-RECLAIM-VISUALIZATION-P04-20261002",
+    "integration_policy": "Validated owned work integrates into refreshed default when required repository gates are green, merge authority exists, and no explicit prohibition remains; no extra conversational confirmation gate."
   }
 }
