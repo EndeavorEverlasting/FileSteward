@@ -13,6 +13,7 @@ from filesteward.visualization.contracts import (
     PresentationModel,
     PresentationNode,
     ShellMetrics,
+    TreemapRect,
     ViewportMode,
 )
 from filesteward.visualization.css import render_token_css
@@ -20,6 +21,7 @@ from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.selection import SelectionController
 from filesteward.visualization.shell import render_report_shell
 from filesteward.visualization.tokens import disposition_css_stem, load_tokens
+from filesteward.visualization.treemap import layout_treemap
 
 __all__ = [
     "GateStep",
@@ -28,10 +30,12 @@ __all__ = [
     "PresentationNode",
     "SelectionController",
     "ShellMetrics",
+    "TreemapRect",
     "ViewportMode",
     "disposition_css_stem",
     "escape_attr",
     "escape_text",
+    "layout_treemap",
     "load_tokens",
     "render_report_shell",
     "render_token_css",
