@@ -90,7 +90,11 @@ Rules:
 - Any identity-gate mismatch (root is not the canonical checkout, or origin differs from `CANONICAL-PATHS.md` section 1) => **STOP**: do not fetch, do not redirect the remote, report the exact observed values.
 - `git fetch` is never read-only: it updates remote-tracking refs, prunes stale refs, and contacts the configured remote. Keep it out of any sequence labeled read-only, and never run it before both identity gates pass.
 - Any unrelated, untracked, or unknown local change => **STOP**: do not stash it, do not reset it, do not clean it, report it verbatim.
-- Reconcile against the tracked handoff (`plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`) for branch pins and continuation gates; never substitute a remembered pin for the supplied one.
+- Reconcile continuation against **current** tracked status, not a remembered sprint:
+  - `plans/active/C-DRIVE-CLEANUP-P04.md` status header (integrated vs implementation-ready),
+  - `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md` **Current disposition** block first (archival B0→L4 text below it is not a re-execution order),
+  - `docs/program/next-sprint-live-audit.md` for the Phase 5 authorization surface.
+  Never substitute a remembered branch pin or chat “next step” for those tracked gates. If the handoff still looked like a live `B0→L4` execution order, treat that as a continuity defect and **STOP** rather than replaying the completed lane.
 
 ## 4. Precedence and authority
 

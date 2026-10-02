@@ -1,6 +1,34 @@
-# OpenCode Handoff — Execute FileSteward Phase 1-4 Only
+# OpenCode Handoff — FileSteward Phase 1–4 (ARCHIVAL)
 
-CONTINUE THE FILESTEWARD C:-DRIVE CLEANUP PROGRAM. EXECUTE B0, THEN PHASE 1-4 ONLY. THIS IS AN EXECUTION REQUEST, NOT A REQUEST TO RETURN ANOTHER PLAN.
+## Current disposition (read first)
+
+```text
+STATUS: SUPERSEDED AS EXECUTION ORDER
+PHASE 1-4: INTEGRATED ON main (PR #2; recovery hardening PR #3)
+B0 -> L4: DO NOT RE-EXECUTE
+PHASE 5: BLOCKED UNTIL EXPLICIT OPERATOR AUTHORIZATION
+APPLY / QUARANTINE / DELETE: NOT AUTHORIZED BY THIS FILE
+```
+
+**Do not** treat this file as an order to run `B0 → L0 → L1 → L2 → L3 → L4` again.
+**Do not** create a second implementation branch to “finish” P04.
+**Do not** open a PR, merge to `main`, or scan real `C:\` because a recovered session pointed here.
+
+Recovery / continuation must:
+
+1. Reconcile Git and provider truth (`docs/agent/RECOVERY.md`, `docs/agent/CANONICAL-PATHS.md`).
+2. Treat sections below labeled historical / archival as **completed sprint instructions**, not a live queue.
+3. Stop at the current gate: explicit operator authorization for Phase 5 (`docs/program/next-sprint-live-audit.md`), or a separately scoped tracked-doc repair — never silent promotion into mutation.
+
+Ignored local receipts under `var/runs/` are workstation evidence only; never commit them; never infer repository LIVE-AUDITED status from chat alone.
+
+---
+
+# Historical text — original Phase 1–4 execution handoff
+
+The banner and body below are preserved as the completed OpenCode execution contract for auditability. They are **not** a re-launch authorization.
+
+~~CONTINUE THE FILESTEWARD C:-DRIVE CLEANUP PROGRAM. EXECUTE B0, THEN PHASE 1-4 ONLY. THIS IS AN EXECUTION REQUEST, NOT A REQUEST TO RETURN ANOTHER PLAN.~~
 
 **THIS FILE IS A POINTER TO THE TRACKED CONTRACTS, NOT A LICENSE TO REINTERPRET THEM.**
 
@@ -254,7 +282,7 @@ These are execution contracts, not suggestions.
 - Never merge anything in this sprint.
 - Never open a new PR in this sprint.
 - Dependency graph width is 1.
-- Execute `B0 -> L0 -> L1 -> L2 -> L3 -> L4` strictly serially, in this session, without pausing to re-plan between lanes.
+- ~~Execute `B0 -> L0 -> L1 -> L2 -> L3 -> L4` strictly serially, in this session, without pausing to re-plan between lanes.~~ **SUPERSEDED:** that lane is integrated; do not re-execute.
 - No subagents.
 - No parallel mutation workers.
 - No "many files means many agents."
@@ -656,6 +684,24 @@ Never commit real:
 No real `C:\` traversal in this sprint, including "read-only."
 
 ## Hard stop
+
+### Current gate (post-integration)
+
+Phase 1–4 / B0–L4 is **already integrated**. A recovered agent that reaches this section must **STOP** and report:
+
+```text
+P04 EXECUTION LANE: COMPLETE / DO NOT REPLAY
+NEXT GATE: Phase 5 requires explicit operator authorization
+SEE: docs/program/next-sprint-live-audit.md
+```
+
+Do not re-run L0–L4 “to be sure.”
+Do not execute Phase 5 without a fresh, explicit operator authorization in the active session.
+Do not scan `C:\` because this file, recovery, or “read-only” language made it feel next.
+Passing synthetic tests does not authorize real workstation observation.
+Mutation / apply / quarantine / delete remain separately gated.
+
+### Historical hard stop (original L4 closeout)
 
 After L4 is green:
 

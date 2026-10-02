@@ -1,19 +1,27 @@
 # FileSteward C:-Drive Cleanup Program — P04 Factoring Plan
 
-**Status:** ACTIVE / IMPLEMENTATION-READY
+**Status:** INTEGRATED / AWAITING PHASE-5 AUTHORIZATION
 **Repository:** `EndeavorEverlasting/FileSteward`
 **Foundation floor:** `agent/repository-foundation@7ca41c45e3d92aae7963d2fc6713cb88b98fa2c2`
-**Plan branch:** `plan/c-drive-cleanup-p04-20260930`
-**Execution host:** `LOCAL_AGENT_RUNTIME` (OpenCode on the operator workstation)
-**Proof ceiling of this plan:** durable design/factoring only; no real `C:\` data observed, classified, moved, quarantined, deleted, or reclaimed.
+**Plan branch (historical):** `plan/c-drive-cleanup-p04-20260930` (merged via PR #2; tip `3e9d78e54558a80baefd3b13563f93e68e36da13`)
+**Integration floor:** contained in current `main` (PR #2 merge `5820d682…`; later recovery hardening via PR #3)
+**Execution host (historical):** `LOCAL_AGENT_RUNTIME` (OpenCode on the operator workstation)
+**Proof ceiling of this plan:** Phase 1–4 synthetic implementation is integrated on `main`. This tracked plan does **not** claim a repository-recorded live `C:\` audit, apply, quarantine, deletion, or verified reclaim. Phase 5 remains a separate explicit operator gate (`docs/program/next-sprint-live-audit.md`).
+
+### Continuity rule (do not replay)
+
+Phase 1–4 (including the historical B0 → L4 OpenCode execution lane) is **complete and merged**. Do **not** re-open an implementation sprint from this file. Do **not** treat `plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md` as an order to re-run B0–L4. The next controlled transition is **operator authorization for Phase 5** (read-only real workstation observation), or a separately scoped documentation/repair task.
+
+Ignored local runtime under `var/runs/` may hold operator-authorized receipts on a given workstation. Those receipts are **not** repository proof and must never be committed (paths, hashes, inventories, queues). Reconcile them against Git/provider truth; do not silently promote them into tracked claims.
 
 Read first:
 
 1. `AGENTS.md`
 2. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
 3. `README.md`
-4. this plan
-5. `plans/active/C-DRIVE-CLEANUP-P04.plan.json`
+4. this plan (as integrated history + Phase 5 gate pointer)
+5. `plans/active/C-DRIVE-CLEANUP-P04.plan.json` (historical lane contract; not a re-execution order)
+6. `docs/program/next-sprint-live-audit.md` (Phase 5 proposal / authorization surface)
 
 ## 1. Mission
 
@@ -625,19 +633,21 @@ The sprint is PASS only when every applicable item is proven.
 
 ## 19. Phase 5 gate — do not cross automatically
 
-After Phase 1-4 passes, STOP.
+Phase 1–4 is integrated on `main`. The remaining hard gate is Phase 5.
 
-Provide the exact bounded command that would perform the first real read-only workstation audit.
+Do **not** re-enter B0–L4. Do **not** invent a new implementation sprint from this plan.
+
+The exact bounded Phase 5 proposal lives in `docs/program/next-sprint-live-audit.md`.
 
 The operator must explicitly authorize crossing:
 
 ```text
-synthetic implementation proof
+synthetic implementation proof (INTEGRATED on main)
     ->
 real workstation read-only observation
 ```
 
-No phrase such as "same run", "next logical step", or "read-only anyway" substitutes for that authorization.
+No phrase such as "same run", "next logical step", recovery, continuation, or "read-only anyway" substitutes for that authorization.
 
 ## 20. Final Phase 1-4 report contract
 
