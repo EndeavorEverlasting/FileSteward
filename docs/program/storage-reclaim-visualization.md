@@ -54,6 +54,9 @@ path
 entry_type
 logical_size_bytes
 allocated_size_bytes
+projected_reclaim_bytes
+reclaim_basis
+projection_quality
 disposition
 authorization_state
 scan_completeness
@@ -95,14 +98,14 @@ Selecting in any pane updates the others. Selection changes presentation state o
 For a selected item/bucket, render the deterministic gate chain:
 
 ```text
-1. Observation complete?
-   NO  -> UNKNOWN -> stop
-   YES -> continue
-
-2. Protected relation?
+1. Protected relation?
    SELF/DESCENDANT -> PROTECTED -> stop
    ANCESTOR        -> HUMAN_REVIEW/decompose -> stop
    unrelated       -> continue
+
+2. Observation complete?
+   NO  -> UNKNOWN -> stop
+   YES -> continue
 
 3. Explicit regenerable contract?
    NO  -> HUMAN_REVIEW -> operator may declare an exact contract
@@ -224,15 +227,20 @@ Production implementation is ready only when it proves:
 3. It streams/handles large receipts without loading 961k rows unnecessarily where aggregation suffices.
 4. Decision traces consume structured persisted evidence only; a negative fixture proves free-form prose is never parsed into authority/gate facts.
 5. Missing historical gate detail renders `UNKNOWN / NOT PERSISTED` rather than being recomputed or guessed.
-6. It publishes atomically; partial HTML is not left as success.
-7. Treemap layout is deterministic for the same normalized model.
-8. Linked selection maps to stable item/bucket identity.
-9. No UI event changes disposition or authorization.
-10. Synthetic fixtures cover HUMAN_REVIEW, UNKNOWN, PROTECTED, KEEP_PROVEN, and RECLAIM_PROVEN.
-11. Negative fixture proves a large/cache-looking item without contract remains HUMAN_REVIEW.
-12. Generated output contains no network dependency and makes no outbound requests.
-13. Browser/manual smoke proves selection + decision trace on a generated synthetic report.
-14. Existing `scan`, `validate`, `plan`, and refusal `apply` behavior remains green.
+6. The presentation model carries `projected_reclaim_bytes`, `reclaim_basis`, and `projection_quality`; logical/allocated area must never be mislabeled as reclaimable bytes.
+7. Dynamic receipt-derived strings are rendered with DOM text nodes/`textContent` or context-correct escaping; a fixture containing `<profile>`, `&`, quotes, and markup-like text must render literally with no active content.
+8. All list and treemap selections are keyboard reachable and activatable; pointer and keyboard paths update the same stable selection state.
+9. Responsive layout must not clip the decision pane at intermediate desktop widths.
+10. It publishes atomically; partial HTML is not left as success.
+11. Treemap layout is deterministic for the same normalized model.
+12. Linked selection maps to stable item/bucket identity.
+13. No UI event changes disposition or authorization.
+14. Synthetic fixtures cover HUMAN_REVIEW, UNKNOWN, PROTECTED, KEEP_PROVEN, and RECLAIM_PROVEN.
+15. Negative fixture proves a large/cache-looking item without contract remains HUMAN_REVIEW.
+16. A mixed protected+incomplete fixture proves protection precedence before UNKNOWN.
+17. Generated output contains no network dependency and makes no outbound requests.
+18. Browser/manual smoke proves selection + decision trace on a generated synthetic report.
+19. Existing `scan`, `validate`, `plan`, and refusal `apply` behavior remains green.
 
 ## 11. Fixed-point design decision
 
