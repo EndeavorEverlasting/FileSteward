@@ -162,4 +162,14 @@ def layout_treemap(
         sized.append((node.node_id, float(raw)))
 
     sized.sort(key=lambda item: (-item[1], item[0]))
-    return tuple(_squarify(sized, 0.0, 0.0, width, height))
+    if width == 0 or height == 0 or not sized:
+        return ()
+
+    # Squarify scoring expects areas in the same coordinate system as the
+    # target rectangle. Raw filesystem byte counts make the aspect-ratio
+    # heuristic scale-dependent and collapse realistic inputs into strips.
+    total_weight = sum(size for _, size in sized)
+    target_area = width * height
+    scale = target_area / total_weight
+    normalized = [(node_id, size * scale) for node_id, size in sized]
+    return tuple(_squarify(normalized, 0.0, 0.0, width, height))
