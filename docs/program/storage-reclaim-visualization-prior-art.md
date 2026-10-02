@@ -18,8 +18,9 @@
 
 ## Source/provenance notes
 
+- WinDirStat's official history says Bernhard Seifert created it in 2003 after using KDirStat; the tree-list + treemap coupling was the central model he wanted on Windows. That history explicitly describes WinDirStat as heavily inspired by/cloning KDirStat's interaction concept.
 - WinDirStat official repository inspected at commit `3abce9a69b80a527f52c0a87482d9b09d343ff0c`: `TreeMapView`, `WinDirStatModel`, extension view, zoom/selection events, and treemap rendering are separate coordinated components.
-- WinDirStat's current public materials present strong-copyleft licensing, while GitHub metadata/history has varied between GPL version labels. FileSteward is MIT. **Do not copy WinDirStat source.**
+- WinDirStat's official background page currently states GPLv2 while the current official GitHub README states GPLv3-or-later. That public licensing inconsistency is itself a provenance risk. FileSteward is MIT. **Do not copy WinDirStat source.**
 - SpaceSniffer is distributed as freeware; its official site documents behavior but is not a compatible source-code donor for FileSteward. **Mechanisms only.**
 - WizTree and TreeSize are proprietary/commercially licensed products. **No code or asset reuse.**
 - Filelight and Baobab are GPL-family applications. **No source copying into FileSteward's MIT codebase.**
@@ -93,3 +94,17 @@ The external ecosystem already supplies mature storage-visualization patterns. T
 
 **Next owner:** P95 architecture/prototype.  
 **Proof ceiling:** prior-art/gap evidence only; no production visualization implementation or mutation authority.
+
+
+## Public reference anchors
+
+- WinDirStat background/history: https://windirstat.net/background.html
+- WinDirStat official repository: https://github.com/windirstat/windirstat
+- SpaceSniffer official product/features: https://www.uderzo.it/main_products/space_sniffer/
+- WizTree official product: https://diskanalyzer.com/
+- TreeSize official product: https://www.jam-software.com/treesize_free
+- KDE Filelight: https://apps.kde.org/filelight/
+- GNOME Disk Usage Analyzer: https://apps.gnome.org/Baobab/
+- UMD HCIL Treemap project/history: https://www.cs.umd.edu/projects/hcil/treemap/
+
+These anchors are research provenance only. No third-party assets or source are vendored by this sprint.
