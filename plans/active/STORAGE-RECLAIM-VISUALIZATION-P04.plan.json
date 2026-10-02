@@ -144,8 +144,8 @@
         "protected+incomplete precedence fixture",
         "hostile markup-like path fixture"
       ],
-      "status": "P100_REPAIR_IMPLEMENTED_AWAITING_LOCAL_VALIDATION",
-      "proof_ceiling": "Prior proof invalidated by PR #9 material review findings; repair implemented in PR #10 but repository-owned focused/full pytest not yet observed on exact repair head."
+      "status": "PROVEN_AFTER_P100_REPAIR",
+      "proof_ceiling": "Exact-head local focused visualization suite and full pytest observed green after PR #10 adjudication of artifact-overwrite, stale-selection, and locale-independent search findings."
     },
     {
       "lane_id": "F2",
@@ -171,8 +171,8 @@
         "no external assets/network calls",
         "responsive no-clipping at intermediate widths"
       ],
-      "status": "P100_REPAIR_IMPLEMENTED_AWAITING_LOCAL_VALIDATION",
-      "proof_ceiling": "Prior proof invalidated by PR #9 material review findings; repair implemented in PR #10 but repository-owned focused/full pytest not yet observed on exact repair head."
+      "status": "PROVEN_AFTER_P100_REPAIR",
+      "proof_ceiling": "Exact-head local focused visualization suite and full pytest observed green after PR #10 adjudication of artifact-overwrite, stale-selection, and locale-independent search findings."
     },
     {
       "lane_id": "F3",
@@ -197,8 +197,8 @@
         "zero/unknown-size handling explicit",
         "zoom/selection coordinates reproducible"
       ],
-      "status": "P100_REPAIR_IMPLEMENTED_AWAITING_LOCAL_VALIDATION",
-      "proof_ceiling": "Prior proof invalidated by PR #9 material review findings; repair implemented in PR #10 but repository-owned focused/full pytest not yet observed on exact repair head."
+      "status": "PROVEN_AFTER_P100_REPAIR",
+      "proof_ceiling": "Exact-head local focused visualization suite and full pytest observed green after PR #10 adjudication of artifact-overwrite, stale-selection, and locale-independent search findings."
     },
     {
       "lane_id": "F4",
@@ -226,8 +226,8 @@
         "scan/validate/plan/apply behavior remains green",
         "full repository local test floor green"
       ],
-      "status": "P100_REPAIR_IMPLEMENTED_AWAITING_LOCAL_VALIDATION",
-      "proof_ceiling": "Prior proof invalidated by PR #9 material review findings; repair implemented in PR #10 but repository-owned focused/full pytest not yet observed on exact repair head."
+      "status": "PROVEN_AFTER_P100_REPAIR",
+      "proof_ceiling": "Exact-head local focused visualization suite and full pytest observed green after PR #10 adjudication of artifact-overwrite, stale-selection, and locale-independent search findings."
     },
     {
       "lane_id": "F5",
@@ -252,7 +252,7 @@
         "state not color-only",
         "first failing gate dominant"
       ],
-      "status": "WAITING_ON_P100_REPAIR_VALIDATION"
+      "status": "READY"
     },
     {
       "lane_id": "F6",
@@ -364,8 +364,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P100 repair validation -> P07 / F5",
-    "first_action": "On the operator/local repository runtime, refresh PR #10 exact head; run focused visualization tests and full pytest; adjudicate exact-head review threads; if green, promote F1-F4 to PROVEN_AFTER_P100_REPAIR, merge PR #10, verify main containment/content, resolve PR #9 findings with merged evidence, then start F5."
+    "prompt": "P07 / F5",
+    "first_action": "After PR #10 is on refreshed main: create isolated F5 worktree; harden keyboard-only, 1024px, forced-colors, first-unresolved-gate dominance, and browser smoke fixtures; do not enter F6 without explicit operator privacy authorization."
   },
   "p100_incidents": [
     {

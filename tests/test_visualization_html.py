@@ -157,6 +157,18 @@ def test_filter_and_search_controls_are_wired() -> None:
     assert "No items match these filters." in html
 
 
+def test_empty_filter_clears_stale_selection_class() -> None:
+    html = render_report_html(_model())
+    assert "classList.remove('selected')" in html
+    assert ".nav-row.selected, .map-node.selected" in html
+
+
+def test_search_uses_locale_independent_lowercase() -> None:
+    html = render_report_html(_model())
+    assert "toLowerCase()" in html
+    assert "toLocaleLowerCase()" not in html
+
+
 def test_filter_payload_escapes_markup_like_receipt_text() -> None:
     html = render_report_html(_model())
     # Dynamic filter/search metadata must not create executable markup.

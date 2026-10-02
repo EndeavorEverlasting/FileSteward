@@ -110,6 +110,10 @@ def render_report_html(
       if (first) {{
         first.click();
       }} else {{
+        // Clear stale selection so restoring filters rebinds a visible row.
+        document.querySelectorAll('.nav-row.selected, .map-node.selected, [data-node-id].selected').forEach((el) => {{
+          el.classList.remove('selected');
+        }});
         const inspector = document.getElementById('inspector-body');
         if (inspector) {{
           inspector.innerHTML = '<p class="empty">No items match these filters.</p>';
@@ -132,7 +136,8 @@ def render_report_html(
   const search = document.querySelector('.search-field');
   if (search) {{
     search.addEventListener('input', () => {{
-      query = search.value.trim().toLocaleLowerCase();
+      // Locale-independent lowercasing to match Python str.lower()/nodeMeta.
+      query = search.value.trim().toLowerCase();
       applyFilters();
     }});
   }}

@@ -149,9 +149,11 @@ Then F5 may resume from the repaired F1–F4 floor.
 At the latest repair branch state:
 
 - all five PR #9 findings have implementation repairs;
+- PR #10 follow-on review findings are repaired:
+  - refuse `output_name` values that would overwrite required run artifacts;
+  - clear stale selected classes when filters yield zero matches;
+  - use locale-independent `toLowerCase()` for search queries;
 - each confirmed finding has a focused regression fixture or explicit browser-proof handoff;
 - FileSteward governance now requires exact-head unresolved-review enumeration before merge;
-- the active P04 plan downgrades F1-F4 and blocks F5 until repair validation;
-- provider review on PR #10 currently has no unresolved material thread at the last observed head;
-- browser execution of filter/search remains intentionally unpromoted until F5/manual-browser proof;
-- repository-local focused/full pytest is still required before merge.
+- repository-local focused visualization suite and full pytest observed green on the repair head before merge;
+- browser execution of filter/search remains intentionally unpromoted until F5/manual-browser proof.

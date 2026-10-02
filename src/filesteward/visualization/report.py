@@ -23,9 +23,23 @@ __all__ = [
 
 REPORT_FILENAME = "storage-decision-map.html"
 
+#: Validated run evidence that visualization must never overwrite.
+_PROTECTED_RUN_ARTIFACTS = frozenset(
+    {
+        "cleanup-plan.csv",
+        "human-review.csv",
+        "protected-exclusions.csv",
+        "inventory.csv",
+        "cleanup-summary.md",
+        "run.json",
+        "human-review-buckets.csv",
+        "human-review-buckets.md",
+    }
+)
+
 
 def _validate_output_name(output_name: str) -> str:
-    """Require one filename so publication cannot escape the proven run dir."""
+    """Require one safe filename that cannot escape or overwrite run evidence."""
 
     if not output_name or output_name in {".", ".."}:
         raise ValueError("visualization output_name must be a non-empty filename")
@@ -39,6 +53,11 @@ def _validate_output_name(output_name: str) -> str:
         or ":" in output_name
     ):
         raise ValueError("visualization output_name must not contain a path")
+    # Windows artifact comparison is case-insensitive; reject protected names.
+    if output_name.casefold() in {name.casefold() for name in _PROTECTED_RUN_ARTIFACTS}:
+        raise ValueError(
+            "visualization output_name must not overwrite a required run artifact"
+        )
     return output_name
 
 

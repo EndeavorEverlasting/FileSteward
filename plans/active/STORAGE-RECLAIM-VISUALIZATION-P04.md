@@ -295,6 +295,6 @@ Minimum product acceptance:
 
 ## 9. Next implementation command
 
-F0 remains proven. PR #9 implementation for F1–F4 is present on main, but P100 incident `P100-FILESTEWARD-PR9-20261002` invalidated the clean-completion claim because five material exact-head review findings were merged unresolved. PR #10 contains the repair and regression fixtures but is awaiting repository-owned focused/full local pytest. F5 is blocked on that repair proof; F6 remains later and still requires its privacy/runtime gate.
+F0 remains proven. PR #10 repairs the P100 incident against PR #9 (including follow-on artifact-overwrite, stale-selection, and locale-independent search findings) with focused + full local pytest observed green on the repair head. After PR #10 integrates, F5 accessibility/adversarial polish is the next implementation slice. F6 remains later and still requires its privacy/runtime gate.
 
 Do not reopen P95/P97/F0–F4 visual-language or architecture decisions unless new evidence falsifies them.
