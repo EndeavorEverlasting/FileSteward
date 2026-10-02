@@ -58,13 +58,17 @@ disposition
 authorization_state
 scan_completeness
 protection_relation
-contract_id
+reason
+contract_summary
 contract_hint_tags
 risk_if_acted_on
 next_gate
+trace_evidence_source
 ```
 
 The production builder derives these fields from already-validated FileSteward artifacts. It does not reclassify items.
+
+**Critical evidence rule:** the viewer may only project a decision-trace fact from a structured persisted field or from an invariant logically guaranteed by the validated final disposition. It must not parse free-form `known_context`/prose to recover control facts, and it must not re-run classification to manufacture a prettier explanation of a historical receipt. If a desired trace fact is not structurally recoverable, render it as `UNKNOWN / NOT PERSISTED` and open a separate schema-evolution slice before claiming that fact.
 
 ## 5. Visual semantics
 
@@ -218,15 +222,17 @@ Production implementation is ready only when it proves:
 1. `visualize` refuses targets outside the canonical runtime tree.
 2. It calls the existing run validator before rendering.
 3. It streams/handles large receipts without loading 961k rows unnecessarily where aggregation suffices.
-4. It publishes atomically; partial HTML is not left as success.
-5. Treemap layout is deterministic for the same normalized model.
-6. Linked selection maps to stable item/bucket identity.
-7. No UI event changes disposition or authorization.
-8. Synthetic fixtures cover HUMAN_REVIEW, UNKNOWN, PROTECTED, KEEP_PROVEN, and RECLAIM_PROVEN.
-9. Negative fixture proves a large/cache-looking item without contract remains HUMAN_REVIEW.
-10. Generated output contains no network dependency and makes no outbound requests.
-11. Browser/manual smoke proves selection + decision trace on a generated synthetic report.
-12. Existing `scan`, `validate`, `plan`, and refusal `apply` behavior remains green.
+4. Decision traces consume structured persisted evidence only; a negative fixture proves free-form prose is never parsed into authority/gate facts.
+5. Missing historical gate detail renders `UNKNOWN / NOT PERSISTED` rather than being recomputed or guessed.
+6. It publishes atomically; partial HTML is not left as success.
+7. Treemap layout is deterministic for the same normalized model.
+8. Linked selection maps to stable item/bucket identity.
+9. No UI event changes disposition or authorization.
+10. Synthetic fixtures cover HUMAN_REVIEW, UNKNOWN, PROTECTED, KEEP_PROVEN, and RECLAIM_PROVEN.
+11. Negative fixture proves a large/cache-looking item without contract remains HUMAN_REVIEW.
+12. Generated output contains no network dependency and makes no outbound requests.
+13. Browser/manual smoke proves selection + decision trace on a generated synthetic report.
+14. Existing `scan`, `validate`, `plan`, and refusal `apply` behavior remains green.
 
 ## 11. Fixed-point design decision
 
