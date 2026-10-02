@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
 import pytest
@@ -301,3 +302,47 @@ def test_prose_contract_claim_does_not_promote(tmp_path: Path) -> None:
     assert node.disposition is CleanupDisposition.HUMAN_REVIEW
     assert node.contract_summary is None
     assert "regenerable-cache-9" not in node.next_gate
+
+
+def _rewrite_inventory_field(
+    run_dir: Path, *, item_id: str, field: str, value: str
+) -> None:
+    path = run_dir / "inventory.csv"
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+        fieldnames = list(reader.fieldnames or ())
+    for row in rows:
+        if row["item_id"] == item_id:
+            row[field] = value
+            break
+    else:
+        raise AssertionError(f"fixture item not found: {item_id}")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def test_unknown_protection_relation_fails_closed(tmp_path: Path) -> None:
+    run_dir = _write_valid_run(tmp_path / "run")
+    _rewrite_inventory_field(
+        run_dir,
+        item_id="reclaim-1",
+        field="protection_relation",
+        value="FUTURE_RELATION",
+    )
+    with pytest.raises(ValueError, match="protection_relation|validation"):
+        build_presentation_model(run_dir)
+
+
+def test_unknown_scan_completeness_fails_closed(tmp_path: Path) -> None:
+    run_dir = _write_valid_run(tmp_path / "run")
+    _rewrite_inventory_field(
+        run_dir,
+        item_id="reclaim-1",
+        field="scan_completeness",
+        value="PARTIALLY_COMPLETE",
+    )
+    with pytest.raises(ValueError, match="scan_completeness|validation"):
+        build_presentation_model(run_dir)
