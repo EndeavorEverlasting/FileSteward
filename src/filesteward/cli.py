@@ -1,24 +1,30 @@
 """``filesteward`` console entry point.
 
 Command vocabulary is owned by ``plans/active/C-DRIVE-CLEANUP-P04.md``
-section 10: ``scan`` / ``validate`` / ``apply``. This module must not
-invent a competing command system, and it contains no cleanup judgment:
-it only parses arguments, invokes ``CleanupRun``/``validate_run``, and
-maps outcomes to exit codes. ``apply`` is a refusal seam for this sprint
-— it never mutates anything.
+section 10: ``scan`` / ``validate`` / ``plan`` / ``apply``. This module
+must not invent a competing command system, and it contains no cleanup
+judgment: it only parses arguments, invokes ``CleanupRun``/
+``validate_run``/``triage_run_dir``, and maps outcomes to exit codes.
+``apply`` is a refusal seam — it never mutates anything. ``plan`` is
+read-only receipt triage (path-prefix buckets); it never nominates
+reclaim or grants approval.
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
 
 import filesteward
 from filesteward.classify import CacheContract
-from filesteward.manifest import validate_run
-from filesteward.policy.paths import resolve_run_dir_argument
+from filesteward.manifest import triage_run_dir, validate_run
+from filesteward.policy.paths import (
+    prove_run_dir_under_runtime,
+    resolve_run_dir_argument,
+)
 from filesteward.run import CleanupRun, RunResult
 
 __all__ = [
@@ -110,6 +116,27 @@ def build_parser() -> argparse.ArgumentParser:
         "validate", help="validate generated artifacts against their schema"
     )
     validate.add_argument("target", help="run directory or manifest path")
+
+    plan = subparsers.add_parser(
+        "plan",
+        help=(
+            "read-only HUMAN_REVIEW path-prefix triage for an existing run; "
+            "writes bucket totals only, never reclaim nominations"
+        ),
+    )
+    plan.add_argument("target", help="run directory containing human-review.csv")
+    plan.add_argument(
+        "--depth",
+        type=int,
+        default=2,
+        help="path-prefix depth for buckets (default: 2)",
+    )
+    plan.add_argument(
+        "--top",
+        type=int,
+        default=20,
+        help="how many largest buckets to print (default: 20)",
+    )
 
     apply_parser = subparsers.add_parser(
         "apply",
@@ -203,6 +230,40 @@ def _run_validate(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _run_plan(args: argparse.Namespace) -> int:
+    if args.depth < 1:
+        print("filesteward plan: --depth must be >= 1", file=sys.stderr)
+        return EXIT_INVALID
+    if args.top < 1:
+        print("filesteward plan: --top must be >= 1", file=sys.stderr)
+        return EXIT_INVALID
+    try:
+        target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
+        result = triage_run_dir(target, depth=args.depth)
+    except (ValueError, OSError, UnicodeError, csv.Error) as exc:
+        print(f"filesteward plan: {exc}", file=sys.stderr)
+        return EXIT_INVALID
+
+    print(
+        f"filesteward plan: {result.human_review_rows} review rows -> "
+        f"{len(result.buckets)} buckets (depth={result.depth})"
+    )
+    print(f"artifacts: {result.csv_path}")
+    print(f"summary: {result.markdown_path}")
+    print(
+        "Buckets are UNAPPROVED evidence for operator contract selection; "
+        "this command produced no reclaim nomination, no approval, no apply, "
+        "and no deletion."
+    )
+    for row in result.buckets[: args.top]:
+        tags = ",".join(row.contract_hint_tags) if row.contract_hint_tags else "-"
+        print(
+            f"  {row.logical_bytes_known} bytes / {row.item_count} items / "
+            f"unknown_size={row.unknown_size_count} / hints={tags} / {row.prefix}"
+        )
+    return EXIT_OK
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -211,6 +272,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return _run_scan(args)
     if args.command == "validate":
         return _run_validate(args)
+    if args.command == "plan":
+        return _run_plan(args)
 
     status = _LANE_STATUS[args.command]
     print(
