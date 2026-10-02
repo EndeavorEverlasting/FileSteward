@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FileSteward Storage Decision Map — Synthetic P95 Prototype</title>
+<style>
+:root{
+  font-family:Segoe UI,Arial,sans-serif;
+  color-scheme:dark;
+  --bg:#101318;--panel:#181d24;--panel2:#202630;--line:#343d49;--text:#edf2f7;--muted:#aeb8c4;
+  --review:#d8a23d;--unknown:#8d96a3;--protected:#c85757;--reclaim:#4da56a;--keep:#4f7fbd;--select:#ffffff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text)}
+button{font:inherit}
+.app{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr auto}
+header{display:flex;gap:18px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);background:#141820}
+header h1{font-size:18px;margin:0;font-weight:650}
+header .sub{font-size:12px;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:#12161c}
+.metric{background:var(--panel);border:1px solid var(--line);padding:9px 10px;border-radius:6px}
+.metric b{display:block;font-size:16px}.metric span{font-size:11px;color:var(--muted)}
+.workspace{display:grid;grid-template-columns:310px minmax(420px,1fr) 360px;min-height:0}
+.pane{min-width:0;min-height:0;border-right:1px solid var(--line);background:var(--panel)}
+.pane:last-child{border-right:0}
+.pane-head{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid var(--line)}
+.pane-head h2{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.06em}
+.controls{display:flex;gap:5px;flex-wrap:wrap}
+.filter{border:1px solid var(--line);background:var(--panel2);color:var(--muted);padding:4px 7px;border-radius:4px;font-size:11px;cursor:pointer}
+.filter.active{color:#fff;border-color:#7f8b99}
+.list{overflow:auto;height:calc(100vh - 175px)}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 11px;border-bottom:1px solid #2a313b;cursor:pointer}
+.row:hover,.row.selected{background:#252c36}.row.selected{outline:1px solid #78889a;outline-offset:-1px}.row:focus-visible,.node:focus-visible{outline:3px solid #fff;outline-offset:-3px}
+.row .name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .meta{font-size:10px;color:var(--muted);margin-top:4px}
+.row .size{text-align:right;font-size:12px;font-variant-numeric:tabular-nums}
+.state{font-size:10px;font-weight:700;letter-spacing:.03em}
+.state.HUMAN_REVIEW{color:var(--review)}.state.UNKNOWN{color:var(--unknown)}.state.PROTECTED{color:var(--protected)}
+.state.RECLAIM_PROVEN{color:var(--reclaim)}.state.KEEP_PROVEN{color:var(--keep)}
+.map-wrap{height:calc(100vh - 175px);padding:10px;background:#0d1015}
+#treemap{width:100%;height:100%;display:block;border:1px solid var(--line);background:#0a0d11}
+.node{cursor:pointer}.node rect{stroke:#0b0e12;stroke-width:2;vector-effect:non-scaling-stroke}
+.node.selected rect{stroke:var(--select);stroke-width:4}
+.node text{pointer-events:none;fill:white;font-size:13px;font-weight:650}
+.node .tiny{font-size:10px;font-weight:400;fill:#e0e6ec}
+.decision{padding:14px;overflow:auto;height:calc(100vh - 175px)}
+.selected-card{border:1px solid var(--line);border-radius:7px;background:var(--panel2);padding:12px;margin-bottom:12px}
+.selected-card h3{font-size:15px;margin:0 0 4px}.path{font-size:11px;color:var(--muted);word-break:break-all}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:6px;font-size:11px;margin-top:10px}.kv div:nth-child(odd){color:var(--muted)}
+.trace{display:grid;gap:7px}.step{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:start;border:1px solid var(--line);border-radius:6px;padding:8px;background:#151a21}
+.step .mark{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;border:1px solid #596574}
+.step.pass .mark{border-color:var(--reclaim);color:var(--reclaim)}
+.step.stop .mark{border-color:var(--review);color:var(--review)}
+.step.block .mark{border-color:var(--protected);color:var(--protected)}
+.step.wait .mark{border-color:var(--unknown);color:var(--unknown)}
+.step b{display:block;font-size:11px}.step span{font-size:10px;color:var(--muted)}
+.next{margin-top:12px;border:1px solid #566273;border-radius:7px;padding:10px;background:#11161d}
+.next b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}.next span{font-size:12px}
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 14px;border-top:1px solid var(--line);background:#12161c;font-size:10px;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:4px;vertical-align:-2px}
+.notice{margin-left:auto;color:#c9d3de}
+@media(max-width:1180px){.workspace{grid-template-columns:260px 1fr}.pane.decision-pane{grid-column:1/-1;border-top:1px solid var(--line)}.decision{height:auto}.map-wrap,.list{height:560px}.metrics{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div>
+    <h1>FileSteward Storage Decision Map</h1>
+    <div class="sub">P95 synthetic interaction prototype · overview → inspect → decision trace</div>
+  </div>
+  <span class="badge">READ ONLY</span>
+  <span class="badge">SYNTHETIC DATA</span>
+</header>
+<section class="metrics">
+  <div class="metric"><b id="visibleSize">0 GiB</b><span>visible logical size</span></div>
+  <div class="metric"><b id="visibleItems">0</b><span>visible evidence groups</span></div>
+  <div class="metric"><b>UNAPPROVED</b><span>authorization state</span></div>
+  <div class="metric"><b>0 bytes</b><span>verified reclaimed by this prototype</span></div>
+</section>
+<main class="workspace">
+  <section class="pane">
+    <div class="pane-head"><h2>Storage groups</h2></div>
+    <div id="list" class="list"></div>
+  </section>
+
+  <section class="pane">
+    <div class="pane-head">
+      <h2>Treemap</h2>
+      <div id="filters" class="controls"></div>
+    </div>
+    <div class="map-wrap"><svg id="treemap" viewBox="0 0 1000 620" role="img" aria-label="Synthetic FileSteward storage treemap"></svg></div>
+  </section>
+
+  <section class="pane decision-pane">
+    <div class="pane-head"><h2>Decision trace</h2></div>
+    <div id="decision" class="decision"></div>
+  </section>
+</main>
+<footer class="legend">
+  <span><i style="background:var(--review)"></i>HUMAN_REVIEW</span>
+  <span><i style="background:var(--unknown)"></i>UNKNOWN</span>
+  <span><i style="background:var(--protected)"></i>PROTECTED</span>
+  <span><i style="background:var(--reclaim)"></i>RECLAIM_PROVEN</span>
+  <span><i style="background:var(--keep)"></i>KEEP_PROVEN</span>
+  <span class="notice">Area communicates size. State + text communicate authority. No destructive control exists.</span>
+</footer>
+</div>
+<script>
+const DATA = [
+ {id:"pkg",name:"Example Package Cache",path:"C:\\Users\\<profile>\\AppData\\Local\\ExamplePackageCache",gib:46.2,items:18240,state:"HUMAN_REVIEW",auth:"UNAPPROVED",hint:"cache",scan:"COMPLETE",protection:"UNRELATED",contract:null,risk:"Large and cache-shaped is not proof of regenerability.",next:"Operator may declare this exact prefix as regenerable only after confirming its provenance/recovery contract."},
+ {id:"downloads",name:"Downloads Review",path:"C:\\Users\\<profile>\\Downloads",gib:28.4,items:912,state:"HUMAN_REVIEW",auth:"UNAPPROVED",hint:"none",scan:"COMPLETE",protection:"UNRELATED",contract:null,risk:"Personal meaning is unknown; size is not deletion authority.",next:"Inspect or classify deliberately. Do not create a broad regenerable contract."},
+ {id:"build",name:"Example Build Artifacts",path:"C:\\Users\\<profile>\\dev\\example-project\\.cache",gib:18.7,items:34091,state:"HUMAN_REVIEW",auth:"UNAPPROVED",hint:"build,cache",scan:"COMPLETE",protection:"UNRELATED",contract:null,risk:"Appears generated, but FileSteward requires an explicit regenerability contract.",next:"Confirm exact build/cache semantics, then optionally declare only this precise prefix."},
+ {id:"protected",name:"Protected Repository",path:"C:\\Users\\<profile>\\dev\\protected-project",gib:12.1,items:10422,state:"PROTECTED",auth:"UNAPPROVED",hint:"none",scan:"COMPLETE",protection:"SELF",contract:null,risk:"Protected overlap prohibits automated reclaim.",next:"No reclaim action. Protection wins over size and hints."},
+ {id:"reclaim",name:"Contract-backed Example Cache",path:"C:\\ProgramData\\ExampleTool\\RegenerableCache",gib:9.6,items:12822,state:"RECLAIM_PROVEN",auth:"UNAPPROVED",hint:"cache",scan:"COMPLETE",protection:"UNRELATED",contract:"example-contract-1",projectedReclaimGiB:8.9,reclaimBasis:"synthetic contract-backed example",projectionQuality:"estimate-logical",risk:"Evidence supports reclaim, but authorization is still absent.",next:"Review the exact manifest/run/row set. A later approval artifact would be a separate gate."},
+ {id:"unknown",name:"Unreadable Subtree",path:"C:\\ExampleRestricted",gib:7.5,items:3,state:"UNKNOWN",auth:"UNAPPROVED",hint:"none",scan:"INCOMPLETE",protection:"UNRELATED",contract:null,risk:"Observation is incomplete; acting could remove unseen content.",next:"Resolve the observation gap or leave untouched."},
+ {id:"keep",name:"Retained Example",path:"C:\\ProgramData\\ExampleTool\\RequiredData",gib:4.2,items:121,state:"KEEP_PROVEN",auth:"UNAPPROVED",hint:"none",scan:"COMPLETE",protection:"UNRELATED",contract:"example-contract-keep",risk:"Affirmative evidence says retain.",next:"No reclaim action."}
+];
+
+const COLORS={HUMAN_REVIEW:"#9f7629",UNKNOWN:"#67717e",PROTECTED:"#983f3f",RECLAIM_PROVEN:"#357b4e",KEEP_PROVEN:"#3d6395"};
+const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const activateSelection = (id) => { selectedId=id; render(); };
+const keyActivate = (event,id) => {
+  if(event.key==="Enter" || event.key===" "){ event.preventDefault(); activateSelection(id); }
+};
+let active="ALL";
+let selectedId=DATA[0].id;
+
+function fmt(n){return n.toFixed(1)+" GiB"}
+
+function layout(items,x,y,w,h){
+  if(!items.length) return [];
+  if(items.length===1) return [{...items[0],x,y,w,h}];
+  const total=items.reduce((s,a)=>s+a.gib,0);
+  let acc=0,cut=1,best=Infinity;
+  for(let i=1;i<items.length;i++){
+    acc+=items[i-1].gib;
+    const d=Math.abs(total/2-acc);
+    if(d<best){best=d;cut=i}
+  }
+  const left=items.slice(0,cut),right=items.slice(cut);
+  const leftTotal=left.reduce((s,a)=>s+a.gib,0);
+  const ratio=leftTotal/total;
+  if(w>=h){
+    const w1=w*ratio;
+    return [...layout(left,x,y,w1,h),...layout(right,x+w1,y,w-w1,h)];
+  }
+  const h1=h*ratio;
+  return [...layout(left,x,y,w,h1),...layout(right,x,y+h1,w,h-h1)];
+}
+
+function visible(){return DATA.filter(d=>active==="ALL"||d.state===active)}
+
+function gateSteps(d){
+  if(d.protection==="SELF" || d.protection==="DESCENDANT") return [
+    ["block","1","Protected overlap?","Yes — "+d.protection+"."],
+    ["block","2","Disposition","PROTECTED. Protection wins."]
+  ];
+  if(d.protection==="ANCESTOR") return [
+    ["stop","1","Protected subtree contained?","Yes — ancestor must be decomposed."],
+    ["stop","2","Disposition","HUMAN_REVIEW. Whole-directory action is prohibited."]
+  ];
+  if(d.scan!=="COMPLETE") return [
+    ["pass","1","Protected overlap?","No."],
+    ["wait","2","Observation complete?","No — scan evidence is incomplete."],
+    ["wait","3","Disposition","UNKNOWN. Stop before contract or action."]
+  ];
+  if(d.state==="KEEP_PROVEN") return [
+    ["pass","1","Protected overlap?","No."],
+    ["pass","2","Observation complete?","Yes."],
+    ["pass","3","Retention evidence?","Yes."],
+    ["stop","4","Disposition","KEEP_PROVEN. No reclaim action."]
+  ];
+  if(!d.contract) return [
+    ["pass","1","Protected overlap?","No."],
+    ["pass","2","Observation complete?","Yes."],
+    ["stop","3","Explicit regenerable contract?","No."],
+    ["stop","4","Disposition","HUMAN_REVIEW. Operator judgment remains required."]
+  ];
+  if(d.state==="RECLAIM_PROVEN") return [
+    ["pass","1","Protected overlap?","No."],
+    ["pass","2","Observation complete?","Yes."],
+    ["pass","3","Explicit regenerable contract?","Yes — "+d.contract+"."],
+    ["pass","4","Provenance/recoverability + challenge?","Sustained by synthetic example evidence."],
+    ["pass","5","Evidence disposition","RECLAIM_PROVEN."],
+    ["stop","6","Operator approval bound to run/manifest/rows?","No — authorization remains UNAPPROVED."],
+    ["wait","7","Apply","Unavailable in the current MVP."]
+  ];
+  return [["stop","1","Disposition",d.state]];
+}
+
+function renderFilters(){
+  const states=["ALL","HUMAN_REVIEW","RECLAIM_PROVEN","PROTECTED","UNKNOWN","KEEP_PROVEN"];
+  document.getElementById("filters").innerHTML=states.map(s=>`<button class="filter ${active===s?"active":""}" data-state="${s}">${s.replace("_"," ")}</button>`).join("");
+  document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{active=b.dataset.state;if(!visible().some(d=>d.id===selectedId))selectedId=visible()[0]?.id||null;render()});
+}
+
+function renderList(){
+  const items=[...visible()].sort((a,b)=>b.gib-a.gib);
+  document.getElementById("list").innerHTML=items.map(d=>`
+    <div class="row ${d.id===selectedId?"selected":""}" data-id="${esc(d.id)}" role="button" tabindex="0" aria-label="${esc(d.name)} ${esc(d.state)} ${fmt(d.gib)}">
+      <div><div class="name">${esc(d.name)}</div><div class="meta"><span class="state ${esc(d.state)}">${esc(d.state)}</span> · ${d.items.toLocaleString()} items · hint: ${esc(d.hint)}</div></div>
+      <div class="size">${fmt(d.gib)}</div>
+    </div>`).join("");
+  document.querySelectorAll(".row").forEach(r=>{
+    r.onclick=()=>activateSelection(r.dataset.id);
+    r.onkeydown=(event)=>keyActivate(event,r.dataset.id);
+  });
+}
+
+function renderMap(){
+  const items=[...visible()].sort((a,b)=>b.gib-a.gib);
+  const laid=layout(items,0,0,1000,620);
+  const svg=document.getElementById("treemap");
+  svg.innerHTML=laid.map(d=>{
+    const pad=3,x=d.x+pad,y=d.y+pad,w=Math.max(0,d.w-pad*2),h=Math.max(0,d.h-pad*2);
+    const label=w>150&&h>70?`<text x="${x+12}" y="${y+24}">${esc(d.name)}</text><text class="tiny" x="${x+12}" y="${y+43}">${fmt(d.gib)} · ${esc(d.state)}</text>`:"";
+    return `<g class="node ${d.id===selectedId?"selected":""}" data-id="${esc(d.id)}" role="button" tabindex="0" aria-label="${esc(d.name)} ${esc(d.state)} ${fmt(d.gib)}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="${COLORS[d.state]}"></rect>${label}</g>`;
+  }).join("");
+  svg.querySelectorAll(".node").forEach(n=>{
+    n.onclick=()=>activateSelection(n.dataset.id);
+    n.onkeydown=(event)=>keyActivate(event,n.dataset.id);
+  });
+}
+
+function renderDecision(){
+  const d=DATA.find(x=>x.id===selectedId);
+  const box=document.getElementById("decision");
+  if(!d){box.innerHTML="<p>No visible item selected.</p>";return}
+  const steps=gateSteps(d).map(s=>`<div class="step ${esc(s[0])}"><div class="mark">${esc(s[1])}</div><div><b>${esc(s[2])}</b><span>${esc(s[3])}</span></div></div>`).join("");
+  box.innerHTML=`
+    <div class="selected-card">
+      <h3>${esc(d.name)}</h3><div class="path">${esc(d.path)}</div>
+      <div class="kv">
+        <div>Logical size</div><div>${fmt(d.gib)}</div>
+        <div>Projected reclaim</div><div>${d.projectedReclaimGiB==null?"not established":fmt(d.projectedReclaimGiB)}</div>
+        <div>Projection quality</div><div>${esc(d.projectionQuality||"not-applicable")}</div>
+        <div>Reclaim basis</div><div>${esc(d.reclaimBasis||"none")}</div>
+        <div>Disposition</div><div class="state ${esc(d.state)}">${esc(d.state)}</div>
+        <div>Authorization</div><div>${esc(d.auth)}</div>
+        <div>Hint tags</div><div>${esc(d.hint)}</div>
+        <div>Contract</div><div>${esc(d.contract||"none")}</div>
+      </div>
+    </div>
+    <div class="trace">${steps}</div>
+    <div class="next"><b>Risk if acted on</b><span>${esc(d.risk)}</span></div>
+    <div class="next"><b>Exact next gate</b><span>${esc(d.next)}</span></div>
+  `;
+}
+
+function renderMetrics(){
+  const items=visible();
+  document.getElementById("visibleSize").textContent=fmt(items.reduce((s,a)=>s+a.gib,0));
+  document.getElementById("visibleItems").textContent=items.length;
+}
+
+function render(){renderFilters();renderList();renderMap();renderDecision();renderMetrics()}
+render();
+</script>
+</body>
+</html>

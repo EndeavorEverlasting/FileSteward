@@ -71,3 +71,22 @@ by this document.
 Do not replay completed P04 B0–L4. Do not promote ignored `var/runs/`
 receipts into tracked LIVE-AUDITED claims without a separate
 operator-directed reconciliation of program docs.
+
+## Visualization + operator decision surface
+
+The storage-reclaim program now has an explicit visualization/design successor before broad contract selection:
+
+- P97 prior art / gap evidence: `docs/program/storage-reclaim-visualization-prior-art.md`
+- P95 architecture / call-stack design: `docs/program/storage-reclaim-visualization.md`
+- executable synthetic interaction prototype: `docs/program/storage-reclaim-visualization-prototype.html`
+
+Selected direction: a dependency-free, self-contained local HTML treemap report with a linked sortable list and FileSteward decision trace. The treemap answers **where the space is**; the decision trace answers **what evidence/authorization gate is next**.
+
+This visualization track does **not** change the current storage-reclaim authority model:
+
+- bucket/hint visuals do not create `--contract` authority;
+- `RECLAIM_PROVEN` remains evidence, not approval;
+- no visualization control may apply/quarantine/delete in the first production slice;
+- real receipt data remains under ignored runtime storage;
+- production implementation is a bounded successor (P07), not implied by the synthetic prototype.
+
