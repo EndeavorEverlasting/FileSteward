@@ -149,10 +149,12 @@ def test_filter_and_search_controls_are_wired() -> None:
     html = render_report_html(_model())
     assert "const applyFilters" in html
     assert "data-filter" in html
-    assert "aria-pressed" in html
+    assert 'aria-pressed="true"' in html
+    assert 'aria-pressed="false"' in html
     assert "search.addEventListener('input'" in html
     assert "meta.disposition === activeFilter" in html
     assert "meta.search.includes(query)" in html
+    assert "No items match these filters." in html
 
 
 def test_filter_payload_escapes_markup_like_receipt_text() -> None:
