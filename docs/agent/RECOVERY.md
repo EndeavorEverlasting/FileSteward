@@ -25,7 +25,7 @@ opencode db path
 Rules:
 
 - Layout rules and the no-fossilize rule: `docs/agent/CANONICAL-PATHS.md` §4.1. This file additionally forbids tracking transcripts or one-incident dates.
-- If the session database file itself is unreadable: **STOP**. Copy it read-only as evidence, report the exact error, and do not repair, delete, or reinstall OpenCode data directories.
+- If the session database file itself is unreadable: **STOP**. Copy it read-only as evidence and report the exact error; do not repair, delete, or reinstall OpenCode data directories. The evidence copy may live only in the ignored runtime tree (`var/`, per `docs/agent/CANONICAL-PATHS.md`) or an explicitly operator-approved external location — never a tracked path.
 
 ## 2. Recovering a lost session
 
@@ -66,20 +66,29 @@ Sessions are keyed to the project directory they ran in: resume from the same pr
 
 ## 3. Proving repository state after an interruption
 
-Run this read-only sequence before trusting any remembered state:
+Step A — read-only inspection (no repository mutation). Run before trusting any remembered state:
 
 ```powershell
+git rev-parse --show-toplevel        # identity gate 1: must be the canonical checkout root
+git remote get-url origin            # identity gate 2: must equal the repository URL in CANONICAL-PATHS section 1
 git status --short
-git fetch --all --prune --tags
 git log --oneline --decorate -5
 gh pr list --state all
 gh pr checks <n>
 git merge-base --is-ancestor <SHA> <branch>   # exit 0 = <SHA> is contained in <branch>
 ```
 
+Step B — refresh (explicitly authorized sync step; mutates local refs). Run only after both identity gates pass:
+
+```powershell
+git fetch --all --prune --tags       # updates remote-tracking refs, prunes stale refs, contacts origin
+```
+
 Rules:
 
 - Report each command and its exact exit code. `git merge-base --is-ancestor` exit 0 proves containment; any other exit code means containment is not proven — report it, do not assume it.
+- Any identity-gate mismatch (root is not the canonical checkout, or origin differs from `CANONICAL-PATHS.md` section 1) => **STOP**: do not fetch, do not redirect the remote, report the exact observed values.
+- `git fetch` is never read-only: it updates remote-tracking refs, prunes stale refs, and contacts the configured remote. Keep it out of any sequence labeled read-only, and never run it before both identity gates pass.
 - Any unrelated, untracked, or unknown local change => **STOP**: do not stash it, do not reset it, do not clean it, report it verbatim.
 - Reconcile against the tracked handoff (`plans/active/C-DRIVE-CLEANUP-OPENCODE-HANDOFF.md`) for branch pins and continuation gates; never substitute a remembered pin for the supplied one.
 
