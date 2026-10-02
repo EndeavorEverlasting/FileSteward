@@ -33,15 +33,15 @@ def render_report_html(
         title=title or "FileSteward Storage Decision Map",
         selected_id=selected_id,
     )
-    # Inject display-only filter/search controls into the navigator pane head.
+    # Inject functional filter/search controls into the navigator pane head.
     controls = """
       <div class="filters" role="group" aria-label="Evidence filters">
-        <button type="button" class="filter-chip active" data-filter="ALL">All</button>
-        <button type="button" class="filter-chip" data-filter="HUMAN_REVIEW">Human review</button>
-        <button type="button" class="filter-chip" data-filter="RECLAIM_PROVEN">Reclaim proven</button>
-        <button type="button" class="filter-chip" data-filter="PROTECTED">Protected</button>
-        <button type="button" class="filter-chip" data-filter="UNKNOWN">Unknown</button>
-        <button type="button" class="filter-chip" data-filter="KEEP_PROVEN">Keep</button>
+        <button type="button" class="filter-chip active" data-filter="ALL" aria-pressed="true">All</button>
+        <button type="button" class="filter-chip" data-filter="HUMAN_REVIEW" aria-pressed="false">Human review</button>
+        <button type="button" class="filter-chip" data-filter="RECLAIM_PROVEN" aria-pressed="false">Reclaim proven</button>
+        <button type="button" class="filter-chip" data-filter="PROTECTED" aria-pressed="false">Protected</button>
+        <button type="button" class="filter-chip" data-filter="UNKNOWN" aria-pressed="false">Unknown</button>
+        <button type="button" class="filter-chip" data-filter="KEEP_PROVEN" aria-pressed="false">Keep</button>
       </div>
       <label class="search-label">Search paths and groups
         <input type="search" class="search-field" height="36" style="height:36px;width:100%;"
@@ -67,7 +67,7 @@ def render_report_html(
     filter_data = {
         node.node_id: {
             "disposition": node.disposition.value,
-            "search": f"{node.display_name} {node.path}".casefold(),
+            "search": f"{node.display_name} {node.path}".lower(),
         }
         for node in model.nodes
     }
@@ -107,7 +107,14 @@ def render_report_html(
     const selected = document.querySelector('.nav-row.selected:not([hidden])');
     if (!selected) {{
       const first = document.querySelector('.nav-row:not([hidden])');
-      if (first) first.click();
+      if (first) {{
+        first.click();
+      }} else {{
+        const inspector = document.getElementById('inspector-body');
+        if (inspector) {{
+          inspector.innerHTML = '<p class="empty">No items match these filters.</p>';
+        }}
+      }}
     }}
   }};
 
