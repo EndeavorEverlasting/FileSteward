@@ -149,9 +149,15 @@ Graph width after F0 is **3**. F1/F2/F3 must use isolated worktrees/branches and
 **Owner:** architecture/convergence agent  
 **Dependencies:** P95/P97 integrated on main  
 **Owned:** this plan, presentation-model contract, design tokens/interfaces only  
-**Forbidden:** implementation files, real receipt data  
-**Artifacts:** accepted field schema + token names + stable component/event interfaces  
-**Gate:** no unresolved contradiction between FileSteward disposition rules and UI state model.
+**Forbidden:** production F1/F2/F3/F4 implementation beyond seam prototypes, real receipt data
+**Artifacts:**
+- `docs/program/storage-reclaim-visual-system.md`
+- `docs/program/storage-reclaim-visual-system.tokens.json`
+- `docs/program/storage-reclaim-visual-system.interfaces.md`
+- executable seams in `src/filesteward/visualization/` (`tokens`, `contracts`, `css`, `literal`, `selection`, `shell`)
+- `tests/test_visualization_f0.py`
+**Gate:** no unresolved contradiction between FileSteward disposition rules and UI state model; token→CSS, literal escape, selection sync, and shell call stacks pass locally.
+**Status:** PROVEN (design + executable seams); production F2 `html.py` expansion remains F2.
 
 ### F1 — Structured presentation/evidence model
 
@@ -276,7 +282,7 @@ Minimum product acceptance:
 |---|---|---|---|
 | Prior art / interaction model | P97 doc | PROVEN | consume, do not reopen |
 | Program architecture | P95 doc | PROVEN | consume |
-| Modern visual-system contract | this P04 plan | TRACKED | F0 freeze then F2 build |
+| Modern visual-system contract | `docs/program/storage-reclaim-visual-system.md` + tokens/interfaces | PROVEN (F0 seams) | F2 expands shell → html.py |
 | Evidence presentation model | F1 | REQUIRED SUCCESSOR WORK | implement + fixtures |
 | Treemap engine | F3 | REQUIRED SUCCESSOR WORK | deterministic implementation |
 | Offline report generator | F4 | REQUIRED SUCCESSOR WORK | integrate F1/F2/F3 |
@@ -289,6 +295,10 @@ Minimum product acceptance:
 
 ## 9. Next implementation command
 
-After this P04 plan is integrated, the next execution owner is P07. It must refresh `main`, run `entire status --json` when available, create isolated lanes for F1/F2/F3 from the same refreshed base, and execute those three lanes concurrently when three isolated writers are actually available.
+F0 visual-system freeze is proven. The next execution owner is P07. It must refresh `main`, run `entire status --json` when available, create isolated lanes for F1/F2/F3 from the same refreshed base (after F0 containment), and execute those three lanes concurrently when three isolated writers are actually available.
 
-Do not route back into P95/P97 unless new evidence falsifies the architecture or prior-art decision.
+- F1: build `model.py` against `visualization.contracts.PresentationNode` without prose parsing.
+- F2: expand `shell.py` into owned `html.py`; keep `render_token_css` / `escape_*` call stacks.
+- F3: implement `treemap.py` emitting `TreemapRect` only.
+
+Do not reopen P95/P97/F0 visual-language decisions unless new evidence falsifies them.

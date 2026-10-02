@@ -99,7 +99,15 @@
         "P95/P97 decisions preserved",
         "F1/F2/F3 ownership is non-overlapping"
       ],
-      "status": "READY"
+      "status": "PROVEN",
+      "artifacts": [
+        "docs/program/storage-reclaim-visual-system.md",
+        "docs/program/storage-reclaim-visual-system.tokens.json",
+        "docs/program/storage-reclaim-visual-system.interfaces.md",
+        "src/filesteward/visualization/",
+        "tests/test_visualization_f0.py"
+      ],
+      "proof": "local pytest tests/test_visualization_f0.py plus full repository test floor on the F0 branch"
     },
     {
       "lane_id": "F1",
@@ -126,7 +134,7 @@
         "protected+incomplete precedence fixture",
         "hostile markup-like path fixture"
       ],
-      "status": "WAITING"
+      "status": "READY"
     },
     {
       "lane_id": "F2",
@@ -152,7 +160,7 @@
         "no external assets/network calls",
         "responsive no-clipping at intermediate widths"
       ],
-      "status": "WAITING"
+      "status": "READY"
     },
     {
       "lane_id": "F3",
@@ -177,7 +185,7 @@
         "zero/unknown-size handling explicit",
         "zoom/selection coordinates reproducible"
       ],
-      "status": "WAITING"
+      "status": "READY"
     },
     {
       "lane_id": "F4",
@@ -343,6 +351,6 @@
   ],
   "next_owner": {
     "prompt": "P07",
-    "first_action": "Refresh main; run entire status --json when available; create isolated F1/F2/F3 worktrees from the same refreshed base; execute the three non-overlapping lanes concurrently; converge through F4."
+    "first_action": "After F0 is on refreshed main: run entire status --json when available; create isolated F1/F2/F3 worktrees from that base; F1 fills PresentationModel, F2 expands shell.py into html.py, F3 emits TreemapRect; execute concurrently when three writers exist; converge through F4."
   }
 }

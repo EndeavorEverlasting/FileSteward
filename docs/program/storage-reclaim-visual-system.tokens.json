@@ -1,0 +1,213 @@
+{
+  "schema_version": "filesteward.visual-system.tokens/v1",
+  "contract_id": "storage-reclaim-visual-system",
+  "color_scheme": "light dark",
+  "typography": {
+    "sans": [
+      "Segoe UI Variable Text",
+      "Segoe UI Variable",
+      "Segoe UI",
+      "system-ui",
+      "-apple-system",
+      "BlinkMacSystemFont",
+      "sans-serif"
+    ],
+    "mono": [
+      "Cascadia Mono",
+      "Cascadia Code",
+      "Consolas",
+      "ui-monospace",
+      "monospace"
+    ],
+    "scale": {
+      "display": {"size_px": 28, "line_height_px": 36, "weight": 600},
+      "title_lg": {"size_px": 20, "line_height_px": 28, "weight": 600},
+      "title": {"size_px": 16, "line_height_px": 24, "weight": 600},
+      "body": {"size_px": 14, "line_height_px": 20, "weight": 400},
+      "body_strong": {"size_px": 14, "line_height_px": 20, "weight": 600},
+      "small": {"size_px": 12, "line_height_px": 16, "weight": 400},
+      "small_strong": {"size_px": 12, "line_height_px": 16, "weight": 600},
+      "micro": {"size_px": 11, "line_height_px": 14, "weight": 500}
+    },
+    "min_body_px": 12,
+    "tabular_nums": true
+  },
+  "space": {
+    "unit_px": 4,
+    "scale_px": {
+      "1": 4,
+      "2": 8,
+      "3": 12,
+      "4": 16,
+      "5": 20,
+      "6": 24,
+      "8": 32,
+      "10": 40,
+      "12": 48
+    },
+    "pane_padding_desktop_px": 16,
+    "pane_padding_compact_px": 12,
+    "page_edge_px": [20, 24],
+    "row_height_min_px": 40,
+    "row_height_preferred_px": 44,
+    "pointer_target_min_px": 40,
+    "pointer_target_preferred_px": 44
+  },
+  "radius_px": {
+    "xs": 4,
+    "sm": 6,
+    "md": 10,
+    "lg": 14,
+    "pill": 999,
+    "treemap_max": 4
+  },
+  "shadow": {
+    "light": {
+      "sm": "0 1px 2px rgba(0,0,0,.06)",
+      "md": "0 4px 16px rgba(0,0,0,.08)"
+    },
+    "dark": {
+      "sm": "0 1px 2px rgba(0,0,0,.20)",
+      "md": "0 4px 16px rgba(0,0,0,.28)"
+    }
+  },
+  "motion": {
+    "easing": "cubic-bezier(.2, 0, 0, 1)",
+    "hover_ms": [100, 140],
+    "selection_ms": [120, 160],
+    "pane_ms": [160, 200],
+    "treemap_zoom_max_ms": 200,
+    "reduced_motion_ms": 0.01
+  },
+  "breakpoints_px": {
+    "wide_min": 1440,
+    "standard_min": 1180,
+    "medium_min": 800,
+    "narrow_max": 799
+  },
+  "shell_grid": {
+    "desktop_min_width_px": 1280,
+    "desktop_min_height_px": 720,
+    "columns": "minmax(260px, 320px) minmax(480px, 1fr) minmax(320px, 400px)",
+    "navigator_share": "25%",
+    "treemap_share": "45-50%",
+    "inspector_share": "25-30%"
+  },
+  "treemap": {
+    "outer_padding_px": 8,
+    "gap_normal_px": 2,
+    "gap_dense_px": 3,
+    "min_label_dimension_px": 3,
+    "selection_outline_px": 3
+  },
+  "themes": {
+    "light": {
+      "bg-canvas": "#F5F7FA",
+      "bg-shell": "#FFFFFF",
+      "bg-surface-1": "#FFFFFF",
+      "bg-surface-2": "#F8FAFC",
+      "bg-surface-3": "#EEF2F6",
+      "bg-hover": "#E9EEF5",
+      "bg-selected": "#E4EDF9",
+      "border-subtle": "#DDE3EA",
+      "border-default": "#C9D2DD",
+      "border-strong": "#9CAABA",
+      "text-primary": "#17202A",
+      "text-secondary": "#4E5D6C",
+      "text-muted": "#718090",
+      "text-disabled": "#98A3AF",
+      "text-inverse": "#FFFFFF",
+      "accent-050": "#EEF6FF",
+      "accent-100": "#DBECFF",
+      "accent-300": "#8BC2F8",
+      "accent-500": "#357FC4",
+      "accent-600": "#286CAD",
+      "accent-700": "#20588D",
+      "accent-800": "#1B466F",
+      "accent": "#286CAD",
+      "accent-hover": "#20588D",
+      "accent-pressed": "#1B466F",
+      "focus": "#176DB8",
+      "state-review": "#A86916",
+      "state-review-bg": "#FFF6E5",
+      "state-review-edge": "#D69B3A",
+      "state-unknown": "#586675",
+      "state-unknown-bg": "#EFF2F5",
+      "state-unknown-edge": "#8794A1",
+      "state-protected": "#AD3F47",
+      "state-protected-bg": "#FDEDEF",
+      "state-protected-edge": "#D96770",
+      "state-keep": "#376FA8",
+      "state-keep-bg": "#EDF5FD",
+      "state-keep-edge": "#70A2D4",
+      "state-reclaim": "#347A51",
+      "state-reclaim-bg": "#EDF8F1",
+      "state-reclaim-edge": "#68A881"
+    },
+    "dark": {
+      "bg-canvas": "#0F1318",
+      "bg-shell": "#141920",
+      "bg-surface-1": "#181E26",
+      "bg-surface-2": "#1E252E",
+      "bg-surface-3": "#262E38",
+      "bg-hover": "#2B3541",
+      "bg-selected": "#23384E",
+      "border-subtle": "#2D3641",
+      "border-default": "#3B4653",
+      "border-strong": "#596675",
+      "text-primary": "#F1F5F8",
+      "text-secondary": "#C1CAD4",
+      "text-muted": "#919EAB",
+      "text-disabled": "#697581",
+      "text-inverse": "#101418",
+      "accent-050": "#152536",
+      "accent-100": "#19334B",
+      "accent-300": "#5AA7E8",
+      "accent-500": "#69B6F3",
+      "accent-600": "#83C5F7",
+      "accent-700": "#A2D4FA",
+      "accent-800": "#C2E4FC",
+      "accent": "#83C5F7",
+      "accent-hover": "#A2D4FA",
+      "accent-pressed": "#C2E4FC",
+      "focus": "#8BCBFF",
+      "state-review": "#F0B758",
+      "state-review-bg": "#342816",
+      "state-review-edge": "#C79240",
+      "state-unknown": "#A9B3BD",
+      "state-unknown-bg": "#252B32",
+      "state-unknown-edge": "#77838F",
+      "state-protected": "#F07C84",
+      "state-protected-bg": "#381D21",
+      "state-protected-edge": "#C95B64",
+      "state-keep": "#82B9EE",
+      "state-keep-bg": "#1B2B3D",
+      "state-keep-edge": "#5F97CA",
+      "state-reclaim": "#7EC89C",
+      "state-reclaim-bg": "#193024",
+      "state-reclaim-edge": "#579A72"
+    }
+  },
+  "disposition_token_map": {
+    "HUMAN_REVIEW": "state-review",
+    "UNKNOWN": "state-unknown",
+    "PROTECTED": "state-protected",
+    "KEEP_PROVEN": "state-keep",
+    "RECLAIM_PROVEN": "state-reclaim"
+  },
+  "authorization_visual": {
+    "UNAPPROVED": {"tone": "neutral", "icon": "lock"},
+    "APPROVED_FOR_ACTION": {"tone": "accent", "icon": "signed-check"},
+    "APPLIED": {"tone": "accent", "icon": "signed-check"},
+    "VERIFIED": {"tone": "strong-neutral", "icon": "confirmation"}
+  },
+  "invariants": [
+    "magnitude_never_implies_actionability",
+    "evidence_color_never_implies_authorization",
+    "selection_never_implies_approval",
+    "reclaim_green_never_used_for_authorization",
+    "state_never_color_alone",
+    "no_destructive_controls_in_initial_visualization",
+    "receipt_text_literal_only"
+  ]
+}
