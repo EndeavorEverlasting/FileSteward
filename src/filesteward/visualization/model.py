@@ -28,6 +28,7 @@ from filesteward.visualization.contracts import (
 __all__ = ["build_presentation_model"]
 
 _NOT_PERSISTED = "UNKNOWN / NOT PERSISTED"
+_PROTECTION_RELATIONS = {"UNRELATED", "SELF", "DESCENDANT", "ANCESTOR"}
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -267,14 +268,26 @@ def _node_from_inventory(
     exclusion: Optional[Mapping[str, str]] = None,
 ) -> PresentationNode:
     disposition = CleanupDisposition(inv["disposition"])
-    protection = inv.get("protection_relation") or "UNRELATED"
+    protection = inv.get("protection_relation") or ""
     if exclusion is not None:
         protection = exclusion.get("relationship") or protection
-    completeness_raw = inv.get("scan_completeness") or "COMPLETE"
-    try:
-        completeness = ScanCompleteness(completeness_raw)
-    except ValueError:
-        completeness = ScanCompleteness.COMPLETE
+    if protection not in _PROTECTION_RELATIONS:
+        raise ValueError(
+            f"unknown protection_relation for {inv.get('item_id', '<unknown>')}: "
+            f"{protection or '<missing>'}"
+        )
+
+    completeness_raw = inv.get("scan_completeness") or ""
+    if not completeness_raw:
+        completeness = ScanCompleteness.INCOMPLETE
+    else:
+        try:
+            completeness = ScanCompleteness(completeness_raw)
+        except ValueError as exc:
+            raise ValueError(
+                f"unknown scan_completeness for {inv.get('item_id', '<unknown>')}: "
+                f"{completeness_raw}"
+            ) from exc
 
     contract_summary = None
     plan_evidence = None
