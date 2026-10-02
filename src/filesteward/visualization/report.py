@@ -36,6 +36,7 @@ def _validate_output_name(output_name: str) -> str:
         or bool(win.drive)
         or "/" in output_name
         or "\\" in output_name
+        or ":" in output_name
     ):
         raise ValueError("visualization output_name must not contain a path")
     return output_name
