@@ -16,6 +16,7 @@ from filesteward.visualization.contracts import (
     ViewportMode,
 )
 from filesteward.visualization.css import render_token_css
+from filesteward.visualization.html import render_report_html, write_report_html_atomically
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.selection import SelectionController
 from filesteward.visualization.shell import render_report_shell
@@ -33,6 +34,8 @@ __all__ = [
     "escape_attr",
     "escape_text",
     "load_tokens",
+    "render_report_html",
     "render_report_shell",
     "render_token_css",
+    "write_report_html_atomically",
 ]
