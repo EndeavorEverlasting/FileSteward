@@ -544,6 +544,9 @@ class TestCloudPlaceholder:
         assert placeholder.scan_completeness is ScanCompleteness.COMPLETE
         assert placeholder.logical_size_bytes == 1_048_576
 
+    @pytest.mark.skipif(
+        sys.platform != "win32", reason="requires Windows ctypes.WinDLL"
+    )
     def test_real_offline_flag_file_detected_without_mutation(
         self, tmp_path: Path
     ) -> None:
