@@ -35,7 +35,8 @@
     "required_conditions": [
       "exact validated head is current",
       "repository-owned required checks green",
-      "material review findings resolved",
+      "exact PR head refreshed before merge",
+      "zero unresolved material review threads, or every material thread explicitly disproven/resolved against the exact head",
       "dependencies satisfied",
       "no conflicts/protection blocker",
       "merge authority available",
@@ -45,7 +46,16 @@
       "refresh default branch",
       "prove validated head or merge commit is contained",
       "verify intended content/contracts remain present"
-    ]
+    ],
+    "review_evidence_rule": {
+      "local_green_does_not_override_material_review": true,
+      "required_pre_merge_observation": "refresh exact PR head + enumerate unresolved review threads",
+      "accepted_dispositions": [
+        "DISPROVEN_ON_EXACT_HEAD",
+        "REPAIRED_AND_RESOLVED"
+      ],
+      "forbidden_terminal_state": "material review thread left unresolved while claiming PROVEN/merge-ready"
+    }
   },
   "modern_visual_system": {
     "typography": [
@@ -352,5 +362,15 @@
   "next_owner": {
     "prompt": "P07 / F5",
     "first_action": "After F4 integration on main: run accessibility/adversarial polish (keyboard-only, 1024px, hostile text, high-contrast, first unresolved gate dominance) then F6 real-receipt proof only with explicit operator gate."
-  }
+  },
+  "p100_incidents": [
+    {
+      "incident_id": "P100-FILESTEWARD-PR9-20261002",
+      "primary_class": "FAITHFULNESS_CONTEXT_IGNORED",
+      "source_pr": 9,
+      "merged_head": "9a078e6ddf11e10bbeac980da3b9ec97d88848bd",
+      "durable_record": "docs/program/p100-pr9-judgment-incident.md",
+      "state": "REPAIR_IMPLEMENTED_AWAITING_LOCAL_VALIDATION"
+    }
+  ]
 }
