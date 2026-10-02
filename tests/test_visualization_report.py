@@ -66,3 +66,26 @@ def test_visualize_cli_refuses_invalid_run(
 def test_visualize_refuses_outside_runtime(tmp_path: Path) -> None:
     code = main(["visualize", str(tmp_path / "outside")])
     assert code == EXIT_INVALID
+
+
+@pytest.mark.parametrize(
+    "output_name",
+    [
+        "../escaped.html",
+        r"..\escaped.html",
+        r"C:\escaped.html",
+    ],
+)
+def test_visualize_rejects_output_name_path_escape(
+    viz_run_dir: Path, output_name: str
+) -> None:
+    _write_valid_run(viz_run_dir)
+    with pytest.raises(ValueError, match="output_name"):
+        visualize_run_dir(viz_run_dir, output_name=output_name)
+
+
+def test_visualize_accepts_single_custom_filename(viz_run_dir: Path) -> None:
+    _write_valid_run(viz_run_dir)
+    result = visualize_run_dir(viz_run_dir, output_name="custom-map.html")
+    assert result.report_path == viz_run_dir / "custom-map.html"
+    assert result.report_path.is_file()
