@@ -78,6 +78,7 @@ The storage-reclaim program now has an explicit visualization/design successor b
 
 - P97 prior art / gap evidence: `docs/program/storage-reclaim-visualization-prior-art.md`
 - P95 architecture / call-stack design: `docs/program/storage-reclaim-visualization.md`
+- P04 modern-product factoring plan: `plans/active/STORAGE-RECLAIM-VISUALIZATION-P04.md` + `.plan.json`
 - executable synthetic interaction prototype: `docs/program/storage-reclaim-visualization-prototype.html`
 
 Selected direction: a dependency-free, self-contained local HTML treemap report with a linked sortable list and FileSteward decision trace. The treemap answers **where the space is**; the decision trace answers **what evidence/authorization gate is next**.
