@@ -252,7 +252,9 @@
         "state not color-only",
         "first failing gate dominant"
       ],
-      "status": "IN_PROGRESS",
+      "status": "PROVEN_INTEGRATED",
+      "integrated_pr": 11,
+      "integrated_main": "9e3e95dd24372ece7817e185d31a3a8444fd87c3",
       "proof_ceiling": "Offline HTML markup fixtures check keyboard handlers/labels, 1024/zoom-safe CSS, forced-colors hooks, first-unresolved-gate dominance markup, and hostile-text escaping; they do not substitute for interactive browser smoke, which remains optional supplemental evidence."
     },
     {
@@ -276,7 +278,7 @@
         "acceptable memory/runtime",
         "zero source mutation"
       ],
-      "status": "WAITING"
+      "status": "READY_PRIVACY_GATED"
     },
     {
       "lane_id": "F7",
@@ -365,8 +367,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / F5 integrate then F6 gate",
-    "first_action": "Integrate validated F5 accessibility/adversarial polish; do not enter F6 without explicit operator privacy authorization."
+    "prompt": "P07 / F6 privacy gate",
+    "first_action": "Do not enter F6 real-receipt visualization without explicit operator privacy authorization; optional interactive browser smoke for F5 remains supplemental only."
   },
   "p100_incidents": [
     {
