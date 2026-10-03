@@ -252,7 +252,8 @@
         "state not color-only",
         "first failing gate dominant"
       ],
-      "status": "READY"
+      "status": "IN_PROGRESS",
+      "proof_ceiling": "Offline HTML markup fixtures check keyboard handlers/labels, 1024/zoom-safe CSS, forced-colors hooks, first-unresolved-gate dominance markup, and hostile-text escaping; they do not substitute for interactive browser smoke, which remains optional supplemental evidence."
     },
     {
       "lane_id": "F6",
@@ -364,8 +365,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / F5",
-    "first_action": "After PR #10 is on refreshed main: create isolated F5 worktree; harden keyboard-only, 1024px, forced-colors, first-unresolved-gate dominance, and browser smoke fixtures; do not enter F6 without explicit operator privacy authorization."
+    "prompt": "P07 / F5 integrate then F6 gate",
+    "first_action": "Integrate validated F5 accessibility/adversarial polish; do not enter F6 without explicit operator privacy authorization."
   },
   "p100_incidents": [
     {
@@ -374,7 +375,9 @@
       "source_pr": 9,
       "merged_head": "9a078e6ddf11e10bbeac980da3b9ec97d88848bd",
       "durable_record": "docs/program/p100-pr9-judgment-incident.md",
-      "state": "REPAIR_IMPLEMENTED_AWAITING_LOCAL_VALIDATION"
+      "state": "REPAIRED_INTEGRATED_PROVIDER_ADJUDICATED",
+      "repair_pr": 10,
+      "repair_integrated_main": "78eabf37991d93a8f6259db3bf7ad5a2d06746df"
     }
   ]
 }

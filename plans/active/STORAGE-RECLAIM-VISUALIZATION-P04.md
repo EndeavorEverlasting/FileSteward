@@ -286,7 +286,7 @@ Minimum product acceptance:
 | Evidence presentation model | F1 | REQUIRED SUCCESSOR WORK | implement + fixtures |
 | Treemap engine | F3 | REQUIRED SUCCESSOR WORK | deterministic implementation |
 | Offline report generator | F4 | REQUIRED SUCCESSOR WORK | integrate F1/F2/F3 |
-| Accessibility/polish | F5 | REQUIRED SUCCESSOR WORK | adversarial/browser proof |
+| Accessibility/polish | F5 | IN PROGRESS | keyboard/1024/forced-colors/hostile-text fixtures |
 | Real receipt visualization | F6 | REQUIRED SUCCESSOR WORK | local private proof |
 | Contract selection | F7 | REQUIRED SUCCESSOR WORK | operator UX + durable contract |
 | Approval UX | F8 | REQUIRED SUCCESSOR WORK | exact manifest-bound approval |
@@ -295,6 +295,6 @@ Minimum product acceptance:
 
 ## 9. Next implementation command
 
-F0 remains proven. PR #10 repairs the P100 incident against PR #9 (including follow-on artifact-overwrite, stale-selection, and locale-independent search findings) with focused + full local pytest observed green on the repair head. After PR #10 integrates, F5 accessibility/adversarial polish is the next implementation slice. F6 remains later and still requires its privacy/runtime gate.
+F0–F4 remain on repaired main (PR #10 provider-adjudicated). F5 accessibility/adversarial polish is the active implementation slice: keyboard-only selection, focus/skip-link, screen-reader labels, 1024px/zoom-safe layout, forced-colors/high-contrast, first-unresolved-gate dominance, and literal hostile text. F6 remains later and still requires its privacy/runtime gate.
 
 Do not reopen P95/P97/F0–F4 visual-language or architecture decisions unless new evidence falsifies them.
