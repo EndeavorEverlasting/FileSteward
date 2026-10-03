@@ -253,7 +253,7 @@
         "first failing gate dominant"
       ],
       "status": "IN_PROGRESS",
-      "proof_ceiling": "Offline HTML fixtures prove keyboard workflow, labels, 1024/zoom-safe CSS, forced-colors, first-unresolved-gate dominance, and hostile-text escaping; interactive browser smoke remains optional supplemental evidence."
+      "proof_ceiling": "Offline HTML markup fixtures check keyboard handlers/labels, 1024/zoom-safe CSS, forced-colors hooks, first-unresolved-gate dominance markup, and hostile-text escaping; they do not substitute for interactive browser smoke, which remains optional supplemental evidence."
     },
     {
       "lane_id": "F6",

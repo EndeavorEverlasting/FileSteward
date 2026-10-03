@@ -145,12 +145,13 @@ def _render_map_slots(
 
 
 def _render_gate_steps(steps: Iterable[GateStep]) -> str:
-    # Place the first unresolved gate first in DOM order so assistive tech
-    # and visual layout agree (CSS order alone is not enough for SR users).
-    ordered = sorted(steps, key=lambda step: (not step.is_first_unresolved,))
+    step_list = list(steps)
     rows = []
-    for step in ordered:
+    first_unresolved: Optional[GateStep] = None
+    for step in step_list:
         first = step.is_first_unresolved
+        if first and first_unresolved is None:
+            first_unresolved = step
         current = ' aria-current="step"' if first else ""
         badge = (
             '<div class="gate-first">First unresolved gate</div>' if first else ""
@@ -168,7 +169,19 @@ def _render_gate_steps(steps: Iterable[GateStep]) -> str:
             '<p class="empty">Decision detail unavailable. '
             "State: UNKNOWN / NOT PERSISTED</p>"
         )
-    return f'<ol class="trace">{"".join(rows)}</ol>'
+    # Lead with a dominant callout so assistive tech hears the first unresolved
+    # gate before the chronological trace; keep ol.trace in evidence order.
+    lead = ""
+    if first_unresolved is not None:
+        lead = (
+            '<p class="gate-lead" role="status">'
+            "<strong>First unresolved gate:</strong> "
+            f"{escape_text(first_unresolved.name)} — "
+            f"{escape_text(first_unresolved.status.value)}. "
+            f"{escape_text(first_unresolved.explanation)}"
+            "</p>"
+        )
+    return f'{lead}<ol class="trace">{"".join(rows)}</ol>'
 
 
 def _render_inspector(node: Optional[PresentationNode]) -> str:
@@ -236,8 +249,9 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .pane-head h2{margin:0;font-size:var(--fs-type-small-strong-size);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--fs-text-secondary);}
 .nav{display:flex;flex-direction:column;}
 .nav-row{appearance:none;border:0;border-bottom:1px solid var(--fs-border-subtle);background:transparent;color:inherit;text-align:left;display:grid;grid-template-columns:1fr auto;gap:var(--fs-space-1) var(--fs-space-2);padding:var(--fs-space-3);min-height:44px;cursor:pointer;}
+.nav-row[hidden],.map-node[hidden]{display:none!important;}
 .nav-row:hover{background:var(--fs-bg-hover);}
-.nav-row.selected{background:var(--fs-bg-selected);box-shadow:inset 2px 0 0 var(--fs-accent);}
+.nav-row.selected{background:var(--fs-bg-selected);color:var(--fs-text-primary);box-shadow:inset 2px 0 0 var(--fs-accent);}
 .nav-name{font-size:var(--fs-type-body-size);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .nav-size{font-variant-numeric:tabular-nums;font-weight:600;}
 .nav-meta{grid-column:1/-1;font-size:var(--fs-type-small-size);color:var(--fs-text-muted);}
@@ -263,6 +277,7 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .step{border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);padding:var(--fs-space-3);background:var(--fs-bg-surface-1);}
 .step.pass{opacity:.72;}
 .step.unresolved{border-color:var(--fs-state-review-edge);border-width:3px;font-weight:700;box-shadow:0 0 0 2px var(--fs-accent-100);background:var(--fs-bg-surface-2);}
+.gate-lead{margin:0 0 var(--fs-space-3);padding:var(--fs-space-3);border:3px solid var(--fs-state-review-edge);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);font-weight:700;}
 .gate-first{color:var(--fs-state-review);font-size:var(--fs-type-small-size);text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--fs-space-1);}
 .state-state-review{color:var(--fs-state-review);}
 .state-state-unknown{color:var(--fs-state-unknown);}
@@ -287,8 +302,9 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
   .metrics{grid-template-columns:1fr;}
 }
 @media (forced-colors: active){
-  .nav-row.selected,.map-node.selected{outline:3px solid Highlight;outline-offset:-3px;}
-  .step.unresolved{border:3px solid Highlight;box-shadow:none;forced-color-adjust:none;}
+  .nav-row.selected,.map-node.selected{outline:3px solid Highlight;outline-offset:-3px;background:Highlight;color:HighlightText;forced-color-adjust:none;}
+  .nav-row.selected .nav-meta,.nav-row.selected .state,.nav-row.selected .state-marker,.map-node.selected .map-state{color:HighlightText;}
+  .step.unresolved,.gate-lead{border:3px solid Highlight;box-shadow:none;forced-color-adjust:none;}
   .state-marker{forced-color-adjust:none;}
   .state-edge-state-review,.state-edge-state-unknown,.state-edge-state-protected,.state-edge-state-keep,.state-edge-state-reclaim{box-shadow:inset -3px -3px 0 CanvasText;}
 }

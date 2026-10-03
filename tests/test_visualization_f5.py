@@ -133,10 +133,34 @@ def test_keyboard_only_selection_workflow_is_present() -> None:
 
 def test_first_unresolved_gate_leads_dom_order() -> None:
     html = render_report_shell(_model())
-    first_badge = html.index("First unresolved gate")
+    lead = html.index("First unresolved gate:")
     protection = html.index("Protected overlap")
-    assert first_badge < protection
+    contract = html.index("Contract coverage")
+    assert lead < protection
+    assert lead < contract
+    # Chronological trace still keeps earlier passed gates before later ones.
+    assert protection < contract
+    assert 'class="gate-lead"' in html
     assert 'aria-current="step"' in html
+
+
+def test_hidden_filter_targets_force_display_none() -> None:
+    html = render_report_shell(_model())
+    assert ".nav-row[hidden],.map-node[hidden]{display:none!important;}" in html.replace(
+        " ", ""
+    ) or "display:none!important" in html
+
+
+def test_empty_filter_clears_aria_current() -> None:
+    html = render_report_html(_model())
+    assert "removeAttribute('aria-current')" in html
+
+
+def test_forced_colors_selected_uses_highlight_text() -> None:
+    html = render_report_shell(_model())
+    assert "color:HighlightText" in html
+    css = render_token_css()
+    assert "--fs-text-on-selected: HighlightText" in css
 
 
 def test_focus_visible_and_skip_link() -> None:

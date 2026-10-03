@@ -112,9 +112,10 @@ def render_report_html(
       if (first) {{
         first.click();
       }} else {{
-        // Clear stale selection so restoring filters rebinds a visible row.
+        // Clear stale selection/aria-current so restoring filters rebinds a visible row.
         document.querySelectorAll('.nav-row.selected, .map-node.selected, [data-node-id].selected').forEach((el) => {{
           el.classList.remove('selected');
+          el.removeAttribute('aria-current');
         }});
         const inspector = document.getElementById('inspector-body');
         if (inspector) {{

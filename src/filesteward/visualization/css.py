@@ -96,6 +96,7 @@ def render_token_css() -> str:
     --fs-bg-surface-3: Canvas;
     --fs-bg-selected: Highlight;
     --fs-bg-hover: Canvas;
+    --fs-text-on-selected: HighlightText;
     --fs-text-primary: CanvasText;
     --fs-text-secondary: CanvasText;
     --fs-text-muted: GrayText;
