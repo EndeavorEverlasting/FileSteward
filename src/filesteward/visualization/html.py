@@ -140,6 +140,9 @@ def render_report_html(
       const delta = event.key === 'ArrowRight' ? 1 : -1;
       const next = chips[(index + delta + chips.length) % chips.length];
       next.focus();
+      // Activate on arrow navigation so focus and filter results stay aligned.
+      activeFilter = next.getAttribute('data-filter') || 'ALL';
+      applyFilters();
     }});
   }});
 

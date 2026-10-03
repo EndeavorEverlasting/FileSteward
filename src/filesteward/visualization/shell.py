@@ -145,8 +145,11 @@ def _render_map_slots(
 
 
 def _render_gate_steps(steps: Iterable[GateStep]) -> str:
+    # Place the first unresolved gate first in DOM order so assistive tech
+    # and visual layout agree (CSS order alone is not enough for SR users).
+    ordered = sorted(steps, key=lambda step: (not step.is_first_unresolved,))
     rows = []
-    for step in steps:
+    for step in ordered:
         first = step.is_first_unresolved
         current = ' aria-current="step"' if first else ""
         badge = (
@@ -259,7 +262,7 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .trace{list-style:none;margin:0;padding:0;display:grid;gap:var(--fs-space-2);}
 .step{border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);padding:var(--fs-space-3);background:var(--fs-bg-surface-1);}
 .step.pass{opacity:.72;}
-.step.unresolved{border-color:var(--fs-state-review-edge);border-width:3px;font-weight:700;box-shadow:0 0 0 2px var(--fs-accent-100);background:var(--fs-bg-surface-2);order:-1;}
+.step.unresolved{border-color:var(--fs-state-review-edge);border-width:3px;font-weight:700;box-shadow:0 0 0 2px var(--fs-accent-100);background:var(--fs-bg-surface-2);}
 .gate-first{color:var(--fs-state-review);font-size:var(--fs-type-small-size);text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--fs-space-1);}
 .state-state-review{color:var(--fs-state-review);}
 .state-state-unknown{color:var(--fs-state-unknown);}

@@ -127,6 +127,16 @@ def test_keyboard_only_selection_workflow_is_present() -> None:
     assert "event.key === 'Enter'" in html or 'event.key === "Enter"' in html
     assert "ArrowRight" in html
     assert "ArrowLeft" in html
+    # Arrowing among filter chips must activate the focused chip.
+    assert "activeFilter = next.getAttribute('data-filter')" in html
+
+
+def test_first_unresolved_gate_leads_dom_order() -> None:
+    html = render_report_shell(_model())
+    first_badge = html.index("First unresolved gate")
+    protection = html.index("Protected overlap")
+    assert first_badge < protection
+    assert 'aria-current="step"' in html
 
 
 def test_focus_visible_and_skip_link() -> None:
