@@ -93,10 +93,35 @@ def render_token_css() -> str:
     --fs-bg-shell: Canvas;
     --fs-bg-surface-1: Canvas;
     --fs-bg-surface-2: Canvas;
+    --fs-bg-surface-3: Canvas;
+    --fs-bg-selected: Highlight;
+    --fs-bg-hover: Canvas;
     --fs-text-primary: CanvasText;
+    --fs-text-secondary: CanvasText;
+    --fs-text-muted: GrayText;
     --fs-border-subtle: CanvasText;
+    --fs-border-default: CanvasText;
     --fs-accent: Highlight;
+    --fs-accent-100: Highlight;
+    --fs-accent-300: Highlight;
+    --fs-accent-800: HighlightText;
     --fs-focus: Highlight;
+    --fs-state-review: CanvasText;
+    --fs-state-unknown: CanvasText;
+    --fs-state-protected: CanvasText;
+    --fs-state-keep: CanvasText;
+    --fs-state-reclaim: CanvasText;
+    --fs-state-review-edge: Highlight;
+    --fs-state-unknown-edge: GrayText;
+    --fs-state-protected-edge: CanvasText;
+    --fs-state-keep-edge: CanvasText;
+    --fs-state-reclaim-edge: Highlight;
+  }}
+}}
+
+@media (prefers-contrast: more) {{
+  :root {{
+    --fs-border-subtle: var(--fs-border-default);
   }}
 }}
 """

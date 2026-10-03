@@ -72,7 +72,9 @@ def _render_navigator(nodes: Sequence[PresentationNode], selected_id: Optional[s
         nodes,
         key=lambda n: (n.logical_size_bytes is None, -(n.logical_size_bytes or 0)),
     ):
-        selected = " selected" if node.node_id == selected_id else ""
+        is_selected = node.node_id == selected_id
+        selected = " selected" if is_selected else ""
+        current = ' aria-current="true"' if is_selected else ""
         tone = disposition_css_stem(node.disposition)
         meta_bits = [
             escape_text(_state_label(node.disposition)),
@@ -90,10 +92,13 @@ def _render_navigator(nodes: Sequence[PresentationNode], selected_id: Optional[s
         )
         rows.append(
             f'<button type="button" class="nav-row{selected}" data-node-id="{escape_attr(node.node_id)}" '
-            f'aria-label="{escape_attr(aria)}">'
+            f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="nav-name">{escape_text(node.display_name)}</span>'
             f'<span class="nav-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
-            f'<span class="nav-meta"><span class="state state-{escape_attr(tone)}">'
+            f'<span class="nav-meta"><span class="state state-{escape_attr(tone)}" '
+            f'data-state-label="{escape_attr(_state_label(node.disposition))}">'
+            f'<span class="state-marker" aria-hidden="true">'
+            f'[{escape_text(_state_label(node.disposition))}]</span> '
             f'{escape_text(_state_label(node.disposition))}</span> · '
             f'{escape_text(" · ".join(meta_bits[1:]))}</span>'
             f"</button>"
@@ -118,7 +123,9 @@ def _render_map_slots(
     by_id = {n.node_id: n for n in nodes}
     for rect in rects:
         node = by_id[rect.node_id]
-        selected = " selected" if node.node_id == selected_id else ""
+        is_selected = node.node_id == selected_id
+        selected = " selected" if is_selected else ""
+        current = ' aria-current="true"' if is_selected else ""
         tone = disposition_css_stem(node.disposition)
         aria = (
             f"{node.display_name}, {_fmt_bytes(node.logical_size_bytes)}, "
@@ -128,8 +135,10 @@ def _render_map_slots(
             f'<button type="button" class="map-node{selected} state-edge-{escape_attr(tone)}" '
             f'data-node-id="{escape_attr(node.node_id)}" '
             f'style="left:{rect.x}%;top:{rect.y}%;width:{rect.width}%;height:{rect.height}%;" '
-            f'aria-label="{escape_attr(aria)}">'
+            f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="map-label">{escape_text(node.display_name)}</span>'
+            f'<span class="map-state state state-{escape_attr(tone)}">'
+            f'{escape_text(_state_label(node.disposition))}</span>'
             f"</button>"
         )
     return "\n".join(parts)
@@ -138,8 +147,14 @@ def _render_map_slots(
 def _render_gate_steps(steps: Iterable[GateStep]) -> str:
     rows = []
     for step in steps:
+        first = step.is_first_unresolved
+        current = ' aria-current="step"' if first else ""
+        badge = (
+            '<div class="gate-first">First unresolved gate</div>' if first else ""
+        )
         rows.append(
-            f'<li class="{_gate_class(step.status, step.is_first_unresolved)}">'
+            f'<li class="{_gate_class(step.status, first)}"{current}>'
+            f"{badge}"
             f'<div class="gate-name">{escape_text(step.name)}</div>'
             f'<div class="gate-status">{escape_text(step.status.value)}</div>'
             f'<div class="gate-expl">{escape_text(step.explanation)}</div>'
@@ -168,7 +183,7 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
     <dt>Allocated size</dt><dd>{escape_text(_fmt_bytes(node.allocated_size_bytes))}</dd>
     <dt>Projected reclaim</dt><dd>{escape_text(reclaim)}</dd>
     <dt>Projection quality</dt><dd>{escape_text(quality)}</dd>
-    <dt>Disposition</dt><dd class="state state-{escape_attr(tone)}">{escape_text(_state_label(node.disposition))}</dd>
+    <dt>Disposition</dt><dd class="state state-{escape_attr(tone)}" data-state-label="{escape_attr(_state_label(node.disposition))}"><span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span> {escape_text(_state_label(node.disposition))}</dd>
     <dt>Authorization</dt><dd class="auth">{escape_text(_auth_label(node.authorization_state))}</dd>
     <dt>Evidence source</dt><dd>{escape_text(node.trace_evidence_source)}</dd>
   </dl>
@@ -199,19 +214,22 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
 
 def _shell_behavior_css() -> str:
     return """
+html{text-size-adjust:100%;-webkit-text-size-adjust:100%;}
 html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);font-family:var(--fs-font-sans);}
-.app{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr auto;}
+.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
+.skip-link:focus{position:static;width:auto;height:auto;display:inline-block;margin:var(--fs-space-2);padding:var(--fs-space-2) var(--fs-space-3);background:var(--fs-bg-surface-1);color:var(--fs-text-primary);border:2px solid var(--fs-focus);z-index:10;}
+.app{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr auto;overflow-x:auto;}
 .shell{background:var(--fs-bg-shell);border-bottom:1px solid var(--fs-border-subtle);padding:var(--fs-space-4) var(--fs-space-5);}
 .shell h1{margin:0;font-size:var(--fs-type-title-lg-size);line-height:var(--fs-type-title-lg-line);font-weight:var(--fs-type-title-lg-weight);}
 .shell .sub{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--fs-space-2);padding:var(--fs-space-3) var(--fs-space-5);background:var(--fs-bg-surface-2);border-bottom:1px solid var(--fs-border-subtle);}
-.metric{background:var(--fs-bg-surface-1);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-3);}
-.metric b{display:block;font-variant-numeric:tabular-nums;font-size:var(--fs-type-title-size);}
+.metric{background:var(--fs-bg-surface-1);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-3);min-width:0;}
+.metric b{display:block;font-variant-numeric:tabular-nums;font-size:var(--fs-type-title-size);overflow-wrap:anywhere;}
 .metric span{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
-.workspace{display:grid;grid-template-columns:minmax(260px,320px) minmax(480px,1fr) minmax(320px,400px);min-height:0;}
+.workspace{display:grid;grid-template-columns:minmax(260px,320px) minmax(480px,1fr) minmax(320px,400px);min-height:0;min-width:0;}
 .pane{background:var(--fs-bg-surface-1);border-right:1px solid var(--fs-border-subtle);min-width:0;}
 .pane:last-child{border-right:0;}
-.pane-head{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--fs-space-3);border-bottom:1px solid var(--fs-border-subtle);}
+.pane-head{min-height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--fs-space-3);border-bottom:1px solid var(--fs-border-subtle);flex-wrap:wrap;gap:var(--fs-space-2);}
 .pane-head h2{margin:0;font-size:var(--fs-type-small-strong-size);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--fs-text-secondary);}
 .nav{display:flex;flex-direction:column;}
 .nav-row{appearance:none;border:0;border-bottom:1px solid var(--fs-border-subtle);background:transparent;color:inherit;text-align:left;display:grid;grid-template-columns:1fr auto;gap:var(--fs-space-1) var(--fs-space-2);padding:var(--fs-space-3);min-height:44px;cursor:pointer;}
@@ -220,11 +238,13 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .nav-name{font-size:var(--fs-type-body-size);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .nav-size{font-variant-numeric:tabular-nums;font-weight:600;}
 .nav-meta{grid-column:1/-1;font-size:var(--fs-type-small-size);color:var(--fs-text-muted);}
-.map-wrap{position:relative;min-height:420px;padding:var(--fs-space-2);background:var(--fs-bg-surface-2);}
+.state-marker{font-weight:700;font-family:var(--fs-font-mono);margin-right:0.25em;}
+.map-wrap{position:relative;min-height:clamp(16rem,42vh,26.25rem);padding:var(--fs-space-2);background:var(--fs-bg-surface-2);}
 .map-placeholder,.map-node{border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-treemap);background:var(--fs-bg-surface-3);color:var(--fs-text-primary);}
 .map-placeholder{display:grid;place-items:center;height:100%;padding:var(--fs-space-4);color:var(--fs-text-secondary);}
-.map-node{position:absolute;overflow:hidden;cursor:pointer;}
+.map-node{position:absolute;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:var(--fs-space-1);}
 .map-node.selected{outline:3px solid var(--fs-accent);outline-offset:-3px;}
+.map-state{font-size:var(--fs-type-small-size);font-weight:600;}
 .state-edge-state-review{box-shadow:inset -2px -2px 0 var(--fs-state-review-edge);}
 .state-edge-state-unknown{box-shadow:inset -2px -2px 0 var(--fs-state-unknown-edge);}
 .state-edge-state-protected{box-shadow:inset -2px -2px 0 var(--fs-state-protected-edge);}
@@ -234,12 +254,13 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .card{background:var(--fs-bg-surface-2);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-4);margin-bottom:var(--fs-space-3);}
 .card h3{margin:0 0 var(--fs-space-2);font-size:var(--fs-type-title-size);}
 .path,.mono{font-family:var(--fs-font-mono);font-size:var(--fs-type-small-size);word-break:break-all;color:var(--fs-text-secondary);}
-.kv{display:grid;grid-template-columns:140px 1fr;gap:var(--fs-space-2);margin:0;}
+.kv{display:grid;grid-template-columns:minmax(8rem,9rem) 1fr;gap:var(--fs-space-2);margin:0;}
 .kv dt{color:var(--fs-text-muted);}
 .trace{list-style:none;margin:0;padding:0;display:grid;gap:var(--fs-space-2);}
 .step{border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);padding:var(--fs-space-3);background:var(--fs-bg-surface-1);}
 .step.pass{opacity:.72;}
-.step.unresolved{border-color:var(--fs-state-review-edge);border-width:2px;font-weight:600;}
+.step.unresolved{border-color:var(--fs-state-review-edge);border-width:3px;font-weight:700;box-shadow:0 0 0 2px var(--fs-accent-100);background:var(--fs-bg-surface-2);order:-1;}
+.gate-first{color:var(--fs-state-review);font-size:var(--fs-type-small-size);text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--fs-space-1);}
 .state-state-review{color:var(--fs-state-review);}
 .state-state-unknown{color:var(--fs-state-unknown);}
 .state-state-protected{color:var(--fs-state-protected);}
@@ -249,14 +270,24 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .note{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .footer{padding:var(--fs-space-3) var(--fs-space-5);border-top:1px solid var(--fs-border-subtle);color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 :focus-visible{outline:3px solid var(--fs-focus);outline-offset:2px;}
-@media (max-width:1179px){
+@media (max-width:1179px),(max-width:1024px){
   .workspace{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
   .pane.inspector-pane{grid-column:1/-1;border-top:1px solid var(--fs-border-subtle);}
   .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+@media (max-width:1024px){
+  .workspace{grid-template-columns:minmax(12rem,16rem) minmax(0,1fr);}
+  .map-wrap{min-height:clamp(12rem,36vh,22rem);}
+}
 @media (max-width:799px){
   .workspace{grid-template-columns:1fr;}
   .metrics{grid-template-columns:1fr;}
+}
+@media (forced-colors: active){
+  .nav-row.selected,.map-node.selected{outline:3px solid Highlight;outline-offset:-3px;}
+  .step.unresolved{border:3px solid Highlight;box-shadow:none;forced-color-adjust:none;}
+  .state-marker{forced-color-adjust:none;}
+  .state-edge-state-review,.state-edge-state-unknown,.state-edge-state-protected,.state-edge-state-keep,.state-edge-state-reclaim{box-shadow:inset -3px -3px 0 CanvasText;}
 }
 """
 
@@ -267,11 +298,30 @@ def _selection_script() -> str:
 (() => {
   const activate = (id) => {
     document.querySelectorAll('[data-node-id]').forEach((el) => {
-      el.classList.toggle('selected', el.getAttribute('data-node-id') === id);
+      const on = el.getAttribute('data-node-id') === id;
+      el.classList.toggle('selected', on);
+      if (on) el.setAttribute('aria-current', 'true');
+      else el.removeAttribute('aria-current');
     });
     const inspector = document.getElementById('inspector-body');
     const source = document.querySelector(`[data-inspector-for="${CSS.escape(id)}"]`);
     if (inspector && source) inspector.innerHTML = source.innerHTML;
+  };
+  const visibleNavRows = () => Array.from(document.querySelectorAll('.nav-row:not([hidden])'));
+  const moveNav = (delta, edge) => {
+    const rows = visibleNavRows();
+    if (!rows.length) return;
+    if (edge === 'home') { rows[0].focus(); activate(rows[0].getAttribute('data-node-id')); return; }
+    if (edge === 'end') { rows[rows.length - 1].focus(); activate(rows[rows.length - 1].getAttribute('data-node-id')); return; }
+    const active = document.activeElement;
+    let idx = rows.indexOf(active);
+    if (idx < 0) {
+      const selected = rows.find((r) => r.classList.contains('selected'));
+      idx = selected ? rows.indexOf(selected) : 0;
+    }
+    const next = rows[Math.max(0, Math.min(rows.length - 1, idx + delta))];
+    next.focus();
+    activate(next.getAttribute('data-node-id'));
   };
   document.querySelectorAll('[data-node-id]').forEach((el) => {
     el.addEventListener('click', () => activate(el.getAttribute('data-node-id')));
@@ -279,7 +329,13 @@ def _selection_script() -> str:
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         activate(el.getAttribute('data-node-id'));
+        return;
       }
+      if (!el.classList.contains('nav-row')) return;
+      if (event.key === 'ArrowDown') { event.preventDefault(); moveNav(1); }
+      else if (event.key === 'ArrowUp') { event.preventDefault(); moveNav(-1); }
+      else if (event.key === 'Home') { event.preventDefault(); moveNav(0, 'home'); }
+      else if (event.key === 'End') { event.preventDefault(); moveNav(0, 'end'); }
     });
   });
 })();
@@ -335,6 +391,7 @@ def render_report_shell(
 </style>
 </head>
 <body>
+<a class="skip-link" href="#inspector-body">Skip to decision inspector</a>
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
     <h1>{escape_text(title)}</h1>
@@ -347,18 +404,18 @@ def render_report_shell(
     <div class="metric"><b>{escape_text(model.metrics.target_free_space_label)}</b><span>Target free space</span></div>
     <div class="metric"><b class="auth">{escape_text(model.metrics.authorization_label)}</b><span>Authorization state</span></div>
   </section>
-  <main class="workspace">
+  <main class="workspace" id="workspace">
     <section class="pane navigator-pane" aria-label="Storage navigator">
       <div class="pane-head"><h2>Storage navigator</h2></div>
-      <div class="nav" role="list">{_render_navigator(model.nodes, current_id)}</div>
+      <nav class="nav" aria-label="Storage items">{_render_navigator(model.nodes, current_id)}</nav>
     </section>
     <section class="pane map-pane" aria-label="Storage map">
       <div class="pane-head"><h2>Storage map</h2></div>
-      <div class="map-wrap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+      <div class="map-wrap" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
     </section>
     <section class="pane inspector-pane" aria-label="Decision inspector">
       <div class="pane-head"><h2>Decision inspector</h2></div>
-      <div class="inspector" id="inspector-body">{_render_inspector(selected)}</div>
+      <div class="inspector" id="inspector-body" tabindex="-1">{_render_inspector(selected)}</div>
     </section>
   </main>
   <footer class="footer">Area communicates size. Labels and edges communicate evidence. Authorization remains separate. No destructive control exists.</footer>

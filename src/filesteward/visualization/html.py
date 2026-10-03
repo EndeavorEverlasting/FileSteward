@@ -43,16 +43,18 @@ def render_report_html(
         <button type="button" class="filter-chip" data-filter="UNKNOWN" aria-pressed="false">Unknown</button>
         <button type="button" class="filter-chip" data-filter="KEEP_PROVEN" aria-pressed="false">Keep</button>
       </div>
-      <label class="search-label">Search paths and groups
-        <input type="search" class="search-field" height="36" style="height:36px;width:100%;"
-               placeholder="Search paths and groups" aria-label="Search paths and groups">
+      <label class="search-label" for="storage-search">Search paths and groups
+        <input id="storage-search" type="search" class="search-field"
+               placeholder="Search paths and groups" aria-label="Search paths and groups"
+               autocomplete="off">
       </label>
 """
     extra_css = """
-.filter-chip{border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-secondary);border-radius:var(--fs-radius-pill);padding:4px 10px;font-size:var(--fs-type-small-size);cursor:pointer;margin:2px;}
+.filter-chip{border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-secondary);border-radius:var(--fs-radius-pill);padding:0.25rem 0.625rem;min-height:2rem;font-size:var(--fs-type-small-size);cursor:pointer;margin:2px;}
 .filter-chip.active{background:var(--fs-accent-100);color:var(--fs-accent-800);border-color:var(--fs-accent-300);}
 .search-label{display:block;padding:var(--fs-space-2) var(--fs-space-3);font-size:var(--fs-type-small-size);color:var(--fs-text-muted);}
-.search-field{margin-top:4px;border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-1);color:var(--fs-text-primary);padding:0 10px;}
+.search-field{display:block;width:100%;box-sizing:border-box;margin-top:0.25rem;min-height:2.25rem;border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-1);color:var(--fs-text-primary);padding:0 0.625rem;}
+@media (forced-colors: active){.filter-chip.active{outline:2px solid Highlight;outline-offset:1px;}}
 """
     if "</style>" in html:
         html = html.replace("</style>", extra_css + "</style>", 1)
@@ -122,7 +124,8 @@ def render_report_html(
     }}
   }};
 
-  document.querySelectorAll('.filter-chip').forEach((chip) => {{
+  const chips = Array.from(document.querySelectorAll('.filter-chip'));
+  chips.forEach((chip, index) => {{
     chip.setAttribute(
       'aria-pressed',
       chip.getAttribute('data-filter') === activeFilter ? 'true' : 'false'
@@ -130,6 +133,13 @@ def render_report_html(
     chip.addEventListener('click', () => {{
       activeFilter = chip.getAttribute('data-filter') || 'ALL';
       applyFilters();
+    }});
+    chip.addEventListener('keydown', (event) => {{
+      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+      event.preventDefault();
+      const delta = event.key === 'ArrowRight' ? 1 : -1;
+      const next = chips[(index + delta + chips.length) % chips.length];
+      next.focus();
     }});
   }});
 
