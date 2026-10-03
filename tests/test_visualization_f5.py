@@ -133,14 +133,13 @@ def test_keyboard_only_selection_workflow_is_present() -> None:
 
 def test_first_unresolved_gate_leads_dom_order() -> None:
     html = render_report_shell(_model())
-    lead = html.index("First unresolved gate:")
-    protection = html.index("Protected overlap")
-    contract = html.index("Contract coverage")
-    assert lead < protection
-    assert lead < contract
-    # Chronological trace still keeps earlier passed gates before later ones.
-    assert protection < contract
-    assert 'class="gate-lead"' in html
+    lead = html.index('class="gate-lead"')
+    trace = html.index('<ol class="trace">')
+    assert lead < trace
+    assert "First unresolved gate:" in html[lead:trace]
+    # Chronological trace keeps earlier passed gates before later unresolved ones.
+    trace_html = html[trace:]
+    assert trace_html.index("Protected overlap") < trace_html.index("Contract coverage")
     assert 'aria-current="step"' in html
 
 
