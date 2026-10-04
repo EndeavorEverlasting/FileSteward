@@ -74,7 +74,9 @@ def render_sector_overview(
     known_omitted = sum(node.logical_size_bytes or 0 for node in omitted)
 
     cards: list[str] = []
+    largest = max((node.logical_size_bytes or 0 for node in shown), default=0)
     for rank, node in enumerate(shown, start=1):
+        ratio = ((node.logical_size_bytes or 0) / largest) if largest else 0.0
         selected = " selected" if node.node_id == selected_id else ""
         current = ' aria-current="true"' if node.node_id == selected_id else ""
         tone = disposition_css_stem(node.disposition)
@@ -93,6 +95,8 @@ def render_sector_overview(
             f'<span class="sector-state state state-{escape_attr(tone)}">'
             f'{escape_text(_state_label(node))}</span>'
             f'<span class="sector-path mono">{escape_text(node.path)}</span>'
+            f'<span class="sector-magnitude" style="--sector-ratio:{ratio:.4f}" '
+            f'aria-hidden="true"></span>'
             f"</button>"
         )
 
@@ -232,6 +236,8 @@ def render_cinematic_css() -> str:
 .sector-size{font-size:clamp(1rem,1.4vw,1.35rem);font-variant-numeric:tabular-nums;font-weight:820;z-index:1;}
 .sector-state{grid-column:1/2;font-size:.72rem;font-weight:750;z-index:1;}
 .sector-path{grid-column:2/4;font-size:.72rem;z-index:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;word-break:normal;color:var(--fs-text-muted);}
+.sector-magnitude{position:absolute;left:0;right:0;bottom:0;height:3px;background:color-mix(in srgb,var(--fs-border-default) 55%,transparent);}
+.sector-magnitude::after{content:"";display:block;height:100%;width:calc(var(--sector-ratio,0) * 100%);background:var(--fs-accent);box-shadow:0 0 12px color-mix(in srgb,var(--fs-accent) 35%,transparent);}
 .overview-remainder{display:flex;align-items:center;justify-content:space-between;gap:var(--fs-space-3);padding:.65rem .85rem;border-top:1px solid var(--fs-border-subtle);color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .overview-remainder strong{color:var(--fs-text-primary);}
 .focus-layer{opacity:0;pointer-events:none;transform:scale(.965);filter:blur(6px);transition:opacity 220ms ease-out,transform 520ms cubic-bezier(.16,1,.3,1),filter 360ms ease-out;padding:var(--fs-space-4);display:grid;grid-template-rows:auto 1fr minmax(7.5rem,10rem);gap:var(--fs-space-3);}
@@ -263,6 +269,8 @@ def render_cinematic_css() -> str:
 .context-map-shell .map-node.selected{outline-width:3px;box-shadow:0 0 0 2px var(--fs-bg-canvas),0 0 0 4px var(--fs-accent);}
 .dive-ghost{position:fixed;z-index:9999;margin:0;pointer-events:none;border:2px solid var(--fs-accent);border-radius:5px;background:linear-gradient(145deg,var(--fs-bg-surface-3),var(--fs-bg-surface-1));box-shadow:0 24px 70px rgba(0,0,0,.35);will-change:left,top,width,height,opacity,transform;}
 @media (max-width:1179px){
+  .workspace[data-scene="focus"]{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
+  .workspace[data-scene="focus"] .inspector-pane{grid-column:1/-1;display:block;}
   .storage-stage{min-height:42rem;}
   .sector-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
   .sector-major{grid-column:span 2;}
@@ -271,6 +279,9 @@ def render_cinematic_css() -> str:
   .focus-facts{grid-template-columns:repeat(3,minmax(0,1fr));}
 }
 @media (max-width:799px){
+  .workspace[data-scene="overview"],.workspace[data-scene="focus"]{grid-template-columns:1fr;}
+  .workspace[data-scene="overview"] .inspector-pane{display:none;}
+  .workspace[data-scene="focus"] .inspector-pane{grid-column:auto;}
   .storage-stage{min-height:48rem;}
   .sector-overview,.focus-layer{padding:var(--fs-space-3);}
   .sector-grid{grid-template-columns:1fr 1fr;}
