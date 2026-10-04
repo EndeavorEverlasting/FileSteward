@@ -308,7 +308,7 @@
         "provider readback",
         "successor FileSteward focused/full local suite"
       ],
-      "status": "PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+      "status": "PROVEN_LOCAL_SUITE",
       "proof_ceiling": "Design/version authority is provider-persisted. Isolated versioning proof is green; FileSteward repository-local suite is still required."
     },
     {
@@ -334,7 +334,7 @@
         "micro-node fit semantics",
         "reduced-motion state equivalence"
       ],
-      "status": "PROTOTYPE_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+      "status": "PROVEN_LOCAL_SUITE",
       "provider_commit": "a64cf5d866a962922a68de3d1a81f2ef95769f2e",
       "isolated_proof": "5 camera prototype tests passed; direct-target default aligned to FileSteward 40px product floor"
     },
@@ -361,7 +361,7 @@
         "protected/unapproved no-inviting-glow rules",
         "state not color-only"
       ],
-      "status": "PROTOTYPE_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+      "status": "PROVEN_LOCAL_SUITE",
       "provider_commit": "a64cf5d866a962922a68de3d1a81f2ef95769f2e",
       "isolated_proof": "4 Decision Signal prototype tests passed"
     },
@@ -392,7 +392,7 @@
         "Home/Escape recovery",
         "reduced motion"
       ],
-      "status": "READY_AFTER_V3_A_B_C_LOCAL_VALIDATION"
+      "status": "IMPLEMENTED_LOCAL_SUITE_GREEN_LIVE_ACCEPTANCE_OPEN"
     },
     {
       "lane_id": "V3-E",
@@ -419,7 +419,7 @@
         "desktop/laptop/phone/reduced-motion browser proof",
         "operator spatial/aesthetic acceptance"
       ],
-      "status": "WAITING_ON_V3_D"
+      "status": "WAITING_ON_OPERATOR_LIVE_ACCEPTANCE"
     },
     {
       "lane_id": "F7",
@@ -509,8 +509,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / Memory Atlas v3 shared-scene convergence",
-    "first_action": "On the canonical FileSteward workstation, fetch PR #15 exact head, run tests/test_versioning.py + tests/test_visualization_camera.py + tests/test_visualization_signals.py and the full suite plus version guard; if green, implement V3-D cinematic/shell responsive cross-input convergence without entering F7 or merging before operator acceptance."
+    "prompt": "V3-E operator live acceptance",
+    "first_action": "Open the regenerated private Memory Atlas v3 report, click a dominant sector, judge the camera dive, then accept or give a concrete motion critique. Do not merge PR #15 before that verdict. Do not start F7."
   },
   "p100_incidents": [
     {
@@ -525,7 +525,7 @@
     }
   ],
   "memory_atlas_v3": {
-    "status": "V3_B_C_PROTOTYPES_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+    "status": "V3_D_WIRED_LOCAL_SUITE_GREEN",
     "operator_disposition": "V2_TECHNICALLY_PROVEN_AESTHETIC_ACCEPTANCE_NOT_GRANTED",
     "canonical_design": "docs/program/storage-reclaim-memory-atlas-v3.md",
     "baseline_live_head": "900caccda01931f8ce04f879856f57ac12ec008c",
@@ -552,7 +552,8 @@
       "versioning_tests": "5 passed",
       "dirty_worktree_auto_bump": "0.1.0 -> 0.2.0; guard PASS",
       "camera_signal_tests": "9 passed",
-      "proof_ceiling": "isolated prototype only; FileSteward-local test suite/browser wiring unproven"
+      "proof_ceiling": "isolated prototype only; FileSteward-local test suite/browser wiring unproven",
+      "filesteward_local_suite": "314 passed including version lockstep"
     },
     "direct_target_contract": {
       "wcag_external_floor_px": 24,

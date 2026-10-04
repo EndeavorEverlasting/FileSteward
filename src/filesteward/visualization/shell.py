@@ -20,10 +20,12 @@ from filesteward.visualization.contracts import (
     TreemapRect,
 )
 from filesteward.visualization.cinematic import (
+    render_atlas_runtime_json,
     render_cinematic_css,
     render_cinematic_script,
     render_focus_chamber,
     render_focus_templates,
+    render_sector_bank,
     render_sector_overview,
     render_substrate_svg,
 )
@@ -151,6 +153,8 @@ def _render_map_slots(
         parts.append(
             f'<button type="button" class="map-node{selected}{density} state-edge-{escape_attr(tone)}" '
             f'data-node-id="{escape_attr(node.node_id)}" '
+            f'data-rect-x="{rect.x}" data-rect-y="{rect.y}" '
+            f'data-rect-w="{rect.width}" data-rect-h="{rect.height}" '
             f'style="left:{rect.x}%;top:{rect.y}%;width:{rect.width}%;height:{rect.height}%;" '
             f'title="{escape_attr(title_text)}" '
             f'aria-label="{escape_attr(aria)}"{current}>'
@@ -437,7 +441,6 @@ def _selection_script() -> str:
       if (!el.classList.contains('nav-row')) return;
       if (event.key === 'ArrowDown') { event.preventDefault(); moveNav(1); }
       else if (event.key === 'ArrowUp') { event.preventDefault(); moveNav(-1); }
-      else if (event.key === 'Home') { event.preventDefault(); moveNav(0, 'home'); }
       else if (event.key === 'End') { event.preventDefault(); moveNav(0, 'end'); }
     });
   });
@@ -516,16 +519,32 @@ def render_report_shell(
     <div class="metric"><b>{escape_text(model.metrics.target_free_space_label)}</b><span>Target free space</span></div>
     <div class="metric"><b class="auth">{escape_text(model.metrics.authorization_label)}</b><span>Authorization state</span></div>
   </section>
-  <main class="workspace" id="workspace" data-scene="overview">
+  <main class="workspace" id="workspace" data-scene="overview" data-camera-level="HOME">
     <section class="pane navigator-pane" aria-label="Storage navigator">
       <div class="pane-head"><h2>Storage navigator</h2></div>
       <nav class="nav" aria-label="Storage items">{_render_navigator(model.nodes, current_id)}</nav>
     </section>
     <section class="pane map-pane" aria-label="Storage map">
       <div class="pane-head"><h2>Storage atlas</h2></div>
-      <div class="storage-stage" id="storage-stage" data-scene="overview" tabindex="-1">
+      <div class="atlas-hud" role="toolbar" aria-label="Atlas camera">
+        <span class="atlas-level" id="atlas-level">CAMERA HOME</span>
+        <button type="button" id="atlas-home">Home</button>
+        <button type="button" id="atlas-zoom-out" aria-label="Zoom out">Zoom -</button>
+        <button type="button" id="atlas-zoom-in" aria-label="Zoom in">Zoom +</button>
+        <button type="button" id="atlas-search">Search</button>
+        <button type="button" id="atlas-fit">Fit selected</button>
+        <button type="button" id="atlas-open">Open</button>
+        <button type="button" id="atlas-decision">Decision</button>
+      </div>
+      <div class="storage-stage" id="storage-stage" data-scene="overview" data-camera-level="HOME" tabindex="-1">
         {render_substrate_svg()}
         {render_sector_overview(model.nodes, current_id)}
+        {render_sector_bank(model.nodes, current_id)}
+        <section class="fabric-layer" aria-label="Evidence fabric">
+          <div class="camera-plane" id="camera-plane">
+            <div class="map-wrap selection-active" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+          </div>
+        </section>
         <section class="focus-layer" aria-label="Focused storage sector">
           <div class="scene-toolbar">
             <button type="button" class="scene-back" id="scene-back" hidden>← Sector overview</button>
@@ -534,9 +553,16 @@ def render_report_shell(
           <div class="focus-host" id="focus-host">{render_focus_chamber(selected, model.nodes)}</div>
           <div class="context-map-shell">
             <span class="context-map-label">FULL-RUN CONTEXT · {len(model.nodes):,} EVIDENCE GROUPS</span>
-            <div class="map-wrap selection-active" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+            <div class="map-wrap selection-active" role="group" aria-label="Chamber context treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
           </div>
         </section>
+      </div>
+      <div class="phone-command-bar" role="toolbar" aria-label="Phone atlas commands">
+        <button type="button" data-atlas-action="home">Home</button>
+        <button type="button" data-atlas-action="search">Search</button>
+        <button type="button" data-atlas-action="zoom_out" aria-label="Zoom out">Zoom -</button>
+        <button type="button" data-atlas-action="zoom_in" aria-label="Zoom in">Zoom +</button>
+        <button type="button" data-atlas-action="toggle_decision">Decision</button>
       </div>
     </section>
     <section class="pane inspector-pane" aria-label="Decision inspector">
@@ -549,6 +575,7 @@ def render_report_shell(
 {"".join(inspector_templates)}
 {"".join(selection_templates)}
 {render_focus_templates(model.nodes)}
+{render_atlas_runtime_json(model.nodes, rects)}
 {_selection_script()}
 {render_cinematic_script()}
 </body>

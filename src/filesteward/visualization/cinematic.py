@@ -6,23 +6,31 @@ Never classifies evidence, grants authorization, or mutates receipt data.
 
 from __future__ import annotations
 
+import json
 from typing import Optional, Sequence
 
-from filesteward.visualization.contracts import PresentationNode
+from filesteward.visualization.camera import DIRECT_TARGET_MIN_PX
+from filesteward.visualization.contracts import PresentationNode, TreemapRect
 from filesteward.visualization.literal import escape_attr, escape_text
+from filesteward.visualization.signals import project_decision_signals
 from filesteward.visualization.tokens import disposition_css_stem
 
 __all__ = [
+    "BANK_LIMIT",
     "OVERVIEW_LIMIT",
+    "render_atlas_runtime_json",
     "render_cinematic_css",
     "render_cinematic_script",
+    "render_decision_signal_rail",
     "render_focus_chamber",
     "render_focus_templates",
+    "render_sector_bank",
     "render_sector_overview",
     "render_substrate_svg",
 ]
 
 OVERVIEW_LIMIT = 12
+BANK_LIMIT = 36
 
 
 def _fmt_bytes(value: Optional[int]) -> str:
@@ -117,12 +125,109 @@ def render_sector_overview(
         '<div><strong>Dominant sectors</strong>'
         f'<span>Top {len(shown)} of {len(ordered):,} evidence groups · '
         "readable overview, not action authority</span></div>"
-        '<span class="overview-hint">Click a sector to dive · Esc returns</span>'
+        '<span class="overview-hint">Click a readable sector to dive · Esc backs one scene · Home returns to Atlas Home</span>'
         "</div>"
         f'<div class="sector-grid">{"".join(cards)}</div>'
         f"{remainder}"
         "</section>"
     )
+
+
+def render_sector_bank(
+    nodes: Sequence[PresentationNode],
+    selected_id: Optional[str],
+    *,
+    start: int = OVERVIEW_LIMIT,
+    limit: int = BANK_LIMIT,
+) -> str:
+    """Second LOD band: more existing evidence groups, still not invented hierarchy."""
+
+    ordered = _sorted_nodes(nodes)
+    shown = ordered[start:limit]
+    if not shown:
+        return ""
+    cards: list[str] = []
+    largest = max((node.logical_size_bytes or 0 for node in shown), default=0)
+    for rank, node in enumerate(shown, start=start + 1):
+        ratio = ((node.logical_size_bytes or 0) / largest) if largest else 0.0
+        selected = " selected" if node.node_id == selected_id else ""
+        current = ' aria-current="true"' if node.node_id == selected_id else ""
+        tone = disposition_css_stem(node.disposition)
+        aria = (
+            f"Storage sector {rank}, {node.display_name}, "
+            f"{_fmt_bytes(node.logical_size_bytes)}, {_state_label(node)}"
+        )
+        cards.append(
+            f'<button type="button" class="sector-card sector-standard{selected} '
+            f'state-edge-{escape_attr(tone)}" data-node-id="{escape_attr(node.node_id)}" '
+            f'data-atlas-action="select" data-sector-rank="{rank}" '
+            f'aria-label="{escape_attr(aria)}"{current}>'
+            f'<span class="sector-rank">S{rank:02d}</span>'
+            f'<span class="sector-name">{escape_text(node.display_name)}</span>'
+            f'<span class="sector-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
+            f'<span class="sector-state state state-{escape_attr(tone)}">'
+            f'{escape_text(_state_label(node))}</span>'
+            f'<span class="sector-path mono">{escape_text(node.path)}</span>'
+            f'<span class="sector-magnitude" style="--sector-ratio:{ratio:.4f}" '
+            f'aria-hidden="true"></span>'
+            f"</button>"
+        )
+    return (
+        '<section class="sector-bank" id="sector-bank" hidden '
+        'aria-label="Expanded storage sectors">'
+        f'<div class="sector-grid sector-grid-bank">{"".join(cards)}</div>'
+        "</section>"
+    )
+
+
+def render_decision_signal_rail(node: PresentationNode) -> str:
+    chips: list[str] = []
+    for signal in project_decision_signals(node):
+        classes = ["signal-chip", f"signal-{signal.kind.value.lower()}"]
+        if signal.is_primary:
+            classes.append("signal-primary")
+        if signal.pulse:
+            classes.append("signal-pulse")
+        if signal.hard_stop:
+            classes.append("signal-hard-stop")
+        chips.append(
+            f'<li class="{" ".join(classes)}" data-signal-id="{escape_attr(signal.signal_id)}">'
+            f'<span class="signal-kind">{escape_text(signal.kind.value)}</span>'
+            f'<strong>{escape_text(signal.label)}</strong>'
+            f'<span class="signal-copy">{escape_text(signal.accessible_text)}</span>'
+            "</li>"
+        )
+    return (
+        '<ul class="decision-signal-rail" aria-label="Decision signals">'
+        f"{''.join(chips)}</ul>"
+    )
+
+
+def render_atlas_runtime_json(
+    nodes: Sequence[PresentationNode],
+    rects: Optional[Sequence[TreemapRect]] = None,
+) -> str:
+    payload = {
+        "directTargetMinPx": DIRECT_TARGET_MIN_PX,
+        "preferredTargetPx": 44.0,
+        "rects": {
+            rect.node_id: {
+                "x": rect.x,
+                "y": rect.y,
+                "width": rect.width,
+                "height": rect.height,
+            }
+            for rect in (rects or ())
+        },
+        "nodeIds": [node.node_id for node in nodes],
+    }
+    raw = (
+        json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
+    return f'<script type="application/json" id="atlas-runtime">{raw}</script>'
 
 
 def _rank_for(node: PresentationNode, nodes: Sequence[PresentationNode]) -> int:
@@ -162,6 +267,7 @@ def render_focus_chamber(
     <span>NEXT GATE</span>
     <strong>{escape_text(node.next_gate)}</strong>
   </div>
+  {render_decision_signal_rail(node)}
   <div class="focus-caption">
     Read-only evidence chamber · size is magnitude, never permission
   </div>
@@ -270,7 +376,7 @@ def render_cinematic_css() -> str:
 .context-map-shell .map-node{border-radius:1px;padding:0;}
 .context-map-shell .map-node.selected{outline-width:3px;box-shadow:0 0 0 2px var(--fs-bg-canvas),0 0 0 4px var(--fs-accent);}
 .dive-ghost{position:fixed;z-index:9999;margin:0;pointer-events:none;border:2px solid var(--fs-accent);border-radius:5px;background:linear-gradient(145deg,var(--fs-bg-surface-3),var(--fs-bg-surface-1));box-shadow:0 24px 70px rgba(0,0,0,.35);will-change:left,top,width,height,opacity,transform;}
-@media (max-width:1179px){
+@media (max-width:1280px){
   .workspace[data-scene="overview"]{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
   .workspace[data-scene="overview"] .inspector-pane{display:none;}
   .workspace[data-scene="focus"]{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
@@ -298,14 +404,62 @@ def render_cinematic_css() -> str:
   .focus-facts{grid-template-columns:1fr;}
 }
 @media (prefers-reduced-motion: reduce){
-  .sector-overview,.focus-layer,.sector-card,.scene-back{transition:none!important;}
+  .sector-overview,.focus-layer,.sector-card,.scene-back,.atlas-hud,.phone-command-bar,.camera-plane,.signal-pulse{transition:none!important;}
   .storage-stage.diving .storage-substrate path{animation:none!important;}
-  .dive-ghost{display:none!important;}
+  .dive-ghost,.signal-pulse{animation:none!important;}
 }
 @media (forced-colors: active){
-  .sector-card,.focus-chamber,.context-map-shell{forced-color-adjust:none;background:Canvas;border-color:CanvasText;color:CanvasText;box-shadow:none;}
+  .sector-card,.focus-chamber,.context-map-shell,.signal-chip,.atlas-hud button,.phone-command-bar button{forced-color-adjust:none;background:Canvas;border-color:CanvasText;color:CanvasText;box-shadow:none;}
   .sector-card.selected{outline:3px solid Highlight;outline-offset:-3px;}
   .storage-substrate{display:none;}
+  .signal-hard-stop{outline:3px solid CanvasText;}
+  .signal-primary{outline:3px solid Highlight;}
+}
+.workspace{container-type:inline-size;container-name:atlas;min-width:0;}
+.map-pane,.navigator-pane,.inspector-pane,.storage-stage,.focus-identity,.focus-path,.sector-name,.sector-path{min-width:0;}
+.atlas-hud{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;padding:.55rem .75rem;border-bottom:1px solid var(--fs-border-subtle);background:color-mix(in srgb,var(--fs-bg-surface-1) 88%,#05080c 12%);}
+.atlas-hud button,.phone-command-bar button,.atlas-open,.atlas-fit{appearance:none;min-height:44px;min-width:44px;padding:.35rem .7rem;border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);color:var(--fs-text-primary);font-weight:750;cursor:pointer;}
+.atlas-level{font:750 .72rem/1 var(--fs-font-mono);letter-spacing:.08em;color:var(--fs-accent);margin-right:.4rem;}
+.sector-bank{position:absolute;inset:0;z-index:2;padding:var(--fs-space-4);opacity:0;pointer-events:none;}
+.storage-stage[data-camera-level="BANK"] .sector-overview{opacity:.35;transform:scale(.98);}
+.storage-stage[data-camera-level="BANK"] .sector-bank{opacity:1;pointer-events:auto;}
+.fabric-layer{position:absolute;inset:0;z-index:1;opacity:0;pointer-events:none;padding:var(--fs-space-3);}
+.storage-stage[data-camera-level="FABRIC"] .sector-overview,.storage-stage[data-camera-level="CELL"] .sector-overview,.storage-stage[data-camera-level="FABRIC"] .sector-bank,.storage-stage[data-camera-level="CELL"] .sector-bank{opacity:0;pointer-events:none;}
+.storage-stage[data-camera-level="FABRIC"] .fabric-layer,.storage-stage[data-camera-level="CELL"] .fabric-layer{opacity:1;pointer-events:auto;}
+.camera-plane{width:100%;height:100%;min-height:18rem;transform-origin:0 0;transition:transform 360ms cubic-bezier(.16,1,.3,1);}
+.map-node.micro{pointer-events:none;cursor:default;}
+.storage-stage[data-camera-level="CELL"] .map-node.selected{pointer-events:auto;cursor:pointer;}
+.decision-signal-rail{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.45rem;list-style:none;margin:0;padding:.4rem 0 0;z-index:1;}
+.signal-chip{min-width:0;display:grid;gap:.15rem;padding:.45rem .65rem;border:1px solid var(--fs-border-default);border-radius:4px;background:var(--fs-bg-surface-2);max-width:100%;}
+.signal-kind{font:750 .66rem/1 var(--fs-font-mono);letter-spacing:.06em;color:var(--fs-text-muted);}
+.signal-copy{font-size:.72rem;color:var(--fs-text-secondary);overflow-wrap:anywhere;}
+.signal-passed{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--fs-accent) 55%,transparent);}
+.signal-unresolved.signal-pulse{border-color:color-mix(in srgb,var(--fs-state-review-edge) 80%,var(--fs-accent));animation:fs-signal-pulse 1.8s ease-in-out infinite;}
+.signal-unknown{border-style:dashed;}
+.signal-blocked.signal-hard-stop,.signal-unapproved{border-width:2px;box-shadow:none;background:var(--fs-bg-surface-1);}
+@keyframes fs-signal-pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--fs-state-review-edge) 35%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--fs-state-review-edge) 8%,transparent)}}
+.phone-command-bar{display:none;position:sticky;bottom:0;z-index:12;gap:.35rem;padding:.45rem .45rem calc(.45rem + env(safe-area-inset-bottom,0px));background:var(--fs-bg-shell);border-top:1px solid var(--fs-border-subtle);}
+.workspace[data-decision-open="true"] .inspector-pane{opacity:1;visibility:visible;pointer-events:auto;}
+@container atlas (max-width:1280px){
+  .workspace[data-scene="overview"]{grid-template-columns:minmax(3.5rem,4.5rem) minmax(0,1fr);}
+  .workspace[data-scene="overview"] .navigator-pane .nav,.workspace[data-scene="overview"] .filters,.workspace[data-scene="overview"] .search-label{display:none;}
+  .workspace[data-scene="overview"] .inspector-pane{display:none;}
+  .workspace[data-scene="focus"]{grid-template-columns:minmax(0,1fr);}
+  .workspace[data-scene="focus"] .navigator-pane{display:none;}
+  .workspace[data-scene="focus"] .inspector-pane{grid-column:1/-1;display:block;max-height:42vh;overflow:auto;}
+  .focus-chamber{grid-template-columns:minmax(0,1fr);}
+  .focus-identity h3,.focus-path,.selection-name,.selection-path{overflow-wrap:anywhere;white-space:normal;}
+}
+@media (max-width:799px){
+  .phone-command-bar{display:flex;justify-content:space-between;}
+  .atlas-hud{display:none;}
+  .workspace[data-scene="overview"] .navigator-pane,.workspace[data-scene="focus"] .navigator-pane{position:fixed;inset:auto 0 3.6rem 0;z-index:11;max-height:48vh;overflow:auto;display:none;border-top:1px solid var(--fs-border-subtle);}
+  .workspace[data-nav-open="true"] .navigator-pane{display:block;}
+  .workspace[data-scene="focus"] .inspector-pane{position:fixed;inset:auto 0 3.6rem 0;z-index:11;max-height:52vh;display:none;background:var(--fs-bg-surface-1);}
+  .workspace[data-decision-open="true"] .inspector-pane{display:block;}
+}
+@media (prefers-reduced-motion: reduce){
+  .signal-unresolved.signal-pulse{animation:none;border-width:2px;}
 }
 """
 
@@ -322,6 +476,20 @@ def render_cinematic_script() -> str:
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   let focusedId = null;
+  let cameraLevel = 'HOME';
+  const history = [];
+  const runtimeEl = document.getElementById('atlas-runtime');
+  const runtime = runtimeEl ? JSON.parse(runtimeEl.textContent || '{}') : {};
+  const plane = document.getElementById('camera-plane');
+  const levelLabel = document.getElementById('atlas-level');
+  const homeBtn = document.getElementById('atlas-home');
+  const searchBtn = document.getElementById('atlas-search');
+  const zoomInBtn = document.getElementById('atlas-zoom-in');
+  const zoomOutBtn = document.getElementById('atlas-zoom-out');
+  const fitBtn = document.getElementById('atlas-fit');
+  const openBtn = document.getElementById('atlas-open');
+  const decisionBtn = document.getElementById('atlas-decision');
+  const bank = document.getElementById('sector-bank');
 
   const byAttr = (selector, attr, value) =>
     Array.from(document.querySelectorAll(selector)).find(
@@ -330,6 +498,95 @@ def render_cinematic_script() -> str:
 
   const focusTemplate = (id) => byAttr('[data-focus-for]', 'data-focus-for', id);
   const overviewSector = (id) => byAttr('.sector-card', 'data-node-id', id);
+  const selectedId = () => {
+    const row = document.querySelector('.nav-row.selected, .sector-card.selected');
+    return row ? row.getAttribute('data-node-id') : focusedId;
+  };
+
+  const setLevel = (level, scene) => {
+    cameraLevel = level;
+    stage.dataset.cameraLevel = level;
+    workspace.dataset.cameraLevel = level;
+    if (scene === 'overview') workspace.dataset.scene = 'overview';
+    else workspace.dataset.scene = 'focus';
+    stage.dataset.scene = workspace.dataset.scene;
+    if (levelLabel) levelLabel.textContent = 'CAMERA ' + level;
+    if (bank) bank.hidden = level !== 'BANK';
+    back.hidden = level === 'HOME';
+  };
+
+  const activateNode = (id) => {
+    const row = byAttr('.nav-row', 'data-node-id', id);
+    if (row) row.click();
+  };
+
+  const atlas = {
+    select(id) {
+      if (!id) return;
+      activateNode(id);
+      if (cameraLevel === 'CHAMBER') syncFocus(id);
+    },
+    zoom_in() {
+      if (cameraLevel === 'HOME') setLevel('BANK', 'overview');
+      else if (cameraLevel === 'BANK') setLevel('FABRIC', 'overview');
+      else if (cameraLevel === 'FABRIC') atlas.fit_selected();
+      else if (cameraLevel === 'CELL') atlas.open_selected();
+    },
+    zoom_out() { atlas.back(); },
+    fit_selected() {
+      const id = selectedId();
+      if (!id) return;
+      const rect = (runtime.rects || {})[id];
+      history.push(cameraLevel);
+      setLevel('CELL', 'overview');
+      if (plane && rect) {
+        const scale = Math.min(8, Math.max(1.15, 70 / Math.max(rect.width, rect.height)));
+        const tx = 50 - (rect.x + rect.width / 2) * scale;
+        const ty = 50 - (rect.y + rect.height / 2) * scale;
+        plane.style.transform = 'translate(' + tx + '%, ' + ty + '%) scale(' + scale + ')';
+      }
+      activateNode(id);
+    },
+    open_selected(source) {
+      const id = selectedId();
+      if (!id) return;
+      enterFocus(id, source);
+    },
+    back() {
+      if (cameraLevel === 'CHAMBER') {
+        exitFocus();
+        return;
+      }
+      if (cameraLevel === 'CELL') {
+        if (plane) plane.style.transform = 'none';
+        setLevel('FABRIC', 'overview');
+        return;
+      }
+      if (cameraLevel === 'FABRIC') setLevel('BANK', 'overview');
+      else if (cameraLevel === 'BANK') setLevel('HOME', 'overview');
+    },
+    home() {
+      if (plane) plane.style.transform = 'none';
+      history.length = 0;
+      const keep = selectedId();
+      setLevel('HOME', 'overview');
+      focusedId = keep;
+      if (keep) activateNode(keep);
+    },
+    search() {
+      const field = document.getElementById('storage-search');
+      workspace.dataset.navOpen = 'true';
+      if (field) field.focus();
+    },
+    toggle_decision() {
+      const open = workspace.dataset.decisionOpen === 'true';
+      workspace.dataset.decisionOpen = open ? 'false' : 'true';
+      if (!open) setLevel(cameraLevel === 'HOME' ? 'CELL' : cameraLevel, cameraLevel === 'HOME' ? 'overview' : stage.dataset.scene);
+      const inspector = document.getElementById('inspector-body');
+      if (!open && inspector) inspector.focus();
+    }
+  };
+  window.FileStewardAtlas = atlas;
 
   const syncFocus = (id) => {
     const template = focusTemplate(id);
@@ -394,6 +651,8 @@ def render_cinematic_script() -> str:
     const from = origin.getBoundingClientRect();
     stage.dataset.scene = 'focus';
     workspace.dataset.scene = 'focus';
+    history.push(cameraLevel);
+    setLevel('CHAMBER', 'focus');
     back.hidden = false;
     pulseSubstrate();
     window.requestAnimationFrame(() => {
@@ -405,9 +664,12 @@ def render_cinematic_script() -> str:
     if (stage.dataset.scene !== 'focus') return;
     const destination = focusedId ? overviewSector(focusedId) : null;
     const from = focusHost.getBoundingClientRect();
-    stage.dataset.scene = 'overview';
-    workspace.dataset.scene = 'overview';
-    back.hidden = true;
+    const prev = history.pop() || 'HOME';
+    const scene = prev === 'CHAMBER' ? 'focus' : 'overview';
+    stage.dataset.scene = scene;
+    workspace.dataset.scene = scene;
+    setLevel(prev === 'CHAMBER' ? 'HOME' : prev, scene);
+    back.hidden = prev === 'HOME';
     pulseSubstrate();
     window.requestAnimationFrame(() => {
       const target = destination || stage;
@@ -430,14 +692,19 @@ def render_cinematic_script() -> str:
   });
 
   document.querySelectorAll('.nav-row').forEach((row) => {
-    row.addEventListener('click', (event) => {
-      if (!event.isTrusted) return;
-      enterFocus(row.getAttribute('data-node-id'), row);
-    });
     row.addEventListener('keydown', (event) => {
       if (!event.isTrusted || (event.key !== 'Enter' && event.key !== ' ')) return;
-      enterFocus(row.getAttribute('data-node-id'), row);
+      event.preventDefault();
+      atlas.select(row.getAttribute('data-node-id'));
+      atlas.fit_selected();
     });
+  });
+
+  document.querySelectorAll('.map-node.micro').forEach((node) => {
+    node.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
   });
 
   document.addEventListener('filesteward:selection', (event) => {
@@ -446,13 +713,35 @@ def render_cinematic_script() -> str:
     if (stage.dataset.scene === 'focus') syncFocus(id);
   });
 
-  back.addEventListener('click', exitFocus);
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && stage.dataset.scene === 'focus') {
-      event.preventDefault();
-      exitFocus();
-    }
+  back.addEventListener('click', () => atlas.back());
+  if (homeBtn) homeBtn.addEventListener('click', () => atlas.home());
+  if (searchBtn) searchBtn.addEventListener('click', () => atlas.search());
+  if (zoomInBtn) zoomInBtn.addEventListener('click', () => atlas.zoom_in());
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => atlas.zoom_out());
+  if (fitBtn) fitBtn.addEventListener('click', () => atlas.fit_selected());
+  if (openBtn) openBtn.addEventListener('click', () => atlas.open_selected(openBtn));
+  if (decisionBtn) decisionBtn.addEventListener('click', () => atlas.toggle_decision());
+  document.querySelectorAll('[data-atlas-action]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const action = el.getAttribute('data-atlas-action');
+      if (action && typeof atlas[action] === 'function') atlas[action]();
+    });
   });
+  document.addEventListener('keydown', (event) => {
+    const typing = event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable);
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      atlas.back();
+      return;
+    }
+    if (typing) return;
+    if (event.key === 'Home') { event.preventDefault(); atlas.home(); }
+    else if (event.key === '+' || event.key === '=') { event.preventDefault(); atlas.zoom_in(); }
+    else if (event.key === '-' || event.key === '_') { event.preventDefault(); atlas.zoom_out(); }
+    else if (event.key === '/') { event.preventDefault(); atlas.search(); }
+    else if (event.key === 'd' || event.key === 'D') { event.preventDefault(); atlas.toggle_decision(); }
+  });
+  setLevel('HOME', 'overview');
 })();
 </script>
 """

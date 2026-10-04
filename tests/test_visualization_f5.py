@@ -272,8 +272,8 @@ def test_cinematic_overview_caps_first_frame_and_collapses_remainder() -> None:
 def test_cinematic_atlas_has_spatial_dive_and_progressive_disclosure() -> None:
     html = render_report_shell(_model())
 
-    assert '<main class="workspace" id="workspace" data-scene="overview">' in html
-    assert 'id="storage-stage" data-scene="overview"' in html
+    assert '<main class="workspace" id="workspace" data-scene="overview" data-camera-level="HOME">' in html
+    assert 'id="storage-stage" data-scene="overview" data-camera-level="HOME"' in html
     assert "Storage atlas" in html
     assert '<svg class="storage-substrate"' in html
     assert 'class="sector-overview"' in html
@@ -290,6 +290,8 @@ def test_cinematic_atlas_has_spatial_dive_and_progressive_disclosure() -> None:
     assert "filesteward:selection" in html
     assert "@keyframes fs-substrate-charge" in html
     assert "@media (prefers-reduced-motion: reduce)" in html
+    assert "CAMERA HOME" in html
+    assert "Fit selected" in html
 
 
 def test_forced_colors_and_high_contrast_hooks() -> None:

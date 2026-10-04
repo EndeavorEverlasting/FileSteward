@@ -1,7 +1,10 @@
 # FileSteward Product Versioning
 
-**Authority:** `[project].version` in `pyproject.toml`  
-**Current cutover version:** `0.1.0`  
+**Authority:** `[project].version` in `pyproject.toml`
+
+**Current cutover version:** `0.1.0`
+
+
 **Status:** P130 repository versioning system established for future changes; no release tag is created by this sprint.
 
 ## Purpose

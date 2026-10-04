@@ -7,14 +7,16 @@
 
 | Lane | State | Mission | Dependency | Owned surface |
 | --- | --- | --- | --- | --- |
-| V3-A | PROVIDER-PUSHED / LOCAL REPO-WIDE VALIDATION PENDING | durable v3 design + P97 expansion + P130 version authority | none | design/prior-art/versioning/plan |
-| V3-B | PROTOTYPE PROVIDER-PUSHED / LOCAL REPO VALIDATION PENDING | semantic camera + level-of-detail zoom | V3-A | `camera.py` + focused tests |
-| V3-C | PROTOTYPE PROVIDER-PUSHED / LOCAL REPO VALIDATION PENDING | Decision Signal projector + semantic glow | V3-A | `signals.py` + focused tests |
-| V3-D | READY AFTER V3-A/B/C LOCAL VALIDATION | scene composition, responsive layout, P129 mouse/keyboard/phone convergence | V3-B, V3-C | cinematic/shell + acceptance tests |
-| V3-E | WAITING ON V3-D | exact-head private report regeneration and operator live acceptance | V3-D | ignored local runtime proof only |
+| V3-A | ✅ PROVEN locally (314-suite + version guard) | durable v3 design + P97 expansion + P130 version authority | none | design/prior-art/versioning/plan |
+| V3-B | ✅ PROVEN locally | semantic camera + level-of-detail zoom | V3-A | `camera.py` + focused tests |
+| V3-C | ✅ PROVEN locally | Decision Signal projector + semantic glow | V3-A | `signals.py` + focused tests |
+| V3-D | 🟡 IMPLEMENTED / suite-validated; live operator acceptance open | scene composition, responsive layout, P129 mouse/keyboard/phone convergence | V3-B, V3-C | cinematic/shell + acceptance tests |
+| V3-E | ⏳ WAITING | exact-head private report regeneration and operator live acceptance | V3-D | ignored local runtime proof only |
 | F7 | REQUIRED SUCCESSOR WORK | contract-selection UX | V3-E | separate operator decision lane |
 
-Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.\n\nIsolated prototype proof: P130 versioning 5/5 tests + dirty-worktree 0.1.0→0.2.0 auto-bump/guard; V3-B/V3-C pure seams 9/9 tests. Provider commits: P130 `48643a9`, v3 plan `0c38576`, camera/signal prototypes + version `a64cf5d`. A target-floor correction then aligned camera direct-target semantics with the existing FileSteward 40px minimum / 44px preferred token contract. FileSteward-local focused/full validation remains required before shared-scene convergence.
+Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.
+
+Local workstation proof: P130 package `__version__` now stays in lockstep with `pyproject.toml` at `0.2.0`. V3-A/B/C plus V3-D wiring: full FileSteward suite 314 passed; version guard ALREADY_SATISFIED; cinematic/shell camera and Decision Signal projection are wired. V3-E remains operator live acceptance of the regenerated private report. Do not merge PR #15 before that acceptance.
 
 
 **Status:** ACTIVE / FACTORED / IMPLEMENTATION-READY AFTER P04 MERGE  

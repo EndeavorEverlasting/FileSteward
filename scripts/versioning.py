@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Iterable
 
 VERSION_RE = re.compile(r'(?m)^(version\s*=\s*")(\d+)\.(\d+)\.(\d+)(")\s*$')
+INIT_VERSION_RE = re.compile(r'(?m)^(__version__\s*=\s*")(\d+\.\d+\.\d+)(")\s*$')
 VISUAL_PATH_PREFIXES = (
     "src/filesteward/visualization/",
 )
@@ -126,10 +127,21 @@ def current_version(root: Path | None = None) -> Version:
 
 
 def write_version(version: Version, root: Path | None = None) -> None:
+    root = root or repo_root()
     path = pyproject_path(root)
     original = path.read_text(encoding="utf-8")
     updated = replace_pyproject_version(original, version)
     path.write_text(updated, encoding="utf-8")
+    init_path = root / "src" / "filesteward" / "__init__.py"
+    if not init_path.is_file():
+        return
+    init_text = init_path.read_text(encoding="utf-8")
+    if not INIT_VERSION_RE.search(init_text):
+        raise ValueError("src/filesteward/__init__.py must declare __version__")
+    init_path.write_text(
+        INIT_VERSION_RE.sub(lambda m: f'{m.group(1)}{version}{m.group(3)}', init_text, count=1),
+        encoding="utf-8",
+    )
 
 
 def ensure_visual_bump(

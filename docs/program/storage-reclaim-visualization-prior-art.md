@@ -175,4 +175,3 @@ The ecosystem already proves zoomable spatial continuity, authored scene transit
 - offline single-report operation with private receipt data local.
 
 That combination remains FileSteward-owned program design.
-

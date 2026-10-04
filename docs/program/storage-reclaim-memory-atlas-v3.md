@@ -1,8 +1,12 @@
 # FileSteward Memory Atlas v3 — Forensic Memory Substrate
 
-**Status:** P95 PROGRAM DESIGN + P97 PRIOR ART + P129 CROSS-INPUT CONTRACT + P130 VERSIONING HOOK; IMPLEMENTATION PROTOTYPES NEXT  
-**Current live floor:** Memory Atlas v2 at PR #15 historical live-certified head `900caccda01931f8ce04f879856f57ac12ec008c`.  
-**Operator disposition:** v2 is technically proven but **not aesthetically/ergonomically accepted**; do not merge it as the final visual result.  
+**Status:** P95 PROGRAM DESIGN + P97 PRIOR ART + P129 CROSS-INPUT CONTRACT + P130 VERSIONING HOOK; IMPLEMENTATION PROTOTYPES NEXT
+
+**Current live floor:** Memory Atlas v2 at PR #15 historical live-certified head `900caccda01931f8ce04f879856f57ac12ec008c`.
+
+**Operator disposition:** v2 is technically proven but **not aesthetically/ergonomically accepted**; do not merge it as the final visual result.
+
+
 **Safety inheritance:** every FileSteward evidence, authorization, privacy, literal-rendering, accessibility, and no-destructive-control invariant remains binding.
 
 ## 1. Why v3 exists

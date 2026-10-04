@@ -96,3 +96,19 @@ def test_changed_paths_include_staged_and_unstaged_worktree_edits(tmp_path: Path
     assert visual_paths == ["src/filesteward/visualization/cinematic.py"]
     assert changed is True
     assert 'version = "0.2.0"' in (root / "pyproject.toml").read_text(encoding="utf-8")
+
+
+def test_write_version_keeps_package_dunder_in_lockstep(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    (root / "src/filesteward").mkdir(parents=True)
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "filesteward"\nversion = "0.1.0"\n', encoding="utf-8"
+    )
+    (root / "src/filesteward/__init__.py").write_text(
+        '__version__ = "0.1.0"\n', encoding="utf-8"
+    )
+    versioning.write_version(versioning.Version.parse("0.2.0"), root=root)
+    assert 'version = "0.2.0"' in (root / "pyproject.toml").read_text(encoding="utf-8")
+    assert '__version__ = "0.2.0"' in (
+        root / "src/filesteward/__init__.py"
+    ).read_text(encoding="utf-8")

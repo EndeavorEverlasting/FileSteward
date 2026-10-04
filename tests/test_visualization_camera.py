@@ -71,4 +71,3 @@ def test_filesteward_direct_target_floor_is_stronger_than_wcag_minimum() -> None
     assert not is_direct_target(
         rect, viewport_width_px=1000, viewport_height_px=1000
     )
-
