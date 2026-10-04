@@ -290,3 +290,82 @@ def render_cinematic_css() -> str:
   .storage-substrate{display:none;}
 }
 """
+
+
+def render_cinematic_script() -> str:
+    return r"""
+<script>
+(() => {
+  const stage = document.getElementById('storage-stage');
+  const focusHost = document.getElementById('focus-host');
+  const back = document.getElementById('scene-back');
+  if (!stage || !focusHost || !back) return;
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let focusedId = null;
+
+  const byAttr = (selector, attr, value) =>
+    Array.from(document.querySelectorAll(selector)).find(
+      (el) => el.getAttribute(attr) === value
+    );
+
+  const focusTemplate = (id) => byAttr('[data-focus-for]', 'data-focus-for', id);
+  const overviewSector = (id) => byAttr('.sector-card', 'data-node-id', id);
+
+  const syncFocus = (id) => {
+    const template = focusTemplate(id);
+    if (!template) return;
+    focusHost.innerHTML = template.innerHTML;
+    focusedId = id;
+  };
+
+  const pulseSubstrate = () => {
+    stage.classList.remove('diving');
+    void stage.offsetWidth;
+    stage.classList.add('diving');
+    window.setTimeout(() => stage.classList.remove('diving'), 680);
+  };
+
+  const animateGhost = (source, destination, reverse = false) => {
+    if (reduced.matches || !source || !destination || !source.animate) return;
+    const a = source.getBoundingClientRect();
+    const b = destination.getBoundingClientRect();
+    const ghost = document.createElement('div');
+    ghost.className = 'dive-ghost';
+    document.body.appendChild(ghost);
+    const from = reverse ? b : a;
+    const to = reverse ? a : b;
+    Object.assign(ghost.style, {
+      left: from.left + 'px',
+      top: from.top + 'px',
+      width: Math.max(1, from.width) + 'px',
+      height: Math.max(1, from.height) + 'px',
+    });
+    const animation = ghost.animate(
+      [
+        {
+          left: from.left + 'px',
+          top: from.top + 'px',
+          width: Math.max(1, from.width) + 'px',
+          height: Math.max(1, from.height) + 'px',
+          opacity: 0.96,
+          transform: 'perspective(900px) rotateX(0deg) scale(1)',
+        },
+        {
+          offset: 0.58,
+          opacity: 0.7,
+          transform: 'perspective(900px) rotateX(-2deg) scale(1.012)',
+        },
+        {
+          left: to.left + 'px',
+          top: to.top + 'px',
+          width: Math.max(1, to.width) + 'px',
+          height: Math.max(1, to.height) + 'px',
+          opacity: 0.08,
+          transform: 'perspective(900px) rotateX(0deg) scale(1)',
+        },
+      ],
+      { duration: 560, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'forwards' }
+    );
+    animation.finished.finally(() => ghost.remove());
+  };
