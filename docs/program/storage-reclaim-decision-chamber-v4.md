@@ -216,3 +216,92 @@ Blue/cyan may appear only when an operating-system forced-color mode chooses it.
 Decision Chamber is product candidate **0.3.0**.
 
 The version helper now treats staged/unstaged visual changes relative to the previous committed HEAD as a new visual pass. Therefore a long-lived branch already at 0.3.0 will still auto-bump a later polish pass instead of silently reusing 0.3.0 merely because it is already greater than main.
+
+## 12. Localhost Decision Bridge — exact interaction transport
+
+The generated report is static evidence. It cannot become the authority for operator decisions by mutating JavaScript objects in memory.
+
+Decision Chamber therefore uses one local-only bridge:
+
+```text
+browser scene
+  -> semantic decision intent
+  -> same-origin 127.0.0.1 Decision Bridge
+  -> ignored var/runs/<run>/ operator artifact
+  -> authoritative readback
+  -> next cinematic scene
+```
+
+### CLI entrypoint to implement
+
+```text
+filesteward review <run-dir> [--port 0]
+```
+
+Binding is fixed to `127.0.0.1` by the application. There is no `--host 0.0.0.0` escape hatch.
+
+The command:
+
+1. validates the existing run before serving;
+2. generates/resolves the current report;
+3. computes the exact `cleanup-plan.csv` SHA-256;
+4. starts a loopback-only HTTP server on an ephemeral port by default;
+5. generates an unpredictable per-process session token;
+6. injects that token into the served report as runtime-only data;
+7. opens or prints the local report URL.
+
+### API
+
+`GET /api/v1/state`
+
+Returns only current local session facts needed by the UI: run ID, plan digest, selected decision events/approval state, and permitted semantic actions. Private path/evidence content remains sourced from the already-local report.
+
+`POST /api/v1/decision`
+
+Accepts only the typed intents from `DecisionBridgeIntent`. It writes/updates an ignored operator-decision artifact. It never rewrites inventory evidence.
+
+`POST /api/v1/approval`
+
+Requires:
+
+- exact run ID;
+- exact item ID;
+- exact cleanup-plan SHA-256;
+- action `QUARANTINE`;
+- `confirm: true`;
+- item present in the exact cleanup plan;
+- item disposition `RECLAIM_PROVEN`;
+- proposed action `quarantine`.
+
+On success it atomically writes/updates the approval artifact and returns authoritative `APPROVED_FOR_ACTION`. The browser then reads that state and enters STAGED.
+
+### Browser-to-localhost security
+
+Mutation requests must fail closed unless all are true:
+
+- server bound to loopback only;
+- request Host resolves to the serving loopback authority;
+- request Origin matches the exact served origin;
+- JSON content type;
+- unpredictable per-process token supplied in `X-FileSteward-Session`;
+- no permissive CORS headers;
+- token is never written to tracked files or durable runtime artifacts.
+
+A random web page must not be able to authorize a local FileSteward action by sending a blind request to localhost.
+
+### UNKNOWN status behavior
+
+Clicking UNKNOWN opens the GATE scene and may record `RESCAN`, `KEEP`, or `REVIEW_LATER`.
+
+The UI may visually change the **operator-decision status** immediately, for example:
+
+```text
+Evidence: UNKNOWN
+Decision: RESCAN REQUESTED
+```
+
+It must not relabel evidence as RECLAIM_PROVEN.
+
+A future/read-only rescan consumes the decision input and creates a fresh evidence run. If deterministic evidence then becomes RECLAIM_PROVEN, the new report advances naturally to APPROVAL.
+
+The first Decision Bridge implementation does not need to automate the full rescan job in the same POST. It must persist the request and expose the exact next executable action. A later bounded lane may make RESCAN asynchronous without changing these semantics.

@@ -527,11 +527,44 @@
       "status": "PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
     },
     {
+      "lane_id": "V4-BRIDGE",
+      "title": "Localhost Decision Bridge",
+      "dependencies": [
+        "V4-A",
+        "V4-B"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/review_bridge.py protocol",
+        "loopback HTTP adapter",
+        "filesteward review CLI entrypoint",
+        "ignored decision/approval persistence",
+        "same-origin/session-token enforcement"
+      ],
+      "forbidden": [
+        "bind non-loopback",
+        "permissive CORS",
+        "client-only fake authorization",
+        "rewrite CleanupDisposition from operator click",
+        "apply/quarantine/delete filesystem mutation"
+      ],
+      "validation": [
+        "protocol tests",
+        "loopback bind test",
+        "cross-origin mutation rejection",
+        "missing/wrong token rejection",
+        "approval exact-plan validation",
+        "runtime artifact remains ignored/private"
+      ],
+      "status": "PROTOCOL_PROVIDER_IMPLEMENTED_HTTP_ADAPTER_PENDING"
+    },
+    {
       "lane_id": "V4-C",
       "title": "Decision Chamber cinematic integration",
       "dependencies": [
         "V4-A",
-        "V4-B"
+        "V4-B",
+        "V4-BRIDGE"
       ],
       "execution_environment": "LOCAL_AGENT_RUNTIME",
       "owned": [
@@ -552,7 +585,7 @@
         "desktop/laptop/phone/reduced-motion/forced-colors",
         "private runtime self-falsification"
       ],
-      "status": "READY_AFTER_V4_A_B_LOCAL_VALIDATION"
+      "status": "WAITING_ON_V4_A_B_BRIDGE"
     },
     {
       "lane_id": "V4-D",
@@ -669,7 +702,7 @@
   ],
   "next_owner": {
     "prompt": "P07 / Memory Atlas v4 Decision Chamber mechanical integration",
-    "first_action": "Fetch exact PR head; prove decision-flow, approval, material-theme, and recurring-version tests plus full suite. If green, wire UNKNOWN/HUMAN_REVIEW/RECLAIM_PROVEN status activation into the fixed Decision Chamber scenes and approval receipt/quarantine-staging workflow. No palette/state/narrative judgment is delegated."
+    "first_action": "Fetch exact PR head and validate V4-A/V4-B/Decision Bridge protocol. Implement loopback-only filesteward review bridge exactly as the tracked v4 contract specifies, then wire the browser scenes to the bridge and perform local/browser proof. No transport/security/state/palette/narrative judgment is delegated."
   },
   "p100_incidents": [
     {
@@ -849,6 +882,24 @@
       "target": "0.3.0",
       "reason": "new Decision Chamber capability + canonical theme generation",
       "recurring_fix": "worktree visual changes now compare against committed HEAD so each new polish pass bumps even when branch already exceeds main"
+    },
+    "decision_bridge": {
+      "cli": "filesteward review <run-dir> [--port 0]",
+      "bind": "127.0.0.1 only",
+      "routes": {
+        "state": "GET /api/v1/state",
+        "decision": "POST /api/v1/decision",
+        "approval": "POST /api/v1/approval"
+      },
+      "mutation_security": [
+        "exact same-origin check",
+        "per-process unpredictable X-FileSteward-Session token",
+        "application/json only",
+        "no permissive CORS",
+        "loopback Host only"
+      ],
+      "persistence": "ignored var/runs only",
+      "evidence_rule": "decision events never rewrite CleanupDisposition; fresh deterministic run owns evidence changes"
     }
   }
 }
