@@ -262,6 +262,8 @@ def test_cinematic_overview_caps_first_frame_and_collapses_remainder() -> None:
     assert "3 smaller sectors" in html
     assert "collapsed from the first frame" in html
     assert "readable overview, not action authority" in html
+    assert "sector-magnitude" in html
+    assert "--sector-ratio:1.0000" in html
     # The remainder is a presentation note, never a synthetic evidence node.
     remainder = html[html.index('class="overview-remainder"'):]
     assert "data-node-id" not in remainder
@@ -278,7 +280,7 @@ def test_cinematic_atlas_has_spatial_dive_and_progressive_disclosure() -> None:
     assert 'class="focus-layer"' in html
     assert 'id="scene-back" hidden' in html
     assert "FULL-RUN CONTEXT · 3 EVIDENCE GROUPS" in html
-    assert '.workspace[data-scene="overview"] .inspector-pane{display:none;}' in html
+    assert '.workspace[data-scene="overview"] .inspector-pane{opacity:0;visibility:hidden;' in html
     assert "workspace.dataset.scene = 'focus'" in html
     assert "workspace.dataset.scene = 'overview'" in html
     assert "duration: 560" in html
