@@ -346,3 +346,127 @@ def test_unknown_scan_completeness_fails_closed(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="scan_completeness|validation"):
         build_presentation_model(run_dir)
+
+
+def _write_buckets(run_dir: Path, rows: list[dict[str, object]]) -> None:
+    path = run_dir / "human-review-buckets.csv"
+    fieldnames = [
+        "prefix",
+        "depth",
+        "item_count",
+        "logical_bytes_known",
+        "unknown_size_count",
+        "contract_hint_tags",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+
+def test_large_inventory_uses_persisted_review_buckets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = _write_valid_run(tmp_path / "run")
+    _write_buckets(
+        run_dir,
+        [
+            {
+                "prefix": r"C:\Users\<profile>\.cache\opencode",
+                "depth": 5,
+                "item_count": 100,
+                "logical_bytes_known": 8_000_000_000,
+                "unknown_size_count": 0,
+                "contract_hint_tags": "cache",
+            },
+            {
+                "prefix": r"C:\Users\<profile>\AppData\Local\Temp",
+                "depth": 5,
+                "item_count": 50,
+                "logical_bytes_known": 2_000_000_000,
+                "unknown_size_count": 3,
+                "contract_hint_tags": "temp",
+            },
+            {
+                "prefix": r"C:\Users\<profile>\Documents",
+                "depth": 4,
+                "item_count": 10,
+                "logical_bytes_known": 500_000_000,
+                "unknown_size_count": 0,
+                "contract_hint_tags": "",
+            },
+        ],
+    )
+    monkeypatch.setattr(
+        "filesteward.visualization.model._count_csv_data_rows",
+        lambda _path: 6000,
+    )
+    model = build_presentation_model(run_dir)
+    assert len(model.nodes) == 3
+    assert all(node.disposition is CleanupDisposition.UNKNOWN for node in model.nodes)
+    assert all(
+        node.authorization_state is AuthorizationState.UNAPPROVED for node in model.nodes
+    )
+    assert all(
+        node.trace_evidence_source == "human-review-buckets.csv" for node in model.nodes
+    )
+    largest = max(model.nodes, key=lambda n: n.logical_size_bytes or -1)
+    assert model.default_selected_id == largest.node_id
+    assert largest.path.endswith(r".cache\opencode")
+    assert largest.contract_hint_tags == ("cache",)
+    assert largest.projected_reclaim_bytes is None
+    assert "fails closed to UNKNOWN" in largest.reason
+    assert any(step.gate_id == "disposition" for step in largest.gate_steps)
+
+
+def test_large_inventory_without_buckets_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = _write_valid_run(tmp_path / "run")
+    monkeypatch.setattr(
+        "filesteward.visualization.model._count_csv_data_rows",
+        lambda _path: 6000,
+    )
+    with pytest.raises(ValueError, match="human-review-buckets"):
+        build_presentation_model(run_dir)
+
+
+def test_count_csv_data_rows_handles_quoted_newlines(tmp_path: Path) -> None:
+    from filesteward.visualization.model import _count_csv_data_rows
+
+    path = tmp_path / "quoted.csv"
+    path.write_text(
+        'item_id,path\n'
+        'a,"line1\nline2"\n'
+        "b,plain\n",
+        encoding="utf-8",
+        newline="",
+    )
+    assert _count_csv_data_rows(path) == 2
+
+
+def test_bucket_aggregation_caps_node_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = _write_valid_run(tmp_path / "run")
+    rows = [
+        {
+            "prefix": rf"C:\Users\<profile>\Bucket{i:03d}",
+            "depth": 5,
+            "item_count": 1,
+            "logical_bytes_known": 1_000_000_000 - i,
+            "unknown_size_count": 0,
+            "contract_hint_tags": "cache" if i % 2 == 0 else "",
+        }
+        for i in range(250)
+    ]
+    _write_buckets(run_dir, rows)
+    monkeypatch.setattr(
+        "filesteward.visualization.model._count_csv_data_rows",
+        lambda _path: 6000,
+    )
+    model = build_presentation_model(run_dir)
+    assert len(model.nodes) == 200
+    sizes = [node.logical_size_bytes or 0 for node in model.nodes]
+    assert sizes == sorted(sizes, reverse=True)
