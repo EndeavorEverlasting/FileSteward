@@ -2,14 +2,18 @@
 
 Never reclassifies. Never parses free-form prose into authority/gate facts.
 Gate steps are projected only from structured fields and disposition invariants.
+
+Large receipts prefer persisted triage buckets (or prefix aggregation) so the
+presentation model does not expand hundreds of thousands of inventory rows.
 """
 
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any, Iterable, Mapping, Optional
 
 from filesteward.manifest import validate_run
 from filesteward.models import (
@@ -29,11 +33,24 @@ __all__ = ["build_presentation_model"]
 
 _NOT_PERSISTED = "UNKNOWN / NOT PERSISTED"
 _PROTECTION_RELATIONS = {"UNRELATED", "SELF", "DESCENDANT", "ANCESTOR"}
+#: Expand inventory rows into presentation nodes only at or below this count.
+_ROW_EXPAND_LIMIT = 5_000
+#: Cap aggregated HUMAN_REVIEW bucket nodes for offline HTML usability.
+_MAX_AGGREGATE_NODES = 200
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
     with path.open("r", encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle))
+
+
+def _count_csv_data_rows(path: Path) -> int:
+    """Count CSV data rows without materializing the full table."""
+
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        # Skip header when present.
+        next(handle, None)
+        return sum(1 for _ in handle)
 
 
 def _opt_int(raw: str | None) -> Optional[int]:
@@ -363,6 +380,104 @@ def _node_from_inventory(
     )
 
 
+def _bucket_node_id(prefix: str, depth: str) -> str:
+    digest = hashlib.sha256(f"{depth}\0{prefix}".encode("utf-8")).hexdigest()[:20]
+    return f"bucket-{digest}"
+
+
+def _parse_hint_tags(raw: str | None) -> tuple[str, ...]:
+    if not raw:
+        return ()
+    parts = [part.strip() for part in raw.replace("|", ",").split(",")]
+    return tuple(part for part in parts if part and part != "-")
+
+
+def _node_from_review_bucket(row: Mapping[str, str]) -> PresentationNode:
+    """Project a persisted triage bucket into a HUMAN_REVIEW presentation node."""
+
+    prefix = row.get("prefix") or ""
+    if not prefix:
+        raise ValueError("human-review bucket is missing prefix")
+    depth = row.get("depth") or ""
+    logical = _opt_int(row.get("logical_bytes_known"))
+    unknown = _opt_int(row.get("unknown_size_count")) or 0
+    item_count = _opt_int(row.get("item_count"))
+    completeness = (
+        ScanCompleteness.COMPLETE if unknown == 0 else ScanCompleteness.INCOMPLETE
+    )
+    hints = _parse_hint_tags(row.get("contract_hint_tags"))
+    disposition = CleanupDisposition.HUMAN_REVIEW
+    steps = _gate_steps_for(
+        disposition=disposition,
+        protection_relation="UNRELATED",
+        scan_completeness=completeness,
+        contract_summary=None,
+        plan_evidence=None,
+    )
+    reason = (
+        "Aggregated HUMAN_REVIEW bucket from persisted triage evidence. "
+        "Not a reclaim nomination and not an approved contract."
+    )
+    return PresentationNode(
+        node_id=_bucket_node_id(prefix, depth),
+        parent_id=None,
+        display_name=_display_name(prefix),
+        path=prefix,
+        entry_type="DIRECTORY",
+        logical_size_bytes=logical,
+        allocated_size_bytes=None,
+        projected_reclaim_bytes=None,
+        reclaim_basis=None,
+        projection_quality=None,
+        disposition=disposition,
+        authorization_state=AuthorizationState.UNAPPROVED,
+        scan_completeness=completeness,
+        protection_relation="UNRELATED",
+        reason=reason,
+        contract_summary=None,
+        contract_hint_tags=hints,
+        risk_if_acted_on=(
+            "Bucket remains UNAPPROVED. Operator contract selection is required "
+            "before any reclaim nomination."
+        ),
+        next_gate=_next_gate(steps, disposition),
+        trace_evidence_source="human-review-buckets.csv",
+        item_count=item_count,
+        gate_steps=steps,
+    )
+
+
+def _top_bucket_nodes(path: Path, *, limit: int) -> list[PresentationNode]:
+    rows = _read_csv(path)
+    ranked: list[tuple[int, int, Mapping[str, str]]] = []
+    for index, row in enumerate(rows):
+        logical = _opt_int(row.get("logical_bytes_known")) or 0
+        ranked.append((logical, index, row))
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+    return [_node_from_review_bucket(row) for _, _, row in ranked[:limit]]
+
+
+def _nodes_from_inventory_rows(
+    inventory: Iterable[Mapping[str, str]],
+    *,
+    plan_rows: Mapping[str, Mapping[str, str]],
+    review_rows: Mapping[str, Mapping[str, str]],
+    exclusion_rows: Mapping[str, Mapping[str, str]],
+) -> list[PresentationNode]:
+    nodes: list[PresentationNode] = []
+    for inv in inventory:
+        item_id = inv["item_id"]
+        nodes.append(
+            _node_from_inventory(
+                inv,
+                plan=plan_rows.get(item_id),
+                review=review_rows.get(item_id),
+                exclusion=exclusion_rows.get(item_id),
+            )
+        )
+    return nodes
+
+
 def _metrics_from_metadata(metadata: Mapping[str, Any]) -> ShellMetrics:
     observed = metadata.get("logical_bytes_observed")
     if observed is None:
@@ -393,7 +508,16 @@ def _metrics_from_metadata(metadata: Mapping[str, Any]) -> ShellMetrics:
 
 
 def build_presentation_model(run_dir: Path) -> PresentationModel:
-    """Load a validated run directory into an immutable presentation model."""
+    """Load a validated run directory into an immutable presentation model.
+
+    Call stack / scale policy:
+      validate_run (fail closed)
+        -> if inventory rows exceed expand limit and triage buckets exist:
+             project top aggregated HUMAN_REVIEW buckets only
+             (does not load human-review.csv / inventory into node expansion)
+        -> else expand inventory rows with joined structured evidence
+        -> largest-first default selection
+    """
 
     target = Path(run_dir)
     errors = validate_run(target)
@@ -403,29 +527,42 @@ def build_presentation_model(run_dir: Path) -> PresentationModel:
             + "; ".join(errors)
         )
 
-    inventory = _read_csv(target / "inventory.csv")
-    plan_rows = {row["item_id"]: row for row in _read_csv(target / "cleanup-plan.csv")}
-    review_rows = {
-        row["item_id"]: row for row in _read_csv(target / "human-review.csv")
-    }
-    exclusion_rows = {
-        row["item_id"]: row
-        for row in _read_csv(target / "protected-exclusions.csv")
-    }
+    inventory_path = target / "inventory.csv"
+    buckets_path = target / "human-review-buckets.csv"
     metadata = json.loads((target / "run.json").read_text(encoding="utf-8"))
     run_id = str(metadata.get("run_id") or target.name)
+    inventory_rows = _count_csv_data_rows(inventory_path)
 
-    nodes: list[PresentationNode] = []
-    for inv in inventory:
-        item_id = inv["item_id"]
-        nodes.append(
-            _node_from_inventory(
-                inv,
-                plan=plan_rows.get(item_id),
-                review=review_rows.get(item_id),
-                exclusion=exclusion_rows.get(item_id),
+    if inventory_rows > _ROW_EXPAND_LIMIT:
+        if not buckets_path.is_file():
+            raise ValueError(
+                "inventory exceeds presentation expand limit "
+                f"({inventory_rows} > {_ROW_EXPAND_LIMIT}); run "
+                "`filesteward plan` to persist human-review-buckets.csv "
+                "before visualize"
             )
+        nodes = _top_bucket_nodes(buckets_path, limit=_MAX_AGGREGATE_NODES)
+    else:
+        inventory = _read_csv(inventory_path)
+        plan_rows = {
+            row["item_id"]: row for row in _read_csv(target / "cleanup-plan.csv")
+        }
+        review_rows = {
+            row["item_id"]: row for row in _read_csv(target / "human-review.csv")
+        }
+        exclusion_rows = {
+            row["item_id"]: row
+            for row in _read_csv(target / "protected-exclusions.csv")
+        }
+        nodes = _nodes_from_inventory_rows(
+            inventory,
+            plan_rows=plan_rows,
+            review_rows=review_rows,
+            exclusion_rows=exclusion_rows,
         )
+
+    if not nodes:
+        raise ValueError("presentation model has no nodes")
 
     # Largest-first default selection among positive logical sizes.
     ordered = sorted(
