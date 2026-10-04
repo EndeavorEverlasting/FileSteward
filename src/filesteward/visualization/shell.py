@@ -19,6 +19,14 @@ from filesteward.visualization.contracts import (
     PresentationNode,
     TreemapRect,
 )
+from filesteward.visualization.cinematic import (
+    render_cinematic_css,
+    render_cinematic_script,
+    render_focus_chamber,
+    render_focus_templates,
+    render_sector_overview,
+    render_substrate_svg,
+)
 from filesteward.visualization.css import render_token_css
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.selection import SelectionController
