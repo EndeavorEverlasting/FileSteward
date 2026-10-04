@@ -286,10 +286,143 @@
       "interactive_browser_smoke": "PASS"
     },
     {
+      "lane_id": "V3-A",
+      "title": "Memory Atlas v3 design + version authority",
+      "dependencies": [],
+      "execution_environment": "CURRENT_CHAT_RUNTIME_PROVIDER_WRITE_PLUS_LOCAL_SUCCESSOR_VALIDATION",
+      "owned": [
+        "v3 design contract",
+        "prior-art expansion",
+        "product version authority and visual bump guard",
+        "active visualization plan"
+      ],
+      "forbidden": [
+        "runtime visual behavior mutation",
+        "private receipt commit",
+        "F7 contract choice",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "isolated versioning unit tests",
+        "dirty-worktree synthetic auto-bump proof",
+        "provider readback",
+        "successor FileSteward focused/full local suite"
+      ],
+      "status": "PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+      "proof_ceiling": "Design/version authority is provider-persisted. Isolated versioning proof is green; FileSteward repository-local suite is still required."
+    },
+    {
+      "lane_id": "V3-B",
+      "title": "Semantic camera and level-of-detail zoom",
+      "dependencies": [
+        "V3-A"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/camera.py",
+        "tests/test_visualization_camera.py",
+        "minimal non-colliding camera integration seam"
+      ],
+      "forbidden": [
+        "invent hierarchy",
+        "decision-signal ownership",
+        "shared shell redesign before convergence"
+      ],
+      "validation": [
+        "camera state transitions",
+        "home/back orthogonal-state invariants",
+        "micro-node fit semantics",
+        "reduced-motion state equivalence"
+      ],
+      "status": "READY_AFTER_V3_A_LOCAL_VALIDATION"
+    },
+    {
+      "lane_id": "V3-C",
+      "title": "Decision Signal projector",
+      "dependencies": [
+        "V3-A"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/signals.py",
+        "tests/test_visualization_signals.py",
+        "accessible signal projection contract"
+      ],
+      "forbidden": [
+        "mutate evidence or authorization",
+        "camera ownership",
+        "shared shell redesign before convergence"
+      ],
+      "validation": [
+        "gate-to-signal mapping",
+        "first-unresolved dominance",
+        "protected/unapproved no-inviting-glow rules",
+        "state not color-only"
+      ],
+      "status": "READY_AFTER_V3_A_LOCAL_VALIDATION"
+    },
+    {
+      "lane_id": "V3-D",
+      "title": "Cinematic scene + responsive cross-input convergence",
+      "dependencies": [
+        "V3-B",
+        "V3-C"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/cinematic.py",
+        "src/filesteward/visualization/shell.py",
+        "focused responsive/input acceptance tests"
+      ],
+      "forbidden": [
+        "second mobile state machine",
+        "hover-only capability",
+        "precision micro-target requirement",
+        "F7 contract choice"
+      ],
+      "validation": [
+        "1440 desktop",
+        "constrained laptop overflow regression",
+        "390px phone emulation",
+        "pointer/keyboard/touch semantic convergence",
+        "Home/Escape recovery",
+        "reduced motion"
+      ],
+      "status": "WAITING_ON_V3_B_V3_C"
+    },
+    {
+      "lane_id": "V3-E",
+      "title": "Private exact-head live convergence and operator acceptance",
+      "dependencies": [
+        "V3-D"
+      ],
+      "execution_environment": "OPERATOR_WORKSTATION_PRIVATE_RUNTIME",
+      "owned": [
+        "ignored local generated report",
+        "private browser/device evidence"
+      ],
+      "forbidden": [
+        "commit private paths/data",
+        "merge before operator acceptance",
+        "F7 contract choice",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "focused and full repository suite",
+        "version guard",
+        "private validate",
+        "zero source mutation",
+        "desktop/laptop/phone/reduced-motion browser proof",
+        "operator spatial/aesthetic acceptance"
+      ],
+      "status": "WAITING_ON_V3_D"
+    },
+    {
       "lane_id": "F7",
       "title": "Contract-selection UX",
       "dependencies": [
-        "F6"
+        "F6",
+        "V3-E"
       ],
       "execution_environment": "SUCCESSOR_PRODUCT_LANE",
       "owned": [
@@ -372,8 +505,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / F7 operator contract decisions",
-    "first_action": "Operator must approve or reject exact regenerable-prefix candidates for durable --contract selection; do not invent contracts, do not apply/quarantine/delete."
+    "prompt": "P07 / Memory Atlas v3 implementation",
+    "first_action": "Run FileSteward-local validation for V3-A, then implement V3-B semantic camera and V3-C Decision Signal as isolated non-colliding lanes; do not enter F7 or merge PR #15."
   },
   "p100_incidents": [
     {
@@ -386,5 +519,25 @@
       "repair_pr": 10,
       "repair_integrated_main": "78eabf37991d93a8f6259db3bf7ad5a2d06746df"
     }
-  ]
+  ],
+  "memory_atlas_v3": {
+    "status": "V3_A_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+    "operator_disposition": "V2_TECHNICALLY_PROVEN_AESTHETIC_ACCEPTANCE_NOT_GRANTED",
+    "canonical_design": "docs/program/storage-reclaim-memory-atlas-v3.md",
+    "baseline_live_head": "900caccda01931f8ce04f879856f57ac12ec008c",
+    "baseline_private_run": "phase5-cdrive-readonly-001",
+    "version_authority": "pyproject.toml:[project].version",
+    "current_product_version": "0.1.0",
+    "first_runtime_v3_bump": "visual-feature -> 0.2.0",
+    "cross_input_owner": "P129",
+    "requested_alias": "P1009",
+    "alias_resolution": "P1009 absent from current Prompt Kit catalog; P129 is canonical semantic owner",
+    "forbidden": [
+      "invent filesystem hierarchy",
+      "commit private receipt contents",
+      "F7 contract choice before v3 live acceptance",
+      "apply/quarantine/delete",
+      "merge PR #15 as final visual result before v3 operator acceptance"
+    ]
+  }
 }

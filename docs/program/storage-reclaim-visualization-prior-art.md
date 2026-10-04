@@ -149,3 +149,30 @@ The external ecosystem already supplies mature storage-visualization patterns. T
 - UMD HCIL Treemap project/history: https://www.cs.umd.edu/projects/hcil/treemap/
 
 These anchors are research provenance only. No third-party assets or source are vendored by this sprint.
+
+## 2026-10-04 Memory Atlas v3 prior-art expansion
+
+This pass follows P97's mechanism-first rule. References are used to extract mechanics; no visual asset, proprietary code, branding, or unsupported hierarchy is copied into FileSteward.
+
+| Reference | Evidence class | Relevant mechanism | FileSteward disposition |
+| --- | --- | --- | --- |
+| AYOCIN ATMOS / Obys — https://ayocin.com/ | operator-observed live reference + public design evidence | authored scale transitions, content-as-transition-medium, immersive scene composition, restrained chrome during focal moments | **ADAPT mechanics only** — forensic storage camera; no asset/code/style copying |
+| CSS Design Awards ATMOS listing | documented independent design evidence | animated/scroll/typographic presentation and high UI/UX/innovation evaluation | **REFERENCE EVIDENCE** only |
+| pbakaus/impeccable — https://github.com/pbakaus/impeccable | observed guidance, Apache-2.0 | one focal motion thesis, structural responsive design, desktop/mobile review, reduced-motion alternatives, durable design-context discipline | **ADOPT design discipline**; no vendoring required |
+| D3 zoomable treemap + d3-zoom | observed implementation/docs | geometry fit/reprojection, opacity continuity, pan/zoom across SVG/HTML/Canvas, pointer/touch | **ADAPT camera mechanics** only; reject D3 hierarchy semantics because FileSteward's evidence is flat |
+| MDN Web Animations / View Transition API | documented platform capability | browser-native animation and progressive same-document view transitions | **ADOPT baseline/progressive split** |
+
+### Gap decision
+
+The ecosystem already proves zoomable spatial continuity, authored scene transitions, browser animation primitives, and responsive/cross-input mechanics. The FileSteward-specific gap is their combination with:
+
+- flat evidence preservation;
+- explicit human decision gates;
+- no false reclaim authority;
+- progressive camera scale that makes micro sectors deliberately selectable;
+- semantic decision-signal glow;
+- desktop/laptop/phone interaction languages over one state model;
+- offline single-report operation with private receipt data local.
+
+That combination remains FileSteward-owned program design.
+
