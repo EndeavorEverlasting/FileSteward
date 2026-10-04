@@ -201,6 +201,9 @@ def render_substrate_svg() -> str:
 def render_cinematic_css() -> str:
     return r"""
 /* P95 + Impeccable cinematic Memory Atlas: presentation only. */
+.workspace[data-scene="overview"]{grid-template-columns:minmax(260px,320px) minmax(0,1fr);}
+.workspace[data-scene="overview"] .inspector-pane{display:none;}
+.workspace[data-scene="focus"]{grid-template-columns:minmax(240px,300px) minmax(0,1fr) minmax(320px,390px);}
 .map-pane{position:relative;}
 .storage-stage{position:relative;min-height:clamp(34rem,72vh,54rem);overflow:hidden;isolation:isolate;background:radial-gradient(110% 80% at 50% -10%,color-mix(in srgb,var(--fs-accent) 13%,transparent),transparent 58%),linear-gradient(180deg,color-mix(in srgb,var(--fs-bg-surface-2) 88%,#101c28 12%),var(--fs-bg-canvas));}
 .storage-stage::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.36;background-image:linear-gradient(color-mix(in srgb,var(--fs-border-subtle) 42%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--fs-border-subtle) 42%,transparent) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 88%);}
@@ -297,9 +300,10 @@ def render_cinematic_script() -> str:
 <script>
 (() => {
   const stage = document.getElementById('storage-stage');
+  const workspace = document.getElementById('workspace');
   const focusHost = document.getElementById('focus-host');
   const back = document.getElementById('scene-back');
-  if (!stage || !focusHost || !back) return;
+  if (!stage || !workspace || !focusHost || !back) return;
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   let focusedId = null;
@@ -377,6 +381,7 @@ def render_cinematic_script() -> str:
     syncFocus(id);
     animateGhost(source || overviewSector(id) || stage, focusHost, false);
     stage.dataset.scene = 'focus';
+    workspace.dataset.scene = 'focus';
     back.hidden = false;
     pulseSubstrate();
   };
@@ -386,6 +391,7 @@ def render_cinematic_script() -> str:
     const destination = focusedId ? overviewSector(focusedId) : null;
     animateGhost(destination || stage, focusHost, true);
     stage.dataset.scene = 'overview';
+    workspace.dataset.scene = 'overview';
     back.hidden = true;
     pulseSubstrate();
     if (destination) {
