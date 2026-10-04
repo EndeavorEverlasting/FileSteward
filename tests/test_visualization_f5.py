@@ -216,6 +216,34 @@ def test_state_not_color_only_and_first_unresolved_gate_dominant() -> None:
     assert "state state-state-review" in html or 'state-state-review"' in html
 
 
+def test_live_selection_salience_keeps_micro_bucket_and_next_gate_obvious() -> None:
+    model = _model()
+    rects = (
+        TreemapRect(node_id="review", x=0, y=0, width=95, height=100),
+        TreemapRect(node_id="reclaim", x=95, y=0, width=5, height=3),
+    )
+    html = render_report_shell(model, rects=rects, selected_id="reclaim")
+
+    assert 'id="selection-summary"' in html
+    assert 'data-selection-summary-for="reclaim"' in html
+    assert "Run baseline free space" in html
+    assert "run <span class="mono">synthetic-f5</span>" in html
+    assert 'class="map-node selected micro ' in html
+    assert "map-size" in html
+    assert ".map-wrap.selection-active .map-node:not(.selected)" in html
+    assert ".map-node.selected.micro::after" in html
+    assert "scrollIntoView({ block: 'nearest' })" in html
+    assert "Next gate" in html
+
+    # Terminal decision context must precede explanatory evidence in the inspector.
+    assert html.index('class="card decision-trace"') < html.index(
+        'class="card evidence"'
+    )
+    assert html.index('class="card next-action"') < html.index(
+        'class="card evidence"'
+    )
+
+
 def test_forced_colors_and_high_contrast_hooks() -> None:
     css = render_token_css()
     html = render_report_html(_model())
