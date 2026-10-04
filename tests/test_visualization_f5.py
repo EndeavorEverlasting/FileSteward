@@ -227,7 +227,7 @@ def test_live_selection_salience_keeps_micro_bucket_and_next_gate_obvious() -> N
     assert 'id="selection-summary"' in html
     assert 'data-selection-summary-for="reclaim"' in html
     assert "Run baseline free space" in html
-    assert "run <span class="mono">synthetic-f5</span>" in html
+    assert 'run <span class="mono">synthetic-f5</span>' in html
     assert 'class="map-node selected micro ' in html
     assert "map-size" in html
     assert ".map-wrap.selection-active .map-node:not(.selected)" in html
