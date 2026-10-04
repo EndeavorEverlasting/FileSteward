@@ -121,6 +121,12 @@ def render_report_html(
         if (inspector) {{
           inspector.innerHTML = '<p class="empty">No items match these filters.</p>';
         }}
+        const summary = document.getElementById('selection-summary');
+        if (summary) {{
+          summary.innerHTML = '<span class="selection-empty">No items match these filters.</span>';
+        }}
+        const mapWrap = document.querySelector('.map-wrap');
+        if (mapWrap) mapWrap.classList.remove('selection-active');
       }}
     }}
   }};
