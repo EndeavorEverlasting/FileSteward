@@ -278,7 +278,12 @@
         "acceptable memory/runtime",
         "zero source mutation"
       ],
-      "status": "READY_PRIVACY_GATED"
+      "status": "PROVEN_LOCAL_PRIVATE",
+      "privacy_authorization": "EXPLICIT_OPERATOR_GRANTED",
+      "run_identity": "phase5-cdrive-readonly-001",
+      "scale_repair_pr": 13,
+      "proof_ceiling": "Local private live certification proved receipt validation, aggregated real-scale visualization, zero source mutation, accepted runtime, and interactive browser smoke. Private paths/rows/report contents remain ignored/local and uncommitted. No contract, approval, apply, quarantine, or deletion was authorized or performed.",
+      "interactive_browser_smoke": "PASS"
     },
     {
       "lane_id": "F7",
@@ -367,8 +372,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / F6 privacy gate",
-    "first_action": "Do not enter F6 real-receipt visualization without explicit operator privacy authorization; optional interactive browser smoke for F5 remains supplemental only."
+    "prompt": "P07 / F7 operator contract decisions",
+    "first_action": "Operator must approve or reject exact regenerable-prefix candidates for durable --contract selection; do not invent contracts, do not apply/quarantine/delete."
   },
   "p100_incidents": [
     {

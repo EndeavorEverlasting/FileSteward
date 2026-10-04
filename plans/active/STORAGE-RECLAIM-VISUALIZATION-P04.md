@@ -287,7 +287,7 @@ Minimum product acceptance:
 | Treemap engine | F3 | REQUIRED SUCCESSOR WORK | deterministic implementation |
 | Offline report generator | F4 | REQUIRED SUCCESSOR WORK | integrate F1/F2/F3 |
 | Accessibility/polish | F5 | PROVEN / INTEGRATED | keyboard/1024/forced-colors/hostile-text fixtures on main |
-| Real receipt visualization | F6 | READY / PRIVACY-GATED | explicit operator privacy authorization |
+| Real receipt visualization | F6 | PROVEN_LOCAL_PRIVATE | ignored local report only; private evidence uncommitted |
 | Contract selection | F7 | REQUIRED SUCCESSOR WORK | operator UX + durable contract |
 | Approval UX | F8 | REQUIRED SUCCESSOR WORK | exact manifest-bound approval |
 | Apply/quarantine | F9 | REQUIRED SUCCESSOR WORK | separately authorized mutation |
@@ -295,6 +295,6 @@ Minimum product acceptance:
 
 ## 9. Next implementation command
 
-F0–F5 are on repaired main (PR #10 provider-adjudicated; PR #11 F5 accessibility/adversarial polish integrated). Offline HTML fixtures cover keyboard handlers/labels, 1024/zoom-safe CSS, forced-colors, first-unresolved-gate dominance markup, and hostile-text escaping; interactive browser smoke remains optional supplemental evidence. F6 is the next slice and still requires explicit operator privacy authorization.
+F0–F6 are closed on repaired main. F5 accessibility/adversarial polish integrated via PR #11. F6 private live certification executed under explicit operator privacy authorization against the canonical ignored Phase-5 receipt identity `phase5-cdrive-readonly-001`: validate passed, scale visualization generated via triage-bucket aggregation (PR #13), zero-source-mutation proved, runtime accepted, and interactive browser smoke passed against the local report. Private runtime evidence remains ignored/local and was not committed. F7 operator contract selection is now the first unproven gate; Cursor must not invent `--contract` values.
 
 Do not reopen P95/P97/F0–F4 visual-language or architecture decisions unless new evidence falsifies them.
