@@ -14,7 +14,7 @@
 | V3-E | WAITING ON V3-D | exact-head private report regeneration and operator live acceptance | V3-D | ignored local runtime proof only |
 | F7 | REQUIRED SUCCESSOR WORK | contract-selection UX | V3-E | separate operator decision lane |
 
-Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.\n\nIsolated prototype proof: P130 versioning 5/5 tests + dirty-worktree 0.1.0→0.2.0 auto-bump/guard; V3-B/V3-C pure seams 8/8 tests. Provider commits: P130 `48643a9`, v3 plan `0c38576`, camera/signal prototypes + version `a64cf5d`. FileSteward-local focused/full validation remains required before shared-scene convergence.
+Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.\n\nIsolated prototype proof: P130 versioning 5/5 tests + dirty-worktree 0.1.0→0.2.0 auto-bump/guard; V3-B/V3-C pure seams 9/9 tests. Provider commits: P130 `48643a9`, v3 plan `0c38576`, camera/signal prototypes + version `a64cf5d`. A target-floor correction then aligned camera direct-target semantics with the existing FileSteward 40px minimum / 44px preferred token contract. FileSteward-local focused/full validation remains required before shared-scene convergence.
 
 
 **Status:** ACTIVE / FACTORED / IMPLEMENTATION-READY AFTER P04 MERGE  

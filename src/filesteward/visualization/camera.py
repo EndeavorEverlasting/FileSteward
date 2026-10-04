@@ -11,6 +11,7 @@ from enum import Enum
 from typing import Protocol
 
 __all__ = [
+    "DIRECT_TARGET_MIN_PX",
     "AtlasCamera",
     "CameraLevel",
     "CameraState",
@@ -19,6 +20,9 @@ __all__ = [
     "is_direct_target",
     "target_size_px",
 ]
+
+
+DIRECT_TARGET_MIN_PX = 40.0
 
 
 class _Rect(Protocol):
@@ -179,11 +183,12 @@ def is_direct_target(
     *,
     viewport_width_px: float,
     viewport_height_px: float,
-    min_target_px: float = 24.0,
+    min_target_px: float = DIRECT_TARGET_MIN_PX,
 ) -> bool:
     """Whether a sector is large enough for direct pointer/touch targeting.
 
-    The 24 CSS-pixel floor aligns with WCAG 2.2 target-size guidance. Small
+    WCAG 2.2 establishes a 24 CSS-pixel external floor, while FileSteward's
+    visual-system contract deliberately uses a stronger 40px minimum. Small
     sectors remain valid evidence; they must be reached through an equivalent
     reliable control and camera-fit path instead of precision clicking.
     """

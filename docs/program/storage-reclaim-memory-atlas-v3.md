@@ -113,13 +113,13 @@ This converts “dartboard selection” into deterministic spatial navigation.
 
 The micro-sector rule is also an accessibility contract:
 
-- a spatial sector intended as a direct pointer/touch control should meet a 24×24 CSS-pixel target floor;
+- WCAG 2.2 supplies a 24×24 CSS-pixel external floor, but FileSteward's existing visual-token contract is intentionally stronger: 40px minimum / 44px preferred for direct pointer targets;
 - if the treemap geometry cannot honestly provide that size, an equivalent reliable control (navigator/search/keyboard result) must select the same node and expose `atlas.fit_selected`;
 - camera zoom must not turn a visual context rectangle into a fake larger evidence object; only the view transform changes;
 - responsive drawers/sheets/sticky chrome must not completely obscure the currently focused control;
 - focus visibility, state text, and equivalent controls remain available under reduced motion and forced colors.
 
-Reference: WCAG 2.2 SC 2.5.8 Target Size (Minimum) and SC 2.4.11 Focus Not Obscured (Minimum).
+Reference: WCAG 2.2 SC 2.5.8 Target Size (Minimum) and SC 2.4.11 Focus Not Obscured (Minimum). FileSteward's 40/44px product floor remains authoritative where it is stronger.
 
 ## 5. Canonical semantic actions
 

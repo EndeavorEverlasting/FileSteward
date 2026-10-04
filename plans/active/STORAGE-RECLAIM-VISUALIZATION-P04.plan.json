@@ -336,7 +336,7 @@
       ],
       "status": "PROTOTYPE_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
       "provider_commit": "a64cf5d866a962922a68de3d1a81f2ef95769f2e",
-      "isolated_proof": "4 camera prototype tests passed"
+      "isolated_proof": "5 camera prototype tests passed; direct-target default aligned to FileSteward 40px product floor"
     },
     {
       "lane_id": "V3-C",
@@ -551,8 +551,23 @@
     "isolated_proof": {
       "versioning_tests": "5 passed",
       "dirty_worktree_auto_bump": "0.1.0 -> 0.2.0; guard PASS",
-      "camera_signal_tests": "8 passed",
+      "camera_signal_tests": "9 passed",
       "proof_ceiling": "isolated prototype only; FileSteward-local test suite/browser wiring unproven"
-    }
+    },
+    "direct_target_contract": {
+      "wcag_external_floor_px": 24,
+      "filesteward_min_px": 40,
+      "filesteward_preferred_px": 44,
+      "owner": "docs/program/storage-reclaim-visual-system.tokens.json"
+    },
+    "execution_boundaries": [
+      {
+        "boundary_id": "V3-A-PLAN-JSON-LITERAL-NEWLINE-20261004",
+        "impact": "machine-readable active plan could not be parsed after a provider update",
+        "proved": "stored plan ended with a literal \\\\n token after the closing JSON object at 8ea3b71491b7982f7fcb809805161afb9eff6ef1",
+        "recovery": "remove the literal trailing token, serialize valid JSON, and read back parseability before further plan mutation",
+        "state": "REPAIRED_IN_THIS_COMMIT"
+      }
+    ]
   }
-}\n
+}

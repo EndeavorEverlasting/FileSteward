@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from filesteward.visualization.camera import (
     AtlasCamera,
+    DIRECT_TARGET_MIN_PX,
     CameraLevel,
     fit_rect_transform,
     is_direct_target,
@@ -63,3 +64,11 @@ def test_fit_transform_centers_selected_geometry() -> None:
     )
     assert center_x == 50
     assert center_y == 50
+
+def test_filesteward_direct_target_floor_is_stronger_than_wcag_minimum() -> None:
+    assert DIRECT_TARGET_MIN_PX == 40.0
+    rect = Rect("near-threshold", 0, 0, 3.0, 4.0)
+    assert not is_direct_target(
+        rect, viewport_width_px=1000, viewport_height_px=1000
+    )
+
