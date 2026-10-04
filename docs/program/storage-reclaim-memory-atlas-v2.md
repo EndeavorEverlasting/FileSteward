@@ -1,7 +1,7 @@
 # FileSteward Memory Atlas — cinematic visualization v2
 
-**Status:** P95 program-design replacement + P97/Impeccable implementation slice  
-**Branch:** `design/p95-p97-live-selection-salience-20261004`  
+**Status:** P95 program-design replacement + P97/Impeccable implementation slice
+**Branch:** `design/p95-p97-live-selection-salience-20261004`
 **Safety inheritance:** all FileSteward evidence / authorization / no-mutation invariants remain binding.
 
 ## Why v1 was falsified
