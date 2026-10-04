@@ -205,9 +205,11 @@ def render_substrate_svg() -> str:
 def render_cinematic_css() -> str:
     return r"""
 /* P95 + Impeccable cinematic Memory Atlas: presentation only. */
-.workspace[data-scene="overview"]{grid-template-columns:minmax(260px,320px) minmax(0,1fr);}
-.workspace[data-scene="overview"] .inspector-pane{display:none;}
+.workspace{transition:grid-template-columns 520ms cubic-bezier(.16,1,.3,1);}
+.workspace[data-scene="overview"]{grid-template-columns:minmax(260px,320px) minmax(0,1fr) 0;}
+.workspace[data-scene="overview"] .inspector-pane{opacity:0;pointer-events:none;overflow:hidden;border:0;}
 .workspace[data-scene="focus"]{grid-template-columns:minmax(240px,300px) minmax(0,1fr) minmax(320px,390px);}
+.workspace[data-scene="focus"] .inspector-pane{opacity:1;pointer-events:auto;transition:opacity 220ms ease-out 180ms;}
 .map-pane{position:relative;}
 .storage-stage{position:relative;min-height:clamp(34rem,72vh,54rem);overflow:hidden;isolation:isolate;background:radial-gradient(110% 80% at 50% -10%,color-mix(in srgb,var(--fs-accent) 13%,transparent),transparent 58%),linear-gradient(180deg,color-mix(in srgb,var(--fs-bg-surface-2) 88%,#101c28 12%),var(--fs-bg-canvas));}
 .storage-stage::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.36;background-image:linear-gradient(color-mix(in srgb,var(--fs-border-subtle) 42%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--fs-border-subtle) 42%,transparent) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 88%);}
@@ -269,8 +271,10 @@ def render_cinematic_css() -> str:
 .context-map-shell .map-node.selected{outline-width:3px;box-shadow:0 0 0 2px var(--fs-bg-canvas),0 0 0 4px var(--fs-accent);}
 .dive-ghost{position:fixed;z-index:9999;margin:0;pointer-events:none;border:2px solid var(--fs-accent);border-radius:5px;background:linear-gradient(145deg,var(--fs-bg-surface-3),var(--fs-bg-surface-1));box-shadow:0 24px 70px rgba(0,0,0,.35);will-change:left,top,width,height,opacity,transform;}
 @media (max-width:1179px){
+  .workspace[data-scene="overview"]{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
+  .workspace[data-scene="overview"] .inspector-pane{display:none;}
   .workspace[data-scene="focus"]{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
-  .workspace[data-scene="focus"] .inspector-pane{grid-column:1/-1;display:block;}
+  .workspace[data-scene="focus"] .inspector-pane{grid-column:1/-1;display:block;opacity:1;}
   .storage-stage{min-height:42rem;}
   .sector-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
   .sector-major{grid-column:span 2;}
@@ -279,9 +283,9 @@ def render_cinematic_css() -> str:
   .focus-facts{grid-template-columns:repeat(3,minmax(0,1fr));}
 }
 @media (max-width:799px){
-  .workspace[data-scene="overview"],.workspace[data-scene="focus"]{grid-template-columns:1fr;}
+  .workspace[data-scene="overview"],.workspace[data-scene="focus"]{grid-template-columns:1fr;transition:none;}
   .workspace[data-scene="overview"] .inspector-pane{display:none;}
-  .workspace[data-scene="focus"] .inspector-pane{grid-column:auto;}
+  .workspace[data-scene="focus"] .inspector-pane{grid-column:auto;display:block;opacity:1;}
   .storage-stage{min-height:48rem;}
   .sector-overview,.focus-layer{padding:var(--fs-space-3);}
   .sector-grid{grid-template-columns:1fr 1fr;}
@@ -341,15 +345,11 @@ def render_cinematic_script() -> str:
     window.setTimeout(() => stage.classList.remove('diving'), 680);
   };
 
-  const animateGhost = (source, destination, reverse = false) => {
-    if (reduced.matches || !source || !destination || !source.animate) return;
-    const a = source.getBoundingClientRect();
-    const b = destination.getBoundingClientRect();
+  const animateGhost = (from, to) => {
+    if (reduced.matches || !from || !to || !document.body.animate) return;
     const ghost = document.createElement('div');
     ghost.className = 'dive-ghost';
     document.body.appendChild(ghost);
-    const from = reverse ? b : a;
-    const to = reverse ? a : b;
     Object.assign(ghost.style, {
       left: from.left + 'px',
       top: from.top + 'px',
@@ -390,23 +390,31 @@ def render_cinematic_script() -> str:
     const template = focusTemplate(id);
     if (!template) return;
     syncFocus(id);
-    animateGhost(source || overviewSector(id) || stage, focusHost, false);
+    const origin = source || overviewSector(id) || stage;
+    const from = origin.getBoundingClientRect();
     stage.dataset.scene = 'focus';
     workspace.dataset.scene = 'focus';
     back.hidden = false;
     pulseSubstrate();
+    window.requestAnimationFrame(() => {
+      animateGhost(from, focusHost.getBoundingClientRect());
+    });
   };
 
   const exitFocus = () => {
     if (stage.dataset.scene !== 'focus') return;
     const destination = focusedId ? overviewSector(focusedId) : null;
-    animateGhost(destination || stage, focusHost, true);
+    const from = focusHost.getBoundingClientRect();
     stage.dataset.scene = 'overview';
     workspace.dataset.scene = 'overview';
     back.hidden = true;
     pulseSubstrate();
+    window.requestAnimationFrame(() => {
+      const target = destination || stage;
+      animateGhost(from, target.getBoundingClientRect());
+    });
     if (destination) {
-      window.setTimeout(() => destination.focus(), reduced.matches ? 0 : 300);
+      window.setTimeout(() => destination.focus(), reduced.matches ? 0 : 560);
     }
   };
 
