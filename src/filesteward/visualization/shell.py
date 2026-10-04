@@ -406,6 +406,9 @@ def _selection_script() -> str:
       (el) => el.getAttribute('data-node-id') === id
     );
     if (navRow) navRow.scrollIntoView({ block: 'nearest' });
+    document.dispatchEvent(
+      new CustomEvent('filesteward:selection', { detail: { id } })
+    );
   };
   const visibleNavRows = () => Array.from(document.querySelectorAll('.nav-row:not([hidden])'));
   const moveNav = (delta, edge) => {
