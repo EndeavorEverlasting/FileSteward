@@ -406,3 +406,6 @@ The product itself teaches the stable workflow through a compact **Decision Comp
 It is a projection of existing camera/gate/authorization state, not a tour overlay and not a second
 decision engine.
 
+## 16. Successor: Memory Atlas v4 Decision Chamber
+
+The next product generation is tracked in `docs/program/storage-reclaim-decision-chamber-v4.md`. It turns the decision trace from explanatory chrome into the actual interactive scene while preserving the evidence/authorization separation established here. V3 remains the camera/experience substrate; V4 owns decision-session, approval, warm-material theme, and truthful staged-quarantine transitions.

@@ -477,6 +477,110 @@
       "status": "WAITING_ON_V3_R1_LOCAL_VALIDATION"
     },
     {
+      "lane_id": "V4-A",
+      "title": "Decision session + approval schema",
+      "dependencies": [
+        "V3-R1"
+      ],
+      "execution_environment": "CURRENT_CHAT_PROVIDER_WRITE_PLUS_LOCAL_VALIDATION",
+      "owned": [
+        "src/filesteward/visualization/decision_flow.py",
+        "src/filesteward/approval.py",
+        "focused synthetic tests",
+        "Decision Chamber design contract"
+      ],
+      "forbidden": [
+        "source-file mutation",
+        "manual disposition promotion",
+        "real operator approval",
+        "quarantine/delete execution"
+      ],
+      "validation": [
+        "decision flow unit tests",
+        "approval binding tests",
+        "local full suite"
+      ],
+      "status": "PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
+    },
+    {
+      "lane_id": "V4-B",
+      "title": "Warm material token system + P130 recurring bump repair",
+      "dependencies": [
+        "V4-A"
+      ],
+      "execution_environment": "CURRENT_CHAT_PROVIDER_WRITE_PLUS_LOCAL_VALIDATION",
+      "owned": [
+        "visual token authority",
+        "versioning automation",
+        "version tests"
+      ],
+      "forbidden": [
+        "blue/cyan dominant Atlas theme",
+        "one-off downstream theme override"
+      ],
+      "validation": [
+        "token contract tests",
+        "version subsequent-pass test",
+        "full suite",
+        "browser contrast/forced-colors"
+      ],
+      "status": "NEXT"
+    },
+    {
+      "lane_id": "V4-C",
+      "title": "Decision Chamber cinematic integration",
+      "dependencies": [
+        "V4-A",
+        "V4-B"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "state badge interaction",
+        "active gate scene",
+        "approval UI/receipt writer",
+        "staged quarantine cinematic",
+        "cross-input adapters"
+      ],
+      "forbidden": [
+        "local-agent product judgment",
+        "direct permanent delete",
+        "evidence promotion from operator click"
+      ],
+      "validation": [
+        "focused integration tests",
+        "full suite",
+        "desktop/laptop/phone/reduced-motion/forced-colors",
+        "private runtime self-falsification"
+      ],
+      "status": "WAITING_ON_V4_A_B"
+    },
+    {
+      "lane_id": "V4-D",
+      "title": "Private live decision journey",
+      "dependencies": [
+        "V4-C"
+      ],
+      "execution_environment": "OPERATOR_WORKSTATION_PRIVATE_RUNTIME",
+      "owned": [
+        "ignored runtime report",
+        "ignored approval/quarantine-stage receipts",
+        "browser proof"
+      ],
+      "forbidden": [
+        "commit private paths/receipts",
+        "permanent deletion",
+        "merge before operator acceptance"
+      ],
+      "validation": [
+        "UNKNOWN click -> gate",
+        "rescan/contract input journey",
+        "RECLAIM_PROVEN -> approval",
+        "approval receipt readback -> staged quarantine scene",
+        "operator acceptance"
+      ],
+      "status": "WAITING_ON_V4_C"
+    },
+    {
       "lane_id": "F7",
       "title": "Contract-selection UX",
       "dependencies": [
@@ -564,8 +668,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / P13 Memory Atlas v3 cinematic repair validation",
-    "first_action": "Fetch the provider-pushed repair head, run tests/test_visualization_v3_experience.py plus the focused/full suite and version guard, regenerate the private report, then perform V3-R2 screenshot/browser self-falsification. Do not ask the operator for another verdict unless those visual gates pass."
+    "prompt": "P07 / Memory Atlas v4 Decision Chamber mechanical integration",
+    "first_action": "Fetch exact PR head, run new decision-flow/approval prototype tests, then wire state badges -> active gate -> allowed intent -> approval receipt -> QUARANTINE STAGED scene exactly as docs/program/storage-reclaim-decision-chamber-v4.md specifies. No product or aesthetic judgment is delegated to the local agent."
   },
   "p100_incidents": [
     {
@@ -652,6 +756,68 @@
     "p13_prevention": {
       "owner": "tests/test_visualization_v3_experience.py + V3-R2 browser self-falsification",
       "operator_gate_rule": "do not ask operator for aesthetic acceptance when screenshots already contradict the design contract"
+    }
+  },
+  "memory_atlas_v4": {
+    "status": "P95_DECISION_CHAMBER_PROTOTYPES_PROVIDER_PUSHED_LOCAL_INTEGRATION_PENDING",
+    "canonical_design": "docs/program/storage-reclaim-decision-chamber-v4.md",
+    "target_product_version": "0.3.0",
+    "selected_state_precedent": {
+      "repository": "EndeavorEverlasting/web-excel-repair-triage",
+      "files": [
+        "docs/prompt-kit.js",
+        "docs/prompt-kit-polish.js",
+        "tests/test_prompt_kit_selected_prompt.py"
+      ],
+      "adaptation": "selectedNodeId + activeGateId + openDecisionScene; selected evidence persists while roving gate/open scene change"
+    },
+    "state_contract": {
+      "scenes": [
+        "MAP",
+        "FOCUS",
+        "GATE",
+        "APPROVAL",
+        "STAGED",
+        "CLOSED"
+      ],
+      "unknown_intents": [
+        "RESCAN",
+        "KEEP",
+        "REVIEW_LATER"
+      ],
+      "human_review_intents": [
+        "DECLARE_REGENERABLE_CONTRACT",
+        "KEEP",
+        "REVIEW_LATER"
+      ],
+      "reclaim_unapproved_intents": [
+        "APPROVE_QUARANTINE",
+        "KEEP",
+        "REVIEW_LATER"
+      ],
+      "staged_action": "QUARANTINE",
+      "permanent_delete": "NOT_IMPLEMENTED"
+    },
+    "approval_contract": {
+      "schema": "filesteward.approval/v1",
+      "binds": [
+        "run_id",
+        "cleanup_plan_sha256",
+        "approved_item_ids",
+        "action"
+      ],
+      "only_action": "QUARANTINE",
+      "storage": "ignored var/runs runtime only"
+    },
+    "p13_root_causes": [
+      "canonical visual tokens force blue/navy/cyan back into downstream scenes",
+      "inspection-only presentation leaves operator outside the actual decision transition",
+      "selected evidence, active gate, and open scene were not separately surfaced",
+      "trusted-click/operator judgment was requested before visual self-falsification"
+    ],
+    "previous_next_owner": {
+      "prompt": "P07 / P13 Memory Atlas v3 cinematic repair validation",
+      "first_action": "Fetch the provider-pushed repair head, run tests/test_visualization_v3_experience.py plus the focused/full suite and version guard, regenerate the private report, then perform V3-R2 screenshot/browser self-falsification. Do not ask the operator for another verdict unless those visual gates pass."
     }
   }
 }

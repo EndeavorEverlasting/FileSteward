@@ -1,0 +1,180 @@
+# Memory Atlas v4 — Decision Chamber
+
+**Status:** P95 PROGRAM DESIGN + P13 recurrence repair; pure workflow prototypes provider-pushed; local integration/validation pending.
+
+**Predecessor:** Memory Atlas v3 cinematic recovery on PR #15.
+
+## 1. Product decision
+
+The next experience is not another inspection dashboard. The operator must be able to click the visible evidence state and move through the actual decision gates.
+
+Canonical journey:
+
+```text
+MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED
+```
+
+Permanent deletion is **not** implemented by this program. The first approved action remains **quarantine**. The UI may describe the operator's intent as a delete candidate, but the truthful terminal scene is:
+
+> DELETE INTENT RECORDED -> APPROVED FOR ACTION -> QUARANTINE STAGED -> NO BYTES REMOVED YET
+
+That distinction is visible in the scene, not buried in documentation.
+
+## 2. UNKNOWN is interactive, not manually promotable
+
+The UNKNOWN badge becomes an action surface.
+
+Click/tap/keyboard activation opens the current decision scene for that exact node.
+
+UNKNOWN never offers approval. Its allowed operator intents are:
+
+- **RESCAN** — resolve incomplete observation;
+- **KEEP** — record an operator keep intent separately from evidence;
+- **REVIEW LATER**.
+
+A decision may produce new inputs or a fresh scan. Only deterministic re-evaluation may change `CleanupDisposition`.
+
+HUMAN_REVIEW similarly offers:
+
+- **DECLARE REGENERABLE CONTRACT**;
+- **KEEP**;
+- **REVIEW LATER**.
+
+The operator does not hand-edit `UNKNOWN -> RECLAIM_PROVEN`.
+
+## 3. Approval gate
+
+Only `RECLAIM_PROVEN + UNAPPROVED` enters APPROVAL.
+
+Approval is a separate artifact bound to:
+
+- exact run ID;
+- SHA-256 of exact `cleanup-plan.csv`;
+- exact approved item IDs;
+- action `QUARANTINE`;
+- authorization state `APPROVED_FOR_ACTION`.
+
+The approval artifact lives only beneath ignored runtime state. It is never inferred from a click highlight.
+
+After authoritative receipt readback, the scene may enter STAGED.
+
+## 4. Staged delete cinematic
+
+The operator's delete decision is made visible without pretending deletion occurred.
+
+Required transition:
+
+1. selected evidence block becomes the sole spatial subject;
+2. surrounding dashboard chrome recedes;
+3. the current gate line completes and collapses behind the subject;
+4. approval identity/digest flashes as a signed checkpoint;
+5. the selected block receives a warm copper cut/perimeter line;
+6. the block separates from the evidence field and moves into a visible **QUARANTINE RAIL**;
+7. the source location remains ghosted as `PENDING APPLY`;
+8. terminal copy reads **STAGED — NO BYTES REMOVED**.
+
+Do not animate the block vanishing. Vanishing would falsely imply deletion.
+
+## 5. Prompt Kit selected-state adaptation
+
+Prompt Kit's current selected-prompt implementation keeps selected, roving/focus, and open-detail identities separate and renders `data-selected`, `aria-selected`, a persistent selected highlight, and viewport centering.
+
+Decision Chamber adapts that mechanism:
+
+| Prompt Kit | FileSteward |
+| --- | --- |
+| `selectedPromptId` | `selectedNodeId` |
+| `rovingPromptId` | `activeGateId` |
+| `openPromptId` | `openDecisionScene` |
+| selected highlight survives focus | selected evidence remains visually anchored while the active gate moves |
+| center selected prompt | keep active gate/selected evidence inside the cinematic viewport |
+| `aria-selected` | `aria-selected` on evidence + `aria-current="step"` on gate |
+
+The UI must always answer **what object is selected, which gate is active, which scene is open, and what just changed**.
+
+## 6. Environment-as-tutorial
+
+No tour overlay.
+
+The scene teaches itself:
+
+- MAP — "find the pressure";
+- FOCUS — "this is the object under review";
+- GATE — "this exact question blocks progress";
+- RESOLVE — only valid operator choices are physically available;
+- APPROVAL — evidence is proven; mutation is still locked;
+- STAGED — approved action is queued for quarantine; nothing removed yet.
+
+Completed gates visibly cool/recede. The active gate is the only high-energy decision locus. The immediately previous gate retains a quieter "last completed" highlight so orientation survives the transition.
+
+## 7. P13 palette root-cause disposition
+
+The current token authority is the source of the repeated blue/cyan appearance. Downstream CSS polish cannot cure a blue canonical palette.
+
+Decision Chamber requires a warm material palette derived from the operator-supplied reference:
+
+- ivory / bone;
+- espresso / carbon-brown;
+- walnut / smoked wood;
+- copper / amber;
+- stone;
+- moss / forest.
+
+Dark navy, electric blue, and cyan are forbidden as dominant Atlas surfaces or primary interaction accents.
+
+Semantic state remains distinguishable by text/icon/shape as well as color.
+
+## 8. Local-agent no-judgment contract
+
+The local agent does **not** choose:
+
+- the state model;
+- allowed intents;
+- approval eligibility;
+- action type;
+- palette direction;
+- cinematic narrative;
+- tutorial strategy;
+- version target.
+
+Those are fixed here.
+
+Local agent work is mechanical integration:
+
+1. wire `decision_flow.py` into the existing selection/camera adapters;
+2. make state badges operable;
+3. render the current gate as the dominant scene;
+4. wire only the intents returned by `allowed_intents`;
+5. implement approval artifact persistence/readback under ignored `var/runs`;
+6. stage only `QUARANTINE`;
+7. implement the exact staged cinematic;
+8. apply the canonical warm token palette;
+9. bump candidate to **0.3.0** through P130;
+10. run the required repository/browser proof.
+
+## 9. Acceptance
+
+Deterministic:
+
+- UNKNOWN cannot request approval;
+- HUMAN_REVIEW cannot self-promote;
+- PROTECTED/KEEP cannot open delete approval;
+- only RECLAIM_PROVEN can accept APPROVED_FOR_ACTION;
+- approval is bound to exact run + cleanup-plan digest + item IDs;
+- STAGED always means QUARANTINE pending, never bytes removed;
+- selected / active gate / open scene remain separate state.
+
+Browser:
+
+- clicking UNKNOWN opens the actual first unresolved gate;
+- active gate is unmistakable and marked `aria-current="step"`;
+- previous gate remains visibly identifiable as last completed;
+- advancing a gate causes a spatial scene transition;
+- approval scene exposes exact scope before confirmation;
+- staged scene ends with `NO BYTES REMOVED`;
+- no blue/cyan dominant visual language remains;
+- mouse, keyboard, and touch use the same semantic intents.
+
+Proof ceiling:
+
+This design/prototype does not prove local persistence, approval receipt creation against a real private run, quarantine/apply behavior, deletion, reclaimed bytes, or operator live acceptance.
