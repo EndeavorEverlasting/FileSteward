@@ -126,3 +126,73 @@ def _rank_for(node: PresentationNode, nodes: Sequence[PresentationNode]) -> int:
         if candidate.node_id == node.node_id:
             return rank
     return 0
+
+
+def render_focus_chamber(
+    node: Optional[PresentationNode],
+    nodes: Sequence[PresentationNode],
+) -> str:
+    if node is None:
+        return '<div class="focus-empty">No sector selected.</div>'
+    rank = _rank_for(node, nodes)
+    tone = disposition_css_stem(node.disposition)
+    item_count = f"{node.item_count:,}" if node.item_count is not None else "?"
+    return f"""
+<article class="focus-chamber state-edge-{escape_attr(tone)}"
+         data-focus-node="{escape_attr(node.node_id)}">
+  <div class="focus-coordinate">
+    <span>STORAGE SECTOR</span>
+    <strong>S{rank:03d}</strong>
+  </div>
+  <div class="focus-identity">
+    <h3>{escape_text(node.display_name)}</h3>
+    <strong class="focus-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</strong>
+    <p class="focus-path mono">{escape_text(node.path)}</p>
+  </div>
+  <div class="focus-facts">
+    <span class="state state-{escape_attr(tone)}">{escape_text(_state_label(node))}</span>
+    <span>{escape_text(node.authorization_state.value.replace("_", " "))}</span>
+    <span>{escape_text(item_count)} items</span>
+  </div>
+  <div class="focus-gate">
+    <span>NEXT GATE</span>
+    <strong>{escape_text(node.next_gate)}</strong>
+  </div>
+  <div class="focus-caption">
+    Read-only evidence chamber · size is magnitude, never permission
+  </div>
+</article>
+"""
+
+
+def render_focus_templates(nodes: Sequence[PresentationNode]) -> str:
+    return "".join(
+        f'<template data-focus-for="{escape_attr(node.node_id)}">'
+        f"{render_focus_chamber(node, nodes)}"
+        "</template>"
+        for node in nodes
+    )
+
+
+def render_substrate_svg() -> str:
+    """Decorative hardware/substrate trace field. It carries no data meaning."""
+
+    return """
+<svg class="storage-substrate" viewBox="0 0 1200 700"
+     preserveAspectRatio="none" aria-hidden="true">
+  <g class="substrate-gridlines">
+    <path d="M40 90H310L360 140H690L740 90H1160"/>
+    <path d="M0 250H220L280 310H520L590 240H930L1010 320H1200"/>
+    <path d="M70 610H330L400 540H760L830 610H1130"/>
+    <path d="M180 0V100L240 160V410L180 470V700"/>
+    <path d="M1010 0V130L950 190V490L1010 550V700"/>
+    <path d="M570 0V90L620 140V560L570 610V700"/>
+  </g>
+  <g class="substrate-nodes">
+    <circle cx="360" cy="140" r="4"/><circle cx="740" cy="90" r="4"/>
+    <circle cx="280" cy="310" r="4"/><circle cx="590" cy="240" r="4"/>
+    <circle cx="1010" cy="320" r="4"/><circle cx="400" cy="540" r="4"/>
+    <circle cx="830" cy="610" r="4"/><circle cx="620" cy="140" r="4"/>
+  </g>
+</svg>
+"""
