@@ -160,7 +160,7 @@ This pass follows P97's mechanism-first rule. References are used to extract mec
 | CSS Design Awards ATMOS listing | documented independent design evidence | animated/scroll/typographic presentation and high UI/UX/innovation evaluation | **REFERENCE EVIDENCE** only |
 | pbakaus/impeccable — https://github.com/pbakaus/impeccable | observed guidance, Apache-2.0 | one focal motion thesis, structural responsive design, desktop/mobile review, reduced-motion alternatives, durable design-context discipline | **ADOPT design discipline**; no vendoring required |
 | D3 zoomable treemap + d3-zoom | observed implementation/docs | geometry fit/reprojection, opacity continuity, pan/zoom across SVG/HTML/Canvas, pointer/touch | **ADAPT camera mechanics** only; reject D3 hierarchy semantics because FileSteward's evidence is flat |
-| MDN Web Animations / View Transition API | documented platform capability | browser-native animation and progressive same-document view transitions | **ADOPT baseline/progressive split** |
+| MDN Web Animations / View Transition API | documented platform capability | browser-native animation and progressive same-document view transitions | **ADOPT baseline/progressive split** |\n| W3C WCAG 2.2 target/focus criteria | normative accessibility standard | 24×24 CSS-pixel target floor with equivalent-control exception; focused controls must not be completely obscured | **ADOPT acceptance floor** — micro treemap geometry uses search/navigator + camera fit rather than precision targeting |
 
 ### Gap decision
 

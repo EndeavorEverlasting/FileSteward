@@ -8,13 +8,13 @@
 | Lane | State | Mission | Dependency | Owned surface |
 | --- | --- | --- | --- | --- |
 | V3-A | PROVIDER-PUSHED / LOCAL REPO-WIDE VALIDATION PENDING | durable v3 design + P97 expansion + P130 version authority | none | design/prior-art/versioning/plan |
-| V3-B | READY AFTER V3-A LOCAL VALIDATION | semantic camera + level-of-detail zoom | V3-A | new `camera.py` seam + focused tests |
-| V3-C | READY AFTER V3-A LOCAL VALIDATION | Decision Signal projector + semantic glow | V3-A | new `signals.py` seam + focused tests |
-| V3-D | WAITING ON V3-B/V3-C | scene composition, responsive layout, P129 mouse/keyboard/phone convergence | V3-B, V3-C | cinematic/shell + acceptance tests |
+| V3-B | PROTOTYPE PROVIDER-PUSHED / LOCAL REPO VALIDATION PENDING | semantic camera + level-of-detail zoom | V3-A | `camera.py` + focused tests |
+| V3-C | PROTOTYPE PROVIDER-PUSHED / LOCAL REPO VALIDATION PENDING | Decision Signal projector + semantic glow | V3-A | `signals.py` + focused tests |
+| V3-D | READY AFTER V3-A/B/C LOCAL VALIDATION | scene composition, responsive layout, P129 mouse/keyboard/phone convergence | V3-B, V3-C | cinematic/shell + acceptance tests |
 | V3-E | WAITING ON V3-D | exact-head private report regeneration and operator live acceptance | V3-D | ignored local runtime proof only |
 | F7 | REQUIRED SUCCESSOR WORK | contract-selection UX | V3-E | separate operator decision lane |
 
-Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.
+Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.\n\nIsolated prototype proof: P130 versioning 5/5 tests + dirty-worktree 0.1.0→0.2.0 auto-bump/guard; V3-B/V3-C pure seams 8/8 tests. Provider commits: P130 `48643a9`, v3 plan `0c38576`, camera/signal prototypes + version `a64cf5d`. FileSteward-local focused/full validation remains required before shared-scene convergence.
 
 
 **Status:** ACTIVE / FACTORED / IMPLEMENTATION-READY AFTER P04 MERGE  

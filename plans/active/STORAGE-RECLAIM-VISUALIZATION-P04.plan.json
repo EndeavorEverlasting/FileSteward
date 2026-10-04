@@ -334,7 +334,9 @@
         "micro-node fit semantics",
         "reduced-motion state equivalence"
       ],
-      "status": "READY_AFTER_V3_A_LOCAL_VALIDATION"
+      "status": "PROTOTYPE_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+      "provider_commit": "a64cf5d866a962922a68de3d1a81f2ef95769f2e",
+      "isolated_proof": "4 camera prototype tests passed"
     },
     {
       "lane_id": "V3-C",
@@ -359,7 +361,9 @@
         "protected/unapproved no-inviting-glow rules",
         "state not color-only"
       ],
-      "status": "READY_AFTER_V3_A_LOCAL_VALIDATION"
+      "status": "PROTOTYPE_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+      "provider_commit": "a64cf5d866a962922a68de3d1a81f2ef95769f2e",
+      "isolated_proof": "4 Decision Signal prototype tests passed"
     },
     {
       "lane_id": "V3-D",
@@ -388,7 +392,7 @@
         "Home/Escape recovery",
         "reduced motion"
       ],
-      "status": "WAITING_ON_V3_B_V3_C"
+      "status": "READY_AFTER_V3_A_B_C_LOCAL_VALIDATION"
     },
     {
       "lane_id": "V3-E",
@@ -505,8 +509,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / Memory Atlas v3 implementation",
-    "first_action": "Run FileSteward-local validation for V3-A, then implement V3-B semantic camera and V3-C Decision Signal as isolated non-colliding lanes; do not enter F7 or merge PR #15."
+    "prompt": "P07 / Memory Atlas v3 shared-scene convergence",
+    "first_action": "On the canonical FileSteward workstation, fetch PR #15 exact head, run tests/test_versioning.py + tests/test_visualization_camera.py + tests/test_visualization_signals.py and the full suite plus version guard; if green, implement V3-D cinematic/shell responsive cross-input convergence without entering F7 or merging before operator acceptance."
   },
   "p100_incidents": [
     {
@@ -521,13 +525,13 @@
     }
   ],
   "memory_atlas_v3": {
-    "status": "V3_A_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
+    "status": "V3_B_C_PROTOTYPES_PROVIDER_PUSHED_LOCAL_REPO_VALIDATION_PENDING",
     "operator_disposition": "V2_TECHNICALLY_PROVEN_AESTHETIC_ACCEPTANCE_NOT_GRANTED",
     "canonical_design": "docs/program/storage-reclaim-memory-atlas-v3.md",
     "baseline_live_head": "900caccda01931f8ce04f879856f57ac12ec008c",
     "baseline_private_run": "phase5-cdrive-readonly-001",
     "version_authority": "pyproject.toml:[project].version",
-    "current_product_version": "0.1.0",
+    "current_product_version": "0.2.0",
     "first_runtime_v3_bump": "visual-feature -> 0.2.0",
     "cross_input_owner": "P129",
     "requested_alias": "P1009",
@@ -538,6 +542,17 @@
       "F7 contract choice before v3 live acceptance",
       "apply/quarantine/delete",
       "merge PR #15 as final visual result before v3 operator acceptance"
-    ]
+    ],
+    "provider_commits": {
+      "version_authority": "48643a9211668263cce7aabfcbf31b232c4c3f97",
+      "v3_design": "0c385765e9874a80f9783205d7de7f6432a66556",
+      "camera_signals": "a64cf5d866a962922a68de3d1a81f2ef95769f2e"
+    },
+    "isolated_proof": {
+      "versioning_tests": "5 passed",
+      "dirty_worktree_auto_bump": "0.1.0 -> 0.2.0; guard PASS",
+      "camera_signal_tests": "8 passed",
+      "proof_ceiling": "isolated prototype only; FileSteward-local test suite/browser wiring unproven"
+    }
   }
-}
+}\n
