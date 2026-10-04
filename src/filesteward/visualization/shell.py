@@ -502,6 +502,7 @@ def render_report_shell(
 </style>
 </head>
 <body>
+<a class="skip-link" href="#storage-stage">Skip to storage atlas</a>
 <a class="skip-link" href="#inspector-body">Skip to decision inspector</a>
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
@@ -522,7 +523,7 @@ def render_report_shell(
     </section>
     <section class="pane map-pane" aria-label="Storage map">
       <div class="pane-head"><h2>Storage atlas</h2></div>
-      <div class="storage-stage" id="storage-stage" data-scene="overview">
+      <div class="storage-stage" id="storage-stage" data-scene="overview" tabindex="-1">
         {render_substrate_svg()}
         {render_sector_overview(model.nodes, current_id)}
         <section class="focus-layer" aria-label="Focused storage sector">
@@ -532,7 +533,7 @@ def render_report_shell(
           </div>
           <div class="focus-host" id="focus-host">{render_focus_chamber(selected, model.nodes)}</div>
           <div class="context-map-shell">
-            <span class="context-map-label">FULL-RUN CONTEXT · 200 EVIDENCE GROUPS</span>
+            <span class="context-map-label">FULL-RUN CONTEXT · {len(model.nodes):,} EVIDENCE GROUPS</span>
             <div class="map-wrap selection-active" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
           </div>
         </section>
