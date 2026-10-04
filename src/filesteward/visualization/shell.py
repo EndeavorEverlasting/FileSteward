@@ -387,6 +387,17 @@ def _selection_script() -> str:
     const inspector = document.getElementById('inspector-body');
     const source = document.querySelector(`[data-inspector-for="${CSS.escape(id)}"]`);
     if (inspector && source) inspector.innerHTML = source.innerHTML;
+    const summary = document.getElementById('selection-summary');
+    const summarySource = Array.from(
+      document.querySelectorAll('[data-selection-summary-for]')
+    ).find((el) => el.getAttribute('data-selection-summary-for') === id);
+    if (summary && summarySource) summary.innerHTML = summarySource.innerHTML;
+    const mapWrap = document.querySelector('.map-wrap');
+    if (mapWrap) mapWrap.classList.toggle('selection-active', Boolean(id));
+    const navRow = Array.from(document.querySelectorAll('.nav-row')).find(
+      (el) => el.getAttribute('data-node-id') === id
+    );
+    if (navRow) navRow.scrollIntoView({ block: 'nearest' });
   };
   const visibleNavRows = () => Array.from(document.querySelectorAll('.nav-row:not([hidden])'));
   const moveNav = (delta, edge) => {
@@ -451,12 +462,19 @@ def render_report_shell(
     current_id = controller.state.selected_id
     selected = controller.selected_node()
 
-    # Pre-render per-node inspector bodies for JS swap without reclassification.
+    # Pre-render per-node inspector and selection-summary bodies for JS swap
+    # without reclassification or client-side evidence inference.
     inspector_templates = []
+    selection_templates = []
     for node in model.nodes:
         inspector_templates.append(
             f'<template data-inspector-for="{escape_attr(node.node_id)}">'
             f"{_render_inspector(node)}"
+            f"</template>"
+        )
+        selection_templates.append(
+            f'<template data-selection-summary-for="{escape_attr(node.node_id)}">'
+            f"{_render_selection_summary(node)}"
             f"</template>"
         )
 
@@ -476,11 +494,11 @@ def render_report_shell(
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
     <h1>{escape_text(title)}</h1>
-    <div class="sub">Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only</div>
+    <div class="sub">Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only · run <span class="mono">{escape_text(model.run_id)}</span></div>
   </header>
   <section class="metrics" aria-label="Run metrics">
     <div class="metric"><b>{escape_text(model.metrics.observed_storage_label)}</b><span>Observed storage</span></div>
-    <div class="metric"><b>{escape_text(model.metrics.free_space_label)}</b><span>Free space</span></div>
+    <div class="metric"><b>{escape_text(model.metrics.free_space_label)}</b><span>Run baseline free space</span></div>
     <div class="metric"><b>{escape_text(model.metrics.projected_reclaim_label)}</b><span>Projected reclaim{" · " + escape_text(model.metrics.projected_reclaim_quality) if model.metrics.projected_reclaim_quality else ""}</span></div>
     <div class="metric"><b>{escape_text(model.metrics.target_free_space_label)}</b><span>Target free space</span></div>
     <div class="metric"><b class="auth">{escape_text(model.metrics.authorization_label)}</b><span>Authorization state</span></div>
@@ -492,7 +510,8 @@ def render_report_shell(
     </section>
     <section class="pane map-pane" aria-label="Storage map">
       <div class="pane-head"><h2>Storage map</h2></div>
-      <div class="map-wrap" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+      <div class="selection-summary" id="selection-summary" aria-live="polite">{_render_selection_summary(selected)}</div>
+      <div class="map-wrap selection-active" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
     </section>
     <section class="pane inspector-pane" aria-label="Decision inspector">
       <div class="pane-head"><h2>Decision inspector</h2></div>
@@ -502,6 +521,7 @@ def render_report_shell(
   <footer class="footer">Area communicates size. Labels and edges communicate evidence. Authorization remains separate. No destructive control exists.</footer>
 </div>
 {"".join(inspector_templates)}
+{"".join(selection_templates)}
 {_selection_script()}
 </body>
 </html>
