@@ -29,6 +29,11 @@ from filesteward.visualization.cinematic import (
     render_sector_overview,
     render_substrate_svg,
 )
+from filesteward.visualization.experience import (
+    render_cinematic_experience_css,
+    render_cinematic_experience_markup,
+    render_cinematic_experience_script,
+)
 from filesteward.visualization.css import render_token_css
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.selection import SelectionController
@@ -502,6 +507,7 @@ def render_report_shell(
 {render_token_css()}
 {_shell_behavior_css()}
 {render_cinematic_css()}
+{render_cinematic_experience_css()}
 </style>
 </head>
 <body>
@@ -528,7 +534,7 @@ def render_report_shell(
       <div class="pane-head"><h2>Storage atlas</h2></div>
       <div class="atlas-hud" role="toolbar" aria-label="Atlas camera">
         <span class="atlas-level" id="atlas-level">CAMERA HOME</span>
-        <button type="button" id="atlas-home">Home</button>
+        <button type="button" id="atlas-home" aria-label="Return to Atlas home">⌂ Atlas Home <kbd>Home</kbd></button>
         <button type="button" id="atlas-zoom-out" aria-label="Zoom out">Zoom -</button>
         <button type="button" id="atlas-zoom-in" aria-label="Zoom in">Zoom +</button>
         <button type="button" id="atlas-search">Search</button>
@@ -538,6 +544,7 @@ def render_report_shell(
       </div>
       <div class="storage-stage" id="storage-stage" data-scene="overview" data-camera-level="HOME" tabindex="-1">
         {render_substrate_svg()}
+        {render_cinematic_experience_markup()}
         {render_sector_overview(model.nodes, current_id)}
         {render_sector_bank(model.nodes, current_id)}
         <section class="fabric-layer" aria-label="Evidence fabric">
@@ -558,7 +565,7 @@ def render_report_shell(
         </section>
       </div>
       <div class="phone-command-bar" role="toolbar" aria-label="Phone atlas commands">
-        <button type="button" data-atlas-action="home">Home</button>
+        <button type="button" data-atlas-action="home" aria-label="Return to Atlas home">⌂ Home</button>
         <button type="button" data-atlas-action="search">Search</button>
         <button type="button" data-atlas-action="zoom_out" aria-label="Zoom out">Zoom -</button>
         <button type="button" data-atlas-action="zoom_in" aria-label="Zoom in">Zoom +</button>
@@ -578,6 +585,7 @@ def render_report_shell(
 {render_atlas_runtime_json(model.nodes, rects)}
 {_selection_script()}
 {render_cinematic_script()}
+{render_cinematic_experience_script()}
 </body>
 </html>
 """

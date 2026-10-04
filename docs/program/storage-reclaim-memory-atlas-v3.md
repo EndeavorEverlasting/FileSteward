@@ -355,3 +355,54 @@ The operator must experience the real local report and accept the spatial feel. 
 ## 14. Proof ceiling
 
 This contract proves the next architecture, ownership seams, acceptance model, and versioning dependency. It does **not** prove v3 runtime behavior, filesystem hierarchy, physical RAM/disk topology, phone hardware comfort, operator aesthetic acceptance, F7 contract choice, approval, quarantine, deletion, or reclaimed space.
+
+## 15. P13 visual-overhaul failure and repair contract — 2026-10-04
+
+The first wired v3 candidate at `4f0eeec88ae0ddba69b580546116f32aa5ef0fa0`
+passed the local suite but **failed operator visual review from screenshots before a trusted-click
+verdict was needed**.
+
+### Repeated failure class
+
+The recurring defect is **UX intent compression**:
+
+`cinematic overhaul requested -> semantic/state infrastructure implemented -> familiar dashboard composition retained -> operator asked to judge the last mile`.
+
+That is not acceptable for a deliberately experiential sprint. A green state machine is necessary
+but cannot stand in for the requested visual transformation.
+
+### Screenshot-proven failures
+
+- CELL/CHAMBER still preserve the familiar navigator + rectangular center + inspector composition;
+- standard cursor language remains instead of context-dependent DIVE / FOCUS / RESOLVE affordance;
+- glow reads mainly as a selected outline rather than live decision-signal energy;
+- the decision trace is still something to read after arrival instead of teaching the path during navigation;
+- Home exists technically but is visually equivalent to ordinary toolbar controls;
+- the authored cinematic motion is too small relative to the requested reference bar.
+
+### P13 prevention
+
+Before an experiential candidate may be sent to the operator for acceptance, the implementing agent
+must perform a screenshot/browser self-falsification against the operator's requested experience.
+
+The candidate is automatically **REJECTED BEFORE OPERATOR** when any of these are true:
+
+1. semantic camera levels do not materially recompose the viewport;
+2. the pointer remains generic over the immersive Atlas on fine-pointer devices;
+3. the first unresolved gate lacks a visible animated signal path/beacon;
+4. Atlas Home / Back recovery is not persistent and self-explanatory;
+5. a new user cannot infer MAP -> FOCUS -> RESOLVE -> DECIDE from the interface itself;
+6. the new screenshot remains recognizably the same three-pane dashboard with additional controls.
+
+### Natural tutorial contract
+
+P25 classifies the tutorial opportunity as **READY_AFTER_PRODUCT_FIX**. P18 documentation is
+deferred because documenting a rejected journey would create tutorial theater.
+
+The product itself teaches the stable workflow through a compact **Decision Compass**:
+
+`MAP -> FOCUS -> RESOLVE -> DECIDE`
+
+It is a projection of existing camera/gate/authorization state, not a tour overlay and not a second
+decision engine.
+

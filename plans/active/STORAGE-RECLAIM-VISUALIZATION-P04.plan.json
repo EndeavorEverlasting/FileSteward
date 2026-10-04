@@ -392,7 +392,7 @@
         "Home/Escape recovery",
         "reduced motion"
       ],
-      "status": "IMPLEMENTED_LOCAL_SUITE_GREEN_LIVE_ACCEPTANCE_OPEN"
+      "status": "SUITE_GREEN_OPERATOR_VISUAL_REJECTED"
     },
     {
       "lane_id": "V3-E",
@@ -419,7 +419,62 @@
         "desktop/laptop/phone/reduced-motion browser proof",
         "operator spatial/aesthetic acceptance"
       ],
-      "status": "WAITING_ON_OPERATOR_LIVE_ACCEPTANCE"
+      "status": "REJECTED_NOT_WAITING_ON_OPERATOR"
+    },
+    {
+      "lane_id": "V3-R1",
+      "title": "P13 cinematic language repair",
+      "dependencies": [
+        "V3-D"
+      ],
+      "execution_environment": "CURRENT_CHAT_PROVIDER_WRITE_THEN_LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/experience.py",
+        "bounded shell integration",
+        "tests/test_visualization_v3_experience.py",
+        "P13/P97/P25 durable contracts"
+      ],
+      "forbidden": [
+        "new evidence/authorization semantics",
+        "separate tutorial overlay",
+        "F7",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "focused experience tests",
+        "full suite",
+        "version guard",
+        "desktop/laptop/phone browser rendering",
+        "contextual cursor on fine pointer",
+        "reduced motion",
+        "forced colors"
+      ],
+      "status": "PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
+    },
+    {
+      "lane_id": "V3-R2",
+      "title": "P13 visual self-falsification before operator",
+      "dependencies": [
+        "V3-R1"
+      ],
+      "execution_environment": "OPERATOR_WORKSTATION_PRIVATE_RUNTIME",
+      "owned": [
+        "ignored local browser screenshots/observations only"
+      ],
+      "forbidden": [
+        "ask operator to judge before self-falsification passes",
+        "merge",
+        "F7"
+      ],
+      "validation": [
+        "HOME screenshot materially differs from rejected candidate",
+        "CELL/CHAMBER chrome recession visible",
+        "DIVE/FOCUS/RESOLVE contextual reticle visible on fine pointer",
+        "first unresolved gate emits semantic glow",
+        "Decision Compass teaches MAP -> FOCUS -> RESOLVE -> DECIDE",
+        "Atlas Home + Home hotkey visually persistent"
+      ],
+      "status": "WAITING_ON_V3_R1_LOCAL_VALIDATION"
     },
     {
       "lane_id": "F7",
@@ -509,8 +564,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "V3-E operator live acceptance",
-    "first_action": "Open the regenerated private Memory Atlas v3 report, click a dominant sector, judge the camera dive, then accept or give a concrete motion critique. Do not merge PR #15 before that verdict. Do not start F7."
+    "prompt": "P07 / P13 Memory Atlas v3 cinematic repair validation",
+    "first_action": "Fetch the provider-pushed repair head, run tests/test_visualization_v3_experience.py plus the focused/full suite and version guard, regenerate the private report, then perform V3-R2 screenshot/browser self-falsification. Do not ask the operator for another verdict unless those visual gates pass."
   },
   "p100_incidents": [
     {
@@ -525,7 +580,7 @@
     }
   ],
   "memory_atlas_v3": {
-    "status": "V3_D_WIRED_LOCAL_SUITE_GREEN",
+    "status": "V3_D_OPERATOR_REJECTED_P13_REPAIR_PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING",
     "operator_disposition": "V2_TECHNICALLY_PROVEN_AESTHETIC_ACCEPTANCE_NOT_GRANTED",
     "canonical_design": "docs/program/storage-reclaim-memory-atlas-v3.md",
     "baseline_live_head": "900caccda01931f8ce04f879856f57ac12ec008c",
@@ -568,7 +623,35 @@
         "proved": "stored plan ended with a literal \\\\n token after the closing JSON object at 8ea3b71491b7982f7fcb809805161afb9eff6ef1",
         "recovery": "remove the literal trailing token, serialize valid JSON, and read back parseability before further plan mutation",
         "state": "REPAIRED_IN_THIS_COMMIT"
+      },
+      {
+        "boundary_id": "P13-V3-D-CINEMATIC-OVERHAUL-MISS-20261004",
+        "impact": "suite-green V3-D was routed to operator acceptance despite obvious visual mismatch with the requested overhaul",
+        "proved": "operator screenshots plus exact-head source inspection: generic pointer cursor, preserved three-pane composition, limited ghost/substrate motion, low-salience Home",
+        "recovery": "install high-salience experience layer + executable contract tests + mandatory screenshot self-falsification before operator re-review",
+        "state": "REPAIR_PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
       }
-    ]
+    ],
+    "operator_rejection": {
+      "head": "4f0eeec88ae0ddba69b580546116f32aa5ef0fa0",
+      "evidence": "operator-provided desktop/laptop screenshots in chat",
+      "disposition": "REJECTED_WITHOUT_TRUSTED_CLICK",
+      "reasons": [
+        "composition remained recognizably the same dashboard",
+        "cinematic motion materially under-shot the requested reference bar",
+        "standard cursor remained",
+        "decision tree did not naturally teach the workflow",
+        "Home/back affordance was technically present but not sufficiently self-evident"
+      ]
+    },
+    "tutorial_disposition": {
+      "P25": "READY_AFTER_PRODUCT_FIX",
+      "P18": "DEFERRED_DO_NOT_DOCUMENT_REJECTED_JOURNEY",
+      "product_owner": "Decision Compass projection from existing camera/gate/authorization state"
+    },
+    "p13_prevention": {
+      "owner": "tests/test_visualization_v3_experience.py + V3-R2 browser self-falsification",
+      "operator_gate_rule": "do not ask operator for aesthetic acceptance when screenshots already contradict the design contract"
+    }
   }
 }

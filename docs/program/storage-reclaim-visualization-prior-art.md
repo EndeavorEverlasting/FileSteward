@@ -160,7 +160,8 @@ This pass follows P97's mechanism-first rule. References are used to extract mec
 | CSS Design Awards ATMOS listing | documented independent design evidence | animated/scroll/typographic presentation and high UI/UX/innovation evaluation | **REFERENCE EVIDENCE** only |
 | pbakaus/impeccable — https://github.com/pbakaus/impeccable | observed guidance, Apache-2.0 | one focal motion thesis, structural responsive design, desktop/mobile review, reduced-motion alternatives, durable design-context discipline | **ADOPT design discipline**; no vendoring required |
 | D3 zoomable treemap + d3-zoom | observed implementation/docs | geometry fit/reprojection, opacity continuity, pan/zoom across SVG/HTML/Canvas, pointer/touch | **ADAPT camera mechanics** only; reject D3 hierarchy semantics because FileSteward's evidence is flat |
-| MDN Web Animations / View Transition API | documented platform capability | browser-native animation and progressive same-document view transitions | **ADOPT baseline/progressive split** |\n| W3C WCAG 2.2 target/focus criteria | normative accessibility standard | 24×24 CSS-pixel external target floor with equivalent-control exception; FileSteward already strengthens direct targets to 40px minimum / 44px preferred; focused controls must not be completely obscured | **ADOPT acceptance floor** — micro treemap geometry uses search/navigator + camera fit rather than precision targeting |
+| MDN Web Animations / View Transition API | documented platform capability | browser-native animation and progressive same-document view transitions | **ADOPT baseline/progressive split** |
+| W3C WCAG 2.2 target/focus criteria | normative accessibility standard | 24×24 CSS-pixel external target floor with equivalent-control exception; FileSteward already strengthens direct targets to 40px minimum / 44px preferred; focused controls must not be completely obscured | **ADOPT acceptance floor** — micro treemap geometry uses search/navigator + camera fit rather than precision targeting |
 
 ### Gap decision
 
@@ -175,3 +176,27 @@ The ecosystem already proves zoomable spatial continuity, authored scene transit
 - offline single-report operation with private receipt data local.
 
 That combination remains FileSteward-owned program design.
+
+## 2026-10-04 P13/P97 reference disposition after wired-v3 rejection
+
+| Reference | Evidence | Mechanism | Disposition |
+| --- | --- | --- | --- |
+| Motion One / motiondivision | MIT open-source WAAPI-oriented animation primitives | compact animation/timeline/scroll abstractions | **EMULATE MECHANICS, NO DEPENDENCY YET** — FileSteward already owns Web Animations directly |
+| d3-zoom | ISC open-source pan/zoom behavior across HTML/SVG/Canvas, pointer + touch, programmatic transforms | direct manipulation + staged zoom tours | **RETAIN / ADAPT** for camera grammar |
+| Driver.js | MIT, dependency-free product-tour/focus library | spotlight/focus shifting and contextual help | **REJECT AS PRODUCT TUTORIAL** — useful focus mechanics, but a tour overlay would encumber the experience the operator explicitly wants taught by the decision tree |
+| Shepherd | open-source onboarding/tour system with AGPL/commercial licensing | guided tours/training/announcements | **REJECT** — wrong interaction model for this product and unfavorable dependency/license fit |
+| XState | open-source state-machine/statechart tooling | visible state progression and model-based state reasoning | **EMULATE PRINCIPLE, NO NEW STATE OWNER** — FileSteward already has canonical camera + gate state; Decision Compass projects those owners instead of adding XState |
+| Locomotive Scroll | MIT parallax/scroll interaction library | depth/parallax/progress; smart touch degradation | **REJECT AS DEPENDENCY** — scroll-first architecture mismatches the Atlas camera, but parallax restraint reinforces that mobile should not inherit desktop effects blindly |
+
+### Selected gap
+
+The missing capability is not another animation library. It is a **presentation grammar** over the
+already-correct state owners:
+
+- cinematic chrome recession in CELL/CHAMBER;
+- contextual DIVE / FOCUS / RESOLVE pointer language;
+- persistent Home/Back recovery;
+- first-unresolved semantic glow and scan energy;
+- state-driven Decision Compass as the natural tutorial;
+- self-falsifying visual acceptance before operator handoff.
+
