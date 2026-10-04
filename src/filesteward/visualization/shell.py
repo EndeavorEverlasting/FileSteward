@@ -498,6 +498,7 @@ def render_report_shell(
 <style>
 {render_token_css()}
 {_shell_behavior_css()}
+{render_cinematic_css()}
 </style>
 </head>
 <body>
@@ -520,20 +521,35 @@ def render_report_shell(
       <nav class="nav" aria-label="Storage items">{_render_navigator(model.nodes, current_id)}</nav>
     </section>
     <section class="pane map-pane" aria-label="Storage map">
-      <div class="pane-head"><h2>Storage map</h2></div>
-      <div class="selection-summary" id="selection-summary" aria-live="polite">{_render_selection_summary(selected)}</div>
-      <div class="map-wrap selection-active" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+      <div class="pane-head"><h2>Storage atlas</h2></div>
+      <div class="storage-stage" id="storage-stage" data-scene="overview">
+        {render_substrate_svg()}
+        {render_sector_overview(model.nodes, current_id)}
+        <section class="focus-layer" aria-label="Focused storage sector">
+          <div class="scene-toolbar">
+            <button type="button" class="scene-back" id="scene-back" hidden>← Sector overview</button>
+            <div class="selection-summary" id="selection-summary" aria-live="polite">{_render_selection_summary(selected)}</div>
+          </div>
+          <div class="focus-host" id="focus-host">{render_focus_chamber(selected, model.nodes)}</div>
+          <div class="context-map-shell">
+            <span class="context-map-label">FULL-RUN CONTEXT · 200 EVIDENCE GROUPS</span>
+            <div class="map-wrap selection-active" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+          </div>
+        </section>
+      </div>
     </section>
     <section class="pane inspector-pane" aria-label="Decision inspector">
       <div class="pane-head"><h2>Decision inspector</h2></div>
       <div class="inspector" id="inspector-body" tabindex="-1">{_render_inspector(selected)}</div>
     </section>
   </main>
-  <footer class="footer">Area communicates size. Labels and edges communicate evidence. Authorization remains separate. No destructive control exists.</footer>
+  <footer class="footer">The overview prioritizes readable dominant sectors; the focus context map preserves full-run magnitude. Evidence and authorization remain separate. No destructive control exists.</footer>
 </div>
 {"".join(inspector_templates)}
 {"".join(selection_templates)}
+{render_focus_templates(model.nodes)}
 {_selection_script()}
+{render_cinematic_script()}
 </body>
 </html>
 """
