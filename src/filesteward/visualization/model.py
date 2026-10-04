@@ -45,12 +45,17 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
 
 
 def _count_csv_data_rows(path: Path) -> int:
-    """Count CSV data rows without materializing the full table."""
+    """Count CSV records without materializing DictReader rows.
+
+    Uses ``csv.reader`` so quoted fields that contain newlines still count as
+    one logical record.
+    """
 
     with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle)
         # Skip header when present.
-        next(handle, None)
-        return sum(1 for _ in handle)
+        next(reader, None)
+        return sum(1 for _ in reader)
 
 
 def _opt_int(raw: str | None) -> Optional[int]:
@@ -393,7 +398,12 @@ def _parse_hint_tags(raw: str | None) -> tuple[str, ...]:
 
 
 def _node_from_review_bucket(row: Mapping[str, str]) -> PresentationNode:
-    """Project a persisted triage bucket into a HUMAN_REVIEW presentation node."""
+    """Project a persisted triage bucket into a presentation node.
+
+    Persisted ``human-review-buckets.csv`` aggregates HUMAN_REVIEW and UNKNOWN
+    rows without per-bucket disposition splits. Fail closed to UNKNOWN so the
+    stop-before-contract gate remains visible.
+    """
 
     prefix = row.get("prefix") or ""
     if not prefix:
@@ -406,7 +416,9 @@ def _node_from_review_bucket(row: Mapping[str, str]) -> PresentationNode:
         ScanCompleteness.COMPLETE if unknown == 0 else ScanCompleteness.INCOMPLETE
     )
     hints = _parse_hint_tags(row.get("contract_hint_tags"))
-    disposition = CleanupDisposition.HUMAN_REVIEW
+    # Fail closed: mixed HUMAN_REVIEW/UNKNOWN triage buckets are not labeled
+    # HUMAN_REVIEW when disposition splits are unavailable.
+    disposition = CleanupDisposition.UNKNOWN
     steps = _gate_steps_for(
         disposition=disposition,
         protection_relation="UNRELATED",
@@ -415,8 +427,9 @@ def _node_from_review_bucket(row: Mapping[str, str]) -> PresentationNode:
         plan_evidence=None,
     )
     reason = (
-        "Aggregated HUMAN_REVIEW bucket from persisted triage evidence. "
-        "Not a reclaim nomination and not an approved contract."
+        "Aggregated HUMAN_REVIEW/UNKNOWN triage bucket from persisted evidence. "
+        "Disposition splits are not recorded per bucket, so presentation fails "
+        "closed to UNKNOWN. Not a reclaim nomination and not an approved contract."
     )
     return PresentationNode(
         node_id=_bucket_node_id(prefix, depth),
@@ -437,8 +450,8 @@ def _node_from_review_bucket(row: Mapping[str, str]) -> PresentationNode:
         contract_summary=None,
         contract_hint_tags=hints,
         risk_if_acted_on=(
-            "Bucket remains UNAPPROVED. Operator contract selection is required "
-            "before any reclaim nomination."
+            "Bucket remains UNAPPROVED/UNKNOWN. Operator judgment is required "
+            "before any contract or reclaim nomination."
         ),
         next_gate=_next_gate(steps, disposition),
         trace_evidence_source="human-review-buckets.csv",
@@ -513,8 +526,9 @@ def build_presentation_model(run_dir: Path) -> PresentationModel:
     Call stack / scale policy:
       validate_run (fail closed)
         -> if inventory rows exceed expand limit and triage buckets exist:
-             project top aggregated HUMAN_REVIEW buckets only
-             (does not load human-review.csv / inventory into node expansion)
+             project top aggregated triage buckets as UNKNOWN
+             (does not expand human-review.csv / inventory into presentation nodes;
+              validate_run may still read full artifacts as its own gate)
         -> else expand inventory rows with joined structured evidence
         -> largest-first default selection
     """

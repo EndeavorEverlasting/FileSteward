@@ -404,9 +404,7 @@ def test_large_inventory_uses_persisted_review_buckets(
     )
     model = build_presentation_model(run_dir)
     assert len(model.nodes) == 3
-    assert all(
-        node.disposition is CleanupDisposition.HUMAN_REVIEW for node in model.nodes
-    )
+    assert all(node.disposition is CleanupDisposition.UNKNOWN for node in model.nodes)
     assert all(
         node.authorization_state is AuthorizationState.UNAPPROVED for node in model.nodes
     )
@@ -418,7 +416,8 @@ def test_large_inventory_uses_persisted_review_buckets(
     assert largest.path.endswith(r".cache\opencode")
     assert largest.contract_hint_tags == ("cache",)
     assert largest.projected_reclaim_bytes is None
-    assert "Not a reclaim nomination" in largest.reason
+    assert "fails closed to UNKNOWN" in largest.reason
+    assert any(step.gate_id == "disposition" for step in largest.gate_steps)
 
 
 def test_large_inventory_without_buckets_fails_closed(
@@ -431,6 +430,20 @@ def test_large_inventory_without_buckets_fails_closed(
     )
     with pytest.raises(ValueError, match="human-review-buckets"):
         build_presentation_model(run_dir)
+
+
+def test_count_csv_data_rows_handles_quoted_newlines(tmp_path: Path) -> None:
+    from filesteward.visualization.model import _count_csv_data_rows
+
+    path = tmp_path / "quoted.csv"
+    path.write_text(
+        'item_id,path\n'
+        'a,"line1\nline2"\n'
+        "b,plain\n",
+        encoding="utf-8",
+        newline="",
+    )
+    assert _count_csv_data_rows(path) == 2
 
 
 def test_bucket_aggregation_caps_node_count(
