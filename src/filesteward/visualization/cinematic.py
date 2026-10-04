@@ -207,9 +207,9 @@ def render_cinematic_css() -> str:
 /* P95 + Impeccable cinematic Memory Atlas: presentation only. */
 .workspace{transition:grid-template-columns 520ms cubic-bezier(.16,1,.3,1);}
 .workspace[data-scene="overview"]{grid-template-columns:minmax(260px,320px) minmax(0,1fr) 0;}
-.workspace[data-scene="overview"] .inspector-pane{opacity:0;pointer-events:none;overflow:hidden;border:0;}
+.workspace[data-scene="overview"] .inspector-pane{opacity:0;visibility:hidden;pointer-events:none;overflow:hidden;border:0;}
 .workspace[data-scene="focus"]{grid-template-columns:minmax(240px,300px) minmax(0,1fr) minmax(320px,390px);}
-.workspace[data-scene="focus"] .inspector-pane{opacity:1;pointer-events:auto;transition:opacity 220ms ease-out 180ms;}
+.workspace[data-scene="focus"] .inspector-pane{opacity:1;visibility:visible;pointer-events:auto;transition:opacity 220ms ease-out 180ms;}
 .map-pane{position:relative;}
 .storage-stage{position:relative;min-height:clamp(34rem,72vh,54rem);overflow:hidden;isolation:isolate;background:radial-gradient(110% 80% at 50% -10%,color-mix(in srgb,var(--fs-accent) 13%,transparent),transparent 58%),linear-gradient(180deg,color-mix(in srgb,var(--fs-bg-surface-2) 88%,#101c28 12%),var(--fs-bg-canvas));}
 .storage-stage::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.36;background-image:linear-gradient(color-mix(in srgb,var(--fs-border-subtle) 42%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--fs-border-subtle) 42%,transparent) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 88%);}
