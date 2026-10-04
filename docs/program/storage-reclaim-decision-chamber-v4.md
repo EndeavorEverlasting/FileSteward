@@ -149,7 +149,7 @@ Local agent work is mechanical integration:
 6. stage only `QUARANTINE`;
 7. implement the exact staged cinematic;
 8. apply the canonical warm token palette;
-9. bump candidate to **0.3.0** through P130;
+9. run P130 on the new V4-C worktree visual pass and require **0.3.0 -> 0.4.0** before commit;
 10. run the required repository/browser proof.
 
 ## 9. Acceptance
@@ -213,9 +213,9 @@ Blue/cyan may appear only when an operating-system forced-color mode chooses it.
 
 ## 11. P130 recurrence repair
 
-Decision Chamber is product candidate **0.3.0**.
+The provider-pushed Decision Chamber contract/palette candidate is **0.3.0**. The next local V4-C scene/bridge wiring is a distinct visual-feature pass and must auto-bump **0.3.0 -> 0.4.0** before that implementation commit.
 
-The version helper now treats staged/unstaged visual changes relative to the previous committed HEAD as a new visual pass. Therefore a long-lived branch already at 0.3.0 will still auto-bump a later polish pass instead of silently reusing 0.3.0 merely because it is already greater than main.
+The version helper now treats staged/unstaged visual changes relative to the previous committed HEAD as a new visual pass. Therefore the local V4-C implementation must run `python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-feature --fix` and the expected result is `0.3.0 -> 0.4.0`. Later visual passes likewise advance again instead of silently reusing an older branch bump.
 
 ## 12. Localhost Decision Bridge — exact interaction transport
 

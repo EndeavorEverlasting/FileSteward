@@ -702,7 +702,7 @@
   ],
   "next_owner": {
     "prompt": "P07 / Memory Atlas v4 Decision Chamber mechanical integration",
-    "first_action": "Fetch exact PR head and validate V4-A/V4-B/Decision Bridge protocol. Implement loopback-only filesteward review bridge exactly as the tracked v4 contract specifies, then wire the browser scenes to the bridge and perform local/browser proof. No transport/security/state/palette/narrative judgment is delegated."
+    "first_action": "Fetch exact PR head; validate provider-pushed V4 contracts; implement the loopback Decision Bridge and V4-C scene wiring exactly as specified; then run P130 ensure-visual-bump --kind visual-feature --fix and expect 0.3.0 -> 0.4.0 before committing the new visual pass."
   },
   "p100_incidents": [
     {
@@ -881,7 +881,11 @@
     "p130": {
       "target": "0.3.0",
       "reason": "new Decision Chamber capability + canonical theme generation",
-      "recurring_fix": "worktree visual changes now compare against committed HEAD so each new polish pass bumps even when branch already exceeds main"
+      "recurring_fix": "worktree visual changes now compare against committed HEAD so each new polish pass bumps even when branch already exceeds main",
+      "current_committed_candidate": "0.3.0",
+      "next_visual_feature_pass": "0.4.0",
+      "local_agent_command": "python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-feature --fix",
+      "expected_local_result": "0.3.0 -> 0.4.0 when V4-C introduces new worktree visualization changes"
     },
     "decision_bridge": {
       "cli": "filesteward review <run-dir> [--port 0]",
@@ -900,6 +904,7 @@
       ],
       "persistence": "ignored var/runs only",
       "evidence_rule": "decision events never rewrite CleanupDisposition; fresh deterministic run owns evidence changes"
-    }
+    },
+    "next_wired_visual_version": "0.4.0"
   }
 }
