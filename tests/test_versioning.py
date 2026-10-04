@@ -112,3 +112,49 @@ def test_write_version_keeps_package_dunder_in_lockstep(tmp_path: Path) -> None:
     assert '__version__ = "0.2.0"' in (
         root / "src/filesteward/__init__.py"
     ).read_text(encoding="utf-8")
+
+def test_subsequent_visual_pass_bumps_from_committed_candidate(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    (root / "src/filesteward/visualization").mkdir(parents=True)
+    (root / "src/filesteward").mkdir(parents=True, exist_ok=True)
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "filesteward"\nversion = "0.1.0"\n',
+        encoding="utf-8",
+    )
+    (root / "src/filesteward/__init__.py").write_text(
+        '__version__ = "0.1.0"\n', encoding="utf-8"
+    )
+    visual = root / "src/filesteward/visualization/cinematic.py"
+    visual.write_text("PASS = 1\n", encoding="utf-8")
+    _git(root, "init")
+    _git(root, "config", "user.email", "test@example.com")
+    _git(root, "config", "user.name", "FileSteward Test")
+    _git(root, "add", ".")
+    _git(root, "commit", "-m", "base")
+    base = _git(root, "rev-parse", "HEAD").strip()
+
+    visual.write_text("PASS = 2\n", encoding="utf-8")
+    before, after, _, changed = versioning.ensure_visual_bump(
+        base=base, kind="visual-feature", fix=True, root=root
+    )
+    assert str(before) == "0.1.0"
+    assert str(after) == "0.2.0"
+    assert changed is True
+    _git(root, "add", ".")
+    _git(root, "commit", "-m", "visual v2")
+
+    visual.write_text("PASS = 3\n", encoding="utf-8")
+    before2, after2, paths2, changed2 = versioning.ensure_visual_bump(
+        base=base, kind="visual-feature", fix=True, root=root
+    )
+    assert str(before2) == "0.2.0"
+    assert str(after2) == "0.3.0"
+    assert paths2 == ["src/filesteward/visualization/cinematic.py"]
+    assert changed2 is True
+    assert 'version = "0.3.0"' in (
+        root / "pyproject.toml"
+    ).read_text(encoding="utf-8")
+    assert '__version__ = "0.3.0"' in (
+        root / "src/filesteward/__init__.py"
+    ).read_text(encoding="utf-8")
+

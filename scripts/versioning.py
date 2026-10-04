@@ -122,6 +122,25 @@ def changed_paths(base: str, head: str = "HEAD", root: Path | None = None) -> li
     return sorted(paths)
 
 
+
+def worktree_changed_paths(root: Path | None = None) -> list[str]:
+    """Return staged + unstaged paths relative to the current committed HEAD.
+
+    This is the per-polish-pass boundary. A long-lived feature branch may
+    already be versioned above main; a new worktree visual mutation must still
+    receive its own bump before it is committed.
+    """
+
+    root = root or repo_root()
+    paths: set[str] = set()
+    for args in (
+        ["diff", "--name-only", "HEAD"],
+        ["diff", "--name-only", "--cached"],
+    ):
+        output = run_git(args, root=root)
+        paths.update(line.strip() for line in output.splitlines() if line.strip())
+    return sorted(paths)
+
 def current_version(root: Path | None = None) -> Version:
     return parse_pyproject_version(pyproject_path(root).read_text(encoding="utf-8"))
 
@@ -153,9 +172,32 @@ def ensure_visual_bump(
     root: Path | None = None,
 ) -> tuple[Version, Version, list[str], bool]:
     root = root or repo_root()
-    paths = visual_change_paths(changed_paths(base, head, root))
     base_version = version_at_ref(base, root)
-    head_version = current_version(root) if head == "HEAD" else version_at_ref(head, root)
+
+    # New worktree visual edits are a new polish/feature pass even when this
+    # long-lived branch was already bumped above main by an earlier pass.
+    if head == "HEAD":
+        live_visual_paths = visual_change_paths(worktree_changed_paths(root))
+        if live_visual_paths:
+            committed_version = version_at_ref("HEAD", root)
+            worktree_version = current_version(root)
+            if worktree_version > committed_version:
+                return committed_version, worktree_version, live_visual_paths, False
+            if not fix:
+                raise ValueError(
+                    "new visual pass changed without a new product-version bump: "
+                    + ", ".join(live_visual_paths)
+                )
+            next_version = committed_version.bump(kind)
+            write_version(next_version, root)
+            return committed_version, next_version, live_visual_paths, True
+
+    paths = visual_change_paths(changed_paths(base, head, root))
+    head_version = (
+        current_version(root)
+        if head == "HEAD"
+        else version_at_ref(head, root)
+    )
 
     if not paths:
         return base_version, head_version, paths, False
@@ -175,7 +217,6 @@ def ensure_visual_bump(
     next_version = base_version.bump(kind)
     write_version(next_version, root)
     return base_version, next_version, paths, True
-
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)

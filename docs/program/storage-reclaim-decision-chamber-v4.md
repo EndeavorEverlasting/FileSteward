@@ -178,3 +178,41 @@ Browser:
 Proof ceiling:
 
 This design/prototype does not prove local persistence, approval receipt creation against a real private run, quarantine/apply behavior, deletion, reclaimed bytes, or operator live acceptance.
+
+## 10. Canonical warm material token values
+
+The palette is not left to implementation taste.
+
+### Dark / cinematic
+
+| Role | Value |
+| --- | --- |
+| canvas | `#15120F` espresso-black |
+| shell | `#1C1814` carbon-brown |
+| selected | `#4A3528` walnut |
+| primary accent | `#D7AA82` warm copper |
+| focus | `#E7C49F` bone-copper |
+| review | `#D6A24A` amber |
+| unknown | `#C1B6A8` warm stone |
+| protected | `#D47B67` oxidized rust |
+| keep | `#A9AD7B` sage/moss |
+| reclaim | `#86A76A` forest-moss |
+
+### Light / reference-adjacent
+
+| Role | Value |
+| --- | --- |
+| canvas | `#F3EDE3` ivory |
+| shell | `#FBF7F0` warm bone |
+| selected | `#E7D2BE` pale walnut |
+| primary accent | `#8D5F3F` walnut/copper |
+| keep | `#626B43` olive |
+| reclaim | `#4F713E` forest |
+
+Blue/cyan may appear only when an operating-system forced-color mode chooses it. It is not an authored dominant Atlas color.
+
+## 11. P130 recurrence repair
+
+Decision Chamber is product candidate **0.3.0**.
+
+The version helper now treats staged/unstaged visual changes relative to the previous committed HEAD as a new visual pass. Therefore a long-lived branch already at 0.3.0 will still auto-bump a later polish pass instead of silently reusing 0.3.0 merely because it is already greater than main.
