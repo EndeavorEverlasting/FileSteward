@@ -369,3 +369,57 @@ def render_cinematic_script() -> str:
     );
     animation.finished.finally(() => ghost.remove());
   };
+
+
+  const enterFocus = (id, source) => {
+    const template = focusTemplate(id);
+    if (!template) return;
+    syncFocus(id);
+    animateGhost(source || overviewSector(id) || stage, focusHost, false);
+    stage.dataset.scene = 'focus';
+    back.hidden = false;
+    pulseSubstrate();
+  };
+
+  const exitFocus = () => {
+    if (stage.dataset.scene !== 'focus') return;
+    const destination = focusedId ? overviewSector(focusedId) : null;
+    animateGhost(destination || stage, focusHost, true);
+    stage.dataset.scene = 'overview';
+    back.hidden = true;
+    pulseSubstrate();
+    if (destination) {
+      window.setTimeout(() => destination.focus(), reduced.matches ? 0 : 300);
+    }
+  };
+
+  document.querySelectorAll('.sector-card').forEach((sector) => {
+    sector.addEventListener('click', (event) => {
+      if (!event.isTrusted) return;
+      enterFocus(sector.getAttribute('data-node-id'), sector);
+    });
+  });
+
+  document.querySelectorAll('.nav-row').forEach((row) => {
+    row.addEventListener('click', (event) => {
+      if (!event.isTrusted) return;
+      enterFocus(row.getAttribute('data-node-id'), row);
+    });
+  });
+
+  document.addEventListener('filesteward:selection', (event) => {
+    const id = event.detail && event.detail.id;
+    if (!id) return;
+    if (stage.dataset.scene === 'focus') syncFocus(id);
+  });
+
+  back.addEventListener('click', exitFocus);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && stage.dataset.scene === 'focus') {
+      event.preventDefault();
+      exitFocus();
+    }
+  });
+})();
+</script>
+"""
