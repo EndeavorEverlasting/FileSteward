@@ -127,21 +127,56 @@ def _render_map_slots(
         selected = " selected" if is_selected else ""
         current = ' aria-current="true"' if is_selected else ""
         tone = disposition_css_stem(node.disposition)
+        density = ""
+        if rect.width < 6 or rect.height < 4:
+            density = " micro"
+        elif rect.width < 14 or rect.height < 8:
+            density = " compact"
         aria = (
             f"{node.display_name}, {_fmt_bytes(node.logical_size_bytes)}, "
             f"{_state_label(node.disposition)}, {_auth_label(node.authorization_state)}"
         )
+        title_text = (
+            f"{node.path} · {_fmt_bytes(node.logical_size_bytes)} · "
+            f"{_state_label(node.disposition)}"
+        )
         parts.append(
-            f'<button type="button" class="map-node{selected} state-edge-{escape_attr(tone)}" '
+            f'<button type="button" class="map-node{selected}{density} state-edge-{escape_attr(tone)}" '
             f'data-node-id="{escape_attr(node.node_id)}" '
             f'style="left:{rect.x}%;top:{rect.y}%;width:{rect.width}%;height:{rect.height}%;" '
+            f'title="{escape_attr(title_text)}" '
             f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="map-label">{escape_text(node.display_name)}</span>'
+            f'<span class="map-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
             f'<span class="map-state state state-{escape_attr(tone)}">'
             f'{escape_text(_state_label(node.disposition))}</span>'
             f"</button>"
         )
     return "\n".join(parts)
+
+
+def _render_selection_summary(node: Optional[PresentationNode]) -> str:
+    if node is None:
+        return '<span class="selection-empty">No item selected.</span>'
+    tone = disposition_css_stem(node.disposition)
+    return f"""
+<div class="selection-primary">
+  <span class="selection-kicker">Selected</span>
+  <strong class="selection-name">{escape_text(node.display_name)}</strong>
+  <span class="selection-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>
+</div>
+<div class="selection-secondary">
+  <span class="state state-{escape_attr(tone)}" data-state-label="{escape_attr(_state_label(node.disposition))}">
+    <span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span>
+    {escape_text(_state_label(node.disposition))}
+  </span>
+  <span class="selection-path mono">{escape_text(node.path)}</span>
+</div>
+<div class="selection-next">
+  <span>Next gate</span>
+  <strong>{escape_text(node.next_gate)}</strong>
+</div>
+"""
 
 
 def _render_gate_steps(steps: Iterable[GateStep]) -> str:
@@ -204,21 +239,21 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
     <dt>Evidence source</dt><dd>{escape_text(node.trace_evidence_source)}</dd>
   </dl>
 </section>
-<section class="card evidence">
-  <h3>Evidence</h3>
-  <p>{escape_text(node.reason)}</p>
-</section>
 <section class="card decision-trace">
   <h3>Decision trace</h3>
   {_render_gate_steps(node.gate_steps)}
 </section>
-<section class="card risk">
-  <h3>Risk</h3>
-  <p>{escape_text(node.risk_if_acted_on)}</p>
-</section>
 <section class="card next-action">
   <h3>Next valid action</h3>
   <p>{escape_text(node.next_gate)}</p>
+</section>
+<section class="card evidence">
+  <h3>Evidence</h3>
+  <p>{escape_text(node.reason)}</p>
+</section>
+<section class="card risk">
+  <h3>Risk</h3>
+  <p>{escape_text(node.risk_if_acted_on)}</p>
 </section>
 <section class="card authorization">
   <h3>Authorization</h3>
