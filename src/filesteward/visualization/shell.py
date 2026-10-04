@@ -515,7 +515,7 @@ def render_report_shell(
     <div class="metric"><b>{escape_text(model.metrics.target_free_space_label)}</b><span>Target free space</span></div>
     <div class="metric"><b class="auth">{escape_text(model.metrics.authorization_label)}</b><span>Authorization state</span></div>
   </section>
-  <main class="workspace" id="workspace">
+  <main class="workspace" id="workspace" data-scene="overview">
     <section class="pane navigator-pane" aria-label="Storage navigator">
       <div class="pane-head"><h2>Storage navigator</h2></div>
       <nav class="nav" aria-label="Storage items">{_render_navigator(model.nodes, current_id)}</nav>
