@@ -404,11 +404,19 @@ def render_cinematic_script() -> str:
       if (!event.isTrusted) return;
       enterFocus(sector.getAttribute('data-node-id'), sector);
     });
+    sector.addEventListener('keydown', (event) => {
+      if (!event.isTrusted || (event.key !== 'Enter' && event.key !== ' ')) return;
+      enterFocus(sector.getAttribute('data-node-id'), sector);
+    });
   });
 
   document.querySelectorAll('.nav-row').forEach((row) => {
     row.addEventListener('click', (event) => {
       if (!event.isTrusted) return;
+      enterFocus(row.getAttribute('data-node-id'), row);
+    });
+    row.addEventListener('keydown', (event) => {
+      if (!event.isTrusted || (event.key !== 'Enter' && event.key !== ' ')) return;
       enterFocus(row.getAttribute('data-node-id'), row);
     });
   });
