@@ -54,3 +54,16 @@ GitHub remains the remote provider for PR/review/merge state where this reposito
 Distinguish: designed, implemented, locally validated, committed, pushed, PR-open, live-audited, operator-approved, applied, verified-reclaimed.
 
 Never claim a higher state than the evidence proves.
+
+## Product versioning gate
+
+`pyproject.toml` `[project].version` is the human-facing FileSteward product-version authority. Schema/protocol/design-document versions are separate contracts and must not be promoted into product release identity.
+
+When a sprint changes shipped visualization behavior under `src/filesteward/visualization/**` or `docs/program/storage-reclaim-visual-system.tokens.json`, run the repository-owned P130 gate before final validation:
+
+```powershell
+python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-polish
+python scripts/versioning.py guard --base origin/main
+```
+
+Use `--kind visual-feature` instead of `visual-polish` when the accepted change adds a new scene, camera/navigation capability, or input language. The command is idempotent when the branch version already advanced. Docs/tests/research-only edits do not require a product bump. Exact commit/artifact identity remains stronger proof than the friendly version label.

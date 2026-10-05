@@ -19,7 +19,35 @@ from filesteward.visualization.contracts import (
     PresentationNode,
     TreemapRect,
 )
+from filesteward.visualization.cinematic import (
+    render_atlas_runtime_json,
+    render_cinematic_css,
+    render_cinematic_script,
+    render_focus_chamber,
+    render_focus_templates,
+    render_sector_bank,
+    render_sector_overview,
+    render_substrate_svg,
+)
+from filesteward.visualization.decision_chamber import (
+    render_decision_chamber_css,
+    render_decision_chamber_markup,
+    render_decision_chamber_script,
+)
+from filesteward.visualization.experience import (
+    render_cinematic_experience_css,
+    render_cinematic_experience_markup,
+    render_cinematic_experience_script,
+)
 from filesteward.visualization.css import render_token_css
+from filesteward.visualization.decision_flow import open_decision_session
+from filesteward.visualization.interaction import (
+    StatusOrbKind,
+    cue_for_map_node,
+    cue_for_navigation,
+    cue_for_status_orb,
+    html_data_attrs,
+)
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.selection import SelectionController
 from filesteward.visualization.tokens import disposition_css_stem
@@ -95,8 +123,11 @@ def _render_navigator(nodes: Sequence[PresentationNode], selected_id: Optional[s
             f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="nav-name">{escape_text(node.display_name)}</span>'
             f'<span class="nav-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
-            f'<span class="nav-meta"><span class="state state-{escape_attr(tone)}" '
-            f'data-state-label="{escape_attr(_state_label(node.disposition))}">'
+            f'<span class="nav-meta">'
+            f'<span class="evidence-state-action state state-{escape_attr(tone)}" '
+            f'role="button" tabindex="0" data-open-decision="true" '
+            f'data-state-label="{escape_attr(_state_label(node.disposition))}" '
+            f'aria-label="Open decision gate for {escape_attr(_state_label(node.disposition))}">'
             f'<span class="state-marker" aria-hidden="true">'
             f'[{escape_text(_state_label(node.disposition))}]</span> '
             f'{escape_text(_state_label(node.disposition))}</span> · '
@@ -127,21 +158,124 @@ def _render_map_slots(
         selected = " selected" if is_selected else ""
         current = ' aria-current="true"' if is_selected else ""
         tone = disposition_css_stem(node.disposition)
+        density = ""
+        if rect.width < 6 or rect.height < 4:
+            density = " micro"
+        elif rect.width < 14 or rect.height < 8:
+            density = " compact"
         aria = (
             f"{node.display_name}, {_fmt_bytes(node.logical_size_bytes)}, "
             f"{_state_label(node.disposition)}, {_auth_label(node.authorization_state)}"
         )
+        cue = cue_for_map_node(node, selected=is_selected)
         parts.append(
-            f'<button type="button" class="map-node{selected} state-edge-{escape_attr(tone)}" '
+            f'<button type="button" class="map-node{selected}{density} state-edge-{escape_attr(tone)}" '
             f'data-node-id="{escape_attr(node.node_id)}" '
+            f'data-rect-x="{rect.x}" data-rect-y="{rect.y}" '
+            f'data-rect-w="{rect.width}" data-rect-h="{rect.height}" '
             f'style="left:{rect.x}%;top:{rect.y}%;width:{rect.width}%;height:{rect.height}%;" '
+            f'{html_data_attrs(cue)} '
             f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="map-label">{escape_text(node.display_name)}</span>'
-            f'<span class="map-state state state-{escape_attr(tone)}">'
+            f'<span class="map-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
+            f'<span class="map-state state state-{escape_attr(tone)}" '
+            f'data-open-decision="true" data-state-label="{escape_attr(_state_label(node.disposition))}">'
             f'{escape_text(_state_label(node.disposition))}</span>'
             f"</button>"
         )
     return "\n".join(parts)
+
+
+def _nav_button(
+    element_id: str,
+    action: str,
+    label: str,
+    *,
+    aria: str | None = None,
+) -> str:
+    cue = cue_for_navigation(action)
+    aria_attr = f' aria-label="{escape_attr(aria or label)}"'
+    return (
+        f'<button type="button" id="{escape_attr(element_id)}" '
+        f'{html_data_attrs(cue)}{aria_attr}>{label}</button>'
+    )
+
+
+def _render_status_orbs(node: Optional[PresentationNode]) -> str:
+    if node is None:
+        return (
+            '<div class="atlas-status-orbs" id="atlas-status-orbs" '
+            'aria-label="Status nodes" hidden></div>'
+        )
+    flow = open_decision_session(node)
+    orbs: list[str] = []
+    specs = (
+        (StatusOrbKind.PROTECTED, "PROTECTED", "Protection status"),
+        (StatusOrbKind.UNAPPROVED, "UNAPPROVED", "Authorization status"),
+        (StatusOrbKind.EVIDENCE_GAP, "? items", "Evidence completeness"),
+    )
+    for kind, visible, aria in specs:
+        cue = cue_for_status_orb(kind, node, flow)
+        active = cue.availability.value in {"OPERABLE", "BLOCKED"}
+        orbs.append(
+            f'<button type="button" class="status-orb quality-{escape_attr(cue.quality_tone.value.lower())}" '
+            f'data-orb-kind="{escape_attr(kind.value)}" '
+            f'data-open-decision="true" '
+            f'{html_data_attrs(cue)} '
+            f'aria-label="{escape_attr(aria + ": " + cue.label)}" '
+            f'data-orb-active="{str(active).lower()}">'
+            f'<span class="status-orb-core" aria-hidden="true"></span>'
+            f'<span class="status-orb-label">{escape_text(visible)}</span>'
+            f"</button>"
+        )
+    return (
+        '<div class="atlas-status-orbs" id="atlas-status-orbs" '
+        'aria-label="Status nodes">'
+        f'{"".join(orbs)}'
+        '<svg class="status-tether" id="status-tether" aria-hidden="true" hidden></svg>'
+        "</div>"
+    )
+
+
+def _render_action_trace() -> str:
+    return """
+<div class="atlas-action-trace" id="atlas-action-trace" aria-label="Camera orientation and recent commands">
+  <div class="trace-current">
+    <span class="trace-kicker">CAMERA</span>
+    <strong id="atlas-camera-current" aria-current="true">HOME</strong>
+  </div>
+  <ol class="trace-history" id="atlas-command-history">
+    <li data-recency="IDLE"><span>ATLAS HOME</span></li>
+  </ol>
+</div>
+"""
+
+
+def _render_selection_summary(node: Optional[PresentationNode]) -> str:
+    if node is None:
+        return '<span class="selection-empty">No item selected.</span>'
+    tone = disposition_css_stem(node.disposition)
+    return f"""
+<div class="selection-primary">
+  <span class="selection-kicker">Selected</span>
+  <strong class="selection-name">{escape_text(node.display_name)}</strong>
+  <span class="selection-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>
+</div>
+<div class="selection-secondary">
+  <button type="button" class="evidence-state-action state state-{escape_attr(tone)}"
+          data-open-decision="true"
+          data-state-label="{escape_attr(_state_label(node.disposition))}"
+          aria-label="Open decision gate for {escape_attr(_state_label(node.disposition))}">
+    <span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span>
+    {escape_text(_state_label(node.disposition))}
+  </button>
+  <span class="selection-path mono">{escape_text(node.path)}</span>
+</div>
+<div class="selection-next">
+  <span>Next gate</span>
+  <strong>{escape_text(node.next_gate)}</strong>
+</div>
+"""
 
 
 def _render_gate_steps(steps: Iterable[GateStep]) -> str:
@@ -199,26 +333,26 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
     <dt>Allocated size</dt><dd>{escape_text(_fmt_bytes(node.allocated_size_bytes))}</dd>
     <dt>Projected reclaim</dt><dd>{escape_text(reclaim)}</dd>
     <dt>Projection quality</dt><dd>{escape_text(quality)}</dd>
-    <dt>Disposition</dt><dd class="state state-{escape_attr(tone)}" data-state-label="{escape_attr(_state_label(node.disposition))}"><span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span> {escape_text(_state_label(node.disposition))}</dd>
+    <dt>Disposition</dt><dd><button type="button" class="evidence-state-action state state-{escape_attr(tone)}" data-open-decision="true" data-state-label="{escape_attr(_state_label(node.disposition))}" aria-label="Open decision gate for {escape_attr(_state_label(node.disposition))}"><span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span> {escape_text(_state_label(node.disposition))}</button></dd>
     <dt>Authorization</dt><dd class="auth">{escape_text(_auth_label(node.authorization_state))}</dd>
     <dt>Evidence source</dt><dd>{escape_text(node.trace_evidence_source)}</dd>
   </dl>
-</section>
-<section class="card evidence">
-  <h3>Evidence</h3>
-  <p>{escape_text(node.reason)}</p>
 </section>
 <section class="card decision-trace">
   <h3>Decision trace</h3>
   {_render_gate_steps(node.gate_steps)}
 </section>
-<section class="card risk">
-  <h3>Risk</h3>
-  <p>{escape_text(node.risk_if_acted_on)}</p>
-</section>
 <section class="card next-action">
   <h3>Next valid action</h3>
   <p>{escape_text(node.next_gate)}</p>
+</section>
+<section class="card evidence">
+  <h3>Evidence</h3>
+  <p>{escape_text(node.reason)}</p>
+</section>
+<section class="card risk">
+  <h3>Risk</h3>
+  <p>{escape_text(node.risk_if_acted_on)}</p>
 </section>
 <section class="card authorization">
   <h3>Authorization</h3>
@@ -248,20 +382,40 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .pane-head{min-height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--fs-space-3);border-bottom:1px solid var(--fs-border-subtle);flex-wrap:wrap;gap:var(--fs-space-2);}
 .pane-head h2{margin:0;font-size:var(--fs-type-small-strong-size);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--fs-text-secondary);}
 .nav{display:flex;flex-direction:column;}
-.nav-row{appearance:none;border:0;border-bottom:1px solid var(--fs-border-subtle);background:transparent;color:inherit;text-align:left;display:grid;grid-template-columns:1fr auto;gap:var(--fs-space-1) var(--fs-space-2);padding:var(--fs-space-3);min-height:44px;cursor:pointer;}
+.nav-row{appearance:none;border:0;border-bottom:1px solid var(--fs-border-subtle);background:transparent;color:inherit;text-align:left;display:grid;grid-template-columns:1fr auto;gap:var(--fs-space-1) var(--fs-space-2);padding:var(--fs-space-3);min-height:44px;cursor:pointer;position:relative;}
 .nav-row[hidden],.map-node[hidden]{display:none!important;}
 .nav-row:hover{background:var(--fs-bg-hover);}
-.nav-row.selected{background:var(--fs-bg-selected);color:var(--fs-text-primary);box-shadow:inset 2px 0 0 var(--fs-accent);}
+.nav-row.selected{background:var(--fs-bg-selected);color:var(--fs-text-primary);box-shadow:inset 4px 0 0 var(--fs-accent),inset 0 0 0 1px var(--fs-accent-300);}
+.nav-row.selected .nav-name{font-weight:800;}
 .nav-name{font-size:var(--fs-type-body-size);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.nav-size{font-variant-numeric:tabular-nums;font-weight:600;}
+.nav-size{font-variant-numeric:tabular-nums;font-weight:700;}
 .nav-meta{grid-column:1/-1;font-size:var(--fs-type-small-size);color:var(--fs-text-muted);}
 .state-marker{font-weight:700;font-family:var(--fs-font-mono);margin-right:0.25em;}
+.selection-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--fs-space-2) var(--fs-space-4);padding:var(--fs-space-3) var(--fs-space-4);background:var(--fs-bg-surface-1);border-bottom:2px solid var(--fs-accent);min-height:5.25rem;}
+.selection-primary{display:flex;align-items:baseline;gap:var(--fs-space-2);min-width:0;}
+.selection-kicker{font-size:var(--fs-type-small-size);font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--fs-accent);}
+.selection-name{font-size:var(--fs-type-title-size);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.selection-size{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;}
+.selection-secondary{grid-column:1/-1;display:flex;align-items:center;gap:var(--fs-space-2);min-width:0;}
+.selection-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;word-break:normal;}
+.selection-next{grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--fs-space-2);align-items:start;padding-top:var(--fs-space-1);border-top:1px solid var(--fs-border-subtle);}
+.selection-next span{font-size:var(--fs-type-small-size);font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--fs-text-muted);}
+.selection-next strong{overflow-wrap:anywhere;}
+.selection-empty{color:var(--fs-text-muted);}
 .map-wrap{position:relative;min-height:clamp(16rem,42vh,26.25rem);padding:var(--fs-space-2);background:var(--fs-bg-surface-2);}
 .map-placeholder,.map-node{border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-treemap);background:var(--fs-bg-surface-3);color:var(--fs-text-primary);}
 .map-placeholder{display:grid;place-items:center;height:100%;padding:var(--fs-space-4);color:var(--fs-text-secondary);}
-.map-node{position:absolute;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:var(--fs-space-1);}
-.map-node.selected{outline:3px solid var(--fs-accent);outline-offset:-3px;}
+.map-node{position:absolute;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:var(--fs-space-1);transition:opacity 90ms linear,filter 90ms linear,box-shadow 90ms linear;}
+.map-wrap.selection-active .map-node:not(.selected){opacity:.68;filter:saturate(.72) brightness(.86);}
+.map-wrap.selection-active .map-node:not(.selected):hover,.map-wrap.selection-active .map-node:not(.selected):focus-visible{opacity:1;filter:none;z-index:4;}
+.map-node.selected{z-index:6;outline:4px solid var(--fs-accent);outline-offset:-2px;box-shadow:0 0 0 2px var(--fs-bg-canvas),0 0 0 5px var(--fs-accent);filter:brightness(1.14) saturate(1.08);}
+.map-node.selected.micro,.map-node.selected.compact{overflow:visible;}
+.map-node.selected.micro::after,.map-node.selected.compact::after{content:"";position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border:3px solid var(--fs-focus);border-radius:50%;box-shadow:0 0 0 2px var(--fs-bg-canvas);pointer-events:none;}
+.map-label{font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.map-size{font-size:var(--fs-type-small-size);font-variant-numeric:tabular-nums;font-weight:800;}
 .map-state{font-size:var(--fs-type-small-size);font-weight:600;}
+.map-node.compact .map-state{display:none;}
+.map-node.micro .map-label,.map-node.micro .map-size,.map-node.micro .map-state{display:none;}
 .state-edge-state-review{box-shadow:inset -2px -2px 0 var(--fs-state-review-edge);}
 .state-edge-state-unknown{box-shadow:inset -2px -2px 0 var(--fs-state-unknown-edge);}
 .state-edge-state-protected{box-shadow:inset -2px -2px 0 var(--fs-state-protected-edge);}
@@ -270,6 +424,9 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .inspector{padding:var(--fs-space-4);overflow:auto;}
 .card{background:var(--fs-bg-surface-2);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-4);margin-bottom:var(--fs-space-3);}
 .card h3{margin:0 0 var(--fs-space-2);font-size:var(--fs-type-title-size);}
+.selected-item{border-color:var(--fs-accent-300);box-shadow:inset 4px 0 0 var(--fs-accent);}
+.decision-trace,.next-action{border-color:var(--fs-state-review-edge);}
+.decision-trace h3,.next-action h3{font-weight:800;}
 .path,.mono{font-family:var(--fs-font-mono);font-size:var(--fs-type-small-size);word-break:break-all;color:var(--fs-text-secondary);}
 .kv{display:grid;grid-template-columns:minmax(8rem,9rem) 1fr;gap:var(--fs-space-2);margin:0;}
 .kv dt{color:var(--fs-text-muted);}
@@ -300,13 +457,59 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 @media (max-width:799px){
   .workspace{grid-template-columns:1fr;}
   .metrics{grid-template-columns:1fr;}
+  .selection-summary{grid-template-columns:1fr;}
+  .selection-primary{flex-wrap:wrap;}
 }
 @media (forced-colors: active){
   .nav-row.selected,.map-node.selected{outline:3px solid Highlight;outline-offset:-3px;background:Highlight;color:HighlightText;forced-color-adjust:none;}
-  .nav-row.selected .nav-meta,.nav-row.selected .state,.nav-row.selected .state-marker,.map-node.selected .map-state{color:HighlightText;}
+  .nav-row.selected .nav-meta,.nav-row.selected .state,.nav-row.selected .state-marker,.map-node.selected .map-state,.map-node.selected .map-size{color:HighlightText;}
+  .selection-summary{border-bottom:3px solid Highlight;forced-color-adjust:none;}
+  .map-node.selected.micro::after,.map-node.selected.compact::after{border-color:Highlight;box-shadow:none;forced-color-adjust:none;}
   .step.unresolved,.gate-lead{border:3px solid Highlight;box-shadow:none;forced-color-adjust:none;}
   .state-marker{forced-color-adjust:none;}
   .state-edge-state-review,.state-edge-state-unknown,.state-edge-state-protected,.state-edge-state-keep,.state-edge-state-reclaim{box-shadow:inset -3px -3px 0 CanvasText;}
+  .status-orb,.atlas-action-trace{forced-color-adjust:none;border-color:CanvasText;background:Canvas;color:CanvasText;box-shadow:none;}
+  .status-orb[data-actionability="OPERABLE"] .status-orb-core,
+  .status-orb[data-actionability="BLOCKED"] .status-orb-core{outline:2px solid Highlight;}
+}
+/* V4-D interaction grammar: quality polarity + status orbs + camera memory */
+.atlas-action-trace{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem;min-height:40px;padding:.25rem .45rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);}
+.atlas-action-trace .trace-kicker{font:800 .62rem/1 var(--fs-font-mono);letter-spacing:.08em;color:var(--fs-text-muted);}
+.atlas-action-trace #atlas-camera-current{font:800 .85rem/1.1 var(--fs-font-mono);color:var(--fs-accent);text-shadow:0 0 12px color-mix(in srgb,var(--fs-accent) 45%,transparent);}
+.trace-history{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.35rem;}
+.trace-history li{font:700 .68rem/1.2 var(--fs-font-mono);padding:.2rem .4rem;border-radius:3px;border:1px solid var(--fs-border-subtle);opacity:.55;}
+.trace-history li[data-recency="LAST"]{opacity:1;border-color:color-mix(in srgb,var(--fs-accent) 55%,var(--fs-border-default));box-shadow:0 0 10px color-mix(in srgb,var(--fs-accent) 28%,transparent);}
+.trace-history li[data-recency="RECENT"]{opacity:.78;border-color:color-mix(in srgb,var(--fs-accent) 30%,var(--fs-border-default));}
+.atlas-hud .atlas-status-orbs{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-left:.25rem;}
+.status-orb{appearance:none;display:inline-flex;align-items:center;gap:.45rem;min-height:40px;min-width:40px;padding:.35rem .65rem;border-radius:999px;border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-primary);font:800 .68rem/1 var(--fs-font-mono);letter-spacing:.04em;cursor:pointer;pointer-events:auto;}
+.status-orb-core{width:12px;height:12px;border-radius:50%;background:currentColor;box-shadow:0 0 0 2px color-mix(in srgb,currentColor 25%,transparent);}
+.status-orb.quality-blocked{color:var(--fs-state-protected-edge);border-color:color-mix(in srgb,var(--fs-state-protected-edge) 55%,var(--fs-border-default));}
+.status-orb.quality-essential{color:var(--fs-state-keep-edge);border-color:color-mix(in srgb,var(--fs-state-keep-edge) 55%,var(--fs-border-default));}
+.status-orb.quality-reclaim_candidate{color:var(--fs-state-reclaim-edge);border-color:color-mix(in srgb,var(--fs-state-reclaim-edge) 55%,var(--fs-border-default));}
+.status-orb.quality-ambiguous{color:var(--fs-state-review-edge);border-color:color-mix(in srgb,var(--fs-state-review-edge) 55%,var(--fs-border-default));}
+.status-orb[data-actionability="OPERABLE"] .status-orb-core,
+.status-orb[data-actionability="BLOCKED"] .status-orb-core{
+  animation:fs-orb-pulse 1500ms ease-in-out infinite;
+  box-shadow:0 0 0 2px color-mix(in srgb,currentColor 30%,transparent),0 0 16px color-mix(in srgb,currentColor 55%,transparent);
+}
+.status-orb[data-actionability="BLOCKED"]{cursor:help;}
+.status-orb[data-actionability="INFORMATIONAL"]{opacity:.55;}
+@keyframes fs-orb-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.map-node[data-quality-tone="BLOCKED"],.map-node[data-quality-tone="ESSENTIAL"],
+.map-node[data-quality-tone="RECLAIM_CANDIDATE"],.map-node[data-quality-tone="AMBIGUOUS"]{
+  box-shadow:inset -2px -2px 0 currentColor;
+}
+.map-node[data-quality-tone="BLOCKED"]{color:var(--fs-state-protected-edge);}
+.map-node[data-quality-tone="ESSENTIAL"]{color:var(--fs-state-keep-edge);}
+.map-node[data-quality-tone="RECLAIM_CANDIDATE"]{color:var(--fs-state-reclaim-edge);}
+.map-node[data-quality-tone="AMBIGUOUS"]{color:var(--fs-state-review-edge);}
+.map-node[data-actionability="OPERABLE"]:focus-visible,
+.status-orb:focus-visible{outline:3px solid var(--fs-focus);outline-offset:2px;}
+.atlas-hud button[data-recency="LAST"]{box-shadow:0 0 0 1px color-mix(in srgb,var(--fs-accent) 50%,transparent),0 0 14px color-mix(in srgb,var(--fs-accent) 30%,transparent);}
+.atlas-hud button[data-recency="RECENT"]{box-shadow:0 0 10px color-mix(in srgb,var(--fs-accent) 16%,transparent);}
+@media (prefers-reduced-motion:reduce){
+  .status-orb[data-actionability="OPERABLE"] .status-orb-core,
+  .status-orb[data-actionability="BLOCKED"] .status-orb-core{animation:none;}
 }
 """
 
@@ -319,12 +522,33 @@ def _selection_script() -> str:
     document.querySelectorAll('[data-node-id]').forEach((el) => {
       const on = el.getAttribute('data-node-id') === id;
       el.classList.toggle('selected', on);
-      if (on) el.setAttribute('aria-current', 'true');
-      else el.removeAttribute('aria-current');
+      if (on) {
+        el.setAttribute('data-selected', 'true');
+        el.setAttribute('aria-selected', 'true');
+        el.setAttribute('aria-current', 'true');
+      } else {
+        el.removeAttribute('data-selected');
+        el.removeAttribute('aria-selected');
+        el.removeAttribute('aria-current');
+      }
     });
     const inspector = document.getElementById('inspector-body');
     const source = document.querySelector(`[data-inspector-for="${CSS.escape(id)}"]`);
     if (inspector && source) inspector.innerHTML = source.innerHTML;
+    const summary = document.getElementById('selection-summary');
+    const summarySource = Array.from(
+      document.querySelectorAll('[data-selection-summary-for]')
+    ).find((el) => el.getAttribute('data-selection-summary-for') === id);
+    if (summary && summarySource) summary.innerHTML = summarySource.innerHTML;
+    const mapWrap = document.querySelector('.map-wrap');
+    if (mapWrap) mapWrap.classList.toggle('selection-active', Boolean(id));
+    const navRow = Array.from(document.querySelectorAll('.nav-row')).find(
+      (el) => el.getAttribute('data-node-id') === id
+    );
+    if (navRow) navRow.scrollIntoView({ block: 'nearest' });
+    document.dispatchEvent(
+      new CustomEvent('filesteward:selection', { detail: { id } })
+    );
   };
   const visibleNavRows = () => Array.from(document.querySelectorAll('.nav-row:not([hidden])'));
   const moveNav = (delta, edge) => {
@@ -353,7 +577,6 @@ def _selection_script() -> str:
       if (!el.classList.contains('nav-row')) return;
       if (event.key === 'ArrowDown') { event.preventDefault(); moveNav(1); }
       else if (event.key === 'ArrowUp') { event.preventDefault(); moveNav(-1); }
-      else if (event.key === 'Home') { event.preventDefault(); moveNav(0, 'home'); }
       else if (event.key === 'End') { event.preventDefault(); moveNav(0, 'end'); }
     });
   });
@@ -389,12 +612,19 @@ def render_report_shell(
     current_id = controller.state.selected_id
     selected = controller.selected_node()
 
-    # Pre-render per-node inspector bodies for JS swap without reclassification.
+    # Pre-render per-node inspector and selection-summary bodies for JS swap
+    # without reclassification or client-side evidence inference.
     inspector_templates = []
+    selection_templates = []
     for node in model.nodes:
         inspector_templates.append(
             f'<template data-inspector-for="{escape_attr(node.node_id)}">'
             f"{_render_inspector(node)}"
+            f"</template>"
+        )
+        selection_templates.append(
+            f'<template data-selection-summary-for="{escape_attr(node.node_id)}">'
+            f"{_render_selection_summary(node)}"
             f"</template>"
         )
 
@@ -407,40 +637,91 @@ def render_report_shell(
 <style>
 {render_token_css()}
 {_shell_behavior_css()}
+{render_cinematic_css()}
+{render_cinematic_experience_css()}
+{render_decision_chamber_css()}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#storage-stage">Skip to storage atlas</a>
 <a class="skip-link" href="#inspector-body">Skip to decision inspector</a>
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
     <h1>{escape_text(title)}</h1>
-    <div class="sub">Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only</div>
+    <div class="sub">Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only · run <span class="mono">{escape_text(model.run_id)}</span></div>
   </header>
   <section class="metrics" aria-label="Run metrics">
     <div class="metric"><b>{escape_text(model.metrics.observed_storage_label)}</b><span>Observed storage</span></div>
-    <div class="metric"><b>{escape_text(model.metrics.free_space_label)}</b><span>Free space</span></div>
+    <div class="metric"><b>{escape_text(model.metrics.free_space_label)}</b><span>Run baseline free space</span></div>
     <div class="metric"><b>{escape_text(model.metrics.projected_reclaim_label)}</b><span>Projected reclaim{" · " + escape_text(model.metrics.projected_reclaim_quality) if model.metrics.projected_reclaim_quality else ""}</span></div>
     <div class="metric"><b>{escape_text(model.metrics.target_free_space_label)}</b><span>Target free space</span></div>
     <div class="metric"><b class="auth">{escape_text(model.metrics.authorization_label)}</b><span>Authorization state</span></div>
   </section>
-  <main class="workspace" id="workspace">
+  <main class="workspace" id="workspace" data-scene="overview" data-camera-level="HOME">
     <section class="pane navigator-pane" aria-label="Storage navigator">
       <div class="pane-head"><h2>Storage navigator</h2></div>
       <nav class="nav" aria-label="Storage items">{_render_navigator(model.nodes, current_id)}</nav>
     </section>
     <section class="pane map-pane" aria-label="Storage map">
-      <div class="pane-head"><h2>Storage map</h2></div>
-      <div class="map-wrap" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+      <div class="pane-head"><h2>Storage atlas</h2></div>
+      <div class="atlas-hud" role="toolbar" aria-label="Atlas camera">
+        <span class="atlas-level" id="atlas-level">CAMERA HOME</span>
+        {_render_action_trace()}
+        {_nav_button("atlas-home", "home", "⌂ Atlas Home <kbd>Home</kbd>", aria="Return to Atlas home")}
+        {_nav_button("atlas-zoom-out", "zoom_out", "Zoom -", aria="Zoom out")}
+        {_nav_button("atlas-zoom-in", "zoom_in", "Zoom +", aria="Zoom in")}
+        {_nav_button("atlas-search", "search", "Search")}
+        {_nav_button("atlas-fit", "fit_selected", "Fit selected")}
+        {_nav_button("atlas-open", "open", "Open")}
+        {_nav_button("atlas-decision", "decision", "Decision")}
+        {_render_status_orbs(selected)}
+      </div>
+      <div class="storage-stage" id="storage-stage" data-scene="overview" data-camera-level="HOME" tabindex="-1">
+        {render_substrate_svg()}
+        {render_cinematic_experience_markup()}
+        {render_decision_chamber_markup()}
+        {render_sector_overview(model.nodes, current_id)}
+        {render_sector_bank(model.nodes, current_id)}
+        <section class="fabric-layer" aria-label="Evidence fabric">
+          <div class="camera-plane" id="camera-plane">
+            <div class="map-wrap selection-active" role="group" aria-label="Storage treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+          </div>
+        </section>
+        <section class="focus-layer" aria-label="Focused storage sector">
+          <div class="scene-toolbar">
+            <button type="button" class="scene-back" id="scene-back" hidden>← Sector overview</button>
+            <div class="selection-summary" id="selection-summary" aria-live="polite">{_render_selection_summary(selected)}</div>
+          </div>
+          <div class="focus-host" id="focus-host">{render_focus_chamber(selected, model.nodes)}</div>
+          <div class="context-map-shell">
+            <span class="context-map-label">FULL-RUN CONTEXT · {len(model.nodes):,} EVIDENCE GROUPS</span>
+            <div class="map-wrap selection-active" role="group" aria-label="Chamber context treemap">{_render_map_slots(model.nodes, rects, current_id)}</div>
+          </div>
+        </section>
+      </div>
+      <div class="phone-command-bar" role="toolbar" aria-label="Phone atlas commands">
+        <button type="button" data-atlas-action="home" aria-label="Return to Atlas home">⌂ Home</button>
+        <button type="button" data-atlas-action="search">Search</button>
+        <button type="button" data-atlas-action="zoom_out" aria-label="Zoom out">Zoom -</button>
+        <button type="button" data-atlas-action="zoom_in" aria-label="Zoom in">Zoom +</button>
+        <button type="button" data-atlas-action="toggle_decision">Decision</button>
+      </div>
     </section>
     <section class="pane inspector-pane" aria-label="Decision inspector">
       <div class="pane-head"><h2>Decision inspector</h2></div>
       <div class="inspector" id="inspector-body" tabindex="-1">{_render_inspector(selected)}</div>
     </section>
   </main>
-  <footer class="footer">Area communicates size. Labels and edges communicate evidence. Authorization remains separate. No destructive control exists.</footer>
+  <footer class="footer">The overview prioritizes readable dominant sectors; the focus context map preserves full-run magnitude. Evidence and authorization remain separate. No destructive control exists.</footer>
 </div>
 {"".join(inspector_templates)}
+{"".join(selection_templates)}
+{render_focus_templates(model.nodes)}
+{render_atlas_runtime_json(model.nodes, rects)}
 {_selection_script()}
+{render_cinematic_script()}
+{render_cinematic_experience_script()}
+{render_decision_chamber_script()}
 </body>
 </html>
 """

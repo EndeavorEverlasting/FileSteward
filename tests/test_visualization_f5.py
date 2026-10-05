@@ -17,6 +17,7 @@ from filesteward.visualization.contracts import (
     ShellMetrics,
     TreemapRect,
 )
+from filesteward.visualization.cinematic import render_sector_overview
 from filesteward.visualization.css import render_token_css
 from filesteward.visualization.html import render_report_html
 from filesteward.visualization.shell import render_report_shell
@@ -214,6 +215,83 @@ def test_state_not_color_only_and_first_unresolved_gate_dominant() -> None:
     assert re.search(r"class=\"[^\"]*unresolved[^\"]*\"", html)
     # Disposition text remains beside color classes.
     assert "state state-state-review" in html or 'state-state-review"' in html
+
+
+def test_live_selection_salience_keeps_micro_bucket_and_next_gate_obvious() -> None:
+    model = _model()
+    rects = (
+        TreemapRect(node_id="review", x=0, y=0, width=95, height=100),
+        TreemapRect(node_id="reclaim", x=95, y=0, width=5, height=3),
+    )
+    html = render_report_shell(model, rects=rects, selected_id="reclaim")
+
+    assert 'id="selection-summary"' in html
+    assert 'data-selection-summary-for="reclaim"' in html
+    assert "Run baseline free space" in html
+    assert 'run <span class="mono">synthetic-f5</span>' in html
+    assert 'class="map-node selected micro ' in html
+    assert "map-size" in html
+    assert ".map-wrap.selection-active .map-node:not(.selected)" in html
+    assert ".map-node.selected.micro::after" in html
+    assert "scrollIntoView({ block: 'nearest' })" in html
+    assert "Next gate" in html
+
+    # Terminal decision context must precede explanatory evidence in the inspector.
+    assert html.index('class="card decision-trace"') < html.index(
+        'class="card evidence"'
+    )
+    assert html.index('class="card next-action"') < html.index(
+        'class="card evidence"'
+    )
+
+
+def test_cinematic_overview_caps_first_frame_and_collapses_remainder() -> None:
+    nodes = tuple(
+        _node(
+            node_id=f"sector-{index}",
+            name=f"Sector {index}",
+            path=rf"C:\synthetic\sector-{index}",
+            disposition=CleanupDisposition.UNKNOWN,
+            logical=(20 - index) * 1_000_000_000,
+        )
+        for index in range(15)
+    )
+    html = render_sector_overview(nodes, selected_id=None)
+
+    assert html.count('class="sector-card') == 12
+    assert "3 smaller sectors" in html
+    assert "collapsed from the first frame" in html
+    assert "readable overview, not action authority" in html
+    assert "sector-magnitude" in html
+    assert "--sector-ratio:1.0000" in html
+    # The remainder is a presentation note, never a synthetic evidence node.
+    remainder = html[html.index('class="overview-remainder"'):]
+    assert "data-node-id" not in remainder
+
+
+def test_cinematic_atlas_has_spatial_dive_and_progressive_disclosure() -> None:
+    html = render_report_shell(_model())
+
+    assert '<main class="workspace" id="workspace" data-scene="overview" data-camera-level="HOME">' in html
+    assert 'id="storage-stage" data-scene="overview" data-camera-level="HOME"' in html
+    assert "Storage atlas" in html
+    assert '<svg class="storage-substrate"' in html
+    assert 'class="sector-overview"' in html
+    assert 'class="focus-layer"' in html
+    assert 'id="scene-back" hidden' in html
+    assert "FULL-RUN CONTEXT · 3 EVIDENCE GROUPS" in html
+    assert '.workspace[data-scene="overview"] .inspector-pane{opacity:0;visibility:hidden;' in html
+    assert "workspace.dataset.scene = 'focus'" in html
+    assert "workspace.dataset.scene = 'overview'" in html
+    assert "duration: 560" in html
+    assert "cubic-bezier(.16,1,.3,1)" in html
+    assert "event.key === 'Escape'" in html
+    assert "event.key !== 'Enter' && event.key !== ' '" in html
+    assert "filesteward:selection" in html
+    assert "@keyframes fs-substrate-charge" in html
+    assert "@media (prefers-reduced-motion: reduce)" in html
+    assert "CAMERA HOME" in html
+    assert "Fit selected" in html
 
 
 def test_forced_colors_and_high_contrast_hooks() -> None:

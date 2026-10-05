@@ -1,5 +1,37 @@
 # FileSteward Modern Storage Experience — P04 Factoring Plan
 
+
+> **2026-10-04 LIVE OPERATOR FALSIFICATION / MEMORY ATLAS v3 REOPEN:** F6 and Memory Atlas v2 remain technically proven on the private `phase5-cdrive-readonly-001` surface, but operator aesthetic/ergonomic acceptance was **not granted**. The center scene remains too report-like; tiny full-run sectors remain precision-pointer traps; laptop-width text can overflow; decision state is not yet carried by the visual story; and no universal camera-home semantic exists. `docs/program/storage-reclaim-memory-atlas-v3.md` is the canonical successor design. F7 stays downstream until v3 live acceptance closes.
+
+### Memory Atlas v3 execution map
+
+| Lane | State | Mission | Dependency | Owned surface |
+| --- | --- | --- | --- | --- |
+| V3-A | ✅ PROVEN locally (314-suite + version guard) | durable v3 design + P97 expansion + P130 version authority | none | design/prior-art/versioning/plan |
+| V3-B | ✅ PROVEN locally | semantic camera + level-of-detail zoom | V3-A | `camera.py` + focused tests |
+| V3-C | ✅ PROVEN locally | Decision Signal projector + semantic glow | V3-A | `signals.py` + focused tests |
+| V3-D | 🟡 IMPLEMENTED / suite-validated; live operator acceptance open | scene composition, responsive layout, P129 mouse/keyboard/phone convergence | V3-B, V3-C | cinematic/shell + acceptance tests |
+| V3-E | ⏳ WAITING | exact-head private report regeneration and operator live acceptance | V3-D | ignored local runtime proof only |
+| F7 | REQUIRED SUCCESSOR WORK | contract-selection UX | V3-E | separate operator decision lane |
+
+### Memory Atlas V4-D — Atlas Interaction Grammar (active)
+
+| Lane | State | Mission | Dependency | Owned surface |
+| --- | --- | --- | --- | --- |
+| V4-C | ✅ PROVEN committed/pushed on PR #15 (`4e8a529`) | Decision Chamber + Decision Bridge at 0.4.0 | V4-A/B/BRIDGE | `decision_chamber.py`, `review_bridge.py` |
+| V4-D1 | 🟡 IN_PROGRESS | typed presentation-only Interaction Projection + unit tests + prior-art/design persistence | V4-C preserved | `interaction.py`, plan/prior-art |
+| V4-D2 | 🟡 IN_PROGRESS | diegetic reticle/cartouche/camera trace/status orbs/quality glow; kill native `title` tooltips | V4-D1 | shell/experience/decision_chamber consumers |
+| V4-D3 | ⏳ WAITING | P124 readability convergence only after interaction behavior is characterized | V4-D2 green | evidence-ranked hotspots |
+| V4-D4 | ⏳ WAITING | self-falsification: desktop/laptop/phone/reduced-motion/forced-colors + private live journey | V4-D2 | ignored runtime proof |
+| PR acceptance | ⛔ BLOCKED | draft until live operator acceptance; no merge/undraft/F7/permanent delete | V4-D4 | PR #15 |
+
+Architecture (fixed): `decision_flow.allowed_intents()` remains authority; `interaction.py` projects cues (`target_kind`, `verb`, `availability`, `recency`, `consequence`, `quality_tone`, explanation) into `data-*` attributes. Quality polarity: ESSENTIAL/KEEP glow vs RECLAIM_CANDIDATE glow vs BLOCKED/PROTECTED vs AMBIGUOUS. Permanent deletion remains NOT IMPLEMENTED; terminal mutation truth stays QUARANTINE STAGED — NO BYTES REMOVED.
+
+Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.
+
+Local workstation proof: V4-C preserved at `4e8a529` with 342-suite PASS. V4-D adds interaction grammar as a visual-feature (P130 decides next version). Do not merge PR #15 before operator acceptance.
+
+
 **Status:** ACTIVE / FACTORED / IMPLEMENTATION-READY AFTER P04 MERGE  
 **Repository:** `EndeavorEverlasting/FileSteward`  
 **Planning base:** `main@b2b312bca0076fc9459b6355eb659a24d037e2a2`  
