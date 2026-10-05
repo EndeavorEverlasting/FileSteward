@@ -93,10 +93,25 @@ def render_report_html(
   let activeFilter = "ALL";
   let query = "";
 
+  const dispositionsFor = (filter) => {{
+    if (!filter || filter === "ALL") return null;
+    if (filter === "AMBIGUOUS") return ["HUMAN_REVIEW", "UNKNOWN"];
+    if (filter.indexOf("|") >= 0) {{
+      return filter.split("|").map((part) => part.trim()).filter(Boolean);
+    }}
+    return [filter];
+  }};
+
+  const stateMatches = (disposition, filter) => {{
+    const allowed = dispositionsFor(filter);
+    if (allowed === null) return true;
+    return allowed.indexOf(disposition) >= 0;
+  }};
+
   const visibleFor = (id) => {{
     const meta = nodeMeta[id];
     if (!meta) return true;
-    const stateMatch = activeFilter === "ALL" || meta.disposition === activeFilter;
+    const stateMatch = stateMatches(meta.disposition, activeFilter);
     const searchMatch = !query || meta.search.includes(query);
     return stateMatch && searchMatch;
   }};
@@ -107,8 +122,17 @@ def render_report_html(
       el.hidden = !visibleFor(id);
     }});
 
+    const allowed = dispositionsFor(activeFilter);
     document.querySelectorAll('.filter-chip').forEach((chip) => {{
-      const active = chip.getAttribute('data-filter') === activeFilter;
+      const chipFilter = chip.getAttribute('data-filter') || 'ALL';
+      let active = false;
+      if (activeFilter === "ALL") {{
+        active = chipFilter === "ALL";
+      }} else if (allowed) {{
+        active = allowed.indexOf(chipFilter) >= 0;
+      }} else {{
+        active = chipFilter === activeFilter;
+      }}
       chip.classList.toggle('active', active);
       chip.setAttribute('aria-pressed', active ? 'true' : 'false');
     }});
@@ -140,6 +164,24 @@ def render_report_html(
     }}
   }};
 
+  const setFilter = (filter) => {{
+    activeFilter = filter || "ALL";
+    applyFilters();
+    document.dispatchEvent(
+      new CustomEvent('filesteward:filter-changed', {{ detail: {{ filter: activeFilter }} }})
+    );
+  }};
+
+  const getFilter = () => activeFilter;
+
+  window.FileStewardFilters = {{ setFilter, getFilter }};
+
+  document.addEventListener('filesteward:set-filter', (event) => {{
+    const next = event && event.detail ? event.detail.filter : null;
+    if (next == null) return;
+    setFilter(next);
+  }});
+
   const chips = Array.from(document.querySelectorAll('.filter-chip'));
   chips.forEach((chip, index) => {{
     chip.setAttribute(
@@ -147,8 +189,7 @@ def render_report_html(
       chip.getAttribute('data-filter') === activeFilter ? 'true' : 'false'
     );
     chip.addEventListener('click', () => {{
-      activeFilter = chip.getAttribute('data-filter') || 'ALL';
-      applyFilters();
+      setFilter(chip.getAttribute('data-filter') || 'ALL');
     }});
     chip.addEventListener('keydown', (event) => {{
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
@@ -157,8 +198,7 @@ def render_report_html(
       const next = chips[(index + delta + chips.length) % chips.length];
       next.focus();
       // Activate on arrow navigation so focus and filter results stay aligned.
-      activeFilter = next.getAttribute('data-filter') || 'ALL';
-      applyFilters();
+      setFilter(next.getAttribute('data-filter') || 'ALL');
     }});
   }});
 

@@ -129,7 +129,9 @@ def test_keyboard_only_selection_workflow_is_present() -> None:
     assert "ArrowRight" in html
     assert "ArrowLeft" in html
     # Arrowing among filter chips must activate the focused chip.
-    assert "activeFilter = next.getAttribute('data-filter')" in html
+    assert "setFilter(next.getAttribute('data-filter')" in html or (
+        "activeFilter = next.getAttribute('data-filter')" in html
+    )
 
 
 def test_first_unresolved_gate_leads_dom_order() -> None:

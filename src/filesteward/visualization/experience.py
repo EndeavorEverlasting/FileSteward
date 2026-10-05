@@ -516,36 +516,87 @@ def render_cinematic_experience_script() -> str:
     return { mode: 'explore', label: 'EXPLORE', actionability: 'OPERABLE', explain: 'Explore the Atlas.' };
   };
 
-  const cartoucheObstacles = () => Array.from(document.querySelectorAll(
-    '.decision-chamber:not([hidden]), .inspector, .decision-compass, .atlas-classification-legend, .atlas-hud, .atlas-next-actions:not([hidden]), #chamber-next-actions:not([hidden])'
-  )).map((el) => el.getBoundingClientRect());
+  /* Chrome that must stay readable — cartouche docks in Atlas negative space instead. */
+  const cartoucheObstacles = () => Array.from(document.querySelectorAll([
+    'header.shell',
+    '.metrics',
+    '.navigator-pane',
+    '.filters',
+    '.filter-chip',
+    '.atlas-hud',
+    '.scene-toolbar',
+    '.phone-command-bar',
+    '.atlas-classification-legend',
+    '.atlas-next-actions:not([hidden])',
+    '#chamber-next-actions:not([hidden])',
+    '.atlas-scene-panel:not([hidden])',
+    '.decision-chamber:not([hidden])',
+    '.decision-compass',
+    '.inspector',
+    '.inspector-pane'
+  ].join(', '))).map((el) => el.getBoundingClientRect()).filter((r) => r.width > 1 && r.height > 1);
 
   const placeCartoucheAway = (x, y) => {
     const w = (cartouche && cartouche.offsetWidth) || 280;
     const h = (cartouche && cartouche.offsetHeight) || 72;
+    const pad = 8;
+    const stageEl = document.getElementById('storage-stage')
+      || document.querySelector('.map-stage')
+      || stage;
+    const stageRect = stageEl.getBoundingClientRect();
+    const stageOk = stageRect.width > w + pad * 2 && stageRect.height > h + pad * 2;
+    const clampBox = stageOk ? stageRect : {
+      left: pad, top: pad,
+      right: window.innerWidth - pad, bottom: window.innerHeight - pad
+    };
     const obstacles = cartoucheObstacles();
-    const overlaps = (left, top) => obstacles.some((r) => (
-      left < r.right + 8 && left + w > r.left - 8 && top < r.bottom + 8 && top + h > r.top - 8
+    /* Soft: prefer empty stage regions away from sector cards when possible. */
+    const softObstacles = Array.from(document.querySelectorAll(
+      '#storage-stage .sector-card, .map-stage .sector-card, .sector-card'
+    )).map((el) => el.getBoundingClientRect()).filter((r) => r.width > 1 && r.height > 1);
+    const hit = (left, top, rects, margin) => rects.some((r) => (
+      left < r.right + margin && left + w > r.left - margin
+      && top < r.bottom + margin && top + h > r.top - margin
     ));
-    const candidates = [
+    const clampToStage = (left, top) => ({
+      left: Math.min(clampBox.right - w - pad, Math.max(clampBox.left + pad, left)),
+      top: Math.min(clampBox.bottom - h - pad, Math.max(clampBox.top + pad, top))
+    });
+    const score = (left, top) => {
+      const chromeHit = hit(left, top, obstacles, pad);
+      const softHit = hit(left, top, softObstacles, 4);
+      const cx = left + w * 0.5;
+      const cy = top + h * 0.5;
+      const dist = Math.abs(cx - x) + Math.abs(cy - y);
+      return (chromeHit ? 100000 : 0) + (softHit ? 400 : 0) + dist;
+    };
+    const near = [
       [x + 20, y + 26],
       [x - w - 20, y + 26],
       [x + 20, y - h - 20],
       [x - w - 20, y - h - 20],
-      [8, y - h - 12],
-      [window.innerWidth - w - 8, y - h - 12],
-      [8, Math.max(8, window.innerHeight * 0.35)],
-      [window.innerWidth - w - 8, Math.max(8, window.innerHeight * 0.35)]
+      [x + 20, y - h * 0.5],
+      [x - w - 20, y - h * 0.5]
     ];
-    for (let i = 0; i < candidates.length; i += 1) {
-      const left = Math.min(window.innerWidth - w - 8, Math.max(8, candidates[i][0]));
-      const top = Math.min(window.innerHeight - h - 8, Math.max(8, candidates[i][1]));
-      if (!overlaps(left, top)) return { left: left, top: top };
-    }
-    return {
-      left: 8,
-      top: Math.min(window.innerHeight - h - 8, Math.max(8, y))
-    };
+    /* Stable stage docks (lower/upper corners) — avoid viewport chrome edges. */
+    const docks = [
+      [clampBox.right - w - pad, clampBox.bottom - h - pad],
+      [clampBox.left + pad, clampBox.top + pad],
+      [clampBox.right - w - pad, clampBox.top + pad],
+      [clampBox.left + pad, clampBox.bottom - h - pad]
+    ];
+    let best = null;
+    let bestScore = Infinity;
+    near.concat(docks).forEach((pair) => {
+      const pos = clampToStage(pair[0], pair[1]);
+      const s = score(pos.left, pos.top);
+      if (s < bestScore) {
+        bestScore = s;
+        best = pos;
+      }
+    });
+    /* Prefer chrome-clear near/stage candidates; else least-bad stage corner dock. */
+    return best || clampToStage(docks[0][0], docks[0][1]);
   };
 
   const paintCue = (cue, x, y, showCartouche) => {

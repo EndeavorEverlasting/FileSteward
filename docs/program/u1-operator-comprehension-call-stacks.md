@@ -3,7 +3,7 @@
 **Status:** DESIGNED + executable seams wired into report shell
 **Module:** `src/filesteward/visualization/scene_surface.py`
 **Authority floor:** `decision_flow.allowed_intents()`; permanent deletion forbidden
-**Product version:** `0.11.0` (visual-feature after chamber next-actions / delete-blocker / cartouche dodge)
+**Product version:** `0.12.0` (legend/metric dashboards operable; cartouche negative-space; draggable chamber)
 
 ## Operator correction 2026-10-05 (blocker / scenery pass)
 

@@ -292,13 +292,23 @@ def _render_metric_scene_cards(model: PresentationModel) -> str:
     cards: list[str] = []
     for entry in entries:
         auth_attr = ' class="auth"' if entry.surface_id == "metric_authorization_state" else ""
+        filter_attr = (
+            f' data-filter-target="{escape_attr(entry.filter_target)}"'
+            if entry.filter_target
+            else ""
+        )
+        decision_attr = (
+            ' data-opens-decision="true"' if entry.opens_decision else ""
+        )
         cards.append(
             f'<button type="button" class="metric metric-scene" '
             f'id="{escape_attr(entry.surface_id)}" '
             f'data-scene-entry="{escape_attr(entry.surface_id)}" '
             f'data-scene="{escape_attr(entry.scene)}" '
             f'data-scene-action="{escape_attr(entry.required_action)}" '
+            f'data-dashboard-heading="{escape_attr(entry.dashboard_title)}" '
             f'data-cue-explain="{escape_attr(entry.explanation)}" '
+            f'data-actionability="OPERABLE"{filter_attr}{decision_attr} '
             f'aria-label="{escape_attr(entry.label + ": " + entry.value + ". " + entry.explanation)}">'
             f"<b{auth_attr}>{escape_text(entry.value)}</b>"
             f"<span>{escape_text(entry.label)}</span>"
@@ -341,27 +351,45 @@ def _render_mode_brief(node: Optional[PresentationNode]) -> str:
     )
 
 
+def _legend_filter_attr(filter_target: str | tuple[str, ...] | None) -> str:
+    if filter_target is None:
+        return ""
+    if isinstance(filter_target, (tuple, list)):
+        value = "|".join(str(part) for part in filter_target)
+    else:
+        value = str(filter_target)
+    if not value:
+        return ""
+    return f'data-filter-target="{escape_attr(value)}" '
+
+
 def _render_classification_legend(node: Optional[PresentationNode] = None) -> str:
     items: list[str] = []
     for entry in classification_legend():
+        explain = f"{entry.meaning} {entry.operable_hint}"
         items.append(
-            f'<li class="class-legend-item quality-{escape_attr(entry.quality_tone.value.lower())}" '
-            f'tabindex="0" '
+            "<li>"
+            f'<button type="button" '
+            f'class="class-legend-item quality-{escape_attr(entry.quality_tone.value.lower())}" '
             f'data-legend-state="{escape_attr(entry.state_id)}" '
+            f'data-legend-action="{escape_attr(entry.legend_action)}" '
+            f'{_legend_filter_attr(entry.filter_target)}'
             f'data-cue-label="{escape_attr(entry.label)}" '
-            f'data-cue-explain="{escape_attr(entry.meaning + " " + entry.operable_hint)}" '
-            f'data-cursor-mode="explore" data-actionability="INFORMATIONAL">'
+            f'data-cue-explain="{escape_attr(explain)}" '
+            f'data-cursor-mode="explore" data-actionability="OPERABLE" '
+            f'aria-label="{escape_attr(entry.label + ". " + explain)}">'
             f'<span class="class-legend-swatch" aria-hidden="true"></span>'
             f'<span class="class-legend-label">{escape_text(entry.label)}</span>'
             f'<span class="class-legend-meaning">{escape_text(entry.meaning)}</span>'
-            f"</li>"
+            f"</button>"
+            "</li>"
         )
     return (
         '<section class="atlas-classification-legend" id="atlas-classification-legend" '
         'aria-label="Classification legend">'
         '<div class="class-legend-head">'
         "<strong>LEGEND</strong>"
-        "<span>Classification ≠ authority · color is not the only signal</span>"
+        "<span>Classification ≠ authority · activate a state to focus matching evidence</span>"
         "</div>"
         f'<ul class="class-legend-list">{"".join(items)}</ul>'
         '<p class="class-legend-hotkeys"><kbd>D</kbd> Decision · <kbd>Home</kbd> Atlas Home · '
@@ -599,12 +627,14 @@ html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,.app::-w
 .class-legend-head strong{font:800 .72rem/1 var(--fs-font-mono);letter-spacing:.08em;}
 .class-legend-head span,.class-legend-hotkeys{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .class-legend-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.45rem;}
-.class-legend-item{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:.4rem;row-gap:.15rem;padding:.35rem .4rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);min-width:0;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;}
+.class-legend-list > li{min-width:0;margin:0;padding:0;}
+.class-legend-item{appearance:none;width:100%;box-sizing:border-box;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:.4rem;row-gap:.15rem;padding:.35rem .4rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);color:inherit;text-align:left;cursor:pointer;min-width:0;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;}
 .class-legend-swatch{width:.7rem;height:.7rem;border-radius:999px;margin-top:.2rem;grid-row:1 / span 2;background:var(--fs-text-muted);box-shadow:0 0 0 1px var(--fs-border-default);}
 .class-legend-item.quality-blocked .class-legend-swatch{background:var(--fs-danger, #b56b5c);}
 .class-legend-item.quality-reclaim_candidate .class-legend-swatch{background:var(--fs-accent);}
 .class-legend-item.quality-essential .class-legend-swatch{background:var(--fs-success, #86A76A);}
 .class-legend-item.quality-ambiguous .class-legend-swatch{background:var(--fs-warning, #D7AA82);}
+.class-legend-item[data-actionability="OPERABLE"] .class-legend-swatch{box-shadow:0 0 0 1px var(--fs-border-default),0 0 10px color-mix(in srgb,currentColor 35%,transparent);}
 .class-legend-label{font:750 .68rem/1.2 var(--fs-font-mono);letter-spacing:.04em;}
 .class-legend-meaning{grid-column:2;color:var(--fs-text-secondary);font-size:.68rem;line-height:1.3;}
 .atlas-next-actions{margin:.55rem 0 0;padding:.65rem .75rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);background:color-mix(in srgb, var(--fs-bg-shell) 92%, var(--fs-accent) 8%);}
@@ -877,44 +907,197 @@ def _selection_script() -> str:
   const scenePanel = document.getElementById('atlas-scene-panel');
   const sceneTitle = document.getElementById('atlas-scene-panel-title');
   const sceneBody = document.getElementById('atlas-scene-panel-body');
-  const openScene = (scene, explain, action) => {
+  const openScene = (title, explain) => {
     if (!scenePanel) return;
-    if (sceneTitle) sceneTitle.textContent = scene || 'SCENE';
-    if (sceneBody) sceneBody.textContent = (action ? action + ' — ' : '') + (explain || '');
+    if (sceneTitle) sceneTitle.textContent = title || 'Dashboard';
+    if (sceneBody) sceneBody.textContent = explain || '';
     scenePanel.hidden = false;
   };
+  const pulseStage = () => {
+    const stage = document.getElementById('storage-stage');
+    if (!stage) return;
+    stage.classList.remove('diving', 'returning-home');
+    void stage.offsetWidth;
+    stage.classList.add('diving');
+    window.setTimeout(() => stage.classList.remove('diving'), 680);
+  };
+  const setNavigatorFilter = (filter) => {
+    if (window.FileStewardFilters && typeof window.FileStewardFilters.setFilter === 'function') {
+      window.FileStewardFilters.setFilter(filter);
+      return;
+    }
+    document.dispatchEvent(
+      new CustomEvent('filesteward:set-filter', { detail: { filter: filter || 'ALL' } })
+    );
+  };
+  const stateLabelForRow = (row) => {
+    if (!row) return '';
+    const marker = row.querySelector('[data-state-label]');
+    return ((marker && marker.getAttribute('data-state-label')) || '').toUpperCase();
+  };
+  const findVisibleRowByState = (needle) => {
+    const key = (needle || '').toUpperCase();
+    return Array.from(document.querySelectorAll('.nav-row:not([hidden])')).find((row) => {
+      return stateLabelForRow(row).indexOf(key) >= 0;
+    }) || null;
+  };
+  const ensureDecisionOpen = () => {
+    const atlas = window.FileStewardAtlas;
+    const workspace = document.getElementById('workspace');
+    if (!atlas || typeof atlas.toggle_decision !== 'function') return;
+    if (workspace && workspace.dataset.decisionOpen === 'true') return;
+    atlas.toggle_decision();
+  };
+  const focusFirstMatch = ({ fit = true, open = false, decision = false } = {}) => {
+    const atlas = window.FileStewardAtlas;
+    const first = document.querySelector('.nav-row:not([hidden])');
+    if (!first) return false;
+    first.click();
+    if (atlas) {
+      if (fit && typeof atlas.fit_selected === 'function') atlas.fit_selected();
+      if (open && typeof atlas.open_selected === 'function') atlas.open_selected();
+      if (decision) ensureDecisionOpen();
+    }
+    pulseStage();
+    return true;
+  };
+  const openAuthorizationDashboard = (title, explain) => {
+    openScene(title || 'Authorization', explain || '');
+    const selected = document.querySelector('.nav-row.selected:not([hidden])');
+    const reclaimRow = (
+      (selected && stateLabelForRow(selected).indexOf('RECLAIM') >= 0)
+        ? selected
+        : findVisibleRowByState('RECLAIM')
+    );
+    if (reclaimRow) {
+      reclaimRow.click();
+      const atlas = window.FileStewardAtlas;
+      if (atlas && typeof atlas.fit_selected === 'function') atlas.fit_selected();
+      ensureDecisionOpen();
+      pulseStage();
+      return;
+    }
+    pulseStage();
+  };
+  const activateLegendItem = (item) => {
+    if (!item) return;
+    document.querySelectorAll('.class-legend-item').forEach((other) => {
+      other.classList.toggle('is-active', other === item);
+    });
+    const title = item.getAttribute('data-cue-label') || 'Legend';
+    const explain = item.getAttribute('data-cue-explain') || '';
+    const action = (item.getAttribute('data-legend-action') || '').toUpperCase();
+    const filterTarget = item.getAttribute('data-filter-target');
+    if (action === 'OPEN_AUTHORIZATION' || filterTarget === 'AUTHORIZATION') {
+      openAuthorizationDashboard(title, explain);
+      return;
+    }
+    openScene(title, explain);
+    if (filterTarget) {
+      setNavigatorFilter(filterTarget);
+      if (!focusFirstMatch({ fit: true, open: true, decision: false })) {
+        openScene(
+          title,
+          (explain ? explain + ' ' : '') + 'No evidence matches this classification filter in the current run.'
+        );
+      }
+      return;
+    }
+    pulseStage();
+  };
+  document.querySelectorAll('.class-legend-item').forEach((item) => {
+    item.addEventListener('click', () => activateLegendItem(item));
+    item.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      activateLegendItem(item);
+    });
+  });
   document.querySelectorAll('[data-scene-entry]').forEach((el) => {
     el.addEventListener('click', () => {
       document.querySelectorAll('[data-scene-entry]').forEach((other) => {
         other.setAttribute('aria-pressed', other === el ? 'true' : 'false');
       });
-      const scene = el.getAttribute('data-scene');
-      const action = el.getAttribute('data-scene-action');
-      openScene(scene, el.getAttribute('data-cue-explain'), action);
+      const action = el.getAttribute('data-scene-action') || '';
+      const dashboardTitle = (
+        el.getAttribute('data-dashboard-heading')
+        || el.getAttribute('data-cue-label')
+        || el.getAttribute('data-scene')
+        || 'Dashboard'
+      );
+      const explain = el.getAttribute('data-cue-explain') || '';
       const atlas = window.FileStewardAtlas;
       const workspace = document.getElementById('workspace');
       if (action === 'OPEN_NAVIGATOR_SCENE' && atlas && typeof atlas.search === 'function') {
+        openScene(dashboardTitle, explain);
         if (workspace) workspace.dataset.navOpen = 'true';
         atlas.search();
-      } else if (action === 'OPEN_ATLAS_SCENE' && atlas && typeof atlas.home === 'function') {
+        return;
+      }
+      if (action === 'OPEN_ATLAS_SCENE' && atlas && typeof atlas.home === 'function') {
+        openScene(dashboardTitle, explain);
         atlas.home();
         const stage = document.getElementById('storage-stage');
         if (stage) stage.focus();
-      } else if (action === 'OPEN_INSPECTOR_SCENE') {
+        return;
+      }
+      if (action === 'OPEN_INSPECTOR_SCENE') {
+        openScene(dashboardTitle, explain);
         if (atlas && typeof atlas.toggle_decision === 'function'
             && workspace && workspace.dataset.decisionOpen !== 'true') {
           atlas.toggle_decision();
         }
         const inspector = document.getElementById('inspector-body');
         if (inspector) inspector.focus();
+        return;
       }
+      if (action === 'OPEN_STORAGE_SCENE') {
+        openScene(dashboardTitle, explain);
+        setNavigatorFilter(el.getAttribute('data-filter-target') || 'ALL');
+        if (atlas && typeof atlas.home === 'function') atlas.home();
+        pulseStage();
+        return;
+      }
+      if (action === 'OPEN_FREE_SPACE_SCENE') {
+        openScene(dashboardTitle, explain);
+        if (atlas && typeof atlas.home === 'function') atlas.home();
+        pulseStage();
+        return;
+      }
+      if (action === 'OPEN_RECLAIM_SCENE') {
+        openScene(dashboardTitle, explain);
+        setNavigatorFilter(el.getAttribute('data-filter-target') || 'RECLAIM_PROVEN');
+        const found = focusFirstMatch({
+          fit: true,
+          open: true,
+          decision: el.getAttribute('data-opens-decision') === 'true',
+        });
+        if (!found) {
+          openScene(
+            dashboardTitle,
+            'No RECLAIM_PROVEN evidence in this run. Projected reclaim stays estimate-grade until candidates appear. Permanent deletion is not available.'
+          );
+        }
+        return;
+      }
+      if (action === 'OPEN_TARGET_SCENE') {
+        openScene(dashboardTitle, explain);
+        pulseStage();
+        return;
+      }
+      if (action === 'OPEN_AUTHORIZATION_SCENE') {
+        openAuthorizationDashboard(dashboardTitle, explain);
+        return;
+      }
+      openScene(dashboardTitle, explain);
     });
   });
   document.querySelectorAll('.next-action').forEach((el) => {
     el.addEventListener('click', () => {
       const explain = el.getAttribute('data-cue-explain') || '';
       const label = (el.querySelector('strong') && el.querySelector('strong').textContent) || 'NEXT';
-      openScene(label, explain, el.getAttribute('data-consequence'));
+      const consequence = el.getAttribute('data-consequence');
+      openScene(label, consequence ? (explain + ' Consequence: ' + consequence) : explain);
       if (el.getAttribute('data-open-approval') === 'true' || el.getAttribute('data-decision-intent')) {
         const atlas = window.FileStewardAtlas;
         if (atlas && typeof atlas.toggle_decision === 'function') atlas.toggle_decision();

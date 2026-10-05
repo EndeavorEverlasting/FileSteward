@@ -6,12 +6,15 @@ Presentation/orchestration helpers only. Legal intents remain owned by
 Success stacks:
   USER activate metric card
     -> MetricSceneEntry
-    -> scenery panel OPEN_* scene
-    -> explanation only (no disposition mutation)
+    -> cinematic dashboard (readable title + consequence)
+    -> navigator filter / Atlas home / Decision chamber as declared
+    -> no disposition mutation from the metric itself
 
-  USER consult classification legend
+  USER activate classification legend
     -> ClassificationLegendEntry
-    -> quality tone + meaning (no color-only semantics)
+    -> filter_target / legend_action
+    -> navigator subset + Atlas focus of first match
+    -> AUTHORIZATION opens auth dashboard (not a disposition filter)
 
   USER wants to classify / "delete"
     -> operator_next_actions(flow)
@@ -64,6 +67,9 @@ class MetricSceneEntry:
     required_action: str
     scene: str
     explanation: str
+    dashboard_title: str
+    filter_target: str | None = None
+    opens_decision: bool = False
 
 
 @dataclass(frozen=True)
@@ -73,6 +79,8 @@ class ClassificationLegendEntry:
     meaning: str
     quality_tone: QualityTone
     operable_hint: str
+    filter_target: str | tuple[str, ...] | None = None
+    legend_action: str = "FILTER_AND_FOCUS"
 
 
 @dataclass(frozen=True)
@@ -267,7 +275,12 @@ def metric_scene_entries(
             value=observed_storage,
             required_action="OPEN_STORAGE_SCENE",
             scene="STORAGE_PRESSURE",
-            explanation="Where pressure lives in this run — magnitude is not authority.",
+            dashboard_title="Storage pressure",
+            explanation=(
+                "Atlas overview of where observed storage pressure lives in this run. "
+                "Magnitude is visible; it is not reclaim authority."
+            ),
+            filter_target="ALL",
         ),
         MetricSceneEntry(
             surface_id="metric_baseline_free_space",
@@ -275,7 +288,12 @@ def metric_scene_entries(
             value=free_space,
             required_action="OPEN_FREE_SPACE_SCENE",
             scene="FREE_SPACE",
-            explanation="Baseline free space for this evidence run.",
+            dashboard_title="Free space baseline",
+            explanation=(
+                "Run baseline free space for this evidence set. "
+                "Use Atlas Home to re-orient before chasing reclaim candidates."
+            ),
+            filter_target=None,
         ),
         MetricSceneEntry(
             surface_id="metric_projected_reclaim",
@@ -283,7 +301,14 @@ def metric_scene_entries(
             value=reclaim_label,
             required_action="OPEN_RECLAIM_SCENE",
             scene="RECLAIM",
-            explanation="Projected reclaim candidates — still needs legal approval.",
+            dashboard_title="Reclaim candidates",
+            explanation=(
+                "Projected reclaim candidates with affirmative evidence. "
+                "Still needs legal operator approval before quarantine staging — "
+                "NO BYTES REMOVED."
+            ),
+            filter_target="RECLAIM_PROVEN",
+            opens_decision=True,
         ),
         MetricSceneEntry(
             surface_id="metric_target_free_space",
@@ -291,7 +316,12 @@ def metric_scene_entries(
             value=target_free_space,
             required_action="OPEN_TARGET_SCENE",
             scene="TARGET",
-            explanation="Operator target free-space goal for this cleanup journey.",
+            dashboard_title="Target free space",
+            explanation=(
+                "Operator target free-space goal for this cleanup journey. "
+                "Keeps the current evidence context; does not invent reclaim authority."
+            ),
+            filter_target=None,
         ),
         MetricSceneEntry(
             surface_id="metric_authorization_state",
@@ -299,7 +329,15 @@ def metric_scene_entries(
             value=authorization,
             required_action="OPEN_AUTHORIZATION_SCENE",
             scene="AUTHORIZATION",
-            explanation="Authorization is separate from evidence classification.",
+            dashboard_title="Authorization",
+            explanation=(
+                "Authorization is separate from CleanupDisposition classification. "
+                "UNAPPROVED means no operator approval artifact yet — not a reclaim "
+                "permission and not a disposition. When a reclaim candidate is available, "
+                "open Decision toward the approval / quarantine staging path."
+            ),
+            filter_target=None,
+            opens_decision=True,
         ),
     )
 
@@ -313,35 +351,45 @@ def classification_legend() -> tuple[ClassificationLegendEntry, ...]:
             label="PROTECTED",
             meaning="Blocked from reclaim. Inspect why; cannot promote to reclaim here.",
             quality_tone=QualityTone.BLOCKED,
-            operable_hint="Open protection explanation",
+            operable_hint="Filter to PROTECTED evidence and focus the first match",
+            filter_target="PROTECTED",
+            legend_action="FILTER_AND_FOCUS",
         ),
         ClassificationLegendEntry(
             state_id="RECLAIM_CANDIDATE",
             label="RECLAIM CANDIDATE",
             meaning="Evidence supports reclaim candidacy. Still needs approval.",
             quality_tone=QualityTone.RECLAIM_CANDIDATE,
-            operable_hint="Open approval or keep",
+            operable_hint="Filter to RECLAIM_PROVEN evidence and focus the first match",
+            filter_target="RECLAIM_PROVEN",
+            legend_action="FILTER_AND_FOCUS",
         ),
         ClassificationLegendEntry(
             state_id="KEEP_ESSENTIAL",
             label="KEEP / ESSENTIAL",
             meaning="Affirmative keep. Not a reclaim target.",
             quality_tone=QualityTone.ESSENTIAL,
-            operable_hint="Inspect keep rationale",
+            operable_hint="Filter to KEEP_PROVEN evidence and focus the first match",
+            filter_target="KEEP_PROVEN",
+            legend_action="FILTER_AND_FOCUS",
         ),
         ClassificationLegendEntry(
             state_id="AMBIGUOUS_HUMAN_REVIEW",
             label="HUMAN REVIEW / UNKNOWN",
             meaning="Ambiguous — operator judgment or rescan required.",
             quality_tone=QualityTone.AMBIGUOUS,
-            operable_hint="Open first unresolved gate",
+            operable_hint="Filter to HUMAN_REVIEW and UNKNOWN evidence; focus the first match",
+            filter_target="AMBIGUOUS",
+            legend_action="FILTER_AND_FOCUS",
         ),
         ClassificationLegendEntry(
             state_id="AUTHORIZATION_LOCKED",
             label="AUTHORIZATION",
             meaning="Approval / lock state. Separate from CleanupDisposition.",
             quality_tone=QualityTone.NEUTRAL,
-            operable_hint="Open authorization scene",
+            operable_hint="Open authorization dashboard (not a disposition filter)",
+            filter_target=None,
+            legend_action="OPEN_AUTHORIZATION",
         ),
     )
 

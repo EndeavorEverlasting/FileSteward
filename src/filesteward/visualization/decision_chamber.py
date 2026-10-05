@@ -19,11 +19,14 @@ def render_decision_chamber_markup() -> str:
 <aside class="decision-chamber"
        id="decision-chamber"
        data-open-scene="MAP"
+       data-docked="center"
        hidden
        aria-label="Decision Chamber">
   <div class="chamber-chrome">
-    <div class="chamber-orientation" aria-live="polite">
-      <span class="chamber-kicker">DECISION CHAMBER</span>
+    <div class="chamber-orientation" id="chamber-drag-handle" data-drag-handle="true"
+         aria-grabbed="false" data-drag-hint="Drag Decision Chamber into negative space"
+         aria-live="polite">
+      <span class="chamber-kicker">DECISION CHAMBER · drag</span>
       <strong id="chamber-scene-label">MAP</strong>
       <span id="chamber-last-transition">No transition yet</span>
     </div>
@@ -93,7 +96,16 @@ def render_decision_chamber_css() -> str:
   color:var(--fs-text-primary);backdrop-filter:blur(10px);
   box-shadow:0 0 0 1px color-mix(in srgb,var(--fs-accent) 18%,transparent),
              0 18px 40px color-mix(in srgb,var(--fs-bg-canvas) 55%,transparent);
+  touch-action:none;
 }
+.decision-chamber[data-docked="free"]{
+  transform:none;right:auto;bottom:auto;
+}
+.decision-chamber.is-dragging{
+  opacity:.94;box-shadow:0 0 0 1px var(--fs-accent),0 18px 48px color-mix(in srgb,var(--fs-bg-canvas) 70%,transparent);
+}
+.chamber-orientation[data-drag-handle="true"]{cursor:grab;user-select:none;}
+.decision-chamber.is-dragging .chamber-orientation[data-drag-handle="true"]{cursor:grabbing;}
 .chamber-next-actions{padding:.55rem;border:1px solid var(--fs-border-subtle);border-radius:4px;background:color-mix(in srgb,var(--fs-accent) 8%,var(--fs-bg-surface-1));}
 .chamber-next-actions[hidden]{display:none!important;}
 .chamber-next-actions .next-action[data-consequence="READ_ONLY"]{cursor:help;}
@@ -186,9 +198,16 @@ button.evidence-state-action:focus-visible{outline:3px solid var(--fs-focus);out
 .workspace[data-staged-cinematic="true"] .decision-chamber{
   animation:fs-staged-settle 720ms ease-out both;
 }
+.workspace[data-staged-cinematic="true"] .decision-chamber[data-docked="free"]{
+  animation:fs-staged-settle-free 720ms ease-out both;
+}
 @keyframes fs-staged-settle{
   0%{transform:translateX(-50%) translateY(8px);opacity:.2}
   100%{transform:translateX(-50%) translateY(0);opacity:1}
+}
+@keyframes fs-staged-settle-free{
+  0%{transform:translateY(8px);opacity:.2}
+  100%{transform:translateY(0);opacity:1}
 }
 button.evidence-state-action,.evidence-state-action[role="button"],.signal-chip[data-open-decision="true"]{
   display:inline-flex;align-items:center;gap:.35rem;min-height:32px;padding:.2rem .45rem;
@@ -204,7 +223,10 @@ button.evidence-state-action .state-marker,.evidence-state-action .state-marker{
 }
 @media (prefers-reduced-motion:reduce){
   .workspace[data-staged-cinematic="true"] .decision-chamber,
-  .chamber-gate[data-active="true"]{animation:none;transform:none;}
+  .workspace[data-staged-cinematic="true"] .decision-chamber[data-docked="free"],
+  .chamber-gate[data-active="true"]{animation:none;}
+  .chamber-gate[data-active="true"]{transform:none;}
+  .workspace[data-staged-cinematic="true"] .decision-chamber:not([data-docked="free"]){transform:none;}
 }
 @media (forced-colors:active){
   .decision-chamber,.chamber-gate,.chamber-actions button,.chamber-confirm,button.evidence-state-action{
@@ -485,12 +507,42 @@ def render_decision_chamber_script() -> str:
     renderSceneNextActions();
   };
 
+  /* Drag Decision Chamber into negative space (mirrors Decision Path). */
+  const boundsEl = document.getElementById('storage-stage') || workspace;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const placeChamber = (left, top) => {
+    const bounds = boundsEl.getBoundingClientRect();
+    const width = chamber.offsetWidth || 320;
+    const height = chamber.offsetHeight || 160;
+    const x = clamp(left - bounds.left, 8, Math.max(8, bounds.width - width - 8));
+    const y = clamp(top - bounds.top, 8, Math.max(8, bounds.height - height - 8));
+    chamber.style.left = x + 'px';
+    chamber.style.top = y + 'px';
+    chamber.style.right = 'auto';
+    chamber.style.bottom = 'auto';
+    chamber.style.transform = 'none';
+    chamber.dataset.docked = 'free';
+    try {
+      sessionStorage.setItem('fs.decisionChamber.pos', JSON.stringify({ x: x, y: y }));
+    } catch (_err) { /* ignore */ }
+  };
+  const restoreChamberPos = () => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('fs.decisionChamber.pos') || 'null');
+      if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+        const bounds = boundsEl.getBoundingClientRect();
+        placeChamber(bounds.left + saved.x, bounds.top + saved.y);
+      }
+    } catch (_err) { /* ignore */ }
+  };
+
   const applyScene = () => {
     workspace.dataset.openDecisionScene = state.openDecisionScene;
     chamber.setAttribute('data-open-scene', state.openDecisionScene);
     const scene = state.openDecisionScene;
     const open = scene === 'GATE' || scene === 'RESOLVE' || scene === 'APPROVAL' || scene === 'STAGED' || scene === 'FOCUS';
     chamber.hidden = !open;
+    if (open) restoreChamberPos();
     if (sceneLabel) sceneLabel.textContent = scene;
     if (chamberBrief) chamberBrief.textContent = sceneBrief(scene);
     if (lastTransitionEl) {
@@ -778,6 +830,38 @@ def render_decision_chamber_script() -> str:
     document.querySelectorAll('[data-ghost="true"]').forEach((el) => el.remove());
     applyScene();
   });
+
+  const dragHandle = document.getElementById('chamber-drag-handle')
+    || chamber.querySelector('[data-drag-handle="true"]');
+  let drag = null;
+  if (dragHandle) {
+    dragHandle.addEventListener('pointerdown', (event) => {
+      if (event.target instanceof Element && event.target.closest(
+        'button,a,input,select,textarea,label,[role="button"],.next-action,.chamber-confirm'
+      )) return;
+      drag = {
+        id: event.pointerId,
+        ox: event.clientX - chamber.getBoundingClientRect().left,
+        oy: event.clientY - chamber.getBoundingClientRect().top
+      };
+      chamber.classList.add('is-dragging');
+      dragHandle.setAttribute('aria-grabbed', 'true');
+      dragHandle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+    dragHandle.addEventListener('pointermove', (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      placeChamber(event.clientX - drag.ox, event.clientY - drag.oy);
+    });
+    const endDrag = (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      drag = null;
+      chamber.classList.remove('is-dragging');
+      dragHandle.setAttribute('aria-grabbed', 'false');
+    };
+    dragHandle.addEventListener('pointerup', endDrag);
+    dragHandle.addEventListener('pointercancel', endDrag);
+  }
 
   // Expose orientation for tests / self-falsification probes.
   window.__filestewardDecisionChamber = state;
