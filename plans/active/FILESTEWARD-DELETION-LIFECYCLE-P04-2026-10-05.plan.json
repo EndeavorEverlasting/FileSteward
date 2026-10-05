@@ -1,0 +1,189 @@
+{
+  "schema_version": "filesteward.p04-plan/v1",
+  "plan_id": "FILESTEWARD-DELETION-LIFECYCLE-P04-20261005",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "baseline": {
+    "dependency_pr": 17,
+    "dependency_branch": "design/u1-brand-home-schedule-seam-20261005",
+    "dependency_head_sha": "4c23b8fe88c73a384ebaebd1da121fe6e6575266",
+    "stack": [
+      "PR17",
+      "PR16",
+      "PR15",
+      "main@be0406b3047ce07a769fb3f9a14cd6618dbf086e"
+    ],
+    "freshness_rule": "REFRESH_PROVIDER_BEFORE_EVERY_COMMIT_PUSH_AND_CONVERGENCE"
+  },
+  "mission": "Make exact deletion visibility and real byte reclamation co-equal FileSteward product outcomes, progressing from exact manifest visibility through preflight, explicit irreversible approval, bounded permanent deletion, receipt, and verified reclaim.",
+  "supersession": {
+    "prior_roadmap_rule": "PERMANENT_DELETE_FORBIDDEN_OUTSIDE_MVP",
+    "disposition": "SUPERSEDED_AS_ROADMAP_ENDPOINT_ONLY",
+    "current_implementation_boundary": "STILL_FORBIDDEN_UNTIL_D3_D4B_GATES_PROVE_AUTHORITY"
+  },
+  "invariants": [
+    "same-volume quarantine is not byte reclamation",
+    "projected reclaim is never verified reclaim",
+    "scheduler cannot self-approve or promote evidence",
+    "delete only exact manifest-enumerated items",
+    "never follow symlink/junction/reparse targets",
+    "partial failure is never global success",
+    "initial permanent-delete scope is RECLAIM_PROVEN regenerable data",
+    "cloud/shared/managed/provider-ambiguous items fail closed"
+  ],
+  "lanes": [
+    {
+      "id": "D0",
+      "title": "Deletion contract freeze",
+      "dependencies": [],
+      "status": "IMPLEMENTED_PLAN_BRANCH",
+      "owned_surface": "plans/active/FILESTEWARD-DELETION-LIFECYCLE-P04-2026-10-05.*",
+      "proof_gates": [
+        "markdown provider readback",
+        "JSON parse",
+        "JSON provider readback"
+      ]
+    },
+    {
+      "id": "D1",
+      "title": "Exact Delete Set + Decision Surface",
+      "dependencies": [
+        "D0"
+      ],
+      "status": "READY_AFTER_REFRESH",
+      "parallel_group": "WAVE_DELETE_1",
+      "owned_surface": "deletion manifest + presentation projection",
+      "proof_gates": [
+        "exact local/private delete-manifest",
+        "RECLAIM_PROVEN only initial scope",
+        "paths + item count + allocated bytes visible",
+        "reversibility visible",
+        "operator can identify exact set"
+      ]
+    },
+    {
+      "id": "D2",
+      "title": "Mutation Preflight / Dry Run",
+      "dependencies": [
+        "D0"
+      ],
+      "status": "READY_AFTER_REFRESH",
+      "parallel_group": "WAVE_DELETE_1",
+      "owned_surface": "new deletion preflight/executor modules + focused tests",
+      "proof_gates": [
+        "no-mutation dry run",
+        "digest drift fail-closed",
+        "reparse/link fail-closed",
+        "protected/managed/cloud fail-closed",
+        "baseline free-space captured"
+      ]
+    },
+    {
+      "id": "D3",
+      "title": "Explicit Delete Approval v1",
+      "dependencies": [
+        "D1",
+        "D2"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "action-specific approval",
+        "manifest digest bound",
+        "preflight revision bound",
+        "exact item IDs/count/bytes bound",
+        "QUARANTINE cannot authorize DELETE_PERMANENTLY"
+      ]
+    },
+    {
+      "id": "D4A",
+      "title": "Reversible Quarantine + Restore",
+      "dependencies": [
+        "D3"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "bounded mutation",
+        "same-volume reclaim truth",
+        "restore proof",
+        "receipt"
+      ]
+    },
+    {
+      "id": "D4B",
+      "title": "Permanent Delete Executor",
+      "dependencies": [
+        "D3"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "manifest-only mutation",
+        "exact revalidation",
+        "bottom-up empty-dir removal",
+        "partial failure retained",
+        "one approved regenerable live specimen"
+      ]
+    },
+    {
+      "id": "D5",
+      "title": "Execution Receipt",
+      "dependencies": [
+        "D4A|D4B"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "per-item result",
+        "manifest+approval digests",
+        "interruption-safe state",
+        "pre/post free-space observations"
+      ]
+    },
+    {
+      "id": "D6",
+      "title": "Reclaim Verification",
+      "dependencies": [
+        "D5"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "source-volume delta",
+        "expected vs observed",
+        "residuals",
+        "VERIFIED/PARTIAL/NO_RECLAIM/UNKNOWN"
+      ]
+    },
+    {
+      "id": "D7",
+      "title": "Retention / Recurrence Integration",
+      "dependencies": [
+        "D6",
+        "system stewardship scheduler"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "manual lifecycle proven first",
+        "no self-approval",
+        "fresh exact approval required",
+        "failed run does not disable recurrence"
+      ]
+    }
+  ],
+  "parallelism": {
+    "after_D0": [
+      "D1",
+      "D2"
+    ],
+    "existing_U1_may_continue": true,
+    "collision_rule": "separate isolated branches/worktrees; refresh provider truth before lane creation and convergence"
+  },
+  "mutation_scope": {
+    "this_lane": "PLAN_ONLY_NO_OPERATOR_FILESYSTEM_MUTATION",
+    "permanent_delete": "REQUIRED_SUCCESSOR_WORK_NOT_AUTHORIZED_BY_PLAN_EXISTENCE"
+  },
+  "first_unproven_gate": {
+    "lanes": [
+      "D1",
+      "D2"
+    ],
+    "dependency": "fresh provider truth from current PR stack",
+    "completion": "operator can see an exact RECLAIM_PROVEN delete set and dry-run preflight can prove those exact items remain current without mutating them"
+  }
+}
