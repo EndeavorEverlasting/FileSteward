@@ -157,4 +157,3 @@ def test_subsequent_visual_pass_bumps_from_committed_candidate(tmp_path: Path) -
     assert '__version__ = "0.3.0"' in (
         root / "src/filesteward/__init__.py"
     ).read_text(encoding="utf-8")
-

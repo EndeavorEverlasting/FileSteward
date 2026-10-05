@@ -64,9 +64,10 @@ def _model() -> PresentationModel:
 def test_decision_tree_is_the_tutorial_not_a_separate_tour() -> None:
     html = render_report_shell(_model())
     assert 'id="decision-compass"' in html
-    for step in ("MAP", "FOCUS", "RESOLVE", "DECIDE"):
+    for step in ("MAP", "FOCUS", "GATE", "RESOLVE", "APPROVAL", "STAGED"):
         assert f'data-guide-step="{step}"' in html
-    assert "Clear the first unresolved gate" in html
+    assert "Open the first unresolved gate" in html
+    assert "NO BYTES REMOVED" in html
     assert "Start tutorial" not in html
     assert "product tour" not in html.lower()
 

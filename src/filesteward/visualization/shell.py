@@ -29,6 +29,11 @@ from filesteward.visualization.cinematic import (
     render_sector_overview,
     render_substrate_svg,
 )
+from filesteward.visualization.decision_chamber import (
+    render_decision_chamber_css,
+    render_decision_chamber_markup,
+    render_decision_chamber_script,
+)
 from filesteward.visualization.experience import (
     render_cinematic_experience_css,
     render_cinematic_experience_markup,
@@ -110,8 +115,11 @@ def _render_navigator(nodes: Sequence[PresentationNode], selected_id: Optional[s
             f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="nav-name">{escape_text(node.display_name)}</span>'
             f'<span class="nav-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
-            f'<span class="nav-meta"><span class="state state-{escape_attr(tone)}" '
-            f'data-state-label="{escape_attr(_state_label(node.disposition))}">'
+            f'<span class="nav-meta">'
+            f'<span class="evidence-state-action state state-{escape_attr(tone)}" '
+            f'role="button" tabindex="0" data-open-decision="true" '
+            f'data-state-label="{escape_attr(_state_label(node.disposition))}" '
+            f'aria-label="Open decision gate for {escape_attr(_state_label(node.disposition))}">'
             f'<span class="state-marker" aria-hidden="true">'
             f'[{escape_text(_state_label(node.disposition))}]</span> '
             f'{escape_text(_state_label(node.disposition))}</span> · '
@@ -165,7 +173,8 @@ def _render_map_slots(
             f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="map-label">{escape_text(node.display_name)}</span>'
             f'<span class="map-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
-            f'<span class="map-state state state-{escape_attr(tone)}">'
+            f'<span class="map-state state state-{escape_attr(tone)}" '
+            f'data-open-decision="true" data-state-label="{escape_attr(_state_label(node.disposition))}">'
             f'{escape_text(_state_label(node.disposition))}</span>'
             f"</button>"
         )
@@ -183,10 +192,13 @@ def _render_selection_summary(node: Optional[PresentationNode]) -> str:
   <span class="selection-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>
 </div>
 <div class="selection-secondary">
-  <span class="state state-{escape_attr(tone)}" data-state-label="{escape_attr(_state_label(node.disposition))}">
+  <button type="button" class="evidence-state-action state state-{escape_attr(tone)}"
+          data-open-decision="true"
+          data-state-label="{escape_attr(_state_label(node.disposition))}"
+          aria-label="Open decision gate for {escape_attr(_state_label(node.disposition))}">
     <span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span>
     {escape_text(_state_label(node.disposition))}
-  </span>
+  </button>
   <span class="selection-path mono">{escape_text(node.path)}</span>
 </div>
 <div class="selection-next">
@@ -251,7 +263,7 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
     <dt>Allocated size</dt><dd>{escape_text(_fmt_bytes(node.allocated_size_bytes))}</dd>
     <dt>Projected reclaim</dt><dd>{escape_text(reclaim)}</dd>
     <dt>Projection quality</dt><dd>{escape_text(quality)}</dd>
-    <dt>Disposition</dt><dd class="state state-{escape_attr(tone)}" data-state-label="{escape_attr(_state_label(node.disposition))}"><span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span> {escape_text(_state_label(node.disposition))}</dd>
+    <dt>Disposition</dt><dd><button type="button" class="evidence-state-action state state-{escape_attr(tone)}" data-open-decision="true" data-state-label="{escape_attr(_state_label(node.disposition))}" aria-label="Open decision gate for {escape_attr(_state_label(node.disposition))}"><span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span> {escape_text(_state_label(node.disposition))}</button></dd>
     <dt>Authorization</dt><dd class="auth">{escape_text(_auth_label(node.authorization_state))}</dd>
     <dt>Evidence source</dt><dd>{escape_text(node.trace_evidence_source)}</dd>
   </dl>
@@ -398,8 +410,15 @@ def _selection_script() -> str:
     document.querySelectorAll('[data-node-id]').forEach((el) => {
       const on = el.getAttribute('data-node-id') === id;
       el.classList.toggle('selected', on);
-      if (on) el.setAttribute('aria-current', 'true');
-      else el.removeAttribute('aria-current');
+      if (on) {
+        el.setAttribute('data-selected', 'true');
+        el.setAttribute('aria-selected', 'true');
+        el.setAttribute('aria-current', 'true');
+      } else {
+        el.removeAttribute('data-selected');
+        el.removeAttribute('aria-selected');
+        el.removeAttribute('aria-current');
+      }
     });
     const inspector = document.getElementById('inspector-body');
     const source = document.querySelector(`[data-inspector-for="${CSS.escape(id)}"]`);
@@ -508,6 +527,7 @@ def render_report_shell(
 {_shell_behavior_css()}
 {render_cinematic_css()}
 {render_cinematic_experience_css()}
+{render_decision_chamber_css()}
 </style>
 </head>
 <body>
@@ -545,6 +565,7 @@ def render_report_shell(
       <div class="storage-stage" id="storage-stage" data-scene="overview" data-camera-level="HOME" tabindex="-1">
         {render_substrate_svg()}
         {render_cinematic_experience_markup()}
+        {render_decision_chamber_markup()}
         {render_sector_overview(model.nodes, current_id)}
         {render_sector_bank(model.nodes, current_id)}
         <section class="fabric-layer" aria-label="Evidence fabric">
@@ -586,6 +607,7 @@ def render_report_shell(
 {_selection_script()}
 {render_cinematic_script()}
 {render_cinematic_experience_script()}
+{render_decision_chamber_script()}
 </body>
 </html>
 """

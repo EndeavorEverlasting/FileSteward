@@ -54,6 +54,7 @@ class TestEntryPointIdentity:
             "validate",
             "plan",
             "visualize",
+            "review",
             "apply",
         }
 

@@ -116,6 +116,8 @@ def render_report_html(
         document.querySelectorAll('.nav-row.selected, .map-node.selected, [data-node-id].selected').forEach((el) => {{
           el.classList.remove('selected');
           el.removeAttribute('aria-current');
+          el.removeAttribute('aria-selected');
+          el.removeAttribute('data-selected');
         }});
         const inspector = document.getElementById('inspector-body');
         if (inspector) {{

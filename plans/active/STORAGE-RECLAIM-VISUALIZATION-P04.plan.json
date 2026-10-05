@@ -556,7 +556,7 @@
         "approval exact-plan validation",
         "runtime artifact remains ignored/private"
       ],
-      "status": "PROTOCOL_PROVIDER_IMPLEMENTED_HTTP_ADAPTER_PENDING"
+      "status": "IMPLEMENTED_LOCALLY_VALIDATED_UNCOMMITTED"
     },
     {
       "lane_id": "V4-C",
@@ -585,7 +585,7 @@
         "desktop/laptop/phone/reduced-motion/forced-colors",
         "private runtime self-falsification"
       ],
-      "status": "WAITING_ON_V4_A_B_BRIDGE"
+      "status": "IMPLEMENTED_LOCALLY_VALIDATED_LIVE_OBSERVED_UNCOMMITTED"
     },
     {
       "lane_id": "V4-D",

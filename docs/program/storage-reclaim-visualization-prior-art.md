@@ -199,4 +199,3 @@ already-correct state owners:
 - first-unresolved semantic glow and scan energy;
 - state-driven Decision Compass as the natural tutorial;
 - self-falsifying visual acceptance before operator handoff.
-

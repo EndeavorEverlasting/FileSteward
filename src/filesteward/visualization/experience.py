@@ -50,13 +50,21 @@ def render_cinematic_experience_markup() -> str:
         <span class="guide-index">02</span><strong>FOCUS</strong>
         <span>Magnify exact evidence</span>
       </li>
-      <li class="decision-guide-step" data-guide-step="RESOLVE">
-        <span class="guide-index">03</span><strong>RESOLVE</strong>
-        <span>Clear the first unresolved gate</span>
+      <li class="decision-guide-step" data-guide-step="GATE">
+        <span class="guide-index">03</span><strong>GATE</strong>
+        <span>Open the first unresolved gate</span>
       </li>
-      <li class="decision-guide-step" data-guide-step="DECIDE">
-        <span class="guide-index">04</span><strong>DECIDE</strong>
-        <span>Human authorization stays separate</span>
+      <li class="decision-guide-step" data-guide-step="RESOLVE">
+        <span class="guide-index">04</span><strong>RESOLVE</strong>
+        <span>Choose only legal operator intents</span>
+      </li>
+      <li class="decision-guide-step" data-guide-step="APPROVAL">
+        <span class="guide-index">05</span><strong>APPROVAL</strong>
+        <span>Authorize exact quarantine scope</span>
+      </li>
+      <li class="decision-guide-step" data-guide-step="STAGED">
+        <span class="guide-index">06</span><strong>STAGED</strong>
+        <span>NO BYTES REMOVED</span>
       </li>
     </ol>
   </section>
@@ -364,32 +372,51 @@ def render_cinematic_experience_script() -> str:
   };
 
   const guideState = () => {
+    const scene = workspace.dataset.openDecisionScene;
+    if (scene && scene !== 'MAP' && scene !== 'CLOSED') return scene;
     const level = workspace.dataset.cameraLevel || 'HOME';
-    if (workspace.dataset.decisionOpen === 'true') return 'DECIDE';
-    if (level === 'CHAMBER') return 'RESOLVE';
+    if (workspace.dataset.decisionOpen === 'true') return 'APPROVAL';
+    if (level === 'CHAMBER') return 'GATE';
     if (level === 'CELL') return 'FOCUS';
     return 'MAP';
   };
 
   const guideCopy = (state) => {
-    if (state === 'FOCUS') return ['FOCUS THE EVIDENCE', 'Fit the exact selection, then open its Chamber.'];
+    if (state === 'FOCUS') return ['FOCUS THE EVIDENCE', 'Fit the exact selection, then open its gate.'];
+    if (state === 'GATE') {
+      const gate = currentGate();
+      return ['OPEN THE GATE', gate ? 'Active: ' + gate : 'Activate UNKNOWN / HUMAN_REVIEW evidence status.'];
+    }
     if (state === 'RESOLVE') {
       const gate = currentGate();
-      return ['RESOLVE THE GATE', gate ? 'Next: ' + gate : 'Follow the first unresolved evidence gate.'];
+      return ['RESOLVE THE GATE', gate ? 'Next: ' + gate : 'Only legal operator intents are available.'];
     }
-    if (state === 'DECIDE') return ['DECISION CONTEXT', 'Review evidence; authorization remains a separate human gate.'];
+    if (state === 'APPROVAL') return ['APPROVAL SCOPE', 'Exact run, digest, and item IDs required before staging.'];
+    if (state === 'STAGED') return ['STAGED', 'QUARANTINE REQUIRED — NO BYTES REMOVED'];
     return ['MAP THE PRESSURE', 'Choose a dominant sector or search for exact evidence.'];
   };
 
   const setGuideState = () => {
     const active = guideState();
-    const order = ['MAP', 'FOCUS', 'RESOLVE', 'DECIDE'];
+    const order = ['MAP', 'FOCUS', 'GATE', 'RESOLVE', 'APPROVAL', 'STAGED'];
     const activeIndex = order.indexOf(active);
     guideSteps().forEach((step) => {
       const key = step.getAttribute('data-guide-step');
       const index = order.indexOf(key);
       step.classList.toggle('is-active', key === active);
       step.classList.toggle('is-complete', index >= 0 && index < activeIndex);
+      if (key === active) {
+        step.setAttribute('aria-current', 'step');
+        step.setAttribute('data-active', 'true');
+      } else {
+        step.removeAttribute('aria-current');
+        step.removeAttribute('data-active');
+      }
+      if (activeIndex > 0 && index === activeIndex - 1) {
+        step.setAttribute('data-last-completed', 'true');
+      } else {
+        step.removeAttribute('data-last-completed');
+      }
     });
     const copy = guideCopy(active);
     if (compassNow) compassNow.textContent = copy[0];

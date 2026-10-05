@@ -191,7 +191,9 @@ def render_decision_signal_rail(node: PresentationNode) -> str:
         if signal.hard_stop:
             classes.append("signal-hard-stop")
         chips.append(
-            f'<li class="{" ".join(classes)}" data-signal-id="{escape_attr(signal.signal_id)}">'
+            f'<li class="{" ".join(classes)}" data-signal-id="{escape_attr(signal.signal_id)}" '
+            f'role="button" tabindex="0" data-open-decision="true" '
+            f'aria-label="Open decision gate: {escape_attr(signal.label)}">'
             f'<span class="signal-kind">{escape_text(signal.kind.value)}</span>'
             f'<strong>{escape_text(signal.label)}</strong>'
             f'<span class="signal-copy">{escape_text(signal.accessible_text)}</span>'
