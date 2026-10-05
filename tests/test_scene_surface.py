@@ -28,7 +28,11 @@ from filesteward.visualization.scene_surface import (
     path_step_previews,
     scenery_subtitle,
 )
-from filesteward.visualization.experience import render_cinematic_experience_markup
+from filesteward.visualization.experience import (
+    render_cinematic_experience_css,
+    render_cinematic_experience_markup,
+    render_cinematic_experience_script,
+)
 from filesteward.visualization.shell import render_report_shell
 
 
@@ -152,6 +156,52 @@ def test_experience_markup_emits_path_step_cues() -> None:
     assert 'data-cue-label="PREVIEW MAP"' in html
     assert 'data-cue-label="PREVIEW STAGED"' in html
     assert html.count("data-cue-label=") == 6
+    assert 'data-drag-handle="true"' in html
+    assert 'data-portal="body"' in html
+    assert "atlas-home-beacon" not in html
+
+
+def test_experience_script_portals_cursor_and_enacts_path() -> None:
+    script = render_cinematic_experience_script()
+    css = render_cinematic_experience_css()
+    assert "document.body.appendChild" in script
+    assert "enactPathStep" in script
+    assert "filesteward:path-step" in script
+    assert "fs.decisionPath.pos" in script
+    assert "2147483000" in css
+    assert "returning-home" in css
+
+
+def test_shell_uses_scenery_type_classes() -> None:
+    reclaim = replace(
+        _node(disposition=CleanupDisposition.RECLAIM_PROVEN),
+        node_id="reclaim",
+        item_count=None,
+        scan_completeness=ScanCompleteness.INCOMPLETE,
+    )
+    html = render_report_shell(
+        PresentationModel(
+            run_id="u1-type",
+            nodes=(reclaim,),
+            metrics=ShellMetrics(
+                observed_storage_label="1 GiB",
+                free_space_label="8 GiB",
+                projected_reclaim_label="0 bytes",
+                projected_reclaim_quality=None,
+                target_free_space_label="not established",
+                authorization_label="UNAPPROVED",
+            ),
+            default_selected_id="reclaim",
+        ),
+        rects=(TreemapRect(node_id="reclaim", x=0, y=0, width=100, height=100),),
+    )
+    assert "fs-type-display" in html
+    assert "fs-type-meta" in html
+    assert '<details class="mode-brief"' in html
+    assert "atlas-home-beacon" not in html
+    assert "returning-home" in html
+    assert "filesteward:path-step" in html
+    assert "document.body.appendChild" in html
 
 
 def test_evidence_gap_mode_brief_teaches_rules() -> None:

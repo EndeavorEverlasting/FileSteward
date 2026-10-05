@@ -43,54 +43,49 @@ def render_cinematic_experience_markup() -> str:
 
     return f"""
 <div class="atlas-experience-layer">
-  <button type="button"
-          class="atlas-home-beacon"
-          data-atlas-action="home"
-          aria-label="Return to Atlas home">
-    <span aria-hidden="true">⌂</span>
-    <span>ATLAS HOME</span>
-    <kbd>Home</kbd>
-  </button>
-
   <div class="atlas-back-hint" aria-hidden="true">
     <kbd>Esc</kbd><span>BACK</span>
   </div>
 
   <section class="decision-compass"
            id="decision-compass"
+           data-docked="negspace"
            aria-label="Decision path"
            aria-live="polite">
-    <div class="decision-compass-status">
-      <span class="decision-compass-kicker">DECISION PATH</span>
-      <strong id="decision-compass-now">MAP THE PRESSURE</strong>
-      <span id="decision-compass-next">Choose a dominant sector or search for exact evidence.</span>
+    <div class="decision-compass-status" id="decision-compass-drag" data-drag-handle="true"
+         aria-grabbed="false" data-drag-hint="Drag Decision Path into negative space">
+      <span class="decision-compass-kicker">DECISION PATH · drag</span>
+      <strong id="decision-compass-now" class="fs-type-scene">MAP THE PRESSURE</strong>
+      <span id="decision-compass-next" class="fs-type-meta">Choose a dominant sector or search for exact evidence.</span>
     </div>
     <ol class="decision-compass-steps">
       {"".join(steps)}
     </ol>
   </section>
+</div>
 
-  <div class="atlas-reticle"
-       id="atlas-reticle"
-       data-cursor-mode="explore"
-       data-actionability="OPERABLE"
-       aria-hidden="true">
-    <span class="reticle-bracket reticle-bracket-nw"></span>
-    <span class="reticle-bracket reticle-bracket-ne"></span>
-    <span class="reticle-bracket reticle-bracket-sw"></span>
-    <span class="reticle-bracket reticle-bracket-se"></span>
-    <span class="reticle-core"></span>
-    <span class="reticle-label" id="atlas-reticle-label">EXPLORE</span>
-  </div>
+<div class="atlas-reticle atlas-cursor-portal"
+     id="atlas-reticle"
+     data-cursor-mode="explore"
+     data-actionability="OPERABLE"
+     data-portal="body"
+     aria-hidden="true">
+  <span class="reticle-bracket reticle-bracket-nw"></span>
+  <span class="reticle-bracket reticle-bracket-ne"></span>
+  <span class="reticle-bracket reticle-bracket-sw"></span>
+  <span class="reticle-bracket reticle-bracket-se"></span>
+  <span class="reticle-core"></span>
+  <span class="reticle-label fs-type-scene" id="atlas-reticle-label">EXPLORE</span>
+</div>
 
-  <div class="atlas-cartouche"
-       id="atlas-cartouche"
-       role="tooltip"
-       hidden
-       aria-hidden="true">
-    <strong id="atlas-cartouche-verb">EXPLORE</strong>
-    <span id="atlas-cartouche-explain">Point at Atlas evidence or controls.</span>
-  </div>
+<div class="atlas-cartouche atlas-cursor-portal"
+     id="atlas-cartouche"
+     role="tooltip"
+     data-portal="body"
+     hidden
+     aria-hidden="true">
+  <strong id="atlas-cartouche-verb" class="fs-type-scene">EXPLORE</strong>
+  <span id="atlas-cartouche-explain" class="fs-type-body">Point at Atlas evidence or controls.</span>
 </div>
 """
 
@@ -105,39 +100,25 @@ def render_cinematic_experience_css() -> str:
   --atlas-danger:var(--fs-state-protected-edge);
 }
 .atlas-experience-layer{position:absolute;inset:0;z-index:8;pointer-events:none;}
-.atlas-home-beacon{
-  pointer-events:auto;position:absolute;left:1rem;top:1rem;z-index:12;
-  display:flex;align-items:center;gap:.55rem;min-height:44px;padding:.55rem .75rem;
-  border:1px solid color-mix(in srgb,var(--atlas-signal) 58%,var(--fs-border-default));
-  border-radius:4px;background:color-mix(in srgb,var(--fs-bg-shell) 88%,transparent);
-  color:var(--fs-text-primary);font:800 .72rem/1 var(--fs-font-mono);
-  letter-spacing:.075em;
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--atlas-signal) 16%,transparent),
-             0 0 28px color-mix(in srgb,var(--atlas-signal) 16%,transparent);
-  backdrop-filter:blur(8px);cursor:pointer;
-}
-.atlas-home-beacon::before{
-  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
-  background:linear-gradient(90deg,transparent,var(--atlas-signal),transparent);
-  opacity:.78;
-}
-.atlas-home-beacon kbd,.atlas-back-hint kbd{
+.atlas-back-hint kbd{
   padding:.2rem .36rem;border:1px solid var(--fs-border-default);border-radius:3px;
   background:var(--fs-bg-surface-3);color:var(--fs-text-secondary);
   font:700 .67rem/1 var(--fs-font-mono);
 }
 .atlas-back-hint{
-  position:absolute;right:1rem;top:1rem;z-index:12;
+  position:absolute;right:.65rem;bottom:.65rem;z-index:9;
   display:flex;align-items:center;gap:.4rem;color:var(--fs-text-muted);
   font:800 .68rem/1 var(--fs-font-mono);letter-spacing:.07em;
+  opacity:.72;pointer-events:none;
 }
 
+/* Default dock: lower-left negative space — not over sector cards. */
 .decision-compass{
   pointer-events:auto;
-  position:absolute;left:50%;top:1rem;transform:translateX(-50%);z-index:11;
-  width:min(48rem,calc(100% - 20rem));min-width:28rem;
-  display:grid;grid-template-columns:minmax(12rem,.75fr) minmax(22rem,1.4fr);gap:.8rem;
-  padding:.55rem .7rem;
+  position:absolute;left:.75rem;right:auto;top:auto;bottom:.75rem;transform:none;z-index:11;
+  width:min(34rem,calc(100% - 1.5rem));min-width:16rem;
+  display:grid;grid-template-columns:minmax(9rem,.7fr) minmax(14rem,1.3fr);gap:.55rem;
+  padding:.45rem .55rem;
   border:1px solid color-mix(in srgb,var(--atlas-signal) 30%,var(--fs-border-subtle));
   border-radius:5px;
   background:linear-gradient(180deg,
@@ -146,7 +127,14 @@ def render_cinematic_experience_css() -> str:
   box-shadow:0 10px 40px rgba(0,0,0,.18),
              inset 0 1px 0 color-mix(in srgb,white 6%,transparent);
   backdrop-filter:blur(10px);
+  touch-action:none;
 }
+.decision-compass[data-docked="free"]{z-index:16;}
+.decision-compass.is-dragging{
+  opacity:.94;box-shadow:0 0 0 1px var(--atlas-signal),0 18px 48px rgba(0,0,0,.35);
+}
+.decision-compass-status[data-drag-handle="true"]{cursor:grab;user-select:none;}
+.decision-compass.is-dragging .decision-compass-status{cursor:grabbing;}
 .decision-compass::after{
   content:"";position:absolute;left:1rem;right:1rem;bottom:-1px;height:1px;
   background:linear-gradient(90deg,transparent,var(--atlas-signal),var(--atlas-gate),transparent);
@@ -297,9 +285,13 @@ def render_cinematic_experience_css() -> str:
 }
 
 /* Fine-pointer contextual reticle; coarse/reduced-motion users retain native cursor. */
+/* Portal to document.body — escapes storage-stage isolation + HUD stacking. */
+.atlas-cursor-portal,.atlas-reticle,.atlas-cartouche{
+  position:fixed!important;z-index:2147483000!important;pointer-events:none!important;
+}
 .atlas-reticle{
-  position:fixed;left:0;top:0;z-index:9999;width:56px;height:56px;display:none;
-  pointer-events:none;transform:translate3d(-100px,-100px,0);will-change:transform;
+  left:0;top:0;width:56px;height:56px;display:none;
+  transform:translate3d(-100px,-100px,0);will-change:transform;
   color:var(--atlas-signal);
 }
 .atlas-reticle .reticle-core{
@@ -327,14 +319,25 @@ def render_cinematic_experience_css() -> str:
 .atlas-reticle[data-actionability="BLOCKED"]{color:var(--atlas-danger);}
 .atlas-reticle.is-active{filter:drop-shadow(0 0 8px currentColor);}
 .atlas-cartouche{
-  pointer-events:none;position:fixed;z-index:10000;max-width:18rem;padding:.55rem .7rem;
+  max-width:18rem;padding:.55rem .7rem;
   border:1px solid color-mix(in srgb,var(--atlas-signal) 50%,var(--fs-border-default));
   border-radius:4px;background:color-mix(in srgb,var(--fs-bg-shell) 94%,transparent);
   color:var(--fs-text-primary);box-shadow:0 10px 28px color-mix(in srgb,var(--fs-bg-canvas) 55%,transparent);
 }
 .atlas-cartouche[hidden]{display:none!important;}
 .atlas-cartouche strong{display:block;font:800 .72rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.25rem;}
-.atlas-cartouche span{display:block;font:600 .74rem/1.35 var(--fs-font-sans);color:var(--fs-text-secondary);}
+.atlas-cartouche span{display:block;font:600 .74rem/1.35 var(--fs-font-mono);color:var(--fs-text-secondary);}
+.storage-stage.returning-home .camera-plane,
+.storage-stage.returning-home .sector-overview{
+  animation:fs-home-zoom 720ms cubic-bezier(.16,1,.3,1) both;
+}
+.storage-stage.path-enacting{
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--atlas-signal) 45%,transparent);
+}
+@keyframes fs-home-zoom{
+  0%{transform:scale(1.1);filter:blur(2px);opacity:.86}
+  100%{transform:none;filter:none;opacity:1}
+}
 @media (pointer:fine) and (prefers-reduced-motion:no-preference){
   .app,.app *{cursor:none!important;}
   .atlas-reticle.is-visible{display:block;}
@@ -342,27 +345,25 @@ def render_cinematic_experience_css() -> str:
 
 @media (max-width:1179px){
   .decision-compass{
-    width:min(40rem,calc(100% - 9rem));min-width:0;grid-template-columns:1fr;
+    width:min(32rem,calc(100% - 1.2rem));min-width:0;grid-template-columns:1fr;
   }
   .decision-compass-status>span:last-child{display:none;}
 }
 @media (max-width:799px){
-  .atlas-home-beacon{top:.65rem;left:.65rem;}
-  .atlas-back-hint{top:.75rem;right:.65rem;}
+  .atlas-back-hint{right:.55rem;bottom:.55rem;}
   .decision-compass{
-    top:4.35rem;left:.65rem;right:.65rem;width:auto;transform:none;padding:.45rem;
+    left:.55rem;right:.55rem;bottom:.55rem;width:auto;padding:.45rem;
   }
-  .decision-compass-status{display:none;}
   .decision-guide-step{padding:.35rem .4rem;}
   .decision-guide-step>span:last-child{display:none;}
 }
 @media (prefers-reduced-motion:reduce){
   .storage-stage::after{animation:none;opacity:.18;transform:translateY(280%);}
   .signal-primary,.signal-primary::before,.atlas-reticle{animation:none!important;}
-  .storage-substrate{transition:none;}
+  .storage-substrate,.storage-stage.returning-home .camera-plane{transition:none;animation:none!important;}
 }
 @media (forced-colors:active){
-  .decision-compass,.atlas-home-beacon,.decision-guide-step{
+  .decision-compass,.decision-guide-step{
     background:Canvas;color:CanvasText;border-color:CanvasText;backdrop-filter:none;
   }
   .decision-guide-step.is-active{outline:3px solid Highlight;box-shadow:none;}
@@ -392,10 +393,16 @@ def render_cinematic_experience_script() -> str:
   const commandHistory = document.getElementById('atlas-command-history');
   if (!stage || !workspace || !compass) return;
 
+  /* Escape storage-stage isolation:isolate and atlas-hud z-index stacking. */
+  [reticle, cartouche].forEach((el) => {
+    if (el && el.parentElement !== document.body) document.body.appendChild(el);
+  });
+
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const fine = window.matchMedia('(pointer: fine)');
   const guideSteps = () => Array.from(compass.querySelectorAll('[data-guide-step]'));
   const recentCommands = [];
+  let pathLockUntil = 0;
 
   const currentGate = () => {
     const signal = document.querySelector('.focus-host .signal-primary strong');
@@ -408,6 +415,9 @@ def render_cinematic_experience_script() -> str:
   };
 
   const guideState = () => {
+    if (Date.now() < pathLockUntil && workspace.dataset.pathPreview) {
+      return workspace.dataset.pathPreview;
+    }
     const scene = workspace.dataset.openDecisionScene;
     if (scene && scene !== 'MAP' && scene !== 'CLOSED') return scene;
     const level = workspace.dataset.cameraLevel || 'HOME';
@@ -466,14 +476,15 @@ def render_cinematic_experience_script() -> str:
     const host = target.closest(
       '.decision-guide-step,[data-action],[data-cursor-mode],[data-cue-label],[data-scene-entry],'
       + '.map-node,.status-orb,.sector-card,.signal-primary,.signal-hard-stop,.gate-lead,'
-      + '.atlas-hud button,[data-atlas-action],.metric-scene,.next-action,.pane-scene-btn,'
-      + '.brand-home,.class-legend-item,#atlas-classification-legend'
+      + '.atlas-hud button,.atlas-hud [data-action],.chamber-gate,.chamber-actions button,'
+      + '[data-atlas-action],.metric-scene,.next-action,.pane-scene-btn,'
+      + '.brand-home,.class-legend-item,#atlas-classification-legend,.decision-chamber button'
     );
     if (host) {
       const mode = host.getAttribute('data-cursor-mode')
         || (host.classList.contains('decision-guide-step') ? 'resolve' : null)
         || (host.classList.contains('signal-hard-stop') ? 'blocked' : null)
-        || (host.classList.contains('signal-primary') || host.classList.contains('gate-lead') ? 'resolve' : null)
+        || (host.classList.contains('signal-primary') || host.classList.contains('gate-lead') || host.classList.contains('chamber-gate') ? 'resolve' : null)
         || (host.classList.contains('sector-card') ? 'dive' : null)
         || (host.classList.contains('map-node') ? 'focus' : 'explore');
       const label = host.getAttribute('data-cue-label')
@@ -547,6 +558,105 @@ def render_cinematic_experience_script() -> str:
     syncCameraTrace();
   };
 
+  const openScenePanel = (label, explain) => {
+    const panel = document.getElementById('atlas-scene-panel');
+    const title = document.getElementById('atlas-scene-panel-title');
+    const body = document.getElementById('atlas-scene-panel-body');
+    if (panel) panel.hidden = false;
+    if (title) title.textContent = label;
+    if (body) body.textContent = explain;
+  };
+
+  const ensureDecisionOpen = (atlas) => {
+    if (!atlas || typeof atlas.toggle_decision !== 'function') return;
+    if (workspace.dataset.decisionOpen !== 'true') atlas.toggle_decision();
+  };
+
+  const enactPathStep = (step) => {
+    const key = step.getAttribute('data-guide-step') || 'MAP';
+    const explain = step.getAttribute('data-cue-explain') || '';
+    const label = step.getAttribute('data-cue-label') || key;
+    const atlas = window.FileStewardAtlas;
+    openScenePanel(label, explain);
+    workspace.dataset.pathPreview = key;
+    workspace.dataset.openDecisionScene = key;
+    pathLockUntil = Date.now() + 4200;
+    stage.classList.add('path-enacting');
+    window.setTimeout(() => stage.classList.remove('path-enacting'), 700);
+
+    if (key === 'MAP') {
+      workspace.dataset.decisionOpen = 'false';
+      if (atlas && typeof atlas.home === 'function') atlas.home();
+    } else if (key === 'FOCUS') {
+      if (atlas && typeof atlas.fit_selected === 'function') atlas.fit_selected();
+    } else if (key === 'GATE') {
+      if (atlas && typeof atlas.open_selected === 'function') atlas.open_selected();
+      ensureDecisionOpen(atlas);
+    } else if (key === 'RESOLVE' || key === 'APPROVAL') {
+      if (atlas && typeof atlas.open_selected === 'function') atlas.open_selected();
+      ensureDecisionOpen(atlas);
+    } else if (key === 'STAGED') {
+      ensureDecisionOpen(atlas);
+      workspace.dataset.stagedCinematic = 'preview';
+    }
+
+    document.dispatchEvent(new CustomEvent('filesteward:path-step', {
+      detail: { step: key, label: label, explain: explain }
+    }));
+    rememberCommand(label);
+    setGuideState();
+  };
+
+  /* Drag Decision Path into negative space. */
+  const dragHandle = document.getElementById('decision-compass-drag') || compass;
+  let drag = null;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const placeCompass = (left, top) => {
+    const bounds = stage.getBoundingClientRect();
+    const width = compass.offsetWidth || 320;
+    const height = compass.offsetHeight || 120;
+    const x = clamp(left - bounds.left, 8, Math.max(8, bounds.width - width - 8));
+    const y = clamp(top - bounds.top, 8, Math.max(8, bounds.height - height - 8));
+    compass.style.left = x + 'px';
+    compass.style.top = y + 'px';
+    compass.style.right = 'auto';
+    compass.style.bottom = 'auto';
+    compass.style.transform = 'none';
+    compass.dataset.docked = 'free';
+    try {
+      sessionStorage.setItem('fs.decisionPath.pos', JSON.stringify({ x: x, y: y }));
+    } catch (_err) { /* ignore */ }
+  };
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('fs.decisionPath.pos') || 'null');
+    if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+      const bounds = stage.getBoundingClientRect();
+      placeCompass(bounds.left + saved.x, bounds.top + saved.y);
+    }
+  } catch (_err) { /* ignore */ }
+  dragHandle.addEventListener('pointerdown', (event) => {
+    if (event.target instanceof Element && event.target.closest('.decision-guide-step')) return;
+    drag = {
+      id: event.pointerId,
+      ox: event.clientX - compass.getBoundingClientRect().left,
+      oy: event.clientY - compass.getBoundingClientRect().top
+    };
+    compass.classList.add('is-dragging');
+    dragHandle.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  dragHandle.addEventListener('pointermove', (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    placeCompass(event.clientX - drag.ox, event.clientY - drag.oy);
+  });
+  const endDrag = (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    drag = null;
+    compass.classList.remove('is-dragging');
+  };
+  dragHandle.addEventListener('pointerup', endDrag);
+  dragHandle.addEventListener('pointercancel', endDrag);
+
   const app = document.querySelector('.app') || document.body;
   app.addEventListener('pointerenter', moveReticle);
   app.addEventListener('pointermove', moveReticle);
@@ -564,50 +674,36 @@ def render_cinematic_experience_script() -> str:
     if (rect) paintCue(cue, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
   });
 
-  const previewPathStep = (step) => {
-    const key = step.getAttribute('data-guide-step') || 'MAP';
-    const explain = step.getAttribute('data-cue-explain') || '';
-    const label = step.getAttribute('data-cue-label') || key;
-    const panel = document.getElementById('atlas-scene-panel');
-    const title = document.getElementById('atlas-scene-panel-title');
-    const body = document.getElementById('atlas-scene-panel-body');
-    if (panel) panel.hidden = false;
-    if (title) title.textContent = label;
-    if (body) body.textContent = explain;
-    const atlas = window.FileStewardAtlas;
-    if (!atlas) return;
-    if (key === 'MAP' && typeof atlas.home === 'function') atlas.home();
-    else if (key === 'FOCUS' && typeof atlas.fit_selected === 'function') atlas.fit_selected();
-    else if ((key === 'GATE' || key === 'RESOLVE' || key === 'APPROVAL')
-      && typeof atlas.toggle_decision === 'function'
-      && workspace.dataset.decisionOpen !== 'true') {
-      atlas.toggle_decision();
-    }
-    workspace.dataset.openDecisionScene = key;
-    setGuideState();
-  };
-
   guideSteps().forEach((step) => {
     step.addEventListener('pointerenter', (event) => {
       step.classList.add('is-hover');
       moveReticle(event);
     });
     step.addEventListener('pointerleave', () => step.classList.remove('is-hover'));
-    step.addEventListener('click', () => previewPathStep(step));
+    step.addEventListener('click', (event) => {
+      event.stopPropagation();
+      enactPathStep(step);
+    });
     step.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        previewPathStep(step);
+        enactPathStep(step);
       }
     });
   });
 
   document.addEventListener('click', (event) => {
     const host = event.target instanceof Element
-      ? event.target.closest('.atlas-hud button,[data-atlas-action],.status-orb')
+      ? event.target.closest('.atlas-hud button,[data-atlas-action],.status-orb,.brand-home')
       : null;
     if (host) {
       rememberCommand(host.getAttribute('data-cue-label') || host.textContent.trim());
+      if (host.classList.contains('brand-home') || host.getAttribute('data-atlas-action') === 'home') {
+        workspace.dataset.pathPreview = 'MAP';
+        workspace.dataset.openDecisionScene = 'MAP';
+        pathLockUntil = Date.now() + 2400;
+        openScenePanel('ATLAS HOME', 'Zooming camera to Atlas Home overview. Brand title and Home key share this scenery.');
+      }
     }
     window.requestAnimationFrame(setGuideState);
   });
@@ -618,7 +714,7 @@ def render_cinematic_experience_script() -> str:
   });
   observer.observe(workspace, {
     attributes: true,
-    attributeFilter: ['data-camera-level', 'data-decision-open', 'data-scene', 'data-open-decision-scene']
+    attributeFilter: ['data-camera-level', 'data-decision-open', 'data-scene', 'data-open-decision-scene', 'data-path-preview']
   });
 
   document.addEventListener('filesteward:selection', () => {

@@ -138,7 +138,7 @@ def test_brand_title_is_truthful_home_affordance() -> None:
 
     assert 'id="brand-home"' in body
     assert 'data-atlas-action="home"' in body
-    assert 'class="brand-home"' in body
+    assert "brand-home" in body
     assert 'data-action="RETURN"' in body
     assert "return to Atlas home" in body
     assert 'id="atlas-home"' in body
@@ -147,6 +147,7 @@ def test_brand_title_is_truthful_home_affordance() -> None:
     assert 'data-atlas-action="delete"' not in body.lower()
     assert "PERMANENT_DELETE" not in body
     assert "title=" not in body
+    assert "returning-home" in body
 
 
 def test_camera_current_state_is_not_historical_command() -> None:

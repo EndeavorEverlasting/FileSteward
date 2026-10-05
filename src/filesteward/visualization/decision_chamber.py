@@ -85,8 +85,9 @@ def render_decision_chamber_css() -> str:
 .decision-chamber[hidden]{display:none!important;}
 .chamber-chrome{display:grid;grid-template-columns:minmax(10rem,.8fr) minmax(16rem,1.4fr);gap:.8rem;}
 .chamber-kicker{display:block;font:800 .66rem/1 var(--fs-font-mono);letter-spacing:.08em;color:var(--fs-text-muted);}
-.chamber-orientation strong,.chamber-subject strong{display:block;margin:.25rem 0;font-size:1.05rem;}
+.chamber-orientation strong,.chamber-subject strong{display:block;margin:.25rem 0;font-size:1.05rem;font-family:var(--fs-font-mono);letter-spacing:.04em;}
 .chamber-evidence-row{display:flex;flex-wrap:wrap;gap:.7rem;font:700 .72rem/1.3 var(--fs-font-mono);}
+.chamber-approval dd,.chamber-subject .mono{font-family:var(--fs-font-mono)!important;}
 .chamber-gate-line{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.45rem;}
 .chamber-gate{
   min-width:7rem;padding:.45rem .55rem;border:1px solid var(--fs-border-default);
@@ -300,6 +301,10 @@ def render_decision_chamber_script() -> str:
       btn.type = 'button';
       btn.textContent = intentLabel(intent);
       btn.setAttribute('data-decision-intent', intent);
+      btn.setAttribute('data-cursor-mode', intent === 'KEEP' ? 'explore' : 'resolve');
+      btn.setAttribute('data-cue-label', intentLabel(intent));
+      btn.setAttribute('data-cue-explain', 'Legal operator intent from decision_flow.allowed_intents().');
+      btn.setAttribute('data-actionability', 'OPERABLE');
       btn.addEventListener('click', () => postDecision(intent));
       actions.appendChild(btn);
     });
@@ -537,6 +542,23 @@ def render_decision_chamber_script() -> str:
       state.openDecisionScene = 'FOCUS';
       applyScene();
     }
+  });
+
+  document.addEventListener('filesteward:path-step', (event) => {
+    const key = event.detail && event.detail.step;
+    if (!key) return;
+    state.lastScene = state.openDecisionScene;
+    state.openDecisionScene = key;
+    state.lastTransition = 'path_step_' + String(key).toLowerCase();
+    if (!state.selectedNodeId) state.selectedNodeId = selectedId();
+    if ((key === 'GATE' || key === 'RESOLVE' || key === 'APPROVAL' || key === 'STAGED') && state.selectedNodeId) {
+      fetchState(state.selectedNodeId).then(() => {
+        state.openDecisionScene = key;
+        applyScene();
+      }).catch(() => applyScene());
+      return;
+    }
+    applyScene();
   });
 
   // Expose orientation for tests / self-falsification probes.

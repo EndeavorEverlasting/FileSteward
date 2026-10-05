@@ -574,6 +574,11 @@ def render_cinematic_script() -> str:
       setLevel('HOME', 'overview');
       focusedId = keep;
       if (keep) activateNode(keep);
+      stage.classList.remove('returning-home');
+      void stage.offsetWidth;
+      stage.classList.add('returning-home');
+      pulseSubstrate();
+      window.setTimeout(() => stage.classList.remove('returning-home'), 820);
     },
     search() {
       const field = document.getElementById('storage-search');

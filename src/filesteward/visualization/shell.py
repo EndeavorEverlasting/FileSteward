@@ -220,8 +220,8 @@ def _render_brand_home(title: str) -> str:
     cue = cue_for_navigation("brand_home")
     aria = f"{title} — return to Atlas home"
     return (
-        f'<h1 class="brand-title">'
-        f'<button type="button" id="brand-home" class="brand-home" '
+        f'<h1 class="brand-title fs-type-display">'
+        f'<button type="button" id="brand-home" class="brand-home fs-type-display" '
         f'data-atlas-action="home" {html_data_attrs(cue)} '
         f'aria-label="{escape_attr(aria)}">'
         f"{escape_text(title)}"
@@ -308,7 +308,7 @@ def _render_metric_scene_cards(model: PresentationModel) -> str:
 
 def _render_mode_brief(node: Optional[PresentationNode]) -> str:
     if node is None:
-        return '<aside class="mode-brief" id="mode-brief" hidden></aside>'
+        return '<details class="mode-brief" id="mode-brief" hidden></details>'
     flow = open_decision_session(node)
     gap_cue = cue_for_status_orb(StatusOrbKind.EVIDENCE_GAP, node, flow)
     show_gap = (
@@ -320,7 +320,7 @@ def _render_mode_brief(node: Optional[PresentationNode]) -> str:
         )
     )
     if not show_gap:
-        return '<aside class="mode-brief" id="mode-brief" hidden></aside>'
+        return '<details class="mode-brief" id="mode-brief" hidden></details>'
     brief = evidence_gap_mode_brief()
 
     def _list(title: str, rows: tuple[str, ...]) -> str:
@@ -328,14 +328,15 @@ def _render_mode_brief(node: Optional[PresentationNode]) -> str:
         return f"<div><h3>{escape_text(title)}</h3><ul>{items}</ul></div>"
 
     return (
-        f'<aside class="mode-brief" id="mode-brief" data-mode="{escape_attr(brief.mode_id)}" '
+        f'<details class="mode-brief" id="mode-brief" data-mode="{escape_attr(brief.mode_id)}" '
         f'aria-label="{escape_attr(brief.title)}">'
-        f"<strong>{escape_text(brief.title)}</strong>"
-        '<div class="mode-brief-grid">'
+        f'<summary class="fs-type-scene">{escape_text(brief.title)}'
+        '<span class="mode-brief-hint"> · expand rules / assumptions / choices</span></summary>'
+        '<div class="mode-brief-grid fs-type-body">'
         f"{_list('Rules', brief.rules)}"
         f"{_list('Assumptions', brief.assumptions)}"
         f"{_list('Choices', brief.choices)}"
-        "</div></aside>"
+        "</div></details>"
     )
 
 
@@ -561,7 +562,14 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
 def _shell_behavior_css() -> str:
     return """
 html{text-size-adjust:100%;-webkit-text-size-adjust:100%;}
-html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);font-family:var(--fs-font-sans);}
+html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);font-family:var(--fs-font-mono);}
+/* Scenery type scheme — prevent basic sans leakage on command surfaces. */
+.fs-type-display{font-family:var(--fs-font-mono);font-weight:800;letter-spacing:.045em;}
+.fs-type-scene{font-family:var(--fs-font-mono);font-weight:750;letter-spacing:.05em;}
+.fs-type-meta{font-family:var(--fs-font-mono);font-size:var(--fs-type-small-size);letter-spacing:.03em;color:var(--fs-text-secondary);}
+.fs-type-body{font-family:var(--fs-font-mono);font-size:.78rem;line-height:1.4;color:var(--fs-text-secondary);}
+.shell .sub,.shell .class-legend-meaning,.shell .next-action span,.atlas-scene-panel span,
+.mode-brief,.chamber-approval dd,.decision-chamber{font-family:var(--fs-font-mono);}
 html,body{color-scheme:dark;scrollbar-color:color-mix(in srgb,var(--fs-accent) 55%,var(--fs-bg-surface-3)) var(--fs-bg-shell);scrollbar-width:thin;}
 html::-webkit-scrollbar,body::-webkit-scrollbar,.app::-webkit-scrollbar,.inspector::-webkit-scrollbar,.nav::-webkit-scrollbar,.atlas-scene-panel::-webkit-scrollbar{width:10px;height:10px;}
 html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,.app::-webkit-scrollbar-track,.inspector::-webkit-scrollbar-track,.nav::-webkit-scrollbar-track{background:var(--fs-bg-shell);}
@@ -571,13 +579,13 @@ html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,.app::-w
 .skip-link:focus{position:static;width:auto;height:auto;display:inline-block;margin:var(--fs-space-2);padding:var(--fs-space-2) var(--fs-space-3);background:var(--fs-bg-surface-1);color:var(--fs-text-primary);border:2px solid var(--fs-focus);z-index:10;}
 .app{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr auto;overflow-x:auto;}
 .shell{background:var(--fs-bg-shell);border-bottom:1px solid var(--fs-border-subtle);padding:var(--fs-space-4) var(--fs-space-5);}
-.shell .brand-title{margin:0;font-size:var(--fs-type-title-lg-size);line-height:var(--fs-type-title-lg-line);font-weight:var(--fs-type-title-lg-weight);}
+.shell .brand-title{margin:0;font-size:var(--fs-type-title-lg-size);line-height:var(--fs-type-title-lg-line);font-weight:var(--fs-type-title-lg-weight);font-family:var(--fs-font-mono);letter-spacing:.04em;text-shadow:0 0 18px color-mix(in srgb,var(--fs-accent) 28%,transparent);}
 .shell .brand-home{appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-size:inherit;line-height:inherit;font-weight:inherit;padding:0;margin:0;cursor:pointer;text-align:left;}
-.shell .brand-home:hover{color:var(--fs-accent);}
+.shell .brand-home:hover{color:var(--fs-accent);text-shadow:0 0 22px color-mix(in srgb,var(--fs-accent) 45%,transparent);}
 .shell .brand-home:focus-visible{outline:2px solid var(--fs-focus);outline-offset:3px;border-radius:2px;}
 @media (prefers-reduced-motion:reduce){.shell .brand-home{transition:none;}}
 @media (forced-colors:active){.shell .brand-home{forced-color-adjust:auto;outline:1px solid ButtonText;}}
-.shell .sub{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
+.shell .sub{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);font-family:var(--fs-font-mono);letter-spacing:.02em;}
 .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--fs-space-2);padding:var(--fs-space-3) var(--fs-space-5);background:var(--fs-bg-surface-2);border-bottom:1px solid var(--fs-border-subtle);}
 .metric{appearance:none;display:block;width:100%;text-align:left;cursor:pointer;background:var(--fs-bg-surface-1);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-3);min-width:0;color:inherit;font:inherit;}
 .metric:hover{border-color:var(--fs-accent);background:var(--fs-bg-hover);}
@@ -689,10 +697,13 @@ html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,.app::-w
 .footer-ticker-track span::before{content:"";width:.35rem;height:.35rem;border-radius:999px;background:var(--fs-accent);box-shadow:0 0 8px color-mix(in srgb,var(--fs-accent) 55%,transparent);}
 @keyframes fs-ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
 @media (prefers-reduced-motion:reduce){.footer-ticker-track{animation:none;flex-wrap:wrap;width:auto;white-space:normal;}}
-.mode-brief{margin:.45rem 0 0;padding:.55rem .7rem;border:1px solid color-mix(in srgb,var(--fs-warning,#D7AA82) 55%,var(--fs-border-subtle));border-radius:var(--fs-radius-md);background:color-mix(in srgb,var(--fs-bg-surface-1) 90%,var(--fs-warning,#D7AA82) 10%);}
+.mode-brief{margin:.45rem 0 0;padding:.45rem .65rem;border:1px solid color-mix(in srgb,var(--fs-warning,#D7AA82) 55%,var(--fs-border-subtle));border-radius:var(--fs-radius-md);background:color-mix(in srgb,var(--fs-bg-surface-1) 90%,var(--fs-warning,#D7AA82) 10%);}
 .mode-brief[hidden]{display:none!important;}
-.mode-brief strong{display:block;font:800 .72rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.35rem;}
-.mode-brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;}
+.mode-brief>summary{cursor:pointer;font:800 .72rem/1.2 var(--fs-font-mono);letter-spacing:.06em;list-style:none;}
+.mode-brief>summary::-webkit-details-marker{display:none;}
+.mode-brief-hint{color:var(--fs-text-muted);font-weight:600;letter-spacing:.03em;}
+.mode-brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin-top:.45rem;}
+.mode-brief:not([open]) .mode-brief-grid{display:none;}
 .mode-brief-grid h3{margin:0 0 .2rem;font:750 .66rem/1 var(--fs-font-mono);letter-spacing:.05em;color:var(--fs-text-secondary);}
 .mode-brief-grid ul{margin:0;padding-left:1rem;color:var(--fs-text-secondary);font-size:.7rem;line-height:1.35;}
 @media (max-width:900px){.mode-brief-grid{grid-template-columns:1fr;}}
@@ -956,7 +967,7 @@ def render_report_shell(
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
     {_render_brand_home(title)}
-    <div class="sub" id="scenery-subtitle">{escape_text(dynamic_sub)} · run <span class="mono">{escape_text(model.run_id)}</span></div>
+    <div class="sub fs-type-meta" id="scenery-subtitle">{escape_text(dynamic_sub)} · run <span class="mono">{escape_text(model.run_id)}</span></div>
     {_render_classification_legend(selected)}
     {_render_operator_next_actions(selected)}
     <aside class="atlas-scene-panel" id="atlas-scene-panel" hidden aria-live="polite">
