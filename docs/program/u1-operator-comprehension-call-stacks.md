@@ -3,15 +3,15 @@
 **Status:** DESIGNED + executable seams wired into report shell
 **Module:** `src/filesteward/visualization/scene_surface.py`
 **Authority floor:** `decision_flow.allowed_intents()`; permanent deletion forbidden
-**Product version:** `0.10.0` (visual-feature after chamber scenes / home reset / range capture)
+**Product version:** `0.11.0` (visual-feature after chamber next-actions / delete-blocker / cartouche dodge)
 
-## Operator correction 2026-10-05 (this pass)
+## Operator correction 2026-10-05 (blocker / scenery pass)
 
-- Home must clear path/chamber/native-selection highlighting.
-- Native browser blue selection must be captured as immersive range scenery.
-- GATE / RESOLVE / APPROVAL must be distinct chamber scenes, not one panel.
-- Confirm staging works offline as quarantine receipt — still NO BYTES REMOVED.
-- Permanent deletion of real workstation files remains forbidden.
+- Disposition UNKNOWN must open Decision Chamber with operable intents + locked STAGE REMOVAL explaining the delete blocker.
+- Header Next Actions must not encumber Atlas Home; invoke in chamber at GATE/RESOLVE/APPROVAL.
+- Cartouche must float into negative space away from inspector/chamber/compass.
+- Legend entries glow for the active disposition during traversal.
+- Permanent deletion remains forbidden; real C: apply remains an operator gate.
 
 ## Operator rejection recovered from live screenshot
 

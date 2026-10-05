@@ -92,6 +92,10 @@ def test_unknown_status_is_operable_and_opens_gate_scene() -> None:
     assert "GATE — inspect the first unresolved evidence gate" in html
     assert "RESOLVE — only decision_flow.allowed_intents()" in html
     assert "APPROVAL — authorize exact quarantine scope" in html
+    assert "chamber-next-actions" in html
+    assert "stage_removal_locked" in html
+    assert "sceneForDispositionLabel" in html
+    assert "STAGE REMOVAL LOCKED" in html
     assert "APPROVE_QUARANTINE" in html  # present in script path for reclaim only
     assert "NO BYTES REMOVED" in html
 

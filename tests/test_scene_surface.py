@@ -120,9 +120,22 @@ def test_reclaim_unapproved_offers_stage_removal_not_permanent_delete() -> None:
     labels = {action.label for action in actions}
     assert "STAGE REMOVAL PATH" in labels
     assert "KEEP" in labels
+    assert "STAGE REMOVAL PATH — LOCKED" not in labels
     assert any(action.intent is DecisionIntent.APPROVE_QUARANTINE for action in actions)
     assert all("PERMANENT" not in action.label.upper() for action in actions)
     assert any("NO BYTES REMOVED" in action.explanation for action in actions)
+
+
+def test_unknown_surfaces_locked_stage_removal_blocker() -> None:
+    node = _node(disposition=CleanupDisposition.UNKNOWN, unresolved=True)
+    flow = open_decision_session(node)
+    actions = operator_next_actions(flow)
+    assert_no_permanent_delete_actions(actions)
+    by_id = {action.action_id: action for action in actions}
+    assert "stage_removal_locked" in by_id
+    assert "RESCAN" in {a.label for a in actions}
+    assert "UNKNOWN" in by_id["stage_removal_locked"].explanation.upper()
+    assert by_id["stage_removal_locked"].consequence == "READ_ONLY"
 
 
 def test_protected_failure_stack_explains_lock() -> None:
@@ -181,6 +194,25 @@ def test_experience_script_portals_cursor_and_enacts_path() -> None:
     cinematic = render_cinematic_script()
     assert "document.dispatchEvent(new CustomEvent('filesteward:atlas-home'))" in cinematic
     assert "el.classList.remove('selected')" in cinematic
+    assert "placeCartoucheAway" in script
+    assert "cartoucheObstacles" in script
+    shell_html = render_report_shell(
+        PresentationModel(
+            run_id="u1-legend-glow",
+            nodes=(_node(disposition=CleanupDisposition.UNKNOWN, unresolved=True),),
+            metrics=ShellMetrics(
+                observed_storage_label="1 GiB",
+                free_space_label="8 GiB",
+                projected_reclaim_label="0 bytes",
+                projected_reclaim_quality=None,
+                target_free_space_label="not established",
+                authorization_label="UNAPPROVED",
+            ),
+            default_selected_id="n1",
+        )
+    )
+    assert ".class-legend-item.is-active" in shell_html
+    assert "classList.toggle('is-active'" in shell_html
 
 
 def test_shell_uses_scenery_type_classes() -> None:
@@ -262,7 +294,9 @@ def test_shell_renders_legend_metrics_and_next_actions() -> None:
     assert 'id="atlas-classification-legend"' in body
     assert "RECLAIM CANDIDATE" in body
     assert 'id="atlas-next-actions"' in body
+    assert 'data-dock="header"' in body
     assert "STAGE REMOVAL PATH" in body
+    assert "chamber-next-actions" in body
     assert 'data-scene-entry="metric_observed_storage"' in body
     assert 'id="scenery-subtitle"' in body
     assert 'data-product-version="' in body

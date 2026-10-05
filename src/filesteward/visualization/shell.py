@@ -439,10 +439,10 @@ def _render_operator_next_actions(node: Optional[PresentationNode]) -> str:
         )
     return (
         '<section class="atlas-next-actions" id="atlas-next-actions" '
-        'aria-label="Next legal actions">'
+        'data-dock="header" hidden aria-label="Next legal actions">'
         '<div class="next-actions-head">'
         "<strong>NEXT ACTIONS</strong>"
-        "<span>How to classify or stage removal for the selected evidence</span>"
+        "<span>Invoked in Decision Chamber scenery at GATE / RESOLVE / APPROVAL</span>"
         "</div>"
         f'<div class="next-actions-row" role="group">{"".join(buttons)}</div>'
         "</section>"
@@ -523,7 +523,7 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
     reclaim = _fmt_bytes(node.projected_reclaim_bytes)
     quality = node.projection_quality or "not-applicable"
     return f"""
-<section class="card selected-item" data-cursor-mode="focus" data-cue-label="INSPECT EVIDENCE" data-cue-explain="Read-only evidence identity. Open disposition to enter GATE." data-actionability="OPERABLE">
+<section class="card selected-item" data-node-id="{escape_attr(node.node_id)}" data-cursor-mode="focus" data-cue-label="INSPECT EVIDENCE" data-cue-explain="Read-only evidence identity. Open disposition to enter the Decision Chamber." data-actionability="OPERABLE">
   <h3>{escape_text(node.display_name)}</h3>
   <p class="path mono">{escape_text(node.path)}</p>
   <dl class="kv">
@@ -531,7 +531,7 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
     <dt>Allocated size</dt><dd>{escape_text(_fmt_bytes(node.allocated_size_bytes))}</dd>
     <dt>Projected reclaim</dt><dd>{escape_text(reclaim)}</dd>
     <dt>Projection quality</dt><dd>{escape_text(quality)}</dd>
-    <dt>Disposition</dt><dd><button type="button" class="evidence-state-action state state-{escape_attr(tone)}" data-open-decision="true" data-state-label="{escape_attr(_state_label(node.disposition))}" aria-label="Open decision gate for {escape_attr(_state_label(node.disposition))}"><span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span> {escape_text(_state_label(node.disposition))}</button></dd>
+    <dt>Disposition</dt><dd><button type="button" class="evidence-state-action state state-{escape_attr(tone)}" data-open-decision="true" data-node-id="{escape_attr(node.node_id)}" data-state-label="{escape_attr(_state_label(node.disposition))}" aria-label="Open decision chamber for {escape_attr(_state_label(node.disposition))}"><span class="state-marker" aria-hidden="true">[{escape_text(_state_label(node.disposition))}]</span> {escape_text(_state_label(node.disposition))}</button></dd>
     <dt>Authorization</dt><dd class="auth">{escape_text(_auth_label(node.authorization_state))}</dd>
     <dt>Evidence source</dt><dd>{escape_text(node.trace_evidence_source)}</dd>
   </dl>
@@ -599,7 +599,7 @@ html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,.app::-w
 .class-legend-head strong{font:800 .72rem/1 var(--fs-font-mono);letter-spacing:.08em;}
 .class-legend-head span,.class-legend-hotkeys{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .class-legend-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.45rem;}
-.class-legend-item{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:.4rem;row-gap:.15rem;padding:.35rem .4rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);min-width:0;}
+.class-legend-item{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:.4rem;row-gap:.15rem;padding:.35rem .4rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);min-width:0;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;}
 .class-legend-swatch{width:.7rem;height:.7rem;border-radius:999px;margin-top:.2rem;grid-row:1 / span 2;background:var(--fs-text-muted);box-shadow:0 0 0 1px var(--fs-border-default);}
 .class-legend-item.quality-blocked .class-legend-swatch{background:var(--fs-danger, #b56b5c);}
 .class-legend-item.quality-reclaim_candidate .class-legend-swatch{background:var(--fs-accent);}
@@ -608,14 +608,28 @@ html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,.app::-w
 .class-legend-label{font:750 .68rem/1.2 var(--fs-font-mono);letter-spacing:.04em;}
 .class-legend-meaning{grid-column:2;color:var(--fs-text-secondary);font-size:.68rem;line-height:1.3;}
 .atlas-next-actions{margin:.55rem 0 0;padding:.65rem .75rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);background:color-mix(in srgb, var(--fs-bg-shell) 92%, var(--fs-accent) 8%);}
+.atlas-next-actions[data-dock="header"],.atlas-next-actions[hidden]{display:none!important;}
 .next-actions-head{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.45rem;}
 .next-actions-head strong{font:800 .72rem/1 var(--fs-font-mono);letter-spacing:.08em;}
 .next-actions-head span{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .next-actions-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.45rem;}
 .next-action{appearance:none;border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-1);color:inherit;text-align:left;padding:.55rem .65rem;cursor:pointer;min-height:44px;}
 .next-action:hover,.next-action:focus-visible{border-color:var(--fs-accent);outline:2px solid var(--fs-focus);outline-offset:1px;}
+.next-action[data-consequence="READ_ONLY"],.next-action[data-next-action="stage_removal_locked"],.next-action[data-next-action="why_locked"]{
+  border-color:color-mix(in srgb,var(--fs-warning,#D7AA82) 55%,var(--fs-border-default));
+  background:color-mix(in srgb,var(--fs-warning,#D7AA82) 10%,var(--fs-bg-surface-1));
+  cursor:help;
+}
 .next-action strong{display:block;font:800 .74rem/1.2 var(--fs-font-mono);letter-spacing:.05em;margin-bottom:.25rem;}
 .next-action span{display:block;color:var(--fs-text-secondary);font-size:.72rem;line-height:1.35;}
+.class-legend-item:hover,.class-legend-item:focus-visible,.class-legend-item.is-active{
+  border-color:var(--fs-accent);
+  background:color-mix(in srgb,var(--fs-accent) 12%,var(--fs-bg-surface-2));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--fs-accent) 35%,transparent),0 0 18px color-mix(in srgb,var(--fs-accent) 28%,transparent);
+}
+.class-legend-item.is-active .class-legend-swatch,.class-legend-item:hover .class-legend-swatch{
+  box-shadow:0 0 0 1px var(--fs-border-default),0 0 14px color-mix(in srgb,var(--fs-accent) 55%,transparent);
+}
 .atlas-scene-panel{margin:.55rem 0 0;padding:.7rem .8rem;border:1px solid var(--fs-accent);border-radius:var(--fs-radius-md);background:var(--fs-bg-surface-1);}
 .atlas-scene-panel[hidden]{display:none!important;}
 .atlas-scene-panel strong{display:block;font:800 .78rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.3rem;}
@@ -810,6 +824,21 @@ def _selection_script() -> str:
       (el) => el.getAttribute('data-node-id') === id
     );
     if (navRow) navRow.scrollIntoView({ block: 'nearest' });
+    const stateBtn = document.querySelector(
+      '.selected-item .evidence-state-action, #inspector-body .evidence-state-action'
+    );
+    const stateLabel = ((stateBtn && stateBtn.getAttribute('data-state-label')) || '').toUpperCase();
+    document.querySelectorAll('.class-legend-item').forEach((item) => {
+      const key = (item.getAttribute('data-legend-state') || '').toUpperCase();
+      let on = false;
+      if (stateLabel.indexOf('PROTECTED') >= 0) on = key.indexOf('PROTECTED') >= 0;
+      else if (stateLabel.indexOf('RECLAIM') >= 0) on = key.indexOf('RECLAIM') >= 0;
+      else if (stateLabel.indexOf('KEEP') >= 0) on = key.indexOf('KEEP') >= 0 || key.indexOf('ESSENTIAL') >= 0;
+      else if (stateLabel.indexOf('UNKNOWN') >= 0 || stateLabel.indexOf('HUMAN') >= 0) {
+        on = key.indexOf('AMBIGUOUS') >= 0 || key.indexOf('HUMAN') >= 0 || key.indexOf('UNKNOWN') >= 0;
+      }
+      item.classList.toggle('is-active', on);
+    });
     document.dispatchEvent(
       new CustomEvent('filesteward:selection', { detail: { id } })
     );

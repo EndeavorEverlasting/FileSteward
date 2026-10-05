@@ -516,6 +516,38 @@ def render_cinematic_experience_script() -> str:
     return { mode: 'explore', label: 'EXPLORE', actionability: 'OPERABLE', explain: 'Explore the Atlas.' };
   };
 
+  const cartoucheObstacles = () => Array.from(document.querySelectorAll(
+    '.decision-chamber:not([hidden]), .inspector, .decision-compass, .atlas-classification-legend, .atlas-hud, .atlas-next-actions:not([hidden]), #chamber-next-actions:not([hidden])'
+  )).map((el) => el.getBoundingClientRect());
+
+  const placeCartoucheAway = (x, y) => {
+    const w = (cartouche && cartouche.offsetWidth) || 280;
+    const h = (cartouche && cartouche.offsetHeight) || 72;
+    const obstacles = cartoucheObstacles();
+    const overlaps = (left, top) => obstacles.some((r) => (
+      left < r.right + 8 && left + w > r.left - 8 && top < r.bottom + 8 && top + h > r.top - 8
+    ));
+    const candidates = [
+      [x + 20, y + 26],
+      [x - w - 20, y + 26],
+      [x + 20, y - h - 20],
+      [x - w - 20, y - h - 20],
+      [8, y - h - 12],
+      [window.innerWidth - w - 8, y - h - 12],
+      [8, Math.max(8, window.innerHeight * 0.35)],
+      [window.innerWidth - w - 8, Math.max(8, window.innerHeight * 0.35)]
+    ];
+    for (let i = 0; i < candidates.length; i += 1) {
+      const left = Math.min(window.innerWidth - w - 8, Math.max(8, candidates[i][0]));
+      const top = Math.min(window.innerHeight - h - 8, Math.max(8, candidates[i][1]));
+      if (!overlaps(left, top)) return { left: left, top: top };
+    }
+    return {
+      left: 8,
+      top: Math.min(window.innerHeight - h - 8, Math.max(8, y))
+    };
+  };
+
   const paintCue = (cue, x, y, showCartouche) => {
     if (reticle && fine.matches && !reduced.matches) {
       reticle.dataset.cursorMode = cue.mode;
@@ -529,10 +561,9 @@ def render_cinematic_experience_script() -> str:
       if (cartoucheExplain) cartoucheExplain.textContent = cue.explain;
       cartouche.hidden = false;
       cartouche.setAttribute('aria-hidden', 'false');
-      const left = Math.min(window.innerWidth - 300, Math.max(8, x + 18));
-      const top = Math.min(window.innerHeight - 96, Math.max(8, y + 24));
-      cartouche.style.left = left + 'px';
-      cartouche.style.top = top + 'px';
+      const pos = placeCartoucheAway(x, y);
+      cartouche.style.left = pos.left + 'px';
+      cartouche.style.top = pos.top + 'px';
     } else if (cartouche) {
       cartouche.hidden = true;
       cartouche.setAttribute('aria-hidden', 'true');

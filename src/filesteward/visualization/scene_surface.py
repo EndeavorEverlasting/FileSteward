@@ -455,6 +455,25 @@ def operator_next_actions(flow: DecisionFlowState) -> tuple[OperatorNextAction, 
                     consequence="RECORD_INTENT",
                 )
             )
+
+    # Always surface delete/remove intent fate — never silent absence (ncdu/BleachBit confirm pattern).
+    if DecisionIntent.APPROVE_QUARANTINE not in intents:
+        disp = flow.disposition.value.replace("_", " ")
+        actions.append(
+            OperatorNextAction(
+                action_id="stage_removal_locked",
+                label="STAGE REMOVAL PATH — LOCKED",
+                explanation=(
+                    f"Delete/remove intent is blocked for {disp}. "
+                    "Quarantine staging requires RECLAIM_PROVEN + UNAPPROVED → APPROVAL. "
+                    "UNKNOWN/HUMAN_REVIEW stay on RESCAN / KEEP / REVIEW LATER. "
+                    "Permanent deletion is not implemented. NO BYTES REMOVED."
+                ),
+                intent=None,
+                opens_approval=False,
+                consequence="READ_ONLY",
+            )
+        )
     return tuple(actions)
 
 
