@@ -49,6 +49,12 @@ from filesteward.visualization.interaction import (
     html_data_attrs,
 )
 from filesteward.visualization.literal import escape_attr, escape_text
+from filesteward.visualization.scene_surface import (
+    classification_legend,
+    metric_scene_entries,
+    operator_next_actions,
+    scenery_subtitle,
+)
 from filesteward.visualization.selection import SelectionController
 from filesteward.visualization.tokens import disposition_css_stem
 
@@ -270,6 +276,97 @@ def _render_action_trace() -> str:
 """
 
 
+def _render_metric_scene_cards(model: PresentationModel) -> str:
+    entries = metric_scene_entries(
+        observed_storage=model.metrics.observed_storage_label,
+        free_space=model.metrics.free_space_label,
+        projected_reclaim=model.metrics.projected_reclaim_label,
+        projected_reclaim_quality=model.metrics.projected_reclaim_quality,
+        target_free_space=model.metrics.target_free_space_label,
+        authorization=model.metrics.authorization_label,
+    )
+    cards: list[str] = []
+    for entry in entries:
+        auth_attr = ' class="auth"' if entry.surface_id == "metric_authorization_state" else ""
+        cards.append(
+            f'<button type="button" class="metric metric-scene" '
+            f'id="{escape_attr(entry.surface_id)}" '
+            f'data-scene-entry="{escape_attr(entry.surface_id)}" '
+            f'data-scene="{escape_attr(entry.scene)}" '
+            f'data-scene-action="{escape_attr(entry.required_action)}" '
+            f'data-cue-explain="{escape_attr(entry.explanation)}" '
+            f'aria-label="{escape_attr(entry.label + ": " + entry.value + ". " + entry.explanation)}">'
+            f"<b{auth_attr}>{escape_text(entry.value)}</b>"
+            f"<span>{escape_text(entry.label)}</span>"
+            f"</button>"
+        )
+    return "\n    ".join(cards)
+
+
+def _render_classification_legend() -> str:
+    items: list[str] = []
+    for entry in classification_legend():
+        items.append(
+            f'<li class="class-legend-item quality-{escape_attr(entry.quality_tone.value.lower())}" '
+            f'data-legend-state="{escape_attr(entry.state_id)}">'
+            f'<span class="class-legend-swatch" aria-hidden="true"></span>'
+            f'<span class="class-legend-label">{escape_text(entry.label)}</span>'
+            f'<span class="class-legend-meaning">{escape_text(entry.meaning)}</span>'
+            f"</li>"
+        )
+    return (
+        '<section class="atlas-classification-legend" id="atlas-classification-legend" '
+        'aria-label="Classification legend">'
+        '<div class="class-legend-head">'
+        "<strong>LEGEND</strong>"
+        "<span>Classification ≠ authority · color is not the only signal</span>"
+        "</div>"
+        f'<ul class="class-legend-list">{"".join(items)}</ul>'
+        '<p class="class-legend-hotkeys"><kbd>D</kbd> Decision · <kbd>Home</kbd> Atlas Home · '
+        "<kbd>Esc</kbd> Back · brand title = Home</p>"
+        "</section>"
+    )
+
+
+def _render_operator_next_actions(node: Optional[PresentationNode]) -> str:
+    if node is None:
+        return (
+            '<section class="atlas-next-actions" id="atlas-next-actions" '
+            'aria-label="Next legal actions" hidden></section>'
+        )
+    flow = open_decision_session(node)
+    actions = operator_next_actions(flow)
+    buttons: list[str] = []
+    for action in actions:
+        intent_attr = (
+            f' data-decision-intent="{escape_attr(action.intent.value)}"'
+            if action.intent is not None
+            else ""
+        )
+        open_attr = ' data-open-approval="true"' if action.opens_approval else ""
+        buttons.append(
+            f'<button type="button" class="next-action" '
+            f'data-next-action="{escape_attr(action.action_id)}" '
+            f'data-consequence="{escape_attr(action.consequence)}" '
+            f'data-cue-explain="{escape_attr(action.explanation)}"'
+            f"{intent_attr}{open_attr} "
+            f'aria-label="{escape_attr(action.label + ". " + action.explanation)}">'
+            f"<strong>{escape_text(action.label)}</strong>"
+            f"<span>{escape_text(action.explanation)}</span>"
+            f"</button>"
+        )
+    return (
+        '<section class="atlas-next-actions" id="atlas-next-actions" '
+        'aria-label="Next legal actions">'
+        '<div class="next-actions-head">'
+        "<strong>NEXT ACTIONS</strong>"
+        "<span>How to classify or stage removal for the selected evidence</span>"
+        "</div>"
+        f'<div class="next-actions-row" role="group">{"".join(buttons)}</div>'
+        "</section>"
+    )
+
+
 def _render_selection_summary(node: Optional[PresentationNode]) -> str:
     if node is None:
         return '<span class="selection-empty">No item selected.</span>'
@@ -397,9 +494,39 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 @media (forced-colors:active){.shell .brand-home{forced-color-adjust:auto;outline:1px solid ButtonText;}}
 .shell .sub{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--fs-space-2);padding:var(--fs-space-3) var(--fs-space-5);background:var(--fs-bg-surface-2);border-bottom:1px solid var(--fs-border-subtle);}
-.metric{background:var(--fs-bg-surface-1);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-3);min-width:0;}
+.metric{appearance:none;display:block;width:100%;text-align:left;cursor:pointer;background:var(--fs-bg-surface-1);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-3);min-width:0;color:inherit;font:inherit;}
+.metric:hover{border-color:var(--fs-accent);background:var(--fs-bg-hover);}
+.metric:focus-visible{outline:2px solid var(--fs-focus);outline-offset:2px;}
+.metric[aria-pressed="true"]{border-color:var(--fs-accent);box-shadow:inset 0 0 0 1px var(--fs-accent);}
 .metric b{display:block;font-variant-numeric:tabular-nums;font-size:var(--fs-type-title-size);overflow-wrap:anywhere;}
 .metric span{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
+.atlas-classification-legend{margin:.55rem 0 0;padding:.65rem .75rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);background:color-mix(in srgb, var(--fs-bg-surface-1) 88%, transparent);}
+.class-legend-head{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.45rem;}
+.class-legend-head strong{font:800 .72rem/1 var(--fs-font-mono);letter-spacing:.08em;}
+.class-legend-head span,.class-legend-hotkeys{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
+.class-legend-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.45rem;}
+.class-legend-item{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:.4rem;row-gap:.15rem;padding:.35rem .4rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);min-width:0;}
+.class-legend-swatch{width:.7rem;height:.7rem;border-radius:999px;margin-top:.2rem;grid-row:1 / span 2;background:var(--fs-text-muted);box-shadow:0 0 0 1px var(--fs-border-default);}
+.class-legend-item.quality-blocked .class-legend-swatch{background:var(--fs-danger, #b56b5c);}
+.class-legend-item.quality-reclaim_candidate .class-legend-swatch{background:var(--fs-accent);}
+.class-legend-item.quality-essential .class-legend-swatch{background:var(--fs-success, #86A76A);}
+.class-legend-item.quality-ambiguous .class-legend-swatch{background:var(--fs-warning, #D7AA82);}
+.class-legend-label{font:750 .68rem/1.2 var(--fs-font-mono);letter-spacing:.04em;}
+.class-legend-meaning{grid-column:2;color:var(--fs-text-secondary);font-size:.68rem;line-height:1.3;}
+.atlas-next-actions{margin:.55rem 0 0;padding:.65rem .75rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);background:color-mix(in srgb, var(--fs-bg-shell) 92%, var(--fs-accent) 8%);}
+.next-actions-head{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.45rem;}
+.next-actions-head strong{font:800 .72rem/1 var(--fs-font-mono);letter-spacing:.08em;}
+.next-actions-head span{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
+.next-actions-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.45rem;}
+.next-action{appearance:none;border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-1);color:inherit;text-align:left;padding:.55rem .65rem;cursor:pointer;min-height:44px;}
+.next-action:hover,.next-action:focus-visible{border-color:var(--fs-accent);outline:2px solid var(--fs-focus);outline-offset:1px;}
+.next-action strong{display:block;font:800 .74rem/1.2 var(--fs-font-mono);letter-spacing:.05em;margin-bottom:.25rem;}
+.next-action span{display:block;color:var(--fs-text-secondary);font-size:.72rem;line-height:1.35;}
+.atlas-scene-panel{margin:.55rem 0 0;padding:.7rem .8rem;border:1px solid var(--fs-accent);border-radius:var(--fs-radius-md);background:var(--fs-bg-surface-1);}
+.atlas-scene-panel[hidden]{display:none!important;}
+.atlas-scene-panel strong{display:block;font:800 .78rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.3rem;}
+@media (max-width:1100px){.class-legend-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:720px){.class-legend-list{grid-template-columns:1fr;}}
 .workspace{display:grid;grid-template-columns:minmax(260px,320px) minmax(480px,1fr) minmax(320px,400px);min-height:0;min-width:0;}
 .pane{background:var(--fs-bg-surface-1);border-right:1px solid var(--fs-border-subtle);min-width:0;}
 .pane:last-child{border-right:0;}
@@ -604,6 +731,41 @@ def _selection_script() -> str:
       else if (event.key === 'End') { event.preventDefault(); moveNav(0, 'end'); }
     });
   });
+
+  const scenePanel = document.getElementById('atlas-scene-panel');
+  const sceneTitle = document.getElementById('atlas-scene-panel-title');
+  const sceneBody = document.getElementById('atlas-scene-panel-body');
+  const openScene = (scene, explain, action) => {
+    if (!scenePanel) return;
+    if (sceneTitle) sceneTitle.textContent = scene || 'SCENE';
+    if (sceneBody) sceneBody.textContent = (action ? action + ' — ' : '') + (explain || '');
+    scenePanel.hidden = false;
+  };
+  document.querySelectorAll('[data-scene-entry]').forEach((el) => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('[data-scene-entry]').forEach((other) => {
+        other.setAttribute('aria-pressed', other === el ? 'true' : 'false');
+      });
+      openScene(
+        el.getAttribute('data-scene'),
+        el.getAttribute('data-cue-explain'),
+        el.getAttribute('data-scene-action')
+      );
+    });
+  });
+  document.querySelectorAll('.next-action').forEach((el) => {
+    el.addEventListener('click', () => {
+      const explain = el.getAttribute('data-cue-explain') || '';
+      const label = (el.querySelector('strong') && el.querySelector('strong').textContent) || 'NEXT';
+      openScene(label, explain, el.getAttribute('data-consequence'));
+      if (el.getAttribute('data-open-approval') === 'true' || el.getAttribute('data-decision-intent')) {
+        const atlas = window.FileStewardAtlas;
+        if (atlas && typeof atlas.toggle_decision === 'function') atlas.toggle_decision();
+        const decisionBtn = document.getElementById('atlas-decision');
+        if (decisionBtn) decisionBtn.focus();
+      }
+    });
+  });
 })();
 </script>
 """
@@ -635,6 +797,12 @@ def render_report_shell(
         controller.select(selected_id)
     current_id = controller.state.selected_id
     selected = controller.selected_node()
+    selected_flow = open_decision_session(selected) if selected is not None else None
+    dynamic_sub = (
+        scenery_subtitle(selected_flow, selected.disposition)
+        if selected is not None and selected_flow is not None
+        else "Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only"
+    )
 
     # Pre-render per-node inspector and selection-summary bodies for JS swap
     # without reclassification or client-side evidence inference.
@@ -672,14 +840,16 @@ def render_report_shell(
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
     {_render_brand_home(title)}
-    <div class="sub">Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only · run <span class="mono">{escape_text(model.run_id)}</span></div>
+    <div class="sub" id="scenery-subtitle">{escape_text(dynamic_sub)} · run <span class="mono">{escape_text(model.run_id)}</span></div>
+    {_render_classification_legend()}
+    {_render_operator_next_actions(selected)}
+    <aside class="atlas-scene-panel" id="atlas-scene-panel" hidden aria-live="polite">
+      <strong id="atlas-scene-panel-title">SCENE</strong>
+      <span id="atlas-scene-panel-body">Activate a metric or legend cue to open its scenery explanation.</span>
+    </aside>
   </header>
   <section class="metrics" aria-label="Run metrics">
-    <div class="metric"><b>{escape_text(model.metrics.observed_storage_label)}</b><span>Observed storage</span></div>
-    <div class="metric"><b>{escape_text(model.metrics.free_space_label)}</b><span>Run baseline free space</span></div>
-    <div class="metric"><b>{escape_text(model.metrics.projected_reclaim_label)}</b><span>Projected reclaim{" · " + escape_text(model.metrics.projected_reclaim_quality) if model.metrics.projected_reclaim_quality else ""}</span></div>
-    <div class="metric"><b>{escape_text(model.metrics.target_free_space_label)}</b><span>Target free space</span></div>
-    <div class="metric"><b class="auth">{escape_text(model.metrics.authorization_label)}</b><span>Authorization state</span></div>
+    {_render_metric_scene_cards(model)}
   </section>
   <main class="workspace" id="workspace" data-scene="overview" data-camera-level="HOME">
     <section class="pane navigator-pane" aria-label="Storage navigator">
