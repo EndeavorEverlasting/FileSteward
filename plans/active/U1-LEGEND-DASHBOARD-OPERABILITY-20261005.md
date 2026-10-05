@@ -69,7 +69,20 @@ Coordinator owns: tests, docs, version bump, validation, commit/push/integration
 - Live operator visual acceptance of cinematic feel: operator gate
 - Mainline merge: authorized when PR stack gates permit; draft operator-acceptance may remain BLOCKED
 
-## 8. Successor phases (not absorbed here)
+## 8. Current proof ledger
+
+| Field | Value |
+|---|---|
+| Exact head | `607d861c1a36c829a6ecc1c6a91d6bdeaa855274` |
+| Product | `0.12.2` |
+| PR | [#17](https://github.com/EndeavorEverlasting/FileSteward/pull/17) (draft, MERGEABLE) |
+| Stack | #17 → #16 → #15 → `main` (`be0406b`) — all drafts |
+| Pytest | `tests/test_u1_dashboard_operability.py` + visualization f5/html → 28 passed |
+| P130 | `ensure-visual-bump` / `guard` PASS (`0.12.1 → 0.12.2`) |
+| Live CDP | `Outputs/u1-ops-live-proof-redock.html` A1–A6 true after settle |
+| Integration | BLOCKED — operator must undraft/accept #15 then #16 then #17 |
+
+## 9. Successor phases (not absorbed here)
 
 - Full immersive metric “dashboard rooms” beyond filter+focus+chamber entry
 - F7/F8 contract/approval UX beyond existing Decision Chamber
