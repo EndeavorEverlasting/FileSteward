@@ -2,7 +2,8 @@
 
 **Status:** DESIGNED + IMPLEMENTED (local suite); live operator acceptance open  
 **Authority floor:** V4-C preserved at PR #15 `4e8a529` (0.4.0)  
-**Product version after this visual-feature:** decided by P130 (`0.5.0`)
+**Product version after V4-D visual-feature:** `0.5.0`
+**Product version after U1 brand/Home visual-feature:** decided by P130 (`0.6.0`)
 
 ## User outcomes
 
@@ -12,6 +13,7 @@
 4. `PROTECTED`, `UNAPPROVED`, and evidence-gap (`? items`) are operable status nodes.
 5. Native browser tooltips never pierce the authored world.
 6. Illegal intents never look operable; explanation is visible.
+7. The FileSteward brand/title is a conventional Home affordance that returns the camera to Atlas Home through the existing `FileStewardAtlas.home()` authority (no second navigation/state owner).
 
 ## Invariants
 
@@ -53,6 +55,18 @@ operator perception (same semantic action)
 Dependency direction: renderers → interaction → decision_flow/models. Never reverse.
 
 ## Representative success call stacks
+
+### Brand / title Home
+
+```text
+USER activate brand title (click / Enter / Space / keyboard focus)
+  -> shell #brand-home data-atlas-action="home"
+  -> cue_for_navigation("brand_home") -> RETURN / READ_ONLY / ATLAS HOME
+  -> cinematic [data-atlas-action] listener -> FileStewardAtlas.home()
+  -> camera HOME + overview scene
+  -> terminal value: Atlas Home restored (same path as #atlas-home / Home key)
+  -> no decision_flow mutation; no second router
+```
 
 ### Explore map evidence
 

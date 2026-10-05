@@ -201,6 +201,25 @@ def _nav_button(
     )
 
 
+def _render_brand_home(title: str) -> str:
+    """Brand/title Home affordance — same camera authority as Atlas Home.
+
+    Terminal user value: return to Atlas camera HOME / overview.
+    ENTRYPOINT: brand control. No intermediate panel. No second router.
+    """
+
+    cue = cue_for_navigation("brand_home")
+    aria = f"{title} — return to Atlas home"
+    return (
+        f'<h1 class="brand-title">'
+        f'<button type="button" id="brand-home" class="brand-home" '
+        f'data-atlas-action="home" {html_data_attrs(cue)} '
+        f'aria-label="{escape_attr(aria)}">'
+        f"{escape_text(title)}"
+        f"</button></h1>"
+    )
+
+
 def _render_status_orbs(node: Optional[PresentationNode]) -> str:
     if node is None:
         return (
@@ -370,7 +389,12 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .skip-link:focus{position:static;width:auto;height:auto;display:inline-block;margin:var(--fs-space-2);padding:var(--fs-space-2) var(--fs-space-3);background:var(--fs-bg-surface-1);color:var(--fs-text-primary);border:2px solid var(--fs-focus);z-index:10;}
 .app{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr auto;overflow-x:auto;}
 .shell{background:var(--fs-bg-shell);border-bottom:1px solid var(--fs-border-subtle);padding:var(--fs-space-4) var(--fs-space-5);}
-.shell h1{margin:0;font-size:var(--fs-type-title-lg-size);line-height:var(--fs-type-title-lg-line);font-weight:var(--fs-type-title-lg-weight);}
+.shell .brand-title{margin:0;font-size:var(--fs-type-title-lg-size);line-height:var(--fs-type-title-lg-line);font-weight:var(--fs-type-title-lg-weight);}
+.shell .brand-home{appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-size:inherit;line-height:inherit;font-weight:inherit;padding:0;margin:0;cursor:pointer;text-align:left;}
+.shell .brand-home:hover{color:var(--fs-accent);}
+.shell .brand-home:focus-visible{outline:2px solid var(--fs-focus);outline-offset:3px;border-radius:2px;}
+@media (prefers-reduced-motion:reduce){.shell .brand-home{transition:none;}}
+@media (forced-colors:active){.shell .brand-home{forced-color-adjust:auto;outline:1px solid ButtonText;}}
 .shell .sub{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
 .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--fs-space-2);padding:var(--fs-space-3) var(--fs-space-5);background:var(--fs-bg-surface-2);border-bottom:1px solid var(--fs-border-subtle);}
 .metric{background:var(--fs-bg-surface-1);border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);padding:var(--fs-space-3);min-width:0;}
@@ -647,7 +671,7 @@ def render_report_shell(
 <a class="skip-link" href="#inspector-body">Skip to decision inspector</a>
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
-    <h1>{escape_text(title)}</h1>
+    {_render_brand_home(title)}
     <div class="sub">Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only · run <span class="mono">{escape_text(model.run_id)}</span></div>
   </header>
   <section class="metrics" aria-label="Run metrics">

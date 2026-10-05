@@ -245,6 +245,12 @@ def cue_for_navigation(action: str, *, recency: Recency = Recency.IDLE) -> Inter
             "return",
             "Return the camera to Atlas home.",
         ),
+        "brand_home": (
+            InteractionVerb.RETURN,
+            "ATLAS HOME",
+            "return",
+            "Return the camera to Atlas home via the FileSteward brand.",
+        ),
         "zoom_in": (
             InteractionVerb.DIVE_IN,
             "DIVE IN · Zoom +",

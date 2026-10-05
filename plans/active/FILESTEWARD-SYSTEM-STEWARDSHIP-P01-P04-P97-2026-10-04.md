@@ -139,14 +139,21 @@ First allowed scheduled actions:
 `QUARANTINE_APPROVED` remains gated on the existing apply/quarantine program.
 
 ### S2 — Local Settings / Schedule Scene
-**Dependencies:** S1 + M2.
+**Dependencies:** S1 + M2 for full scenery + OS registration.
+**Domain seam prototype (this U1 pass):** `src/filesteward/housekeeping_settings.py` + `docs/program/housekeeping-settings-call-stack.md`.
 
-Owns:
+Owns (full S2):
 - local/private settings store;
 - immersive toggle scene;
 - cadence/idle/power options;
 - next-run/last-run state;
 - explicit readback after registration changes.
+
+Prototype proved now:
+- enable/disable/cadence validation;
+- forbidden-action rejection (`PERMANENT_DELETE` / `SELF_APPROVE` / `PROMOTE_EVIDENCE`);
+- `QUARANTINE_APPROVED` still gated on approval identity;
+- scheduler port plans descriptors without registering OS tasks.
 
 ### Q1 — Approved Quarantine Cadence
 **Dependencies:** manifest-bound approval + quarantine/apply + retention policy.
@@ -174,12 +181,9 @@ No rung may be inferred from a lower rung.
 
 ## Current next action
 
-Local owner should first pull this successor harness branch in an isolated worktree, run:
+U1 brand/Home + housekeeping settings seam are in flight on
+`design/u1-brand-home-schedule-seam-20261005`. After local suite green and draft PR push:
 
-```powershell
-python scripts/validate_harness_contracts.py
-python -m pytest -q tests/test_harness_contracts.py
-python -m pytest -q
-```
-
-If green, preserve this harness contract independently from PR #15 and then execute U1/M1/S1 according to collision ownership.
+1. Operator live-accepts brand/Home on the regenerated report.
+2. Do not merge/undraft PR #15/#16/#U1 until that acceptance gate.
+3. Successor M1/S1 remain parallel-ready on non-overlapping surfaces.
