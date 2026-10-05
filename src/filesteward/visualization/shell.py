@@ -480,8 +480,8 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .trace-history li{font:700 .68rem/1.2 var(--fs-font-mono);padding:.2rem .4rem;border-radius:3px;border:1px solid var(--fs-border-subtle);opacity:.55;}
 .trace-history li[data-recency="LAST"]{opacity:1;border-color:color-mix(in srgb,var(--fs-accent) 55%,var(--fs-border-default));box-shadow:0 0 10px color-mix(in srgb,var(--fs-accent) 28%,transparent);}
 .trace-history li[data-recency="RECENT"]{opacity:.78;border-color:color-mix(in srgb,var(--fs-accent) 30%,var(--fs-border-default));}
-.atlas-status-orbs{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;padding:var(--fs-space-2) var(--fs-space-4);border-bottom:1px solid var(--fs-border-subtle);background:color-mix(in srgb,var(--fs-bg-surface-1) 92%,transparent);}
-.status-orb{appearance:none;display:inline-flex;align-items:center;gap:.45rem;min-height:40px;min-width:40px;padding:.35rem .65rem;border-radius:999px;border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-primary);font:800 .68rem/1 var(--fs-font-mono);letter-spacing:.04em;cursor:pointer;}
+.atlas-hud .atlas-status-orbs{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-left:.25rem;}
+.status-orb{appearance:none;display:inline-flex;align-items:center;gap:.45rem;min-height:40px;min-width:40px;padding:.35rem .65rem;border-radius:999px;border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-primary);font:800 .68rem/1 var(--fs-font-mono);letter-spacing:.04em;cursor:pointer;pointer-events:auto;}
 .status-orb-core{width:12px;height:12px;border-radius:50%;background:currentColor;box-shadow:0 0 0 2px color-mix(in srgb,currentColor 25%,transparent);}
 .status-orb.quality-blocked{color:var(--fs-state-protected-edge);border-color:color-mix(in srgb,var(--fs-state-protected-edge) 55%,var(--fs-border-default));}
 .status-orb.quality-essential{color:var(--fs-state-keep-edge);border-color:color-mix(in srgb,var(--fs-state-keep-edge) 55%,var(--fs-border-default));}
@@ -674,6 +674,7 @@ def render_report_shell(
         {_nav_button("atlas-fit", "fit_selected", "Fit selected")}
         {_nav_button("atlas-open", "open", "Open")}
         {_nav_button("atlas-decision", "decision", "Decision")}
+        {_render_status_orbs(selected)}
       </div>
       <div class="storage-stage" id="storage-stage" data-scene="overview" data-camera-level="HOME" tabindex="-1">
         {render_substrate_svg()}
@@ -690,7 +691,6 @@ def render_report_shell(
           <div class="scene-toolbar">
             <button type="button" class="scene-back" id="scene-back" hidden>← Sector overview</button>
             <div class="selection-summary" id="selection-summary" aria-live="polite">{_render_selection_summary(selected)}</div>
-            {_render_status_orbs(selected)}
           </div>
           <div class="focus-host" id="focus-host">{render_focus_chamber(selected, model.nodes)}</div>
           <div class="context-map-shell">
