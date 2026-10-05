@@ -1,7 +1,7 @@
 # U1 Operator Comprehension — Call-Stack Design
 
-**Status:** DESIGNED + executable seams wired into report shell 
-**Module:** `src/filesteward/visualization/scene_surface.py` 
+**Status:** DESIGNED + executable seams wired into report shell
+**Module:** `src/filesteward/visualization/scene_surface.py`
 **Authority floor:** `decision_flow.allowed_intents()`; permanent deletion forbidden
 
 ## Operator rejection recovered from live screenshot
