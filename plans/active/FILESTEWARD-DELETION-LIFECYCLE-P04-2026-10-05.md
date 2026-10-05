@@ -1,9 +1,9 @@
 # FileSteward Deletion Lifecycle — P04
 
-**Plan ID:** `FILESTEWARD-DELETION-LIFECYCLE-P04-20261005`  
-**Repository:** `EndeavorEverlasting/FileSteward`  
-**Provider floor at plan creation:** PR #17 `design/u1-brand-home-schedule-seam-20261005@4c23b8fe88c73a384ebaebd1da121fe6e6575266`  
-**Stack:** PR #17 -> PR #16 -> PR #15 -> `main@be0406b3047ce07a769fb3f9a14cd6618dbf086e`  
+**Plan ID:** `FILESTEWARD-DELETION-LIFECYCLE-P04-20261005`
+**Repository:** `EndeavorEverlasting/FileSteward`
+**Provider floor at plan creation:** PR #17 `design/u1-brand-home-schedule-seam-20261005@4c23b8fe88c73a384ebaebd1da121fe6e6575266`
+**Stack:** PR #17 -> PR #16 -> PR #15 -> `main@be0406b3047ce07a769fb3f9a14cd6618dbf086e`
 **Disposition:** deletion is now an active required product outcome, not an indefinite post-MVP aspiration.
 
 ## 1. Operator outcome
@@ -119,7 +119,7 @@ Defines:
 
 ### D1 — Exact Delete Set + Decision Surface
 
-**Dependency:** D0.  
+**Dependency:** D0.
 **Parallel-safe with D2** if D1 owns manifest/presentation files and D2 owns executor/preflight files.
 
 **Mission:** convert eligible cleanup rows into a local/private, exact deletion-set artifact that the operator can inspect before any mutation.
@@ -160,7 +160,7 @@ Each manifest item must carry, at minimum:
 
 ### D2 — Mutation Preflight / Dry-Run Engine
 
-**Dependency:** D0.  
+**Dependency:** D0.
 **Mission:** prove the exact selected objects still match the approved evidence immediately before mutation.
 
 Future owned surface:
