@@ -74,10 +74,15 @@ def test_decision_tree_is_the_tutorial_not_a_separate_tour() -> None:
 
 def test_home_is_persistent_named_and_teaches_the_hotkey() -> None:
     html = render_report_shell(_model())
-    assert 'class="atlas-home-beacon"' in html
+    # Floating ATLAS HOME beacon removed — it occluded atlas scenery.
+    # Brand title + HUD Atlas Home remain the persistent Home affordances.
+    assert "atlas-home-beacon" not in html
+    assert 'id="brand-home"' in html
+    assert 'id="atlas-home"' in html
     assert 'aria-label="Return to Atlas home"' in html
     assert "<kbd>Home</kbd>" in html
     assert "Esc" in html and "BACK" in html
+    assert "returning-home" in html
 
 
 def test_contextual_reticle_replaces_standard_cursor_inside_atlas_only() -> None:

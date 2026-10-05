@@ -24,6 +24,7 @@
 | V4-D3 | ⏳ WAITING | P124 readability convergence only after interaction behavior is characterized | V4-D2 green | evidence-ranked hotspots |
 | V4-D4 | ⏳ WAITING | self-falsification: desktop/laptop/phone/reduced-motion/forced-colors + private live journey | V4-D2 | ignored runtime proof |
 | PR acceptance | ⛔ BLOCKED | draft until live operator acceptance; no merge/undraft/F7/permanent delete | V4-D4 | PR #15 |
+| U1-OPS | 🟡 IMPLEMENTED at `0.12.0` | legend cinematic filters; metric dashboards; cartouche negative space; draggable chamber | U1 `0.11.0` floor | `plans/active/U1-LEGEND-DASHBOARD-OPERABILITY-20261005.md` |
 
 Architecture (fixed): `decision_flow.allowed_intents()` remains authority; `interaction.py` projects cues (`target_kind`, `verb`, `availability`, `recency`, `consequence`, `quality_tone`, explanation) into `data-*` attributes. Quality polarity: ESSENTIAL/KEEP glow vs RECLAIM_CANDIDATE glow vs BLOCKED/PROTECTED vs AMBIGUOUS. Permanent deletion remains NOT IMPLEMENTED; terminal mutation truth stays QUARANTINE STAGED — NO BYTES REMOVED.
 

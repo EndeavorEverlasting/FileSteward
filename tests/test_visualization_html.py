@@ -152,8 +152,13 @@ def test_filter_and_search_controls_are_wired() -> None:
     assert 'aria-pressed="true"' in html
     assert 'aria-pressed="false"' in html
     assert "search.addEventListener('input'" in html
-    assert "meta.disposition === activeFilter" in html
+    assert (
+        "meta.disposition === activeFilter" in html
+        or "stateMatches(meta.disposition, activeFilter)" in html
+    )
     assert "meta.search.includes(query)" in html
+    assert "FileStewardFilters" in html
+    assert "AMBIGUOUS" in html
     assert "No items match these filters." in html
 
 

@@ -103,6 +103,51 @@ def test_navigation_cues_are_deterministic() -> None:
     assert cue_for_navigation("search").verb is InteractionVerb.LOCATE
     assert cue_for_navigation("decision").verb is InteractionVerb.RESOLVE
     assert cue_for_navigation("home").consequence is Consequence.READ_ONLY
+    brand = cue_for_navigation("brand_home")
+    assert brand.verb is InteractionVerb.RETURN
+    assert brand.consequence is Consequence.READ_ONLY
+    assert brand.label == cue_for_navigation("home").label
+
+
+def test_brand_title_is_truthful_home_affordance() -> None:
+    reclaim = replace(
+        _node(disposition=CleanupDisposition.RECLAIM_PROVEN),
+        node_id="reclaim",
+        display_name="reclaim",
+        path=r"C:\synthetic\reclaim",
+    )
+    model = PresentationModel(
+        run_id="synthetic-brand-home",
+        nodes=(reclaim,),
+        metrics=ShellMetrics(
+            observed_storage_label="1 GiB",
+            free_space_label="8 GiB",
+            projected_reclaim_label="0 bytes",
+            projected_reclaim_quality=None,
+            target_free_space_label="not established",
+            authorization_label="UNAPPROVED",
+        ),
+        default_selected_id="reclaim",
+    )
+    html = render_report_shell(
+        model,
+        rects=(TreemapRect(node_id="reclaim", x=0, y=0, width=100, height=100),),
+        title="FileSteward Storage Decision Map",
+    )
+    body = html.split("<body>", 1)[1]
+
+    assert 'id="brand-home"' in body
+    assert 'data-atlas-action="home"' in body
+    assert "brand-home" in body
+    assert 'data-action="RETURN"' in body
+    assert "return to Atlas home" in body
+    assert 'id="atlas-home"' in body
+    # Negative: inert plain title heading without Home action is gone.
+    assert "<h1>FileSteward Storage Decision Map</h1>" not in body
+    assert 'data-atlas-action="delete"' not in body.lower()
+    assert "PERMANENT_DELETE" not in body
+    assert "title=" not in body
+    assert "returning-home" in body
 
 
 def test_camera_current_state_is_not_historical_command() -> None:

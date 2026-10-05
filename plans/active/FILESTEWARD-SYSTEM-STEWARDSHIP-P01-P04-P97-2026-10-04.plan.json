@@ -50,9 +50,13 @@
       "dependencies": [
         "H0"
       ],
-      "status": "READY_AFTER_H0_LOCAL_PROOF",
+      "status": "IN_PROGRESS_BRAND_HOME_AND_SETTINGS_SEAM",
       "parallel_group": "WAVE1",
       "owned_surface": "visualization interaction/renderers",
+      "partial_proof": [
+        "brand_title GO_HOME via #brand-home data-atlas-action=home",
+        "housekeeping_settings executable seam without OS registration"
+      ],
       "proof_gates": [
         "UNKNOWN/HUMAN_REVIEW actionable scenes",
         "reticle+legend topmost",
@@ -131,12 +135,15 @@
         "S1",
         "M2"
       ],
-      "status": "WAITING",
+      "status": "DOMAIN_SEAM_PROTOTYPED_WAITING_SCENERY",
+      "prototype_owner": "src/filesteward/housekeeping_settings.py",
+      "prototype_doc": "docs/program/housekeeping-settings-call-stack.md",
       "proof_gates": [
         "private settings",
         "development default on",
         "product default opt-in",
-        "next/last run readback"
+        "next/last run readback",
+        "scenery-native toggle scene"
       ]
     },
     {
