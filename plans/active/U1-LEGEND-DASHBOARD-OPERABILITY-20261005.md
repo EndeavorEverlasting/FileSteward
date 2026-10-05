@@ -73,7 +73,7 @@ Coordinator owns: tests, docs, version bump, validation, commit/push/integration
 
 | Field | Value |
 |---|---|
-| Exact head | `607d861c1a36c829a6ecc1c6a91d6bdeaa855274` |
+| Validated behavioral floor | `607d861c1a36c829a6ecc1c6a91d6bdeaa855274` (chamber redock + tests; plan tip may advance for ledger-only) |
 | Product | `0.12.2` |
 | PR | [#17](https://github.com/EndeavorEverlasting/FileSteward/pull/17) (draft, MERGEABLE) |
 | Stack | #17 → #16 → #15 → `main` (`be0406b`) — all drafts |
