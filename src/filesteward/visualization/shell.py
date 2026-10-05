@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Iterable, Optional, Sequence
 
+from filesteward import __version__ as FILESTEWARD_VERSION
 from filesteward.models import AuthorizationState, CleanupDisposition, ScanCompleteness
 from filesteward.visualization.contracts import (
     GateStep,
@@ -522,7 +523,7 @@ def _render_inspector(node: Optional[PresentationNode]) -> str:
     reclaim = _fmt_bytes(node.projected_reclaim_bytes)
     quality = node.projection_quality or "not-applicable"
     return f"""
-<section class="card selected-item">
+<section class="card selected-item" data-cursor-mode="focus" data-cue-label="INSPECT EVIDENCE" data-cue-explain="Read-only evidence identity. Open disposition to enter GATE." data-actionability="OPERABLE">
   <h3>{escape_text(node.display_name)}</h3>
   <p class="path mono">{escape_text(node.path)}</p>
   <dl class="kv">
@@ -967,7 +968,7 @@ def render_report_shell(
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
     {_render_brand_home(title)}
-    <div class="sub fs-type-meta" id="scenery-subtitle">{escape_text(dynamic_sub)} · run <span class="mono">{escape_text(model.run_id)}</span></div>
+    <div class="sub fs-type-meta" id="scenery-subtitle">{escape_text(dynamic_sub)} · v<span class="mono" id="product-version" data-product-version="{escape_attr(FILESTEWARD_VERSION)}">{escape_text(FILESTEWARD_VERSION)}</span> · run <span class="mono">{escape_text(model.run_id)}</span></div>
     {_render_classification_legend(selected)}
     {_render_operator_next_actions(selected)}
     <aside class="atlas-scene-panel" id="atlas-scene-panel" hidden aria-live="polite">

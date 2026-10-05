@@ -28,6 +28,7 @@ from filesteward.visualization.scene_surface import (
     path_step_previews,
     scenery_subtitle,
 )
+from filesteward.visualization.cinematic import render_cinematic_script
 from filesteward.visualization.experience import (
     render_cinematic_experience_css,
     render_cinematic_experience_markup,
@@ -167,9 +168,19 @@ def test_experience_script_portals_cursor_and_enacts_path() -> None:
     assert "document.body.appendChild" in script
     assert "enactPathStep" in script
     assert "filesteward:path-step" in script
+    assert "filesteward:atlas-home" in script
+    assert "resetHighlights" in script
+    assert "atlas-range-marquee" in script
+    assert "selectstart" in script
     assert "fs.decisionPath.pos" in script
     assert "2147483000" in css
     assert "returning-home" in css
+    assert "html,body,.app,.app *" in css
+    assert "user-select:none" in css.replace(" ", "")
+    assert "document.addEventListener('selectstart'" in script
+    cinematic = render_cinematic_script()
+    assert "document.dispatchEvent(new CustomEvent('filesteward:atlas-home'))" in cinematic
+    assert "el.classList.remove('selected')" in cinematic
 
 
 def test_shell_uses_scenery_type_classes() -> None:
@@ -254,6 +265,8 @@ def test_shell_renders_legend_metrics_and_next_actions() -> None:
     assert "STAGE REMOVAL PATH" in body
     assert 'data-scene-entry="metric_observed_storage"' in body
     assert 'id="scenery-subtitle"' in body
+    assert 'data-product-version="' in body
+    assert 'id="product-version"' in body
     assert 'class="pane-scene-btn"' in body
     assert 'data-scene-entry="pane_atlas"' in body
     assert "footer-ticker-track" in body

@@ -334,6 +334,18 @@ def render_cinematic_experience_css() -> str:
 .storage-stage.path-enacting{
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--atlas-signal) 45%,transparent);
 }
+html,body,.app,.app *{user-select:none;-webkit-user-select:none;}
+.app input,.app textarea,.app [contenteditable="true"]{user-select:text;-webkit-user-select:text;}
+html::selection,body::selection,.app::selection,.app *::selection{
+  background:color-mix(in srgb,var(--fs-accent) 42%,transparent);
+  color:var(--fs-text-primary);
+}
+.atlas-range-marquee{
+  position:fixed;z-index:2147482990;pointer-events:none;
+  border:1px solid var(--fs-accent);
+  background:color-mix(in srgb,var(--fs-accent) 16%,transparent);
+  box-shadow:0 0 18px color-mix(in srgb,var(--fs-accent) 28%,transparent);
+}
 @keyframes fs-home-zoom{
   0%{transform:scale(1.1);filter:blur(2px);opacity:.86}
   100%{transform:none;filter:none;opacity:1}
@@ -478,7 +490,8 @@ def render_cinematic_experience_script() -> str:
       + '.map-node,.status-orb,.sector-card,.signal-primary,.signal-hard-stop,.gate-lead,'
       + '.atlas-hud button,.atlas-hud [data-action],.chamber-gate,.chamber-actions button,'
       + '[data-atlas-action],.metric-scene,.next-action,.pane-scene-btn,'
-      + '.brand-home,.class-legend-item,#atlas-classification-legend,.decision-chamber button'
+      + '.brand-home,.class-legend-item,#atlas-classification-legend,.decision-chamber,'
+      + '.decision-chamber button,.inspector,[data-decision-intent],.chamber-gate,.chamber-confirm'
     );
     if (host) {
       const mode = host.getAttribute('data-cursor-mode')
@@ -567,6 +580,31 @@ def render_cinematic_experience_script() -> str:
     if (body) body.textContent = explain;
   };
 
+  const hideScenePanel = () => {
+    const panel = document.getElementById('atlas-scene-panel');
+    if (panel) panel.hidden = true;
+  };
+
+  const resetHighlights = () => {
+    pathLockUntil = 0;
+    workspace.dataset.pathPreview = 'MAP';
+    workspace.dataset.openDecisionScene = 'MAP';
+    stage.classList.remove('path-enacting');
+    hideScenePanel();
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    const marquee = document.getElementById('atlas-range-marquee');
+    if (marquee) marquee.hidden = true;
+    document.querySelectorAll('.decision-guide-step').forEach((step) => {
+      const on = step.getAttribute('data-guide-step') === 'MAP';
+      step.classList.toggle('is-active', on);
+      step.classList.remove('is-complete', 'is-hover');
+      if (on) step.setAttribute('aria-current', 'step');
+      else step.removeAttribute('aria-current');
+      step.removeAttribute('data-last-completed');
+    });
+    setGuideState();
+  };
+
   const ensureDecisionOpen = (atlas) => {
     if (!atlas || typeof atlas.toggle_decision !== 'function') return;
     if (workspace.dataset.decisionOpen !== 'true') atlas.toggle_decision();
@@ -592,7 +630,10 @@ def render_cinematic_experience_script() -> str:
     } else if (key === 'GATE') {
       if (atlas && typeof atlas.open_selected === 'function') atlas.open_selected();
       ensureDecisionOpen(atlas);
-    } else if (key === 'RESOLVE' || key === 'APPROVAL') {
+    } else if (key === 'RESOLVE') {
+      if (atlas && typeof atlas.open_selected === 'function') atlas.open_selected();
+      ensureDecisionOpen(atlas);
+    } else if (key === 'APPROVAL') {
       if (atlas && typeof atlas.open_selected === 'function') atlas.open_selected();
       ensureDecisionOpen(atlas);
     } else if (key === 'STAGED') {
@@ -658,6 +699,55 @@ def render_cinematic_experience_script() -> str:
   dragHandle.addEventListener('pointercancel', endDrag);
 
   const app = document.querySelector('.app') || document.body;
+  let marquee = document.getElementById('atlas-range-marquee');
+  if (!marquee) {
+    marquee = document.createElement('div');
+    marquee.id = 'atlas-range-marquee';
+    marquee.className = 'atlas-range-marquee';
+    marquee.hidden = true;
+    marquee.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(marquee);
+  }
+  let rangeDrag = null;
+  const inChrome = (target) => target instanceof Element && !!target.closest(
+    'input,textarea,button,a,select,[contenteditable="true"],.decision-compass,.decision-chamber'
+  );
+  document.addEventListener('selectstart', (event) => {
+    if (inChrome(event.target)) return;
+    event.preventDefault();
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || inChrome(event.target)) return;
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    rangeDrag = { x: event.clientX, y: event.clientY };
+    marquee.hidden = false;
+    marquee.style.left = rangeDrag.x + 'px';
+    marquee.style.top = rangeDrag.y + 'px';
+    marquee.style.width = '0px';
+    marquee.style.height = '0px';
+  });
+  document.addEventListener('pointermove', (event) => {
+    if (!rangeDrag) return;
+    const x = Math.min(event.clientX, rangeDrag.x);
+    const y = Math.min(event.clientY, rangeDrag.y);
+    marquee.style.left = x + 'px';
+    marquee.style.top = y + 'px';
+    marquee.style.width = Math.abs(event.clientX - rangeDrag.x) + 'px';
+    marquee.style.height = Math.abs(event.clientY - rangeDrag.y) + 'px';
+    paintCue({
+      mode: 'focus',
+      label: 'FRAME RANGE',
+      actionability: 'OPERABLE',
+      explain: 'Immersive range mark. Native browser selection is contained.'
+    }, event.clientX, event.clientY, true);
+  });
+  const endRange = () => {
+    rangeDrag = null;
+    if (marquee) marquee.hidden = true;
+  };
+  document.addEventListener('pointerup', endRange);
+  document.addEventListener('pointercancel', endRange);
+
   app.addEventListener('pointerenter', moveReticle);
   app.addEventListener('pointermove', moveReticle);
   app.addEventListener('pointerleave', () => {
@@ -699,10 +789,9 @@ def render_cinematic_experience_script() -> str:
     if (host) {
       rememberCommand(host.getAttribute('data-cue-label') || host.textContent.trim());
       if (host.classList.contains('brand-home') || host.getAttribute('data-atlas-action') === 'home') {
-        workspace.dataset.pathPreview = 'MAP';
-        workspace.dataset.openDecisionScene = 'MAP';
-        pathLockUntil = Date.now() + 2400;
-        openScenePanel('ATLAS HOME', 'Zooming camera to Atlas Home overview. Brand title and Home key share this scenery.');
+        resetHighlights();
+        openScenePanel('ATLAS HOME', 'Zooming camera to Atlas Home overview. Path highlight, chamber, and native selection reset.');
+        window.setTimeout(hideScenePanel, 1600);
       }
     }
     window.requestAnimationFrame(setGuideState);
@@ -723,7 +812,7 @@ def render_cinematic_experience_script() -> str:
       syncCameraTrace();
     });
   });
-  document.addEventListener('keydown', () => window.requestAnimationFrame(setGuideState));
+  document.addEventListener('filesteward:atlas-home', resetHighlights);
 
   setGuideState();
   syncCameraTrace();

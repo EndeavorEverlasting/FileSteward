@@ -3,7 +3,15 @@
 **Status:** DESIGNED + executable seams wired into report shell
 **Module:** `src/filesteward/visualization/scene_surface.py`
 **Authority floor:** `decision_flow.allowed_intents()`; permanent deletion forbidden
-**Product version:** `0.8.0` (visual-feature after path/cursor/mode/footer pass)
+**Product version:** `0.10.0` (visual-feature after chamber scenes / home reset / range capture)
+
+## Operator correction 2026-10-05 (this pass)
+
+- Home must clear path/chamber/native-selection highlighting.
+- Native browser blue selection must be captured as immersive range scenery.
+- GATE / RESOLVE / APPROVAL must be distinct chamber scenes, not one panel.
+- Confirm staging works offline as quarantine receipt — still NO BYTES REMOVED.
+- Permanent deletion of real workstation files remains forbidden.
 
 ## Operator rejection recovered from live screenshot
 

@@ -570,15 +570,33 @@ def render_cinematic_script() -> str:
     home() {
       if (plane) plane.style.transform = 'none';
       history.length = 0;
-      const keep = selectedId();
       setLevel('HOME', 'overview');
-      focusedId = keep;
-      if (keep) activateNode(keep);
-      stage.classList.remove('returning-home');
+      focusedId = null;
+      workspace.dataset.decisionOpen = 'false';
+      workspace.dataset.pathPreview = 'MAP';
+      workspace.dataset.openDecisionScene = 'MAP';
+      workspace.dataset.stagedCinematic = 'false';
+      document.querySelectorAll('[data-ghost="true"]').forEach((el) => el.remove());
+      document.querySelectorAll(
+        '.atlas-hud [aria-pressed="true"], .decision-guide-step[aria-pressed="true"], #decision-chamber [aria-pressed="true"]'
+      ).forEach((el) => {
+        el.setAttribute('aria-pressed', 'false');
+      });
+      document.querySelectorAll('[data-node-id].selected, .nav-row.selected, .map-node.selected, .sector-card.selected').forEach((el) => {
+        el.classList.remove('selected');
+        el.removeAttribute('data-selected');
+        el.removeAttribute('aria-selected');
+        el.removeAttribute('aria-current');
+      });
+      const mapWrap = document.querySelector('.map-wrap');
+      if (mapWrap) mapWrap.classList.remove('selection-active');
+      if (window.getSelection) window.getSelection().removeAllRanges();
+      stage.classList.remove('returning-home', 'path-enacting');
       void stage.offsetWidth;
       stage.classList.add('returning-home');
       pulseSubstrate();
       window.setTimeout(() => stage.classList.remove('returning-home'), 820);
+      document.dispatchEvent(new CustomEvent('filesteward:atlas-home'));
     },
     search() {
       const field = document.getElementById('storage-search');

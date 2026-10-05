@@ -41,6 +41,10 @@ def render_decision_chamber_markup() -> str:
 
   <ol class="chamber-gate-line" id="chamber-gate-line" aria-label="Active decision gates"></ol>
 
+  <p class="chamber-brief fs-type-body" id="chamber-brief" aria-live="polite">
+    Closed — choose a Decision Path step to open a distinct chamber scene.
+  </p>
+
   <div class="chamber-actions" id="chamber-actions" role="group" aria-label="Legal operator intents"></div>
 
   <section class="chamber-approval" id="chamber-approval" hidden>
@@ -73,8 +77,8 @@ def render_decision_chamber_markup() -> str:
 def render_decision_chamber_css() -> str:
     return r"""
 .decision-chamber{
-  pointer-events:auto;position:absolute;left:50%;bottom:1rem;transform:translateX(-50%);
-  z-index:14;width:min(52rem,calc(100% - 2rem));
+  pointer-events:auto;position:absolute;right:.75rem;left:auto;bottom:.75rem;transform:none;
+  z-index:14;width:min(28rem,calc(100% - 2rem));
   display:grid;gap:.7rem;padding:.85rem 1rem;
   border:1px solid color-mix(in srgb,var(--fs-accent) 45%,var(--fs-border-default));
   border-radius:6px;background:color-mix(in srgb,var(--fs-bg-shell) 92%,transparent);
@@ -82,6 +86,13 @@ def render_decision_chamber_css() -> str:
   box-shadow:0 0 0 1px color-mix(in srgb,var(--fs-accent) 18%,transparent),
              0 18px 40px color-mix(in srgb,var(--fs-bg-canvas) 55%,transparent);
 }
+.decision-chamber[data-open-scene="GATE"]{border-color:var(--fs-state-review-edge);}
+.decision-chamber[data-open-scene="RESOLVE"]{border-color:var(--fs-accent);}
+.decision-chamber[data-open-scene="APPROVAL"],.decision-chamber[data-open-scene="STAGED"]{
+  border-color:color-mix(in srgb,var(--fs-accent) 80%,white);
+}
+.chamber-brief{margin:0;padding:.45rem .55rem;border:1px solid var(--fs-border-subtle);border-radius:4px;}
+.chamber-gate-line[hidden],.chamber-actions[hidden]{display:none!important;}
 .decision-chamber[hidden]{display:none!important;}
 .chamber-chrome{display:grid;grid-template-columns:minmax(10rem,.8fr) minmax(16rem,1.4fr);gap:.8rem;}
 .chamber-kicker{display:block;font:800 .66rem/1 var(--fs-font-mono);letter-spacing:.08em;color:var(--fs-text-muted);}
@@ -207,6 +218,7 @@ def render_decision_chamber_script() -> str:
 
   const sceneLabel = document.getElementById('chamber-scene-label');
   const lastTransitionEl = document.getElementById('chamber-last-transition');
+  const chamberBrief = document.getElementById('chamber-brief');
   const nodeName = document.getElementById('chamber-node-name');
   const nodePath = document.getElementById('chamber-node-path');
   const evidenceEl = document.getElementById('chamber-evidence');
@@ -292,23 +304,38 @@ def render_decision_chamber_script() -> str:
 
   const intentLabel = (intent) => intent.replace(/_/g, ' ');
 
+  const sceneBrief = (scene) => {
+    if (scene === 'GATE') return 'GATE — inspect the first unresolved evidence gate. No mutation. UNKNOWN/HUMAN_REVIEW stay locked from reclaim.';
+    if (scene === 'RESOLVE') return 'RESOLVE — only decision_flow.allowed_intents() are operable. Toggle KEEP / REVIEW LATER / RESCAN here.';
+    if (scene === 'APPROVAL') return 'APPROVAL — authorize exact quarantine scope. Permanent deletion is not implemented. Bytes stay until a later verified quarantine apply.';
+    if (scene === 'STAGED') return 'STAGED — quarantine receipt recorded. NO BYTES REMOVED. Real C: apply remains an operator gate outside this report.';
+    if (scene === 'FOCUS') return 'FOCUS — evidence is framed. Open GATE to inspect, RESOLVE to choose a legal intent.';
+    if (scene === 'MAP') return 'MAP — chamber closed. Camera at Atlas Home.';
+    return 'Chamber closed.';
+  };
+
   const renderActions = () => {
     if (!actions) return;
+    const scene = state.openDecisionScene;
     actions.innerHTML = '';
-    state.allowedIntents.forEach((intent) => {
-      if (intent === 'APPROVE_QUARANTINE') return;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = intentLabel(intent);
-      btn.setAttribute('data-decision-intent', intent);
-      btn.setAttribute('data-cursor-mode', intent === 'KEEP' ? 'explore' : 'resolve');
-      btn.setAttribute('data-cue-label', intentLabel(intent));
-      btn.setAttribute('data-cue-explain', 'Legal operator intent from decision_flow.allowed_intents().');
-      btn.setAttribute('data-actionability', 'OPERABLE');
-      btn.addEventListener('click', () => postDecision(intent));
-      actions.appendChild(btn);
-    });
-    const showApproval = state.openDecisionScene === 'APPROVAL'
+    const showIntents = scene === 'RESOLVE' || scene === 'APPROVAL';
+    if (showIntents) {
+      state.allowedIntents.forEach((intent) => {
+        if (intent === 'APPROVE_QUARANTINE') return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = intentLabel(intent);
+        btn.setAttribute('data-decision-intent', intent);
+        btn.setAttribute('data-cursor-mode', intent === 'KEEP' ? 'explore' : 'resolve');
+        btn.setAttribute('data-cue-label', intentLabel(intent));
+        btn.setAttribute('data-cue-explain', 'Legal operator intent from decision_flow.allowed_intents(). Toggle records intent; it does not delete files.');
+        btn.setAttribute('data-actionability', 'OPERABLE');
+        btn.addEventListener('click', () => postDecision(intent));
+        actions.appendChild(btn);
+      });
+    }
+    actions.hidden = !showIntents || !actions.childElementCount;
+    const showApproval = scene === 'APPROVAL'
       && state.allowedIntents.indexOf('APPROVE_QUARANTINE') >= 0;
     if (approval) approval.hidden = !showApproval;
     if (showApproval) {
@@ -316,18 +343,20 @@ def render_decision_chamber_script() -> str:
       set('approval-node', state.node && state.node.display_name);
       set('approval-path', state.node && state.node.path);
       set('approval-reclaim', (state.node && state.node.reclaim_basis) || 'RECLAIM_PROVEN');
-      set('approval-digest', state.digest);
+      set('approval-digest', state.digest || 'synthetic-offline');
       set('approval-auth', state.auth);
     }
+    if (gateLine) gateLine.hidden = !(scene === 'GATE' || scene === 'RESOLVE');
   };
 
   const applyScene = () => {
     workspace.dataset.openDecisionScene = state.openDecisionScene;
-    chamber.hidden = !state.selectedNodeId || state.openDecisionScene === 'MAP' || state.openDecisionScene === 'CLOSED';
-    if (state.openDecisionScene === 'GATE' || state.openDecisionScene === 'APPROVAL' || state.openDecisionScene === 'STAGED' || state.openDecisionScene === 'FOCUS' || state.openDecisionScene === 'RESOLVE') {
-      chamber.hidden = false;
-    }
-    if (sceneLabel) sceneLabel.textContent = state.openDecisionScene;
+    chamber.setAttribute('data-open-scene', state.openDecisionScene);
+    const scene = state.openDecisionScene;
+    const open = scene === 'GATE' || scene === 'RESOLVE' || scene === 'APPROVAL' || scene === 'STAGED' || scene === 'FOCUS';
+    chamber.hidden = !open;
+    if (sceneLabel) sceneLabel.textContent = scene;
+    if (chamberBrief) chamberBrief.textContent = sceneBrief(scene);
     if (lastTransitionEl) {
       lastTransitionEl.textContent = state.lastTransition
         ? ('Last completed: ' + String(state.lastTransition).replace(/_/g, ' '))
@@ -409,7 +438,7 @@ def render_decision_chamber_script() -> str:
     applyScene();
   };
 
-  const localOpenGate = (id) => {
+  const localOpenGate = (id, requestedScene) => {
     state.selectedNodeId = id;
     paintSelectionMarkers(id);
     const evidenceNode = document.querySelector('[data-inspector-for="' + CSS.escape(id) + '"]');
@@ -417,45 +446,56 @@ def render_decision_chamber_script() -> str:
       ? ((evidenceNode.querySelector('.state') || {}).textContent || '').trim()
       : '';
     state.evidence = stateText.replace(/\[.*?\]\s*/, '') || state.evidence;
-    state.openDecisionScene = 'GATE';
-    state.lastScene = 'FOCUS';
-    state.lastTransition = 'open_decision_session';
     const steps = gateStepsFromDom();
     const first = steps.find((s) => s.unresolved) || steps[0];
     state.activeGateId = first ? first.gate_id : 'observation';
-    // Offline / no-bridge mode still refuses approval for UNKNOWN.
     const upper = (state.evidence || '').toUpperCase();
     if (upper.indexOf('UNKNOWN') >= 0) {
       state.allowedIntents = ['RESCAN', 'KEEP', 'REVIEW_LATER'];
     } else if (upper.indexOf('HUMAN') >= 0) {
       state.allowedIntents = ['DECLARE_REGENERABLE_CONTRACT', 'KEEP', 'REVIEW_LATER'];
     } else if (upper.indexOf('RECLAIM') >= 0) {
-      state.openDecisionScene = 'APPROVAL';
       state.allowedIntents = ['APPROVE_QUARANTINE', 'KEEP', 'REVIEW_LATER'];
-    } else {
+    } else if (upper.indexOf('KEEP') >= 0 || upper.indexOf('PROTECTED') >= 0) {
       state.allowedIntents = [];
-      state.openDecisionScene = 'CLOSED';
+    } else {
+      state.allowedIntents = ['KEEP', 'REVIEW_LATER'];
     }
+    const scene = requestedScene || 'GATE';
+    if (scene === 'APPROVAL' && state.allowedIntents.indexOf('APPROVE_QUARANTINE') < 0) {
+      state.openDecisionScene = 'RESOLVE';
+      state.lastTransition = 'approval_locked_no_reclaim_authority';
+    } else if (scene === 'STAGED' && state.auth !== 'APPROVED_FOR_ACTION') {
+      state.openDecisionScene = state.allowedIntents.indexOf('APPROVE_QUARANTINE') >= 0 ? 'APPROVAL' : 'RESOLVE';
+      state.lastTransition = 'staging_requires_approval';
+    } else {
+      state.openDecisionScene = scene;
+    }
+    state.lastScene = state.lastScene || 'FOCUS';
     state.node = {
       display_name: (document.querySelector('.nav-row.selected .nav-name') || {}).textContent || id,
       path: (document.querySelector('.selection-path') || {}).textContent || '',
-      reclaim_basis: null
+      reclaim_basis: upper.indexOf('RECLAIM') >= 0 ? 'RECLAIM_PROVEN' : null
     };
     applyScene();
   };
 
-  const fetchState = async (id) => {
+  const fetchState = async (id, requestedScene) => {
     if (!bridge || !bridge.origin || !bridge.statePath) {
-      localOpenGate(id);
+      localOpenGate(id, requestedScene);
       return;
     }
     const url = bridge.origin + bridge.statePath + '?item_id=' + encodeURIComponent(id);
     const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!response.ok) {
-      localOpenGate(id);
+      localOpenGate(id, requestedScene);
       return;
     }
     absorbState(await response.json());
+    if (requestedScene) {
+      state.openDecisionScene = requestedScene;
+      applyScene();
+    }
   };
 
   const postDecision = async (intent) => {
@@ -463,7 +503,10 @@ def render_decision_chamber_script() -> str:
       state.decisionLabel = intent.replace(/_/g, ' ') + ' REQUESTED';
       state.lastScene = state.openDecisionScene;
       state.lastTransition = intent.toLowerCase();
-      if (intent === 'KEEP' || intent === 'REVIEW_LATER') state.openDecisionScene = 'CLOSED';
+      if (intent === 'KEEP' || intent === 'REVIEW_LATER') {
+        state.openDecisionScene = 'RESOLVE';
+        state.lastTransition = intent.toLowerCase() + '_recorded';
+      }
       applyScene();
       return;
     }
@@ -484,7 +527,22 @@ def render_decision_chamber_script() -> str:
   };
 
   const postApproval = async () => {
-    if (!bridge || !bridge.origin || !state.selectedNodeId) return;
+    if (!state.selectedNodeId) return;
+    if (!bridge || !bridge.origin) {
+      if (state.allowedIntents.indexOf('APPROVE_QUARANTINE') < 0) {
+        state.lastTransition = 'approval_rejected_no_reclaim_authority';
+        state.openDecisionScene = 'RESOLVE';
+        applyScene();
+        return;
+      }
+      state.auth = 'APPROVED_FOR_ACTION';
+      state.decisionLabel = 'QUARANTINE STAGED';
+      state.lastScene = 'APPROVAL';
+      state.lastTransition = 'confirm_staging_offline';
+      state.openDecisionScene = 'STAGED';
+      applyScene();
+      return;
+    }
     const response = await fetch(bridge.origin + bridge.approvalPath, {
       method: 'POST',
       headers: {
@@ -518,7 +576,7 @@ def render_decision_chamber_script() -> str:
     state.selectedNodeId = id;
     paintSelectionMarkers(id);
     document.dispatchEvent(new CustomEvent('filesteward:selection', { detail: { id } }));
-    fetchState(id);
+    fetchState(id, 'GATE');
   };
 
   document.addEventListener('click', openFromEvidenceControl);
@@ -536,8 +594,8 @@ def render_decision_chamber_script() -> str:
     if (!id) return;
     state.selectedNodeId = id;
     paintSelectionMarkers(id);
-    if (state.openDecisionScene === 'GATE' || state.openDecisionScene === 'APPROVAL' || state.openDecisionScene === 'STAGED') {
-      fetchState(id);
+    if (state.openDecisionScene === 'GATE' || state.openDecisionScene === 'RESOLVE' || state.openDecisionScene === 'APPROVAL' || state.openDecisionScene === 'STAGED') {
+      fetchState(id, state.openDecisionScene);
     } else {
       state.openDecisionScene = 'FOCUS';
       applyScene();
@@ -548,16 +606,30 @@ def render_decision_chamber_script() -> str:
     const key = event.detail && event.detail.step;
     if (!key) return;
     state.lastScene = state.openDecisionScene;
-    state.openDecisionScene = key;
     state.lastTransition = 'path_step_' + String(key).toLowerCase();
     if (!state.selectedNodeId) state.selectedNodeId = selectedId();
-    if ((key === 'GATE' || key === 'RESOLVE' || key === 'APPROVAL' || key === 'STAGED') && state.selectedNodeId) {
-      fetchState(state.selectedNodeId).then(() => {
-        state.openDecisionScene = key;
-        applyScene();
-      }).catch(() => applyScene());
+    if (key === 'MAP' || key === 'FOCUS') {
+      state.openDecisionScene = key;
+      applyScene();
       return;
     }
+    if (state.selectedNodeId) {
+      fetchState(state.selectedNodeId, key);
+      return;
+    }
+    state.openDecisionScene = key;
+    applyScene();
+  });
+
+  document.addEventListener('filesteward:atlas-home', () => {
+    state.openDecisionScene = 'MAP';
+    state.lastTransition = 'atlas_home_reset';
+    state.lastScene = null;
+    state.selectedNodeId = null;
+    paintSelectionMarkers('');
+    chamber.hidden = true;
+    chamber.setAttribute('data-open-scene', 'MAP');
+    document.querySelectorAll('[data-ghost="true"]').forEach((el) => el.remove());
     applyScene();
   });
 

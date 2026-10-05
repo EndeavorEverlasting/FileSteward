@@ -83,6 +83,15 @@ def test_unknown_status_is_operable_and_opens_gate_scene() -> None:
     assert "activeGateId" in html
     assert "localOpenGate" in html or "open_decision_session" in html
     assert "GATE" in html
+    assert "chamber-brief" in html
+    assert "confirm_staging_offline" in html
+    assert "sceneBrief" in html
+    assert "filesteward:atlas-home" in html
+    assert "requestedScene" in html
+    assert "approval_locked_no_reclaim_authority" in html
+    assert "GATE — inspect the first unresolved evidence gate" in html
+    assert "RESOLVE — only decision_flow.allowed_intents()" in html
+    assert "APPROVAL — authorize exact quarantine scope" in html
     assert "APPROVE_QUARANTINE" in html  # present in script path for reclaim only
     assert "NO BYTES REMOVED" in html
 
