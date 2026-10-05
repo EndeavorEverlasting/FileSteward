@@ -1,0 +1,57 @@
+{
+  "schema_version": "filesteward.housekeeping-schedule/v1",
+  "owner": "FileSteward maintenance orchestration",
+  "purpose": "User-controlled local/private recurring housekeeping without turning the scheduler into cleanup authority.",
+  "profiles": {
+    "development": {
+      "enabled_by_default": true,
+      "reason": "Exercise recurring paths aggressively during product development.",
+      "default_cadence": "daily_idle",
+      "surface": "local/private settings"
+    },
+    "product": {
+      "enabled_by_default": false,
+      "reason": "Public/user installs must opt in before recurring housekeeping is registered.",
+      "default_cadence": "disabled",
+      "surface": "local/private settings"
+    }
+  },
+  "actions": {
+    "allowed": [
+      "SCAN",
+      "RECOMMEND",
+      "QUARANTINE_APPROVED"
+    ],
+    "forbidden": [
+      "PERMANENT_DELETE",
+      "PROMOTE_EVIDENCE",
+      "SELF_APPROVE"
+    ]
+  },
+  "windows_adapter": {
+    "provider": "Windows Task Scheduler",
+    "preferred_over": "an always-running FileSteward polling daemon",
+    "conditions": {
+      "run_only_if_idle": true,
+      "disallow_start_if_on_batteries": true,
+      "stop_if_going_on_batteries": true,
+      "start_when_available": true,
+      "multiple_instances": "IGNORE_NEW"
+    }
+  },
+  "separation_of_concerns": {
+    "scheduler": "wake/run selection only",
+    "health_observer": "measure resource state",
+    "advisor": "classify warnings/recommendations",
+    "decision_flow": "human/authority state",
+    "executor": "future approved quarantine/apply only"
+  },
+  "retirement_rule": "A failed run does not disable recurrence. Disable/remove only from explicit user setting or proven terminal/cutover rule.",
+  "proof_required": [
+    "registered task readback",
+    "enabled-state readback",
+    "next-run/cadence readback",
+    "one observed scheduled execution",
+    "artifact readback from that execution"
+  ]
+}

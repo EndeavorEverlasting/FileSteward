@@ -1,0 +1,125 @@
+{
+  "schema_version": "filesteward.interaction-scene-acceptance/v1",
+  "owner": "FileSteward visualization interaction grammar",
+  "purpose": "Make every meaningful visible status/control/summary explain itself and lead to a truthful scene or explanation.",
+  "global_invariants": [
+    "environment_is_tutorial",
+    "cursor_and_legend_are_topmost",
+    "hover_focus_touch_semantics_converge",
+    "no_color_only_meaning",
+    "no_native_browser_title_tooltips",
+    "no_illegal_action_is_rendered_as_inviting",
+    "stale_measurements_render_UNKNOWN_not_NORMAL"
+  ],
+  "classification_states": [
+    "PROTECTED_BLOCKED",
+    "RECLAIM_CANDIDATE",
+    "KEEP_ESSENTIAL",
+    "AMBIGUOUS_HUMAN_REVIEW",
+    "AUTHORIZATION_LOCKED",
+    "HEALTH_CAREFUL",
+    "HEALTH_WARNING",
+    "HEALTH_CRITICAL"
+  ],
+  "surfaces": {
+    "brand_title": {
+      "required_action": "GO_HOME",
+      "scene": "ATLAS_HOME"
+    },
+    "decision_map_title": {
+      "required_action": "OPEN_DECISION_MAP",
+      "scene": "DECISION_MAP"
+    },
+    "metric_observed_storage": {
+      "required_action": "OPEN_STORAGE_SCENE",
+      "scene": "STORAGE_PRESSURE"
+    },
+    "metric_baseline_free_space": {
+      "required_action": "OPEN_FREE_SPACE_SCENE",
+      "scene": "FREE_SPACE"
+    },
+    "metric_projected_reclaim": {
+      "required_action": "OPEN_RECLAIM_SCENE",
+      "scene": "RECLAIM"
+    },
+    "metric_target_free_space": {
+      "required_action": "OPEN_TARGET_SCENE",
+      "scene": "TARGET"
+    },
+    "metric_authorization_state": {
+      "required_action": "OPEN_AUTHORIZATION_SCENE",
+      "scene": "AUTHORIZATION"
+    },
+    "status_unknown": {
+      "required_action": "OPEN_FIRST_UNRESOLVED_GATE",
+      "scene": "GATE"
+    },
+    "status_human_review": {
+      "required_action": "OPEN_HUMAN_JUDGMENT_GATE",
+      "scene": "GATE"
+    },
+    "status_unapproved": {
+      "required_action": "APPROVE_OR_EXPLAIN_LOCK",
+      "scene": "APPROVAL_OR_LOCK"
+    },
+    "status_protected": {
+      "required_action": "EXPLAIN_PROTECTION_BLOCK",
+      "scene": "PROTECTION"
+    },
+    "camera_controls": {
+      "required_action": "PREVIEW_VIEW_ASSUMPTIONS",
+      "scene": "CAMERA_ASSIST"
+    },
+    "decision_path_steps": {
+      "required_action": "PREVIEW_CONSEQUENCE_AND_PREREQUISITES",
+      "scene": "PATH_PREVIEW"
+    },
+    "footer_ticker": {
+      "required_action": "SURFACE_LIVE_WARNINGS_AND_CONTEXT",
+      "scene": "STATUS_TICKER"
+    },
+    "favicon": {
+      "required_action": "RENDER_PRODUCT_IDENTITY",
+      "scene": "BROWSER_CHROME"
+    },
+    "health_warning": {
+      "required_action": "OPEN_HEALTH_WARNING_SCENE",
+      "scene": "HEALTH_WARNING"
+    }
+  },
+  "cursor_assistant": {
+    "role": "dynamic legend and consequence preview",
+    "must_render_above": [
+      "decision_chamber",
+      "review_panel",
+      "camera_hud",
+      "status_orbs",
+      "path_compass"
+    ],
+    "required_context": [
+      "target",
+      "action",
+      "why",
+      "consequence",
+      "blocked_reason_or_next_gate"
+    ],
+    "hotkey_legend": "required"
+  },
+  "footer_ticker": {
+    "mechanics": [
+      "continuous_loop",
+      "auto_fill",
+      "pause_on_hover",
+      "pause_on_focus",
+      "reduced_motion_static_fallback"
+    ],
+    "content_priority": [
+      "CRITICAL",
+      "WARNING",
+      "BLOCKED_DECISION",
+      "NEXT_GATE",
+      "RECENT_ACTION"
+    ],
+    "style_rule": "cinematic system-status rail, not hacker/matrix terminal cosplay"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema_version": "filesteward.system-health-snapshot/v1",
+  "owner": "FileSteward observation plane",
+  "purpose": "Local/private resource measurements that can drive warnings and recommendations without granting cleanup authority.",
+  "privacy": {
+    "scope": "local-only",
+    "persist_under": "ignored var/runs or user-private settings/runtime state",
+    "forbidden_fields": [
+      "credentials",
+      "raw_username",
+      "raw_private_path",
+      "document_content"
+    ]
+  },
+  "state_scale": [
+    "NORMAL",
+    "CAREFUL",
+    "WARNING",
+    "CRITICAL",
+    "UNKNOWN"
+  ],
+  "freshness": {
+    "required": true,
+    "fields": [
+      "captured_at",
+      "source",
+      "age_seconds"
+    ],
+    "stale_state": "UNKNOWN"
+  },
+  "metrics": {
+    "storage_free_percent": {
+      "unit": "percent",
+      "direction": "low_is_bad",
+      "development_defaults": {
+        "careful": 20,
+        "warning": 12,
+        "critical": 7
+      },
+      "operator_configurable": true
+    },
+    "storage_free_bytes": {
+      "unit": "bytes",
+      "direction": "low_is_bad",
+      "development_defaults": {
+        "careful": 42949672960,
+        "warning": 21474836480,
+        "critical": 10737418240
+      },
+      "operator_configurable": true
+    },
+    "memory_used_percent": {
+      "unit": "percent",
+      "direction": "high_is_bad",
+      "development_defaults": {
+        "careful": 70,
+        "warning": 85,
+        "critical": 95
+      },
+      "operator_configurable": true
+    },
+    "cpu_used_percent": {
+      "unit": "percent",
+      "direction": "high_is_bad",
+      "development_defaults": {
+        "careful": 70,
+        "warning": 85,
+        "critical": 95
+      },
+      "operator_configurable": true
+    },
+    "disk_busy_percent": {
+      "unit": "percent",
+      "direction": "high_is_bad",
+      "development_defaults": {
+        "careful": 70,
+        "warning": 85,
+        "critical": 95
+      },
+      "operator_configurable": true
+    }
+  },
+  "aggregation": {
+    "storage_severity": "max severity across free-percent and free-bytes rules when both are fresh",
+    "unknown_rule": "missing or stale measurement must not be promoted to NORMAL"
+  },
+  "authority": {
+    "may_warn": true,
+    "may_recommend": true,
+    "may_change_cleanup_disposition": false,
+    "may_approve": false,
+    "may_delete": false
+  }
+}
