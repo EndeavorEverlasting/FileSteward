@@ -869,6 +869,16 @@ def _selection_script() -> str:
       }
       item.classList.toggle('is-active', on);
     });
+    const subtitleText = document.getElementById('scenery-subtitle-text');
+    const subtitleSource = document.querySelector(
+      `[data-subtitle-for="${CSS.escape(id || '')}"]`
+    );
+    if (subtitleText && subtitleSource) {
+      const raw = (subtitleSource.content && subtitleSource.content.textContent != null)
+        ? subtitleSource.content.textContent
+        : subtitleSource.textContent;
+      subtitleText.textContent = (raw || '').trim();
+    }
     document.dispatchEvent(
       new CustomEvent('filesteward:selection', { detail: { id } })
     );
@@ -912,6 +922,9 @@ def _selection_script() -> str:
     if (sceneTitle) sceneTitle.textContent = title || 'Dashboard';
     if (sceneBody) sceneBody.textContent = explain || '';
     scenePanel.hidden = false;
+    scenePanel.setAttribute('data-dashboard-open', 'true');
+    const workspace = document.getElementById('workspace');
+    if (workspace) workspace.dataset.dashboardOpen = 'true';
   };
   const pulseStage = () => {
     const stage = document.getElementById('storage-stage');
@@ -961,22 +974,64 @@ def _selection_script() -> str:
     pulseStage();
     return true;
   };
+  const exitChamberToAtlas = () => {
+    const atlas = window.FileStewardAtlas;
+    const workspace = document.getElementById('workspace');
+    const chamber = document.getElementById('decision-chamber');
+    if (workspace) {
+      workspace.dataset.decisionOpen = 'false';
+      workspace.dataset.openDecisionScene = 'MAP';
+      workspace.dataset.pathPreview = 'MAP';
+    }
+    if (chamber) {
+      chamber.hidden = true;
+      chamber.setAttribute('data-open-scene', 'MAP');
+    }
+    if (!atlas) return;
+    let guard = 0;
+    while (
+      workspace
+      && (workspace.dataset.cameraLevel === 'CHAMBER' || workspace.dataset.scene === 'focus')
+      && typeof atlas.back === 'function'
+      && guard < 4
+    ) {
+      atlas.back();
+      guard += 1;
+    }
+  };
   const openAuthorizationDashboard = (title, explain) => {
-    openScene(title || 'Authorization', explain || '');
-    const selected = document.querySelector('.nav-row.selected:not([hidden])');
-    const reclaimRow = (
-      (selected && stateLabelForRow(selected).indexOf('RECLAIM') >= 0)
-        ? selected
-        : findVisibleRowByState('RECLAIM')
-    );
+    /* Always reveal reclaim candidates — do not search inside an unrelated filter. */
+    setNavigatorFilter('RECLAIM_PROVEN');
+    exitChamberToAtlas();
+    const reclaimRow = findVisibleRowByState('RECLAIM');
+    const authExplain = explain || 'UNAPPROVED means no operator approval artifact yet.';
     if (reclaimRow) {
       reclaimRow.click();
       const atlas = window.FileStewardAtlas;
       if (atlas && typeof atlas.fit_selected === 'function') atlas.fit_selected();
-      ensureDecisionOpen();
+      const workspace = document.getElementById('workspace');
+      if (workspace) workspace.dataset.openDecisionScene = 'APPROVAL';
+      /* Path-step owns chamber scene; toggle only if still closed after APPROVAL. */
+      document.dispatchEvent(new CustomEvent('filesteward:path-step', {
+        detail: {
+          step: 'APPROVAL',
+          label: 'Authorization',
+          explain: authExplain
+        }
+      }));
+      const chamber = document.getElementById('decision-chamber');
+      if (chamber && chamber.hidden) ensureDecisionOpen();
+      openScene(title || 'Authorization', authExplain);
       pulseStage();
       return;
     }
+    setNavigatorFilter('ALL');
+    openScene(
+      title || 'Authorization',
+      (authExplain ? authExplain + ' ' : '')
+      + 'No RECLAIM_PROVEN candidate is available to approve in this run. '
+      + 'Authorization stays UNAPPROVED and separate from classification.'
+    );
     pulseStage();
   };
   const activateLegendItem = (item) => {
@@ -994,8 +1049,10 @@ def _selection_script() -> str:
     }
     openScene(title, explain);
     if (filterTarget) {
+      exitChamberToAtlas();
       setNavigatorFilter(filterTarget);
-      if (!focusFirstMatch({ fit: true, open: true, decision: false })) {
+      /* Atlas subset view — fit, do not dive into CHAMBER detail. */
+      if (!focusFirstMatch({ fit: true, open: false, decision: false })) {
         openScene(
           title,
           (explain ? explain + ' ' : '') + 'No evidence matches this classification filter in the current run.'
@@ -1035,8 +1092,8 @@ def _selection_script() -> str:
         return;
       }
       if (action === 'OPEN_ATLAS_SCENE' && atlas && typeof atlas.home === 'function') {
-        openScene(dashboardTitle, explain);
         atlas.home();
+        openScene(dashboardTitle, explain);
         const stage = document.getElementById('storage-stage');
         if (stage) stage.focus();
         return;
@@ -1052,31 +1109,44 @@ def _selection_script() -> str:
         return;
       }
       if (action === 'OPEN_STORAGE_SCENE') {
-        openScene(dashboardTitle, explain);
+        exitChamberToAtlas();
         setNavigatorFilter(el.getAttribute('data-filter-target') || 'ALL');
+        /* home() clears dashboards via atlas-home — openScene must run after. */
         if (atlas && typeof atlas.home === 'function') atlas.home();
+        openScene(dashboardTitle, explain);
         pulseStage();
         return;
       }
       if (action === 'OPEN_FREE_SPACE_SCENE') {
-        openScene(dashboardTitle, explain);
+        exitChamberToAtlas();
         if (atlas && typeof atlas.home === 'function') atlas.home();
+        openScene(dashboardTitle, explain);
         pulseStage();
         return;
       }
       if (action === 'OPEN_RECLAIM_SCENE') {
-        openScene(dashboardTitle, explain);
+        exitChamberToAtlas();
         setNavigatorFilter(el.getAttribute('data-filter-target') || 'RECLAIM_PROVEN');
+        const openDecision = el.getAttribute('data-opens-decision') === 'true';
         const found = focusFirstMatch({
           fit: true,
-          open: true,
-          decision: el.getAttribute('data-opens-decision') === 'true',
+          open: false,
+          decision: openDecision,
         });
         if (!found) {
           openScene(
             dashboardTitle,
             'No RECLAIM_PROVEN evidence in this run. Projected reclaim stays estimate-grade until candidates appear. Permanent deletion is not available.'
           );
+        } else {
+          openScene(dashboardTitle, explain);
+          if (openDecision) {
+            const workspace = document.getElementById('workspace');
+            if (workspace) workspace.dataset.openDecisionScene = 'APPROVAL';
+            document.dispatchEvent(new CustomEvent('filesteward:path-step', {
+              detail: { step: 'APPROVAL', label: dashboardTitle, explain: explain }
+            }));
+          }
         }
         return;
       }
@@ -1144,11 +1214,13 @@ def render_report_shell(
         else "Read-only decision surface · magnitude ≠ authority · synthetic/runtime evidence only"
     )
 
-    # Pre-render per-node inspector and selection-summary bodies for JS swap
-    # without reclassification or client-side evidence inference.
+    # Pre-render per-node inspector, selection-summary, and subtitle bodies for
+    # JS swap without reclassification or client-side evidence inference.
     inspector_templates = []
     selection_templates = []
+    subtitle_templates = []
     for node in model.nodes:
+        node_flow = open_decision_session(node)
         inspector_templates.append(
             f'<template data-inspector-for="{escape_attr(node.node_id)}">'
             f"{_render_inspector(node)}"
@@ -1157,6 +1229,11 @@ def render_report_shell(
         selection_templates.append(
             f'<template data-selection-summary-for="{escape_attr(node.node_id)}">'
             f"{_render_selection_summary(node)}"
+            f"</template>"
+        )
+        subtitle_templates.append(
+            f'<template data-subtitle-for="{escape_attr(node.node_id)}">'
+            f"{escape_text(scenery_subtitle(node_flow, node.disposition))}"
             f"</template>"
         )
 
@@ -1180,7 +1257,7 @@ def render_report_shell(
 <div class="app" data-run-id="{escape_attr(model.run_id)}">
   <header class="shell">
     {_render_brand_home(title)}
-    <div class="sub fs-type-meta" id="scenery-subtitle">{escape_text(dynamic_sub)} · v<span class="mono" id="product-version" data-product-version="{escape_attr(FILESTEWARD_VERSION)}">{escape_text(FILESTEWARD_VERSION)}</span> · run <span class="mono">{escape_text(model.run_id)}</span></div>
+    <div class="sub fs-type-meta" id="scenery-subtitle"><span id="scenery-subtitle-text">{escape_text(dynamic_sub)}</span> · v<span class="mono" id="product-version" data-product-version="{escape_attr(FILESTEWARD_VERSION)}">{escape_text(FILESTEWARD_VERSION)}</span> · run <span class="mono">{escape_text(model.run_id)}</span></div>
     {_render_classification_legend(selected)}
     {_render_operator_next_actions(selected)}
     <aside class="atlas-scene-panel" id="atlas-scene-panel" hidden aria-live="polite">
@@ -1254,6 +1331,7 @@ def render_report_shell(
 </div>
 {"".join(inspector_templates)}
 {"".join(selection_templates)}
+{"".join(subtitle_templates)}
 {render_focus_templates(model.nodes)}
 {render_atlas_runtime_json(model.nodes, rects)}
 {_selection_script()}

@@ -544,11 +544,22 @@ def render_cinematic_experience_script() -> str:
       || document.querySelector('.map-stage')
       || stage;
     const stageRect = stageEl.getBoundingClientRect();
-    const stageOk = stageRect.width > w + pad * 2 && stageRect.height > h + pad * 2;
-    const clampBox = stageOk ? stageRect : {
-      left: pad, top: pad,
-      right: window.innerWidth - pad, bottom: window.innerHeight - pad
+    /* Intersect stage with the visible viewport — stage can extend below fold. */
+    const viewBox = {
+      left: pad,
+      top: pad,
+      right: window.innerWidth - pad,
+      bottom: window.innerHeight - pad
     };
+    const intersect = {
+      left: Math.max(viewBox.left, stageRect.left),
+      top: Math.max(viewBox.top, stageRect.top),
+      right: Math.min(viewBox.right, stageRect.right),
+      bottom: Math.min(viewBox.bottom, stageRect.bottom)
+    };
+    const stageOk = (intersect.right - intersect.left) > w + pad * 2
+      && (intersect.bottom - intersect.top) > h + pad * 2;
+    const clampBox = stageOk ? intersect : viewBox;
     const obstacles = cartoucheObstacles();
     /* Soft: prefer empty stage regions away from sector cards when possible. */
     const softObstacles = Array.from(document.querySelectorAll(
@@ -570,7 +581,9 @@ def render_cinematic_experience_script() -> str:
       const dist = Math.abs(cx - x) + Math.abs(cy - y);
       return (chromeHit ? 100000 : 0) + (softHit ? 400 : 0) + dist;
     };
-    const near = [
+    const cursorOverChrome = hit(x - 4, y - 4, obstacles, 0)
+      || obstacles.some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+    const near = cursorOverChrome ? [] : [
       [x + 20, y + 26],
       [x - w - 20, y + 26],
       [x + 20, y - h - 20],
@@ -587,16 +600,23 @@ def render_cinematic_experience_script() -> str:
     ];
     let best = null;
     let bestScore = Infinity;
+    let bestClear = null;
+    let bestClearScore = Infinity;
     near.concat(docks).forEach((pair) => {
       const pos = clampToStage(pair[0], pair[1]);
+      const chromeHit = hit(pos.left, pos.top, obstacles, pad);
       const s = score(pos.left, pos.top);
       if (s < bestScore) {
         bestScore = s;
         best = pos;
       }
+      if (!chromeHit && s < bestClearScore) {
+        bestClearScore = s;
+        bestClear = pos;
+      }
     });
-    /* Prefer chrome-clear near/stage candidates; else least-bad stage corner dock. */
-    return best || clampToStage(docks[0][0], docks[0][1]);
+    /* Never prefer a chrome-overlapping near-cursor seat when a clear stage dock exists. */
+    return bestClear || best || clampToStage(docks[0][0], docks[0][1]);
   };
 
   const paintCue = (cue, x, y, showCartouche) => {
@@ -664,7 +684,11 @@ def render_cinematic_experience_script() -> str:
 
   const hideScenePanel = () => {
     const panel = document.getElementById('atlas-scene-panel');
-    if (panel) panel.hidden = true;
+    if (panel) {
+      panel.hidden = true;
+      panel.removeAttribute('data-dashboard-open');
+    }
+    workspace.dataset.dashboardOpen = 'false';
   };
 
   const resetHighlights = () => {
@@ -672,6 +696,7 @@ def render_cinematic_experience_script() -> str:
     workspace.dataset.pathPreview = 'MAP';
     workspace.dataset.openDecisionScene = 'MAP';
     stage.classList.remove('path-enacting');
+    /* Explicit Atlas Home clears dashboards; metric/legend handlers reopen after home(). */
     hideScenePanel();
     if (window.getSelection) window.getSelection().removeAllRanges();
     const marquee = document.getElementById('atlas-range-marquee');

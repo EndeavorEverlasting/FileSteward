@@ -201,3 +201,52 @@ def test_decision_chamber_is_draggable_like_decision_path() -> None:
     assert "fs.decisionChamber.pos" in script
     assert "is-dragging" in css or "is-dragging" in script
     assert "pointerdown" in script
+
+
+def test_live_journey_regressions_from_operator_proof() -> None:
+    """Measured failures on 0.12.x live proof must not return."""
+
+    from filesteward.visualization.decision_chamber import render_decision_chamber_script
+    from filesteward.visualization.experience import render_cinematic_experience_script
+    from filesteward.visualization.shell import render_report_shell
+
+    model = _model()
+    rects = tuple(
+        TreemapRect(node_id=n.node_id, x=i * 20, y=0, width=20, height=100)
+        for i, n in enumerate(model.nodes)
+    )
+    html = render_report_shell(model, rects=rects)
+    # Auth dashboard must leave unrelated filters before hunting reclaim rows.
+    assert "setNavigatorFilter('RECLAIM_PROVEN')" in html
+    # Legend cinematic stays on Atlas subset — no automatic CHAMBER dive.
+    assert "open: false" in html or "open:false" in html.replace(" ", "")
+    assert "exitChamberToAtlas" in html
+    # Subtitle must track selection, not freeze on the default node.
+    assert 'id="scenery-subtitle-text"' in html
+    assert "data-subtitle-for=" in html
+    assert "subtitleSource.content" in html
+    # Metric dashboards must reopen AFTER atlas.home() (home clears the panel).
+    marker = "openScene must run after"
+    assert marker in html
+    home_after = html.find("atlas.home()", html.find(marker))
+    open_after = html.find("openScene(", html.find(marker))
+    assert home_after >= 0 and open_after >= 0
+    assert home_after < open_after
+    assert "data-dashboard-open" in html
+    # Cartouche clamps to viewport∩stage and hard-prefers chrome-clear docks.
+    script = render_cinematic_experience_script()
+    assert "window.innerHeight" in script
+    assert "intersect" in script or "viewBox" in script
+    assert "bestClear" in script or "cursorOverChrome" in script
+    # Chamber docks into visible viewport∩stage — not stage-bottom below the fold.
+    from filesteward.visualization.decision_chamber import render_decision_chamber_css
+
+    chamber = render_decision_chamber_script()
+    assert "dockChamberInView" in chamber
+    assert "visibleStageBox" in chamber
+    assert "innerHeight" in chamber
+    css = render_decision_chamber_css()
+    assert "max-height" in css
+    assert "overflow-y:auto" in css.replace(" ", "") or "overflow-y: auto" in css
+    assert "position:fixed" in css.replace(" ", "") or "position: fixed" in css
+    assert "fixed: true" in chamber or 'fixed:true' in chamber.replace(" ", "")

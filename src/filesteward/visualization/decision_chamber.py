@@ -90,6 +90,9 @@ def render_decision_chamber_css() -> str:
 .decision-chamber{
   pointer-events:auto;position:absolute;left:50%;right:auto;bottom:1rem;transform:translateX(-50%);
   z-index:16;width:min(40rem,calc(100% - 2rem));
+  box-sizing:border-box;
+  max-height:min(70vh, calc(100vh - 8rem));
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
   display:grid;gap:.7rem;padding:.85rem 1rem;
   border:1px solid color-mix(in srgb,var(--fs-accent) 45%,var(--fs-border-default));
   border-radius:6px;background:color-mix(in srgb,var(--fs-bg-shell) 94%,transparent);
@@ -99,6 +102,8 @@ def render_decision_chamber_css() -> str:
   touch-action:none;
 }
 .decision-chamber[data-docked="free"]{
+  /* Viewport-fixed so a tall overflowing stage cannot park the chamber below the fold. */
+  position:fixed!important;
   transform:none;right:auto;bottom:auto;
 }
 .decision-chamber.is-dragging{
@@ -510,39 +515,102 @@ def render_decision_chamber_script() -> str:
   /* Drag Decision Chamber into negative space (mirrors Decision Path). */
   const boundsEl = document.getElementById('storage-stage') || workspace;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-  const placeChamber = (left, top) => {
+  const visibleStageBox = () => {
     const bounds = boundsEl.getBoundingClientRect();
+    const pad = 8;
+    return {
+      left: Math.max(bounds.left, pad),
+      top: Math.max(bounds.top, pad),
+      right: Math.min(bounds.right, window.innerWidth - pad),
+      bottom: Math.min(bounds.bottom, window.innerHeight - pad),
+      bounds: bounds
+    };
+  };
+  const placeChamber = (left, top) => {
+    /* left/top are viewport client coordinates; free-dock uses position:fixed. */
+    const box = visibleStageBox();
+    const availH = Math.max(120, Math.min(box.bottom, window.innerHeight - 8) - Math.max(box.top, 8));
+    chamber.dataset.docked = 'free';
+    chamber.style.maxHeight = Math.min(Math.max(120, availH - 8), window.innerHeight * 0.7) + 'px';
+    void chamber.offsetHeight;
     const width = chamber.offsetWidth || 320;
     const height = chamber.offsetHeight || 160;
-    const x = clamp(left - bounds.left, 8, Math.max(8, bounds.width - width - 8));
-    const y = clamp(top - bounds.top, 8, Math.max(8, bounds.height - height - 8));
-    chamber.style.left = x + 'px';
-    chamber.style.top = y + 'px';
+    const minLeft = 8;
+    const minTop = 8;
+    const maxLeft = Math.max(minLeft, window.innerWidth - width - 8);
+    const maxTop = Math.max(minTop, window.innerHeight - height - 8);
+    const clientX = clamp(left, minLeft, maxLeft);
+    const clientY = clamp(top, minTop, maxTop);
+    chamber.style.left = clientX + 'px';
+    chamber.style.top = clientY + 'px';
     chamber.style.right = 'auto';
     chamber.style.bottom = 'auto';
     chamber.style.transform = 'none';
-    chamber.dataset.docked = 'free';
     try {
-      sessionStorage.setItem('fs.decisionChamber.pos', JSON.stringify({ x: x, y: y }));
+      sessionStorage.setItem('fs.decisionChamber.pos', JSON.stringify({
+        x: clientX,
+        y: clientY,
+        fixed: true
+      }));
     } catch (_err) { /* ignore */ }
+  };
+  const dockChamberInView = () => {
+    const box = visibleStageBox();
+    chamber.dataset.docked = 'free';
+    const availH = Math.max(120, Math.min(box.bottom, window.innerHeight - 8) - Math.max(box.top, 8));
+    chamber.style.maxHeight = Math.min(Math.max(120, availH - 8), window.innerHeight * 0.7) + 'px';
+    void chamber.offsetHeight;
+    const width = chamber.offsetWidth || 320;
+    const height = Math.min(chamber.offsetHeight || 160, availH - 8);
+    const left = Math.max(8, Math.min(
+      window.innerWidth - width - 8,
+      box.left + Math.max(0, (box.right - box.left - width) * 0.5)
+    ));
+    const top = Math.max(8, Math.min(
+      window.innerHeight - height - 8,
+      Math.max(box.top, Math.min(box.bottom, window.innerHeight - 8) - height - 12)
+    ));
+    placeChamber(left, top);
   };
   const restoreChamberPos = () => {
     try {
       const saved = JSON.parse(sessionStorage.getItem('fs.decisionChamber.pos') || 'null');
       if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
-        const bounds = boundsEl.getBoundingClientRect();
-        placeChamber(bounds.left + saved.x, bounds.top + saved.y);
+        if (saved.fixed) {
+          placeChamber(saved.x, saved.y);
+        } else {
+          const bounds = boundsEl.getBoundingClientRect();
+          placeChamber(bounds.left + saved.x, bounds.top + saved.y);
+        }
+        const r = chamber.getBoundingClientRect();
+        const clipped = r.bottom > window.innerHeight - 4
+          || r.top < 4
+          || r.right > window.innerWidth - 4
+          || r.left < 4
+          || r.height < 8;
+        if (clipped) dockChamberInView();
+        return;
       }
     } catch (_err) { /* ignore */ }
+    dockChamberInView();
   };
 
   const applyScene = () => {
     workspace.dataset.openDecisionScene = state.openDecisionScene;
     chamber.setAttribute('data-open-scene', state.openDecisionScene);
     const scene = state.openDecisionScene;
-    const open = scene === 'GATE' || scene === 'RESOLVE' || scene === 'APPROVAL' || scene === 'STAGED' || scene === 'FOCUS';
+    /* FOCUS frames Atlas evidence only — chamber chrome opens at GATE+. */
+    const open = scene === 'GATE' || scene === 'RESOLVE' || scene === 'APPROVAL' || scene === 'STAGED';
     chamber.hidden = !open;
-    if (open) restoreChamberPos();
+    if (open) {
+      restoreChamberPos();
+      window.requestAnimationFrame(() => {
+        const r = chamber.getBoundingClientRect();
+        if (r.bottom > window.innerHeight - 4 || r.top < 4 || r.height < 8) {
+          dockChamberInView();
+        }
+      });
+    }
     if (sceneLabel) sceneLabel.textContent = scene;
     if (chamberBrief) chamberBrief.textContent = sceneBrief(scene);
     if (lastTransitionEl) {
@@ -633,7 +701,12 @@ def render_decision_chamber_script() -> str:
     const stateText = evidenceNode
       ? ((evidenceNode.querySelector('.state') || {}).textContent || '').trim()
       : '';
-    state.evidence = stateText.replace(/\[.*?\]\s*/, '') || state.evidence;
+    const navState = (() => {
+      const row = document.querySelector('.nav-row[data-node-id="' + CSS.escape(id) + '"]');
+      const marker = row && row.querySelector('[data-state-label]');
+      return marker ? (marker.getAttribute('data-state-label') || '').trim() : '';
+    })();
+    state.evidence = stateText.replace(/\[.*?\]\s*/, '') || navState || state.evidence;
     const steps = gateStepsFromDom();
     const first = steps.find((s) => s.unresolved) || steps[0];
     state.activeGateId = first ? first.gate_id : 'observation';

@@ -1,6 +1,6 @@
 # U1 Legend / Dashboard / Chamber Operability — Sprint Plan
 
-**Status:** ACTIVE / IMPLEMENTED locally at `0.12.0` — awaiting suite proof + PR push  
+**Status:** ACTIVE / LIVE-VALIDATED at `0.12.1` — dashboards survive home(); chamber viewport-fixed; cartouche chrome-clear; awaiting PR push + operator acceptance  
 
 **Repository:** `EndeavorEverlasting/FileSteward`  
 **Lane owner:** P07 on `design/u1-brand-home-schedule-seam-20261005` (PR #17 stack)  
