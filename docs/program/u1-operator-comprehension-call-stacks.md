@@ -3,7 +3,7 @@
 **Status:** DESIGNED + executable seams wired into report shell
 **Module:** `src/filesteward/visualization/scene_surface.py`
 **Authority floor:** `decision_flow.allowed_intents()`; permanent deletion forbidden
-**Product version:** `0.12.0` (legend/metric dashboards operable; cartouche negative-space; draggable chamber)
+**Product version:** `0.12.2` (legend/metric dashboards survive `atlas.home()`; cartouche chrome-clear docks; Decision Chamber viewport-fixed + settle redocks)
 
 ## Operator correction 2026-10-05 (blocker / scenery pass)
 
@@ -83,6 +83,35 @@ USER click "Storage atlas" pane-scene-btn
   -> atlas-scene-panel explanation
   -> FileStewardAtlas.home() + stage focus
   -> terminal: Atlas Home camera scenery
+```
+
+### Metric / legend dashboard survives home()
+
+```text
+USER click metric Observed storage / legend PROTECTED
+  -> OPEN_STORAGE_SCENE / activateLegendItem
+  -> (metrics) atlas.home() clears panel via filesteward:atlas-home
+  -> openScene(...) MUST run after home()
+  -> terminal: atlas-scene-panel stays visible with dashboard title/body
+```
+
+### Authorization → APPROVAL in viewport
+
+```text
+USER click AUTHORIZATION legend or Authorization metric
+  -> setNavigatorFilter('RECLAIM_PROVEN'); exitChamberToAtlas()
+  -> focus reclaim row; filesteward:path-step APPROVAL
+  -> decision chamber data-docked=free; position:fixed; dockChamberInView
+  -> double-rAF redock after content expands
+  -> terminal: chamber fully inside viewport; panel title AUTHORIZATION
+```
+
+### Cartouche avoids chrome
+
+```text
+USER pointermove over legend / metrics chrome
+  -> placeCartoucheAway prefers bestClear stage docks (cursorOverChrome skips near seats)
+  -> terminal: cartouche in stage∩viewport, no legend/metrics overlap
 ```
 
 ### ? items mode brief

@@ -245,6 +245,9 @@ def test_live_journey_regressions_from_operator_proof() -> None:
     assert "dockChamberInView" in chamber
     assert "visibleStageBox" in chamber
     assert "innerHeight" in chamber
+    assert "requestAnimationFrame" in chamber
+    assert "ensureChamberInView" in chamber
+    assert "setTimeout(ensureChamberInView" in chamber
     css = render_decision_chamber_css()
     assert "max-height" in css
     assert "overflow-y:auto" in css.replace(" ", "") or "overflow-y: auto" in css

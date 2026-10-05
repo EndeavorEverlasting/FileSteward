@@ -558,19 +558,31 @@ def render_decision_chamber_script() -> str:
     const box = visibleStageBox();
     chamber.dataset.docked = 'free';
     const availH = Math.max(120, Math.min(box.bottom, window.innerHeight - 8) - Math.max(box.top, 8));
-    chamber.style.maxHeight = Math.min(Math.max(120, availH - 8), window.innerHeight * 0.7) + 'px';
+    const maxH = Math.min(Math.max(120, availH - 8), window.innerHeight * 0.7);
+    chamber.style.maxHeight = maxH + 'px';
     void chamber.offsetHeight;
     const width = chamber.offsetWidth || 320;
-    const height = Math.min(chamber.offsetHeight || 160, availH - 8);
-    const left = Math.max(8, Math.min(
+    let height = Math.min(chamber.offsetHeight || 160, maxH);
+    /* Prefer lower-center of the visible stage∩viewport band. */
+    let left = Math.max(8, Math.min(
       window.innerWidth - width - 8,
       box.left + Math.max(0, (box.right - box.left - width) * 0.5)
     ));
-    const top = Math.max(8, Math.min(
-      window.innerHeight - height - 8,
-      Math.max(box.top, Math.min(box.bottom, window.innerHeight - 8) - height - 12)
-    ));
+    let top = Math.max(8, window.innerHeight - height - 8);
+    const stageBottom = Math.min(box.bottom, window.innerHeight - 8);
+    if (stageBottom - height - 12 >= Math.max(box.top, 8)) {
+      top = stageBottom - height - 12;
+    }
     placeChamber(left, top);
+    /* Second pass after layout — content can grow past the first offsetHeight. */
+    void chamber.offsetHeight;
+    const lived = chamber.getBoundingClientRect();
+    if (lived.bottom > window.innerHeight - 4 || lived.top < 4) {
+      height = Math.min(lived.height || height, maxH);
+      top = Math.max(8, window.innerHeight - height - 8);
+      left = Math.max(8, Math.min(window.innerWidth - lived.width - 8, lived.left));
+      placeChamber(left, top);
+    }
   };
   const restoreChamberPos = () => {
     try {
@@ -604,12 +616,33 @@ def render_decision_chamber_script() -> str:
     chamber.hidden = !open;
     if (open) {
       restoreChamberPos();
-      window.requestAnimationFrame(() => {
+      /* Content (approval scope / next-actions) expands after the first measure, and
+         atlas.home() scenery animation can temporarily distort stage bounds. Force
+         viewport redocks across paint + short settle windows. */
+      const ensureChamberInView = () => {
+        if (chamber.hidden) return;
         const r = chamber.getBoundingClientRect();
-        if (r.bottom > window.innerHeight - 4 || r.top < 4 || r.height < 8) {
+        if (
+          r.bottom > window.innerHeight - 4
+          || r.top < 4
+          || r.right > window.innerWidth - 4
+          || r.left < 4
+          || r.height < 8
+        ) {
           dockChamberInView();
         }
+      };
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          dockChamberInView();
+          ensureChamberInView();
+        });
       });
+      window.setTimeout(ensureChamberInView, 0);
+      window.setTimeout(ensureChamberInView, 48);
+      window.setTimeout(ensureChamberInView, 160);
+    } else {
+      chamber.removeAttribute('data-docked');
     }
     if (sceneLabel) sceneLabel.textContent = scene;
     if (chamberBrief) chamberBrief.textContent = sceneBrief(scene);

@@ -1,6 +1,6 @@
 # U1 Legend / Dashboard / Chamber Operability — Sprint Plan
 
-**Status:** ACTIVE / LIVE-VALIDATED at `0.12.1` — dashboards survive home(); chamber viewport-fixed; cartouche chrome-clear; awaiting PR push + operator acceptance  
+**Status:** ACTIVE / LIVE-VALIDATED at `0.12.2` — dashboards survive home(); chamber viewport-fixed with settle redocks (rAF + timeouts); cartouche chrome-clear; PR #17 draft awaiting operator acceptance (merge blocked by stack drafts #15/#16/#17)
 
 **Repository:** `EndeavorEverlasting/FileSteward`  
 **Lane owner:** P07 on `design/u1-brand-home-schedule-seam-20261005` (PR #17 stack)  
