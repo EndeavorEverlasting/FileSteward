@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Iterable, Optional, Sequence
 
-from filesteward.models import AuthorizationState, CleanupDisposition
+from filesteward.models import AuthorizationState, CleanupDisposition, ScanCompleteness
 from filesteward.visualization.contracts import (
     GateStep,
     GateStepStatus,
@@ -51,8 +51,11 @@ from filesteward.visualization.interaction import (
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.scene_surface import (
     classification_legend,
+    evidence_gap_mode_brief,
+    footer_ticker_items,
     metric_scene_entries,
     operator_next_actions,
+    pane_scene_entries,
     scenery_subtitle,
 )
 from filesteward.visualization.selection import SelectionController
@@ -303,12 +306,49 @@ def _render_metric_scene_cards(model: PresentationModel) -> str:
     return "\n    ".join(cards)
 
 
-def _render_classification_legend() -> str:
+def _render_mode_brief(node: Optional[PresentationNode]) -> str:
+    if node is None:
+        return '<aside class="mode-brief" id="mode-brief" hidden></aside>'
+    flow = open_decision_session(node)
+    gap_cue = cue_for_status_orb(StatusOrbKind.EVIDENCE_GAP, node, flow)
+    show_gap = (
+        node.item_count is None
+        or node.scan_completeness is ScanCompleteness.INCOMPLETE
+        or (
+            gap_cue.verb.value in {"RESCAN", "EXPLAIN"}
+            and "Evidence gap" in gap_cue.explanation
+        )
+    )
+    if not show_gap:
+        return '<aside class="mode-brief" id="mode-brief" hidden></aside>'
+    brief = evidence_gap_mode_brief()
+
+    def _list(title: str, rows: tuple[str, ...]) -> str:
+        items = "".join(f"<li>{escape_text(row)}</li>" for row in rows)
+        return f"<div><h3>{escape_text(title)}</h3><ul>{items}</ul></div>"
+
+    return (
+        f'<aside class="mode-brief" id="mode-brief" data-mode="{escape_attr(brief.mode_id)}" '
+        f'aria-label="{escape_attr(brief.title)}">'
+        f"<strong>{escape_text(brief.title)}</strong>"
+        '<div class="mode-brief-grid">'
+        f"{_list('Rules', brief.rules)}"
+        f"{_list('Assumptions', brief.assumptions)}"
+        f"{_list('Choices', brief.choices)}"
+        "</div></aside>"
+    )
+
+
+def _render_classification_legend(node: Optional[PresentationNode] = None) -> str:
     items: list[str] = []
     for entry in classification_legend():
         items.append(
             f'<li class="class-legend-item quality-{escape_attr(entry.quality_tone.value.lower())}" '
-            f'data-legend-state="{escape_attr(entry.state_id)}">'
+            f'tabindex="0" '
+            f'data-legend-state="{escape_attr(entry.state_id)}" '
+            f'data-cue-label="{escape_attr(entry.label)}" '
+            f'data-cue-explain="{escape_attr(entry.meaning + " " + entry.operable_hint)}" '
+            f'data-cursor-mode="explore" data-actionability="INFORMATIONAL">'
             f'<span class="class-legend-swatch" aria-hidden="true"></span>'
             f'<span class="class-legend-label">{escape_text(entry.label)}</span>'
             f'<span class="class-legend-meaning">{escape_text(entry.meaning)}</span>'
@@ -324,7 +364,47 @@ def _render_classification_legend() -> str:
         f'<ul class="class-legend-list">{"".join(items)}</ul>'
         '<p class="class-legend-hotkeys"><kbd>D</kbd> Decision · <kbd>Home</kbd> Atlas Home · '
         "<kbd>Esc</kbd> Back · brand title = Home</p>"
+        f"{_render_mode_brief(node)}"
         "</section>"
+    )
+
+
+def _render_pane_head(surface_id: str) -> str:
+    entry = next(item for item in pane_scene_entries() if item.surface_id == surface_id)
+    return (
+        '<div class="pane-head">'
+        f'<button type="button" class="pane-scene-btn" id="{escape_attr(entry.surface_id)}" '
+        f'data-scene-entry="{escape_attr(entry.surface_id)}" '
+        f'data-scene="{escape_attr(entry.scene)}" '
+        f'data-scene-action="{escape_attr(entry.required_action)}" '
+        f'data-cue-label="{escape_attr(entry.label.upper())}" '
+        f'data-cue-explain="{escape_attr(entry.explanation)}" '
+        f'data-cursor-mode="explore" data-actionability="OPERABLE" '
+        f'aria-label="{escape_attr(entry.label + ". " + entry.explanation)}">'
+        f"{escape_text(entry.label)}"
+        "</button></div>"
+    )
+
+
+def _render_footer_ticker(
+    *,
+    authorization: str,
+    disposition_label: str | None,
+    scene_hint: str,
+) -> str:
+    items = footer_ticker_items(
+        authorization=authorization,
+        disposition_label=disposition_label,
+        scene_hint=scene_hint,
+    )
+    # Duplicate for seamless loop.
+    doubled = list(items) + list(items)
+    spans = "".join(f"<span>{escape_text(item)}</span>" for item in doubled)
+    return (
+        '<footer class="footer footer-ticker" tabindex="0" '
+        'aria-label="Status ticker">'
+        f'<div class="footer-ticker-track">{spans}</div>'
+        "</footer>"
     )
 
 
@@ -482,6 +562,11 @@ def _shell_behavior_css() -> str:
     return """
 html{text-size-adjust:100%;-webkit-text-size-adjust:100%;}
 html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);font-family:var(--fs-font-sans);}
+html,body{color-scheme:dark;scrollbar-color:color-mix(in srgb,var(--fs-accent) 55%,var(--fs-bg-surface-3)) var(--fs-bg-shell);scrollbar-width:thin;}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.app::-webkit-scrollbar,.inspector::-webkit-scrollbar,.nav::-webkit-scrollbar,.atlas-scene-panel::-webkit-scrollbar{width:10px;height:10px;}
+html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,.app::-webkit-scrollbar-track,.inspector::-webkit-scrollbar-track,.nav::-webkit-scrollbar-track{background:var(--fs-bg-shell);}
+html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb,.app::-webkit-scrollbar-thumb,.inspector::-webkit-scrollbar-thumb,.nav::-webkit-scrollbar-thumb{background:linear-gradient(180deg,color-mix(in srgb,var(--fs-accent) 70%,var(--fs-bg-surface-2)),color-mix(in srgb,var(--fs-bg-surface-3) 70%,var(--fs-accent)));border:2px solid var(--fs-bg-shell);border-radius:999px;}
+html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,.app::-webkit-scrollbar-thumb:hover{background:var(--fs-accent);}
 .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
 .skip-link:focus{position:static;width:auto;height:auto;display:inline-block;margin:var(--fs-space-2);padding:var(--fs-space-2) var(--fs-space-3);background:var(--fs-bg-surface-1);color:var(--fs-text-primary);border:2px solid var(--fs-focus);z-index:10;}
 .app{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr auto;overflow-x:auto;}
@@ -531,7 +616,9 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .pane{background:var(--fs-bg-surface-1);border-right:1px solid var(--fs-border-subtle);min-width:0;}
 .pane:last-child{border-right:0;}
 .pane-head{min-height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--fs-space-3);border-bottom:1px solid var(--fs-border-subtle);flex-wrap:wrap;gap:var(--fs-space-2);}
-.pane-head h2{margin:0;font-size:var(--fs-type-small-strong-size);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--fs-text-secondary);}
+.pane-head h2,.pane-scene-btn{margin:0;font-size:var(--fs-type-small-strong-size);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--fs-text-secondary);}
+.pane-scene-btn{appearance:none;border:1px solid transparent;background:transparent;padding:.35rem .45rem;border-radius:var(--fs-radius-sm);cursor:pointer;color:inherit;}
+.pane-scene-btn:hover,.pane-scene-btn:focus-visible{border-color:var(--fs-accent);color:var(--fs-text-primary);outline:2px solid var(--fs-focus);outline-offset:1px;}
 .nav{display:flex;flex-direction:column;}
 .nav-row{appearance:none;border:0;border-bottom:1px solid var(--fs-border-subtle);background:transparent;color:inherit;text-align:left;display:grid;grid-template-columns:1fr auto;gap:var(--fs-space-1) var(--fs-space-2);padding:var(--fs-space-3);min-height:44px;cursor:pointer;position:relative;}
 .nav-row[hidden],.map-node[hidden]{display:none!important;}
@@ -594,7 +681,21 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
 .state-state-reclaim{color:var(--fs-state-reclaim);}
 .auth{font-weight:600;color:var(--fs-text-secondary);}
 .note{color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
-.footer{padding:var(--fs-space-3) var(--fs-space-5);border-top:1px solid var(--fs-border-subtle);color:var(--fs-text-muted);font-size:var(--fs-type-small-size);}
+.footer{padding:0;border-top:1px solid var(--fs-border-subtle);color:var(--fs-text-muted);font-size:var(--fs-type-small-size);overflow:hidden;background:var(--fs-bg-shell);}
+.footer-ticker{display:flex;align-items:center;min-height:2.4rem;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+.footer-ticker-track{display:flex;gap:2.5rem;white-space:nowrap;width:max-content;padding:.65rem var(--fs-space-5);animation:fs-ticker 42s linear infinite;}
+.footer-ticker:hover .footer-ticker-track,.footer-ticker:focus-within .footer-ticker-track{animation-play-state:paused;}
+.footer-ticker-track span{display:inline-flex;align-items:center;gap:.45rem;}
+.footer-ticker-track span::before{content:"";width:.35rem;height:.35rem;border-radius:999px;background:var(--fs-accent);box-shadow:0 0 8px color-mix(in srgb,var(--fs-accent) 55%,transparent);}
+@keyframes fs-ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+@media (prefers-reduced-motion:reduce){.footer-ticker-track{animation:none;flex-wrap:wrap;width:auto;white-space:normal;}}
+.mode-brief{margin:.45rem 0 0;padding:.55rem .7rem;border:1px solid color-mix(in srgb,var(--fs-warning,#D7AA82) 55%,var(--fs-border-subtle));border-radius:var(--fs-radius-md);background:color-mix(in srgb,var(--fs-bg-surface-1) 90%,var(--fs-warning,#D7AA82) 10%);}
+.mode-brief[hidden]{display:none!important;}
+.mode-brief strong{display:block;font:800 .72rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.35rem;}
+.mode-brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;}
+.mode-brief-grid h3{margin:0 0 .2rem;font:750 .66rem/1 var(--fs-font-mono);letter-spacing:.05em;color:var(--fs-text-secondary);}
+.mode-brief-grid ul{margin:0;padding-left:1rem;color:var(--fs-text-secondary);font-size:.7rem;line-height:1.35;}
+@media (max-width:900px){.mode-brief-grid{grid-template-columns:1fr;}}
 :focus-visible{outline:3px solid var(--fs-focus);outline-offset:2px;}
 @media (max-width:1179px),(max-width:1024px){
   .workspace{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
@@ -746,11 +847,26 @@ def _selection_script() -> str:
       document.querySelectorAll('[data-scene-entry]').forEach((other) => {
         other.setAttribute('aria-pressed', other === el ? 'true' : 'false');
       });
-      openScene(
-        el.getAttribute('data-scene'),
-        el.getAttribute('data-cue-explain'),
-        el.getAttribute('data-scene-action')
-      );
+      const scene = el.getAttribute('data-scene');
+      const action = el.getAttribute('data-scene-action');
+      openScene(scene, el.getAttribute('data-cue-explain'), action);
+      const atlas = window.FileStewardAtlas;
+      const workspace = document.getElementById('workspace');
+      if (action === 'OPEN_NAVIGATOR_SCENE' && atlas && typeof atlas.search === 'function') {
+        if (workspace) workspace.dataset.navOpen = 'true';
+        atlas.search();
+      } else if (action === 'OPEN_ATLAS_SCENE' && atlas && typeof atlas.home === 'function') {
+        atlas.home();
+        const stage = document.getElementById('storage-stage');
+        if (stage) stage.focus();
+      } else if (action === 'OPEN_INSPECTOR_SCENE') {
+        if (atlas && typeof atlas.toggle_decision === 'function'
+            && workspace && workspace.dataset.decisionOpen !== 'true') {
+          atlas.toggle_decision();
+        }
+        const inspector = document.getElementById('inspector-body');
+        if (inspector) inspector.focus();
+      }
     });
   });
   document.querySelectorAll('.next-action').forEach((el) => {
@@ -841,7 +957,7 @@ def render_report_shell(
   <header class="shell">
     {_render_brand_home(title)}
     <div class="sub" id="scenery-subtitle">{escape_text(dynamic_sub)} · run <span class="mono">{escape_text(model.run_id)}</span></div>
-    {_render_classification_legend()}
+    {_render_classification_legend(selected)}
     {_render_operator_next_actions(selected)}
     <aside class="atlas-scene-panel" id="atlas-scene-panel" hidden aria-live="polite">
       <strong id="atlas-scene-panel-title">SCENE</strong>
@@ -853,11 +969,11 @@ def render_report_shell(
   </section>
   <main class="workspace" id="workspace" data-scene="overview" data-camera-level="HOME">
     <section class="pane navigator-pane" aria-label="Storage navigator">
-      <div class="pane-head"><h2>Storage navigator</h2></div>
+      {_render_pane_head("pane_navigator")}
       <nav class="nav" aria-label="Storage items">{_render_navigator(model.nodes, current_id)}</nav>
     </section>
     <section class="pane map-pane" aria-label="Storage map">
-      <div class="pane-head"><h2>Storage atlas</h2></div>
+      {_render_pane_head("pane_atlas")}
       <div class="atlas-hud" role="toolbar" aria-label="Atlas camera">
         <span class="atlas-level" id="atlas-level">CAMERA HOME</span>
         {_render_action_trace()}
@@ -902,11 +1018,15 @@ def render_report_shell(
       </div>
     </section>
     <section class="pane inspector-pane" aria-label="Decision inspector">
-      <div class="pane-head"><h2>Decision inspector</h2></div>
+      {_render_pane_head("pane_inspector")}
       <div class="inspector" id="inspector-body" tabindex="-1">{_render_inspector(selected)}</div>
     </section>
   </main>
-  <footer class="footer">The overview prioritizes readable dominant sectors; the focus context map preserves full-run magnitude. Evidence and authorization remain separate. No destructive control exists.</footer>
+  {_render_footer_ticker(
+      authorization=model.metrics.authorization_label,
+      disposition_label=_state_label(selected.disposition) if selected is not None else None,
+      scene_hint=selected_flow.scene.value if selected_flow is not None else "MAP",
+  )}
 </div>
 {"".join(inspector_templates)}
 {"".join(selection_templates)}

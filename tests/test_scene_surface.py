@@ -20,10 +20,15 @@ from filesteward.visualization.decision_flow import (
 from filesteward.visualization.scene_surface import (
     assert_no_permanent_delete_actions,
     classification_legend,
+    evidence_gap_mode_brief,
+    footer_ticker_items,
     metric_scene_entries,
     operator_next_actions,
+    pane_scene_entries,
+    path_step_previews,
     scenery_subtitle,
 )
+from filesteward.visualization.experience import render_cinematic_experience_markup
 from filesteward.visualization.shell import render_report_shell
 
 
@@ -123,6 +128,51 @@ def test_protected_failure_stack_explains_lock() -> None:
     assert actions[0].intent is None
 
 
+def test_path_step_previews_are_distinct_and_non_destructive() -> None:
+    steps = path_step_previews()
+    assert [step.step_id for step in steps] == [
+        "MAP",
+        "FOCUS",
+        "GATE",
+        "RESOLVE",
+        "APPROVAL",
+        "STAGED",
+    ]
+    labels = {step.cue_label for step in steps}
+    assert len(labels) == 6
+    assert any("NO BYTES REMOVED" in step.explanation for step in steps)
+    assert all("PERMANENT DELETE" not in step.cue_label.upper() for step in steps)
+
+
+def test_experience_markup_emits_path_step_cues() -> None:
+    html = render_cinematic_experience_markup()
+    assert 'data-guide-step="APPROVAL"' in html
+    assert 'data-cue-label="PREVIEW GATE"' in html
+    assert 'data-cursor-mode="approve"' in html
+    assert 'data-cue-label="PREVIEW MAP"' in html
+    assert 'data-cue-label="PREVIEW STAGED"' in html
+    assert html.count("data-cue-label=") == 6
+
+
+def test_evidence_gap_mode_brief_teaches_rules() -> None:
+    brief = evidence_gap_mode_brief()
+    assert brief.mode_id == "EVIDENCE_GAP"
+    assert any("not the same as CleanupDisposition.UNKNOWN" in rule for rule in brief.rules)
+    assert any("RESCAN" in choice for choice in brief.choices)
+
+
+def test_pane_and_footer_surfaces_exist() -> None:
+    panes = {entry.surface_id for entry in pane_scene_entries()}
+    assert panes == {"pane_navigator", "pane_atlas", "pane_inspector"}
+    ticker = footer_ticker_items(
+        authorization="UNAPPROVED",
+        disposition_label="RECLAIM PROVEN",
+        scene_hint="APPROVAL",
+    )
+    assert any("ticker" not in item.lower() for item in ticker)
+    assert any("NO PERMANENT DELETE" in item for item in ticker)
+
+
 def test_shell_renders_legend_metrics_and_next_actions() -> None:
     reclaim = replace(
         _node(disposition=CleanupDisposition.RECLAIM_PROVEN),
@@ -154,8 +204,30 @@ def test_shell_renders_legend_metrics_and_next_actions() -> None:
     assert "STAGE REMOVAL PATH" in body
     assert 'data-scene-entry="metric_observed_storage"' in body
     assert 'id="scenery-subtitle"' in body
+    assert 'class="pane-scene-btn"' in body
+    assert 'data-scene-entry="pane_atlas"' in body
+    assert "footer-ticker-track" in body
+    assert "scrollbar-color" in html
     assert "delete intent opens approval" in body.lower() or "STAGE REMOVAL" in body
     assert "Delete</button>" not in body
     assert "Permanently delete</button>" not in body
     flow = open_decision_session(reclaim)
     assert "APPROVAL" in scenery_subtitle(flow, reclaim.disposition)
+
+    gap = replace(
+        reclaim,
+        item_count=None,
+        scan_completeness=ScanCompleteness.INCOMPLETE,
+    )
+    gap_model = PresentationModel(
+        run_id="u1-gap-mode",
+        nodes=(gap,),
+        metrics=model.metrics,
+        default_selected_id="reclaim",
+    )
+    gap_html = render_report_shell(
+        gap_model,
+        rects=(TreemapRect(node_id="reclaim", x=0, y=0, width=100, height=100),),
+    )
+    assert 'data-mode="EVIDENCE_GAP"' in gap_html
+    assert "? items mode" in gap_html

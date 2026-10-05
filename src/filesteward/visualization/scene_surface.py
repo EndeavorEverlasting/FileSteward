@@ -41,10 +41,17 @@ from filesteward.visualization.interaction import QualityTone, quality_tone_for_
 __all__ = [
     "ClassificationLegendEntry",
     "MetricSceneEntry",
+    "ModeBrief",
     "OperatorNextAction",
+    "PaneSceneEntry",
+    "PathStepPreview",
     "classification_legend",
+    "evidence_gap_mode_brief",
+    "footer_ticker_items",
     "metric_scene_entries",
     "operator_next_actions",
+    "pane_scene_entries",
+    "path_step_previews",
     "scenery_subtitle",
 ]
 
@@ -76,6 +83,169 @@ class OperatorNextAction:
     intent: DecisionIntent | None
     opens_approval: bool
     consequence: str
+
+
+@dataclass(frozen=True)
+class PathStepPreview:
+    step_id: str
+    title: str
+    summary: str
+    cue_label: str
+    explanation: str
+    cursor_mode: str
+    consequence: str
+    prerequisites: str
+
+
+@dataclass(frozen=True)
+class PaneSceneEntry:
+    surface_id: str
+    label: str
+    scene: str
+    required_action: str
+    explanation: str
+
+
+@dataclass(frozen=True)
+class ModeBrief:
+    mode_id: str
+    title: str
+    rules: tuple[str, ...]
+    assumptions: tuple[str, ...]
+    choices: tuple[str, ...]
+
+
+def path_step_previews() -> tuple[PathStepPreview, ...]:
+    """Decision Path step hover/focus previews — PATH_PREVIEW contract."""
+
+    return (
+        PathStepPreview(
+            step_id="MAP",
+            title="MAP",
+            summary="Find where space lives",
+            cue_label="PREVIEW MAP",
+            explanation="Locate pressure sectors. Magnitude is visible; no reclaim authority yet.",
+            cursor_mode="explore",
+            consequence="READ_ONLY",
+            prerequisites="Open the atlas overview or search.",
+        ),
+        PathStepPreview(
+            step_id="FOCUS",
+            title="FOCUS",
+            summary="Magnify exact evidence",
+            cue_label="PREVIEW FOCUS",
+            explanation="Dive to one evidence group. Selection stays anchored while the camera moves.",
+            cursor_mode="focus",
+            consequence="READ_ONLY",
+            prerequisites="Choose a sector/card or Fit selected.",
+        ),
+        PathStepPreview(
+            step_id="GATE",
+            title="GATE",
+            summary="Open the first unresolved gate",
+            cue_label="PREVIEW GATE",
+            explanation="Open the first unresolved evidence gate. UNKNOWN/HUMAN_REVIEW become action surfaces.",
+            cursor_mode="resolve",
+            consequence="READ_ONLY",
+            prerequisites="Focused evidence with an unresolved gate.",
+        ),
+        PathStepPreview(
+            step_id="RESOLVE",
+            title="RESOLVE",
+            summary="Choose only legal operator intents",
+            cue_label="PREVIEW RESOLVE",
+            explanation="Only intents from decision_flow.allowed_intents() are legal. Illegal choices stay locked.",
+            cursor_mode="resolve",
+            consequence="RECORD_INTENT",
+            prerequisites="An open gate with legal intents.",
+        ),
+        PathStepPreview(
+            step_id="APPROVAL",
+            title="APPROVAL",
+            summary="Authorize exact quarantine scope",
+            cue_label="PREVIEW APPROVAL",
+            explanation="Exact run, plan digest, and item IDs required. This is authorization, not deletion.",
+            cursor_mode="approve",
+            consequence="WRITE_APPROVAL",
+            prerequisites="RECLAIM_PROVEN + UNAPPROVED evidence.",
+        ),
+        PathStepPreview(
+            step_id="STAGED",
+            title="STAGED",
+            summary="NO BYTES REMOVED",
+            cue_label="PREVIEW STAGED",
+            explanation="Quarantine staged — NO BYTES REMOVED. Permanent deletion is not implemented.",
+            cursor_mode="approve",
+            consequence="STAGE_QUARANTINE",
+            prerequisites="Validated APPROVED_FOR_ACTION receipt.",
+        ),
+    )
+
+
+def pane_scene_entries() -> tuple[PaneSceneEntry, ...]:
+    return (
+        PaneSceneEntry(
+            surface_id="pane_navigator",
+            label="Storage navigator",
+            scene="NAVIGATOR",
+            required_action="OPEN_NAVIGATOR_SCENE",
+            explanation="Browse evidence rows. Enter/Space selects; classification tags open decision gates.",
+        ),
+        PaneSceneEntry(
+            surface_id="pane_atlas",
+            label="Storage atlas",
+            scene="ATLAS",
+            required_action="OPEN_ATLAS_SCENE",
+            explanation="Spatial pressure map. Dive sectors, use camera HUD, or open Decision Path steps.",
+        ),
+        PaneSceneEntry(
+            surface_id="pane_inspector",
+            label="Decision inspector",
+            scene="INSPECTOR",
+            required_action="OPEN_INSPECTOR_SCENE",
+            explanation="Gate trace and rationale for the selected evidence. Not a delete console.",
+        ),
+    )
+
+
+def evidence_gap_mode_brief() -> ModeBrief:
+    return ModeBrief(
+        mode_id="EVIDENCE_GAP",
+        title="? items mode — evidence completeness gap",
+        rules=(
+            "This status means item count or scan completeness is incomplete.",
+            "It is not the same as CleanupDisposition.UNKNOWN unless disposition also says UNKNOWN.",
+            "Color alone is never authority; the orb label and Next actions carry the rule.",
+        ),
+        assumptions=(
+            "Observation may be partial; reclaim math stays estimate-grade until complete.",
+            "Protected evidence still blocks reclaim even if counts are incomplete.",
+        ),
+        choices=(
+            "If the gate allows RESCAN — use Next actions / Decision to rescan.",
+            "KEEP or REVIEW LATER remain legal when decision_flow allows them.",
+            "STAGE REMOVAL PATH appears only for RECLAIM_PROVEN + UNAPPROVED — not from ? items alone.",
+        ),
+    )
+
+
+def footer_ticker_items(
+    *,
+    authorization: str,
+    disposition_label: str | None,
+    scene_hint: str,
+) -> tuple[str, ...]:
+    items = [
+        f"AUTH {authorization}",
+        f"SCENE {scene_hint}",
+        "NO PERMANENT DELETE — quarantine staging only",
+        "Brand title / Home key → Atlas Home",
+        "Decision Path steps preview consequence before commit",
+        "Legend states ≠ mutation authority",
+    ]
+    if disposition_label:
+        items.insert(0, f"SELECTED {disposition_label}")
+    return tuple(items)
 
 
 def metric_scene_entries(

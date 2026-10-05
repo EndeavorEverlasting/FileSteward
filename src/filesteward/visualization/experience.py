@@ -7,6 +7,9 @@ changes authorization, or creates a second state machine.
 
 from __future__ import annotations
 
+from filesteward.visualization.literal import escape_attr, escape_text
+from filesteward.visualization.scene_surface import path_step_previews
+
 __all__ = [
     "render_cinematic_experience_css",
     "render_cinematic_experience_markup",
@@ -17,7 +20,28 @@ __all__ = [
 def render_cinematic_experience_markup() -> str:
     """Persistent Home, contextual cursor, and state-driven decision guide."""
 
-    return r"""
+    steps: list[str] = []
+    for index, preview in enumerate(path_step_previews(), start=1):
+        active = " is-active" if preview.step_id == "MAP" else ""
+        current = ' aria-current="step"' if preview.step_id == "MAP" else ""
+        steps.append(
+            f'<li class="decision-guide-step{active}" tabindex="0" '
+            f'data-guide-step="{escape_attr(preview.step_id)}" '
+            f'data-target-kind="NAVIGATION" '
+            f'data-action="{escape_attr(preview.cue_label.replace(" ", "_"))}" '
+            f'data-actionability="OPERABLE" '
+            f'data-consequence="{escape_attr(preview.consequence)}" '
+            f'data-cursor-mode="{escape_attr(preview.cursor_mode)}" '
+            f'data-cue-label="{escape_attr(preview.cue_label)}" '
+            f'data-cue-explain="{escape_attr(preview.explanation + " Prerequisite: " + preview.prerequisites)}" '
+            f'aria-label="{escape_attr(preview.title + ": " + preview.explanation)}"{current}>'
+            f'<span class="guide-index">{index:02d}</span>'
+            f"<strong>{escape_text(preview.title)}</strong>"
+            f"<span>{escape_text(preview.summary)}</span>"
+            f"</li>"
+        )
+
+    return f"""
 <div class="atlas-experience-layer">
   <button type="button"
           class="atlas-home-beacon"
@@ -42,30 +66,7 @@ def render_cinematic_experience_markup() -> str:
       <span id="decision-compass-next">Choose a dominant sector or search for exact evidence.</span>
     </div>
     <ol class="decision-compass-steps">
-      <li class="decision-guide-step is-active" data-guide-step="MAP">
-        <span class="guide-index">01</span><strong>MAP</strong>
-        <span>Find where space lives</span>
-      </li>
-      <li class="decision-guide-step" data-guide-step="FOCUS">
-        <span class="guide-index">02</span><strong>FOCUS</strong>
-        <span>Magnify exact evidence</span>
-      </li>
-      <li class="decision-guide-step" data-guide-step="GATE">
-        <span class="guide-index">03</span><strong>GATE</strong>
-        <span>Open the first unresolved gate</span>
-      </li>
-      <li class="decision-guide-step" data-guide-step="RESOLVE">
-        <span class="guide-index">04</span><strong>RESOLVE</strong>
-        <span>Choose only legal operator intents</span>
-      </li>
-      <li class="decision-guide-step" data-guide-step="APPROVAL">
-        <span class="guide-index">05</span><strong>APPROVAL</strong>
-        <span>Authorize exact quarantine scope</span>
-      </li>
-      <li class="decision-guide-step" data-guide-step="STAGED">
-        <span class="guide-index">06</span><strong>STAGED</strong>
-        <span>NO BYTES REMOVED</span>
-      </li>
+      {"".join(steps)}
     </ol>
   </section>
 
@@ -132,6 +133,7 @@ def render_cinematic_experience_css() -> str:
 }
 
 .decision-compass{
+  pointer-events:auto;
   position:absolute;left:50%;top:1rem;transform:translateX(-50%);z-index:11;
   width:min(48rem,calc(100% - 20rem));min-width:28rem;
   display:grid;grid-template-columns:minmax(12rem,.75fr) minmax(22rem,1.4fr);gap:.8rem;
@@ -163,9 +165,10 @@ def render_cinematic_experience_css() -> str:
 }
 .decision-compass-steps{
   list-style:none;margin:0;padding:0;display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;align-items:stretch;
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;align-items:stretch;
 }
 .decision-guide-step{
+  pointer-events:auto;cursor:pointer;
   position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;
   gap:.08rem .35rem;align-content:center;padding:.4rem .5rem;min-width:0;
   border:1px solid var(--fs-border-subtle);
@@ -173,6 +176,13 @@ def render_cinematic_experience_css() -> str:
   opacity:.46;
   transition:opacity 180ms ease-out,border-color 180ms ease-out,
              box-shadow 220ms ease-out,transform 220ms cubic-bezier(.16,1,.3,1);
+}
+.decision-guide-step:hover,.decision-guide-step:focus-visible,.decision-guide-step.is-hover{
+  opacity:1;outline:none;transform:translateY(-2px);
+  border-color:color-mix(in srgb,var(--atlas-signal) 70%,var(--fs-border-default));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--atlas-signal) 45%,transparent),
+             0 0 28px color-mix(in srgb,var(--atlas-signal) 34%,transparent),
+             0 8px 18px rgba(0,0,0,.22);
 }
 .decision-guide-step .guide-index{
   grid-row:1/3;align-self:center;color:var(--fs-text-muted);
@@ -326,9 +336,7 @@ def render_cinematic_experience_css() -> str:
 .atlas-cartouche strong{display:block;font:800 .72rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.25rem;}
 .atlas-cartouche span{display:block;font:600 .74rem/1.35 var(--fs-font-sans);color:var(--fs-text-secondary);}
 @media (pointer:fine) and (prefers-reduced-motion:no-preference){
-  .storage-stage,.storage-stage button,.storage-stage .map-node,.storage-stage .sector-card{
-    cursor:none!important;
-  }
+  .app,.app *{cursor:none!important;}
   .atlas-reticle.is-visible{display:block;}
 }
 
@@ -455,15 +463,24 @@ def render_cinematic_experience_script() -> str:
     if (!(target instanceof Element)) {
       return { mode: 'explore', label: 'EXPLORE', actionability: 'OPERABLE', explain: 'Explore the Atlas.' };
     }
-    const host = target.closest('[data-action],[data-cursor-mode],.map-node,.status-orb,.sector-card,.signal-primary,.signal-hard-stop,.gate-lead,.atlas-hud button,[data-atlas-action]');
+    const host = target.closest(
+      '.decision-guide-step,[data-action],[data-cursor-mode],[data-cue-label],[data-scene-entry],'
+      + '.map-node,.status-orb,.sector-card,.signal-primary,.signal-hard-stop,.gate-lead,'
+      + '.atlas-hud button,[data-atlas-action],.metric-scene,.next-action,.pane-scene-btn,'
+      + '.brand-home,.class-legend-item,#atlas-classification-legend'
+    );
     if (host) {
       const mode = host.getAttribute('data-cursor-mode')
+        || (host.classList.contains('decision-guide-step') ? 'resolve' : null)
         || (host.classList.contains('signal-hard-stop') ? 'blocked' : null)
         || (host.classList.contains('signal-primary') || host.classList.contains('gate-lead') ? 'resolve' : null)
         || (host.classList.contains('sector-card') ? 'dive' : null)
         || (host.classList.contains('map-node') ? 'focus' : 'explore');
       const label = host.getAttribute('data-cue-label')
         || host.getAttribute('data-action')
+        || (host.classList.contains('decision-guide-step')
+          ? ('PREVIEW ' + (host.getAttribute('data-guide-step') || 'PATH'))
+          : null)
         || (mode === 'blocked' ? 'INSPECT BLOCK' : mode === 'dive' ? 'DIVE IN' : mode === 'resolve' ? 'RESOLVE' : mode === 'focus' ? 'FOCUS' : 'EXPLORE');
       return {
         mode,
@@ -530,9 +547,10 @@ def render_cinematic_experience_script() -> str:
     syncCameraTrace();
   };
 
-  stage.addEventListener('pointerenter', moveReticle);
-  stage.addEventListener('pointermove', moveReticle);
-  stage.addEventListener('pointerleave', () => {
+  const app = document.querySelector('.app') || document.body;
+  app.addEventListener('pointerenter', moveReticle);
+  app.addEventListener('pointermove', moveReticle);
+  app.addEventListener('pointerleave', () => {
     if (reticle) reticle.classList.remove('is-visible', 'is-active');
     if (cartouche) {
       cartouche.hidden = true;
@@ -540,10 +558,48 @@ def render_cinematic_experience_script() -> str:
     }
   });
 
-  stage.addEventListener('focusin', (event) => {
+  app.addEventListener('focusin', (event) => {
     const cue = cueFrom(event.target);
     const rect = event.target instanceof Element ? event.target.getBoundingClientRect() : null;
     if (rect) paintCue(cue, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
+  });
+
+  const previewPathStep = (step) => {
+    const key = step.getAttribute('data-guide-step') || 'MAP';
+    const explain = step.getAttribute('data-cue-explain') || '';
+    const label = step.getAttribute('data-cue-label') || key;
+    const panel = document.getElementById('atlas-scene-panel');
+    const title = document.getElementById('atlas-scene-panel-title');
+    const body = document.getElementById('atlas-scene-panel-body');
+    if (panel) panel.hidden = false;
+    if (title) title.textContent = label;
+    if (body) body.textContent = explain;
+    const atlas = window.FileStewardAtlas;
+    if (!atlas) return;
+    if (key === 'MAP' && typeof atlas.home === 'function') atlas.home();
+    else if (key === 'FOCUS' && typeof atlas.fit_selected === 'function') atlas.fit_selected();
+    else if ((key === 'GATE' || key === 'RESOLVE' || key === 'APPROVAL')
+      && typeof atlas.toggle_decision === 'function'
+      && workspace.dataset.decisionOpen !== 'true') {
+      atlas.toggle_decision();
+    }
+    workspace.dataset.openDecisionScene = key;
+    setGuideState();
+  };
+
+  guideSteps().forEach((step) => {
+    step.addEventListener('pointerenter', (event) => {
+      step.classList.add('is-hover');
+      moveReticle(event);
+    });
+    step.addEventListener('pointerleave', () => step.classList.remove('is-hover'));
+    step.addEventListener('click', () => previewPathStep(step));
+    step.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        previewPathStep(step);
+      }
+    });
   });
 
   document.addEventListener('click', (event) => {

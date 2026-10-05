@@ -1,9 +1,10 @@
 # Memory Atlas V4-D — Atlas Interaction Grammar
 
-**Status:** DESIGNED + IMPLEMENTED (local suite); live operator acceptance open  
-**Authority floor:** V4-C preserved at PR #15 `4e8a529` (0.4.0)  
+**Status:** DESIGNED + IMPLEMENTED (local suite); live operator acceptance open
+**Authority floor:** V4-C preserved at PR #15 `4e8a529` (0.4.0)
 **Product version after V4-D visual-feature:** `0.5.0`
 **Product version after U1 brand/Home visual-feature:** decided by P130 (`0.6.0`)
+**Product version after U1 comprehension/path/cursor visual-feature:** decided by P130 (`0.8.0`)
 
 ## User outcomes
 

@@ -58,11 +58,18 @@ def render_report_html(
 """
     if "</style>" in html:
         html = html.replace("</style>", extra_css + "</style>", 1)
-    needle = '<div class="pane-head"><h2>Storage navigator</h2></div>'
-    if needle in html:
+    needle_btn = 'data-scene-entry="pane_navigator"'
+    needle_legacy = '<div class="pane-head"><h2>Storage navigator</h2></div>'
+    if needle_btn in html:
+        # Insert filter/search controls immediately after the navigator pane head.
+        head_end = html.find("</div>", html.find(needle_btn))
+        if head_end != -1:
+            insert_at = head_end + len("</div>")
+            html = html[:insert_at] + controls + html[insert_at:]
+    elif needle_legacy in html:
         html = html.replace(
-            needle,
-            '<div class="pane-head"><h2>Storage navigator</h2></div>' + controls,
+            needle_legacy,
+            needle_legacy + controls,
             1,
         )
 
