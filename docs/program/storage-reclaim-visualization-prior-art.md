@@ -199,3 +199,30 @@ already-correct state owners:
 - first-unresolved semantic glow and scan energy;
 - state-driven Decision Compass as the natural tutorial;
 - self-falsifying visual acceptance before operator handoff.
+
+## 2026-10-04 V4-D Atlas Interaction Grammar — prior-art disposition
+
+V4-D completes the presentation grammar gap. Mechanisms only; no vendored code/assets; no new framework dependency.
+
+| Reference | Evidence class | Mechanism | Disposition |
+| --- | --- | --- | --- |
+| pbakaus/impeccable | observed guidance (Apache-2.0) | complete interactive states; motion conveys state; bounded screenshot→defect→repair | **ADOPT** design discipline |
+| Anthropic frontend-design skill | official first-party plugin docs | distinctive intentional UI over generic templates | **ADAPT** product language; no dependency |
+| Radix UI data-state / data-disabled | observed docs | DOM data attributes as styling/behavior contract | **ADAPT** as `data-action` / `data-actionability` / `data-recency` / `data-target-kind` / `data-quality-tone` |
+| React Aria state attributes | observed docs | selected/hovered/pressed/focus-visible as portable state | **ADAPT** parity across pointer/keyboard/touch |
+| WAI tooltip pattern | normative APG | tooltips do not receive focus; choices need non-tooltip surfaces | **ADOPT** — info cartouche vs decision chamber |
+| MDN Popover API / CSS anchor positioning | platform docs | authored overlay attachment + flip | **ADAPT** progressive enhancement for cartouche attachment |
+| View Transition API | platform docs | spatial continuity between DOM states | **DEFER** progressive only; WAAPI remains primary |
+| XState | open-source statecharts | second workflow owner | **REJECT** — `decision_flow` / camera / selection remain authority |
+| Radix/React component migration | ecosystem | replace HTML/JS surfaces | **REJECT** — emulate mechanisms without stack churn |
+
+### Quality polarity (FileSteward-owned)
+
+Color/glow is a presentation projection of persisted disposition/authorization, never authority:
+
+- **ESSENTIAL / KEEP** — warm keep-edge glow (retain)
+- **BLOCKED / PROTECTED** — protected-edge glow; verb `INSPECT BLOCK` / `WHY LOCKED`
+- **RECLAIM_CANDIDATE** — reclaim-edge glow when evidence is reclaim-proven; approval still separate
+- **AMBIGUOUS** — review-edge glow for incomplete/human-review evidence gaps (`? items` ≠ `CleanupDisposition.UNKNOWN`)
+
+Canonical owner: `src/filesteward/visualization/interaction.py` projects cues; renderers consume attributes only.

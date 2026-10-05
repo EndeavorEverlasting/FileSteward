@@ -40,6 +40,14 @@ from filesteward.visualization.experience import (
     render_cinematic_experience_script,
 )
 from filesteward.visualization.css import render_token_css
+from filesteward.visualization.decision_flow import open_decision_session
+from filesteward.visualization.interaction import (
+    StatusOrbKind,
+    cue_for_map_node,
+    cue_for_navigation,
+    cue_for_status_orb,
+    html_data_attrs,
+)
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.selection import SelectionController
 from filesteward.visualization.tokens import disposition_css_stem
@@ -159,17 +167,14 @@ def _render_map_slots(
             f"{node.display_name}, {_fmt_bytes(node.logical_size_bytes)}, "
             f"{_state_label(node.disposition)}, {_auth_label(node.authorization_state)}"
         )
-        title_text = (
-            f"{node.path} · {_fmt_bytes(node.logical_size_bytes)} · "
-            f"{_state_label(node.disposition)}"
-        )
+        cue = cue_for_map_node(node, selected=is_selected)
         parts.append(
             f'<button type="button" class="map-node{selected}{density} state-edge-{escape_attr(tone)}" '
             f'data-node-id="{escape_attr(node.node_id)}" '
             f'data-rect-x="{rect.x}" data-rect-y="{rect.y}" '
             f'data-rect-w="{rect.width}" data-rect-h="{rect.height}" '
             f'style="left:{rect.x}%;top:{rect.y}%;width:{rect.width}%;height:{rect.height}%;" '
-            f'title="{escape_attr(title_text)}" '
+            f'{html_data_attrs(cue)} '
             f'aria-label="{escape_attr(aria)}"{current}>'
             f'<span class="map-label">{escape_text(node.display_name)}</span>'
             f'<span class="map-size">{escape_text(_fmt_bytes(node.logical_size_bytes))}</span>'
@@ -179,6 +184,71 @@ def _render_map_slots(
             f"</button>"
         )
     return "\n".join(parts)
+
+
+def _nav_button(
+    element_id: str,
+    action: str,
+    label: str,
+    *,
+    aria: str | None = None,
+) -> str:
+    cue = cue_for_navigation(action)
+    aria_attr = f' aria-label="{escape_attr(aria or label)}"'
+    return (
+        f'<button type="button" id="{escape_attr(element_id)}" '
+        f'{html_data_attrs(cue)}{aria_attr}>{label}</button>'
+    )
+
+
+def _render_status_orbs(node: Optional[PresentationNode]) -> str:
+    if node is None:
+        return (
+            '<div class="atlas-status-orbs" id="atlas-status-orbs" '
+            'aria-label="Status nodes" hidden></div>'
+        )
+    flow = open_decision_session(node)
+    orbs: list[str] = []
+    specs = (
+        (StatusOrbKind.PROTECTED, "PROTECTED", "Protection status"),
+        (StatusOrbKind.UNAPPROVED, "UNAPPROVED", "Authorization status"),
+        (StatusOrbKind.EVIDENCE_GAP, "? items", "Evidence completeness"),
+    )
+    for kind, visible, aria in specs:
+        cue = cue_for_status_orb(kind, node, flow)
+        active = cue.availability.value in {"OPERABLE", "BLOCKED"}
+        orbs.append(
+            f'<button type="button" class="status-orb quality-{escape_attr(cue.quality_tone.value.lower())}" '
+            f'data-orb-kind="{escape_attr(kind.value)}" '
+            f'data-open-decision="true" '
+            f'{html_data_attrs(cue)} '
+            f'aria-label="{escape_attr(aria + ": " + cue.label)}" '
+            f'data-orb-active="{str(active).lower()}">'
+            f'<span class="status-orb-core" aria-hidden="true"></span>'
+            f'<span class="status-orb-label">{escape_text(visible)}</span>'
+            f"</button>"
+        )
+    return (
+        '<div class="atlas-status-orbs" id="atlas-status-orbs" '
+        'aria-label="Status nodes">'
+        f'{"".join(orbs)}'
+        '<svg class="status-tether" id="status-tether" aria-hidden="true" hidden></svg>'
+        "</div>"
+    )
+
+
+def _render_action_trace() -> str:
+    return """
+<div class="atlas-action-trace" id="atlas-action-trace" aria-label="Camera orientation and recent commands">
+  <div class="trace-current">
+    <span class="trace-kicker">CAMERA</span>
+    <strong id="atlas-camera-current" aria-current="true">HOME</strong>
+  </div>
+  <ol class="trace-history" id="atlas-command-history">
+    <li data-recency="IDLE"><span>ATLAS HOME</span></li>
+  </ol>
+</div>
+"""
 
 
 def _render_selection_summary(node: Optional[PresentationNode]) -> str:
@@ -398,6 +468,48 @@ html,body{margin:0;background:var(--fs-bg-canvas);color:var(--fs-text-primary);f
   .step.unresolved,.gate-lead{border:3px solid Highlight;box-shadow:none;forced-color-adjust:none;}
   .state-marker{forced-color-adjust:none;}
   .state-edge-state-review,.state-edge-state-unknown,.state-edge-state-protected,.state-edge-state-keep,.state-edge-state-reclaim{box-shadow:inset -3px -3px 0 CanvasText;}
+  .status-orb,.atlas-action-trace{forced-color-adjust:none;border-color:CanvasText;background:Canvas;color:CanvasText;box-shadow:none;}
+  .status-orb[data-actionability="OPERABLE"] .status-orb-core,
+  .status-orb[data-actionability="BLOCKED"] .status-orb-core{outline:2px solid Highlight;}
+}
+/* V4-D interaction grammar: quality polarity + status orbs + camera memory */
+.atlas-action-trace{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem;min-height:40px;padding:.25rem .45rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);}
+.atlas-action-trace .trace-kicker{font:800 .62rem/1 var(--fs-font-mono);letter-spacing:.08em;color:var(--fs-text-muted);}
+.atlas-action-trace #atlas-camera-current{font:800 .85rem/1.1 var(--fs-font-mono);color:var(--fs-accent);text-shadow:0 0 12px color-mix(in srgb,var(--fs-accent) 45%,transparent);}
+.trace-history{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.35rem;}
+.trace-history li{font:700 .68rem/1.2 var(--fs-font-mono);padding:.2rem .4rem;border-radius:3px;border:1px solid var(--fs-border-subtle);opacity:.55;}
+.trace-history li[data-recency="LAST"]{opacity:1;border-color:color-mix(in srgb,var(--fs-accent) 55%,var(--fs-border-default));box-shadow:0 0 10px color-mix(in srgb,var(--fs-accent) 28%,transparent);}
+.trace-history li[data-recency="RECENT"]{opacity:.78;border-color:color-mix(in srgb,var(--fs-accent) 30%,var(--fs-border-default));}
+.atlas-status-orbs{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;padding:var(--fs-space-2) var(--fs-space-4);border-bottom:1px solid var(--fs-border-subtle);background:color-mix(in srgb,var(--fs-bg-surface-1) 92%,transparent);}
+.status-orb{appearance:none;display:inline-flex;align-items:center;gap:.45rem;min-height:40px;min-width:40px;padding:.35rem .65rem;border-radius:999px;border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-primary);font:800 .68rem/1 var(--fs-font-mono);letter-spacing:.04em;cursor:pointer;}
+.status-orb-core{width:12px;height:12px;border-radius:50%;background:currentColor;box-shadow:0 0 0 2px color-mix(in srgb,currentColor 25%,transparent);}
+.status-orb.quality-blocked{color:var(--fs-state-protected-edge);border-color:color-mix(in srgb,var(--fs-state-protected-edge) 55%,var(--fs-border-default));}
+.status-orb.quality-essential{color:var(--fs-state-keep-edge);border-color:color-mix(in srgb,var(--fs-state-keep-edge) 55%,var(--fs-border-default));}
+.status-orb.quality-reclaim_candidate{color:var(--fs-state-reclaim-edge);border-color:color-mix(in srgb,var(--fs-state-reclaim-edge) 55%,var(--fs-border-default));}
+.status-orb.quality-ambiguous{color:var(--fs-state-review-edge);border-color:color-mix(in srgb,var(--fs-state-review-edge) 55%,var(--fs-border-default));}
+.status-orb[data-actionability="OPERABLE"] .status-orb-core,
+.status-orb[data-actionability="BLOCKED"] .status-orb-core{
+  animation:fs-orb-pulse 1500ms ease-in-out infinite;
+  box-shadow:0 0 0 2px color-mix(in srgb,currentColor 30%,transparent),0 0 16px color-mix(in srgb,currentColor 55%,transparent);
+}
+.status-orb[data-actionability="BLOCKED"]{cursor:help;}
+.status-orb[data-actionability="INFORMATIONAL"]{opacity:.55;}
+@keyframes fs-orb-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.map-node[data-quality-tone="BLOCKED"],.map-node[data-quality-tone="ESSENTIAL"],
+.map-node[data-quality-tone="RECLAIM_CANDIDATE"],.map-node[data-quality-tone="AMBIGUOUS"]{
+  box-shadow:inset -2px -2px 0 currentColor;
+}
+.map-node[data-quality-tone="BLOCKED"]{color:var(--fs-state-protected-edge);}
+.map-node[data-quality-tone="ESSENTIAL"]{color:var(--fs-state-keep-edge);}
+.map-node[data-quality-tone="RECLAIM_CANDIDATE"]{color:var(--fs-state-reclaim-edge);}
+.map-node[data-quality-tone="AMBIGUOUS"]{color:var(--fs-state-review-edge);}
+.map-node[data-actionability="OPERABLE"]:focus-visible,
+.status-orb:focus-visible{outline:3px solid var(--fs-focus);outline-offset:2px;}
+.atlas-hud button[data-recency="LAST"]{box-shadow:0 0 0 1px color-mix(in srgb,var(--fs-accent) 50%,transparent),0 0 14px color-mix(in srgb,var(--fs-accent) 30%,transparent);}
+.atlas-hud button[data-recency="RECENT"]{box-shadow:0 0 10px color-mix(in srgb,var(--fs-accent) 16%,transparent);}
+@media (prefers-reduced-motion:reduce){
+  .status-orb[data-actionability="OPERABLE"] .status-orb-core,
+  .status-orb[data-actionability="BLOCKED"] .status-orb-core{animation:none;}
 }
 """
 
@@ -554,13 +666,14 @@ def render_report_shell(
       <div class="pane-head"><h2>Storage atlas</h2></div>
       <div class="atlas-hud" role="toolbar" aria-label="Atlas camera">
         <span class="atlas-level" id="atlas-level">CAMERA HOME</span>
-        <button type="button" id="atlas-home" aria-label="Return to Atlas home">⌂ Atlas Home <kbd>Home</kbd></button>
-        <button type="button" id="atlas-zoom-out" aria-label="Zoom out">Zoom -</button>
-        <button type="button" id="atlas-zoom-in" aria-label="Zoom in">Zoom +</button>
-        <button type="button" id="atlas-search">Search</button>
-        <button type="button" id="atlas-fit">Fit selected</button>
-        <button type="button" id="atlas-open">Open</button>
-        <button type="button" id="atlas-decision">Decision</button>
+        {_render_action_trace()}
+        {_nav_button("atlas-home", "home", "⌂ Atlas Home <kbd>Home</kbd>", aria="Return to Atlas home")}
+        {_nav_button("atlas-zoom-out", "zoom_out", "Zoom -", aria="Zoom out")}
+        {_nav_button("atlas-zoom-in", "zoom_in", "Zoom +", aria="Zoom in")}
+        {_nav_button("atlas-search", "search", "Search")}
+        {_nav_button("atlas-fit", "fit_selected", "Fit selected")}
+        {_nav_button("atlas-open", "open", "Open")}
+        {_nav_button("atlas-decision", "decision", "Decision")}
       </div>
       <div class="storage-stage" id="storage-stage" data-scene="overview" data-camera-level="HOME" tabindex="-1">
         {render_substrate_svg()}
@@ -577,6 +690,7 @@ def render_report_shell(
           <div class="scene-toolbar">
             <button type="button" class="scene-back" id="scene-back" hidden>← Sector overview</button>
             <div class="selection-summary" id="selection-summary" aria-live="polite">{_render_selection_summary(selected)}</div>
+            {_render_status_orbs(selected)}
           </div>
           <div class="focus-host" id="focus-host">{render_focus_chamber(selected, model.nodes)}</div>
           <div class="context-map-shell">

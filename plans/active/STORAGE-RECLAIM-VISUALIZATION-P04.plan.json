@@ -585,33 +585,59 @@
         "desktop/laptop/phone/reduced-motion/forced-colors",
         "private runtime self-falsification"
       ],
-      "status": "IMPLEMENTED_LOCALLY_VALIDATED_LIVE_OBSERVED_UNCOMMITTED"
+      "status": "PROVEN_COMMITTED_PUSHED_4e8a529"
     },
     {
       "lane_id": "V4-D",
-      "title": "Private live decision journey",
+      "title": "Atlas Interaction Grammar + diegetic decision affordances",
       "dependencies": [
         "V4-C"
       ],
-      "execution_environment": "OPERATOR_WORKSTATION_PRIVATE_RUNTIME",
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
       "owned": [
-        "ignored runtime report",
-        "ignored approval/quarantine-stage receipts",
-        "browser proof"
+        "src/filesteward/visualization/interaction.py",
+        "presentation-only cue projection",
+        "reticle/cartouche/camera action trace",
+        "PROTECTED/UNAPPROVED/EVIDENCE_GAP status orbs",
+        "quality-tone glow polarity",
+        "native title-tooltip removal on Atlas targets",
+        "prior-art ADOPT/ADAPT/REJECT refresh",
+        "focused interaction tests"
       ],
       "forbidden": [
-        "commit private paths/receipts",
-        "permanent deletion",
-        "merge before operator acceptance"
+        "second state machine / XState",
+        "UI framework migration",
+        "evidence/disposition promotion from presentation",
+        "permanent deletion affordance",
+        "merge or undraft PR #15",
+        "F7",
+        "broad P124 rewrite before interaction behavior is green"
       ],
       "validation": [
-        "UNKNOWN click -> gate",
-        "rescan/contract input journey",
-        "RECLAIM_PROVEN -> approval",
-        "approval receipt readback -> staged quarantine scene",
-        "operator acceptance"
+        "interaction projection unit tests",
+        "no native title on Atlas interaction nodes",
+        "mouse/keyboard/touch semantic parity",
+        "current camera vs last/recent command distinction",
+        "PROTECTED/UNAPPROVED/evidence-gap activation",
+        "illegal action absence",
+        "reduced motion + forced colors",
+        "full suite",
+        "P130 visual-feature after visual mutation"
       ],
-      "status": "WAITING_ON_V4_C"
+      "status": "IN_PROGRESS_IMPLEMENTATION",
+      "successor_private_live": {
+        "lane_id": "V4-D4",
+        "owned": [
+          "ignored runtime report",
+          "browser proof",
+          "operator acceptance"
+        ],
+        "forbidden": [
+          "commit private paths/receipts",
+          "permanent deletion",
+          "merge before operator acceptance"
+        ]
+      }
     },
     {
       "lane_id": "F7",

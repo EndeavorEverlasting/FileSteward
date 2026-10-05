@@ -85,7 +85,7 @@ def test_contextual_reticle_replaces_standard_cursor_inside_atlas_only() -> None
     assert 'id="atlas-reticle"' in html
     assert 'data-cursor-mode="explore"' in html
     assert "pointermove" in html
-    assert "cursorModeFor" in html
+    assert "cueFrom" in html
     assert "cursor:none!important" in html
     assert "(pointer:fine)" in html
     assert "(prefers-reduced-motion:no-preference)" in html

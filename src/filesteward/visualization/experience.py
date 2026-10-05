@@ -72,6 +72,7 @@ def render_cinematic_experience_markup() -> str:
   <div class="atlas-reticle"
        id="atlas-reticle"
        data-cursor-mode="explore"
+       data-actionability="OPERABLE"
        aria-hidden="true">
     <span class="reticle-bracket reticle-bracket-nw"></span>
     <span class="reticle-bracket reticle-bracket-ne"></span>
@@ -79,6 +80,15 @@ def render_cinematic_experience_markup() -> str:
     <span class="reticle-bracket reticle-bracket-se"></span>
     <span class="reticle-core"></span>
     <span class="reticle-label" id="atlas-reticle-label">EXPLORE</span>
+  </div>
+
+  <div class="atlas-cartouche"
+       id="atlas-cartouche"
+       role="tooltip"
+       hidden
+       aria-hidden="true">
+    <strong id="atlas-cartouche-verb">EXPLORE</strong>
+    <span id="atlas-cartouche-explain">Point at Atlas evidence or controls.</span>
   </div>
 </div>
 """
@@ -278,31 +288,43 @@ def render_cinematic_experience_css() -> str:
 
 /* Fine-pointer contextual reticle; coarse/reduced-motion users retain native cursor. */
 .atlas-reticle{
-  position:fixed;left:0;top:0;z-index:9999;width:52px;height:52px;display:none;
+  position:fixed;left:0;top:0;z-index:9999;width:56px;height:56px;display:none;
   pointer-events:none;transform:translate3d(-100px,-100px,0);will-change:transform;
-  color:var(--atlas-signal);mix-blend-mode:screen;
+  color:var(--atlas-signal);
 }
 .atlas-reticle .reticle-core{
-  position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;
-  background:currentColor;transform:translate(-50%,-50%);
-  box-shadow:0 0 12px currentColor;
+  position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;
+  border:2px solid currentColor;background:color-mix(in srgb,var(--fs-bg-canvas) 70%,transparent);
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--fs-bg-canvas) 85%,transparent),0 0 14px currentColor;
 }
-.reticle-bracket{position:absolute;width:12px;height:12px;border-color:currentColor;opacity:.9;}
-.reticle-bracket-nw{left:4px;top:4px;border-left:1px solid;border-top:1px solid}
-.reticle-bracket-ne{right:4px;top:4px;border-right:1px solid;border-top:1px solid}
-.reticle-bracket-sw{left:4px;bottom:4px;border-left:1px solid;border-bottom:1px solid}
-.reticle-bracket-se{right:4px;bottom:4px;border-right:1px solid;border-bottom:1px solid}
+.reticle-bracket{position:absolute;width:14px;height:14px;border-color:currentColor;opacity:.95;}
+.reticle-bracket-nw{left:3px;top:3px;border-left:2px solid;border-top:2px solid}
+.reticle-bracket-ne{right:3px;top:3px;border-right:2px solid;border-top:2px solid}
+.reticle-bracket-sw{left:3px;bottom:3px;border-left:2px solid;border-bottom:2px solid}
+.reticle-bracket-se{right:3px;bottom:3px;border-right:2px solid;border-bottom:2px solid}
 .reticle-label{
   position:absolute;left:50%;top:calc(100% + 4px);transform:translateX(-50%);
-  padding:.2rem .32rem;border:1px solid currentColor;
-  background:color-mix(in srgb,var(--fs-bg-shell) 88%,transparent);white-space:nowrap;
-  color:currentColor;font:900 .55rem/1 var(--fs-font-mono);letter-spacing:.09em;
+  padding:.22rem .4rem;border:1px solid currentColor;border-radius:3px;
+  background:color-mix(in srgb,var(--fs-bg-shell) 92%,transparent);white-space:nowrap;
+  color:currentColor;font:900 .58rem/1 var(--fs-font-mono);letter-spacing:.09em;
+  box-shadow:0 0 10px color-mix(in srgb,currentColor 35%,transparent);
 }
-.atlas-reticle[data-cursor-mode="dive"]{color:var(--atlas-signal);}
-.atlas-reticle[data-cursor-mode="focus"]{color:var(--fs-focus);}
+.atlas-reticle[data-cursor-mode="dive"],.atlas-reticle[data-cursor-mode="approve"]{color:var(--atlas-signal);}
+.atlas-reticle[data-cursor-mode="focus"],.atlas-reticle[data-cursor-mode="return"]{color:var(--fs-focus);}
 .atlas-reticle[data-cursor-mode="resolve"]{color:var(--atlas-gate);}
-.atlas-reticle[data-cursor-mode="blocked"]{color:var(--atlas-danger);}
-.atlas-reticle.is-active{filter:drop-shadow(0 0 7px currentColor);}
+.atlas-reticle[data-cursor-mode="blocked"],.atlas-reticle[data-cursor-mode="locked"],
+.atlas-reticle[data-actionability="BLOCKED"]{color:var(--atlas-danger);}
+.atlas-reticle.is-active{filter:drop-shadow(0 0 8px currentColor);}
+.atlas-cartouche{
+  pointer-events:none;position:fixed;z-index:10000;max-width:18rem;padding:.55rem .7rem;
+  border:1px solid color-mix(in srgb,var(--atlas-signal) 50%,var(--fs-border-default));
+  border-radius:4px;background:color-mix(in srgb,var(--fs-bg-shell) 94%,transparent);
+  color:var(--fs-text-primary);box-shadow:0 10px 28px color-mix(in srgb,var(--fs-bg-canvas) 55%,transparent);
+}
+.atlas-cartouche[hidden]{display:none!important;}
+.atlas-cartouche strong{display:block;font:800 .72rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.25rem;}
+.atlas-cartouche span{display:block;font:600 .74rem/1.35 var(--fs-font-sans);color:var(--fs-text-secondary);}
 @media (pointer:fine) and (prefers-reduced-motion:no-preference){
   .storage-stage,.storage-stage button,.storage-stage .map-node,.storage-stage .sector-card{
     cursor:none!important;
@@ -355,11 +377,17 @@ def render_cinematic_experience_script() -> str:
   const compassNext = document.getElementById('decision-compass-next');
   const reticle = document.getElementById('atlas-reticle');
   const reticleLabel = document.getElementById('atlas-reticle-label');
+  const cartouche = document.getElementById('atlas-cartouche');
+  const cartoucheVerb = document.getElementById('atlas-cartouche-verb');
+  const cartoucheExplain = document.getElementById('atlas-cartouche-explain');
+  const cameraCurrent = document.getElementById('atlas-camera-current');
+  const commandHistory = document.getElementById('atlas-command-history');
   if (!stage || !workspace || !compass) return;
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const fine = window.matchMedia('(pointer: fine)');
   const guideSteps = () => Array.from(compass.querySelectorAll('[data-guide-step]'));
+  const recentCommands = [];
 
   const currentGate = () => {
     const signal = document.querySelector('.focus-host .signal-primary strong');
@@ -423,45 +451,130 @@ def render_cinematic_experience_script() -> str:
     if (compassNext) compassNext.textContent = copy[1];
   };
 
-  const cursorModeFor = (target) => {
-    if (!(target instanceof Element)) return ['explore', 'EXPLORE'];
-    if (target.closest('.signal-hard-stop,.state-edge-state-protected')) return ['blocked', 'BLOCKED'];
-    if (target.closest('.signal-primary,.gate-lead')) return ['resolve', 'RESOLVE'];
-    if (target.closest('.sector-card')) return ['dive', 'DIVE'];
-    if (target.closest('.map-node')) return ['focus', 'FOCUS'];
-    if (target.closest('.focus-chamber')) return ['resolve', 'INSPECT'];
-    return ['explore', 'EXPLORE'];
+  const cueFrom = (target) => {
+    if (!(target instanceof Element)) {
+      return { mode: 'explore', label: 'EXPLORE', actionability: 'OPERABLE', explain: 'Explore the Atlas.' };
+    }
+    const host = target.closest('[data-action],[data-cursor-mode],.map-node,.status-orb,.sector-card,.signal-primary,.signal-hard-stop,.gate-lead,.atlas-hud button,[data-atlas-action]');
+    if (host) {
+      const mode = host.getAttribute('data-cursor-mode')
+        || (host.classList.contains('signal-hard-stop') ? 'blocked' : null)
+        || (host.classList.contains('signal-primary') || host.classList.contains('gate-lead') ? 'resolve' : null)
+        || (host.classList.contains('sector-card') ? 'dive' : null)
+        || (host.classList.contains('map-node') ? 'focus' : 'explore');
+      const label = host.getAttribute('data-cue-label')
+        || host.getAttribute('data-action')
+        || (mode === 'blocked' ? 'INSPECT BLOCK' : mode === 'dive' ? 'DIVE IN' : mode === 'resolve' ? 'RESOLVE' : mode === 'focus' ? 'FOCUS' : 'EXPLORE');
+      return {
+        mode,
+        label: String(label).split('_').join(' '),
+        actionability: host.getAttribute('data-actionability') || 'OPERABLE',
+        explain: host.getAttribute('data-cue-explain') || host.getAttribute('aria-label') || label
+      };
+    }
+    return { mode: 'explore', label: 'EXPLORE', actionability: 'OPERABLE', explain: 'Explore the Atlas.' };
+  };
+
+  const paintCue = (cue, x, y, showCartouche) => {
+    if (reticle && fine.matches && !reduced.matches) {
+      reticle.dataset.cursorMode = cue.mode;
+      reticle.dataset.actionability = cue.actionability;
+      if (reticleLabel) reticleLabel.textContent = cue.label;
+      reticle.classList.add('is-visible', 'is-active');
+      reticle.style.transform = 'translate3d(' + (x - 28) + 'px,' + (y - 28) + 'px,0)';
+    }
+    if (cartouche && showCartouche) {
+      if (cartoucheVerb) cartoucheVerb.textContent = cue.label;
+      if (cartoucheExplain) cartoucheExplain.textContent = cue.explain;
+      cartouche.hidden = false;
+      cartouche.setAttribute('aria-hidden', 'false');
+      const left = Math.min(window.innerWidth - 300, Math.max(8, x + 18));
+      const top = Math.min(window.innerHeight - 96, Math.max(8, y + 24));
+      cartouche.style.left = left + 'px';
+      cartouche.style.top = top + 'px';
+    } else if (cartouche) {
+      cartouche.hidden = true;
+      cartouche.setAttribute('aria-hidden', 'true');
+    }
   };
 
   const moveReticle = (event) => {
-    if (!reticle || !fine.matches || reduced.matches) return;
-    const mode = cursorModeFor(event.target);
-    reticle.dataset.cursorMode = mode[0];
-    if (reticleLabel) reticleLabel.textContent = mode[1];
-    reticle.classList.add('is-visible', 'is-active');
-    reticle.style.transform =
-      'translate3d(' + (event.clientX - 26) + 'px,' + (event.clientY - 26) + 'px,0)';
+    const cue = cueFrom(event.target);
+    paintCue(cue, event.clientX, event.clientY, true);
+  };
+
+  const syncCameraTrace = () => {
+    const level = workspace.dataset.cameraLevel || 'HOME';
+    if (cameraCurrent) {
+      cameraCurrent.textContent = level;
+      cameraCurrent.setAttribute('aria-current', 'true');
+    }
+    if (!commandHistory) return;
+    const items = recentCommands.slice(0, 3);
+    commandHistory.innerHTML = items.map((item, index) => {
+      const recency = index === 0 ? 'LAST' : 'RECENT';
+      return '<li data-recency="' + recency + '"><span>' + item + '</span></li>';
+    }).join('') || '<li data-recency="IDLE"><span>ATLAS HOME</span></li>';
+    document.querySelectorAll('.atlas-hud button[data-action]').forEach((btn) => {
+      const label = btn.getAttribute('data-cue-label') || btn.textContent.trim();
+      const idx = items.indexOf(label);
+      btn.setAttribute('data-recency', idx === 0 ? 'LAST' : idx > 0 ? 'RECENT' : 'IDLE');
+    });
+  };
+
+  const rememberCommand = (label) => {
+    if (!label) return;
+    if (recentCommands[0] === label) return;
+    recentCommands.unshift(label);
+    while (recentCommands.length > 3) recentCommands.pop();
+    syncCameraTrace();
   };
 
   stage.addEventListener('pointerenter', moveReticle);
   stage.addEventListener('pointermove', moveReticle);
   stage.addEventListener('pointerleave', () => {
     if (reticle) reticle.classList.remove('is-visible', 'is-active');
+    if (cartouche) {
+      cartouche.hidden = true;
+      cartouche.setAttribute('aria-hidden', 'true');
+    }
   });
 
-  const observer = new MutationObserver(setGuideState);
+  stage.addEventListener('focusin', (event) => {
+    const cue = cueFrom(event.target);
+    const rect = event.target instanceof Element ? event.target.getBoundingClientRect() : null;
+    if (rect) paintCue(cue, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
+  });
+
+  document.addEventListener('click', (event) => {
+    const host = event.target instanceof Element
+      ? event.target.closest('.atlas-hud button,[data-atlas-action],.status-orb')
+      : null;
+    if (host) {
+      rememberCommand(host.getAttribute('data-cue-label') || host.textContent.trim());
+    }
+    window.requestAnimationFrame(setGuideState);
+  });
+
+  const observer = new MutationObserver(() => {
+    setGuideState();
+    syncCameraTrace();
+  });
   observer.observe(workspace, {
     attributes: true,
-    attributeFilter: ['data-camera-level', 'data-decision-open', 'data-scene']
+    attributeFilter: ['data-camera-level', 'data-decision-open', 'data-scene', 'data-open-decision-scene']
   });
 
   document.addEventListener('filesteward:selection', () => {
-    window.requestAnimationFrame(setGuideState);
+    window.requestAnimationFrame(() => {
+      setGuideState();
+      syncCameraTrace();
+    });
   });
-  document.addEventListener('click', () => window.requestAnimationFrame(setGuideState));
   document.addEventListener('keydown', () => window.requestAnimationFrame(setGuideState));
 
   setGuideState();
+  syncCameraTrace();
 })();
 </script>
 """

@@ -14,9 +14,22 @@
 | V3-E | ⏳ WAITING | exact-head private report regeneration and operator live acceptance | V3-D | ignored local runtime proof only |
 | F7 | REQUIRED SUCCESSOR WORK | contract-selection UX | V3-E | separate operator decision lane |
 
+### Memory Atlas V4-D — Atlas Interaction Grammar (active)
+
+| Lane | State | Mission | Dependency | Owned surface |
+| --- | --- | --- | --- | --- |
+| V4-C | ✅ PROVEN committed/pushed on PR #15 (`4e8a529`) | Decision Chamber + Decision Bridge at 0.4.0 | V4-A/B/BRIDGE | `decision_chamber.py`, `review_bridge.py` |
+| V4-D1 | 🟡 IN_PROGRESS | typed presentation-only Interaction Projection + unit tests + prior-art/design persistence | V4-C preserved | `interaction.py`, plan/prior-art |
+| V4-D2 | 🟡 IN_PROGRESS | diegetic reticle/cartouche/camera trace/status orbs/quality glow; kill native `title` tooltips | V4-D1 | shell/experience/decision_chamber consumers |
+| V4-D3 | ⏳ WAITING | P124 readability convergence only after interaction behavior is characterized | V4-D2 green | evidence-ranked hotspots |
+| V4-D4 | ⏳ WAITING | self-falsification: desktop/laptop/phone/reduced-motion/forced-colors + private live journey | V4-D2 | ignored runtime proof |
+| PR acceptance | ⛔ BLOCKED | draft until live operator acceptance; no merge/undraft/F7/permanent delete | V4-D4 | PR #15 |
+
+Architecture (fixed): `decision_flow.allowed_intents()` remains authority; `interaction.py` projects cues (`target_kind`, `verb`, `availability`, `recency`, `consequence`, `quality_tone`, explanation) into `data-*` attributes. Quality polarity: ESSENTIAL/KEEP glow vs RECLAIM_CANDIDATE glow vs BLOCKED/PROTECTED vs AMBIGUOUS. Permanent deletion remains NOT IMPLEMENTED; terminal mutation truth stays QUARANTINE STAGED — NO BYTES REMOVED.
+
 Parallel intent: V3-B and V3-C are independent writers by primary file ownership; V3-D owns convergence into shared cinematic/shell surfaces. If implementation evidence reveals a real shared-file collision, serialize instead of pretending parallel safety.
 
-Local workstation proof: P130 package `__version__` now stays in lockstep with `pyproject.toml` at `0.2.0`. V3-A/B/C plus V3-D wiring: full FileSteward suite 314 passed; version guard ALREADY_SATISFIED; cinematic/shell camera and Decision Signal projection are wired. V3-E remains operator live acceptance of the regenerated private report. Do not merge PR #15 before that acceptance.
+Local workstation proof: V4-C preserved at `4e8a529` with 342-suite PASS. V4-D adds interaction grammar as a visual-feature (P130 decides next version). Do not merge PR #15 before operator acceptance.
 
 
 **Status:** ACTIVE / FACTORED / IMPLEMENTATION-READY AFTER P04 MERGE  
