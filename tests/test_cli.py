@@ -504,6 +504,73 @@ class TestDeleteLifecycleCli:
         err = capsys.readouterr().err.casefold()
         assert "personal" in err or "home" in err
 
+    def test_execute_refuses_pytest_named_home_path(
+        self, s1_run_dir: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """A home path containing 'pytest-' must not bypass live-home refusal."""
+
+        victim = Path.home() / "pytest-victim" / "scan"
+        code = main(
+            [
+                "delete-execute",
+                str(s1_run_dir),
+                "--scan-root",
+                str(victim),
+                "--i-understand-irreversible",
+            ]
+        )
+        assert code == EXIT_INVALID
+        err = capsys.readouterr().err.casefold()
+        assert "personal" in err or "home" in err
+
+    def test_execute_partial_returns_nonzero(
+        self, s1_run_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from filesteward import cli as cli_mod
+        from filesteward.deletion.execute import ExecutionResult, ItemExecutionResult
+
+        s1_run_dir.mkdir(parents=True, exist_ok=True)
+        (s1_run_dir / "delete-manifest.json").write_text("{}", encoding="utf-8")
+        (s1_run_dir / "delete-approval.json").write_text("{}", encoding="utf-8")
+        scan = tmp_path / "scan"
+        scan.mkdir()
+
+        def fake_execute(**kwargs: object) -> ExecutionResult:
+            return ExecutionResult(
+                overall="PARTIAL",
+                run_dir=s1_run_dir,
+                receipt_path=s1_run_dir / "delete-execution-receipt.json",
+                items=[
+                    ItemExecutionResult(
+                        item_id="a",
+                        path=str(scan / "a"),
+                        status="SUCCEEDED",
+                        reason_class="OK",
+                        detail="ok",
+                    ),
+                    ItemExecutionResult(
+                        item_id="b",
+                        path=str(scan / "b"),
+                        status="FAILED",
+                        reason_class="IDENTITY_DRIFT",
+                        detail="drift",
+                    ),
+                ],
+            )
+
+        monkeypatch.setattr(cli_mod, "execute_permanent_delete", fake_execute)
+        monkeypatch.setattr(cli_mod, "_scan_root_allowed_for_execute", lambda p: None)
+        code = main(
+            [
+                "delete-execute",
+                str(s1_run_dir),
+                "--scan-root",
+                str(scan),
+                "--i-understand-irreversible",
+            ]
+        )
+        assert code == EXIT_INVALID
+
     def test_preflight_approve_execute_temp_fixture(
         self, s1_run_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
@@ -518,6 +585,8 @@ class TestDeleteLifecycleCli:
         payload = b"CLI-DELETE-PROOF" * 256
         target.write_bytes(payload)
         st = target.stat()
+        blocks = getattr(st, "st_blocks", None)
+        allocated = blocks * 512 if isinstance(blocks, int) and blocks > 0 else None
         item = {
             "item_id": "cli-victim",
             "path": str(target.resolve()),
@@ -526,8 +595,10 @@ class TestDeleteLifecycleCli:
             "evidence": "synthetic",
             "contract_source": "cli-test",
             "logical_size_bytes": int(st.st_size),
-            "allocated_size_bytes": int(st.st_size),
-            "projected_reclaim_bytes": int(st.st_size),
+            "allocated_size_bytes": allocated,
+            "projected_reclaim_bytes": (
+                allocated if allocated is not None else int(st.st_size)
+            ),
             "reclaim_basis": "synthetic",
             "projection_quality": "allocated-evidence",
             "protection_check": "UNRELATED",
@@ -538,12 +609,12 @@ class TestDeleteLifecycleCli:
             "link_count": 1,
             "modified_at": float(st.st_mtime),
             "source_run_id": "cli-run",
-            "source_cleanup_plan_sha256": "c" * 64,
+            "source_cleanup_plan_sha256": "",
             "identity": {
                 "path": str(target.resolve()),
                 "item_type": "FILE",
                 "logical_size_bytes": int(st.st_size),
-                "allocated_size_bytes": int(st.st_size),
+                "allocated_size_bytes": allocated,
                 "modified_at": float(st.st_mtime),
                 "link_count": 1,
             },
@@ -553,7 +624,7 @@ class TestDeleteLifecycleCli:
         manifest = {
             "schema_version": DELETE_MANIFEST_SCHEMA,
             "run_id": "cli-run",
-            "source_cleanup_plan_sha256": "c" * 64,
+            "source_cleanup_plan_sha256": "",
             "authorization_state": "UNAPPROVED",
             "intended_action": "QUARANTINE",
             "item_count": 1,

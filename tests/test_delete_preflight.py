@@ -40,11 +40,18 @@ def _file_identity(path: Path) -> dict[str, Any]:
     nlink = getattr(st, "st_nlink", 1)
     if not isinstance(nlink, int) or nlink <= 0:
         nlink = os.stat(os.fspath(path), follow_symlinks=False).st_nlink
+    # Use platform allocation when known; otherwise leave null so preflight
+    # compares logical size only (POSIX st_blocks*512 often exceeds st_size).
+    blocks = getattr(st, "st_blocks", None)
+    if isinstance(blocks, int) and blocks > 0:
+        allocated: int | None = blocks * 512
+    else:
+        allocated = None
     return {
         "path": str(path.resolve()),
         "item_type": "FILE",
         "logical_size_bytes": int(st.st_size),
-        "allocated_size_bytes": int(st.st_size),
+        "allocated_size_bytes": allocated,
         "modified_at": float(st.st_mtime),
         "link_count": int(nlink),
     }
@@ -79,7 +86,11 @@ def _item_from_file(
         "contract_source": "test",
         "logical_size_bytes": identity["logical_size_bytes"],
         "allocated_size_bytes": identity["allocated_size_bytes"],
-        "projected_reclaim_bytes": identity["allocated_size_bytes"],
+        "projected_reclaim_bytes": (
+            identity["allocated_size_bytes"]
+            if identity["allocated_size_bytes"] is not None
+            else identity["logical_size_bytes"]
+        ),
         "reclaim_basis": "allocated-evidence",
         "projection_quality": "allocated-evidence",
         "protection_check": "UNRELATED",
@@ -785,3 +796,112 @@ class TestMutatedFilesystemInvariant:
         write_preflight_receipt(out, result)
         payload = json.loads(out.read_text(encoding="utf-8"))
         assert payload["mutated_filesystem"] is False
+
+
+class TestSafetyRepairs:
+    def test_cleanup_plan_missing_fail_closed(self, tmp_path: Path) -> None:
+        scan_root = tmp_path / "scan"
+        scan_root.mkdir()
+        target = scan_root / "ok.bin"
+        target.write_bytes(b"ABCDEFGH")
+        plan_sha = "a" * 64
+        item = _item_from_file(target, item_id="item-plan", plan_sha=plan_sha)
+        manifest = _manifest([item], plan_sha=plan_sha)
+
+        result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=None)
+        assert result.overall == "FAIL"
+        assert any(v.reason_class == ReasonClass.CLEANUP_PLAN_MISSING for v in result.items)
+
+        missing = tmp_path / "cleanup-plan.csv"
+        result2 = run_preflight(
+            manifest, scan_root=scan_root, cleanup_plan_path=missing
+        )
+        assert result2.overall == "FAIL"
+        assert any(
+            v.reason_class == ReasonClass.CLEANUP_PLAN_MISSING for v in result2.items
+        )
+
+    def test_content_sha256_mismatch(self, tmp_path: Path) -> None:
+        scan_root = tmp_path / "scan"
+        scan_root.mkdir()
+        target = scan_root / "hashed.bin"
+        target.write_bytes(b"v1-content")
+        plan, plan_sha = _make_plan(tmp_path)
+        item = _item_from_file(target, item_id="item-hash", plan_sha=plan_sha)
+        wrong = "0" * 64
+        item["content_sha256"] = wrong
+        item["identity"]["content_sha256"] = wrong
+        # Equal-size rewrite with restored mtime still fails on hash.
+        st = os.lstat(target)
+        target.write_bytes(b"v2-content")
+        os.utime(target, (st.st_atime, st.st_mtime))
+        manifest = _manifest([item], plan_sha=plan_sha)
+
+        result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
+        assert result.overall == "FAIL"
+        assert result.items[-1].reason_class == ReasonClass.IDENTITY_DRIFT
+        assert "digest" in result.items[-1].detail.casefold()
+
+    def test_symlink_ancestor_fail_closed(self, tmp_path: Path) -> None:
+        scan_root = tmp_path / "scan"
+        real = scan_root / "real"
+        real.mkdir(parents=True)
+        target = real / "nested.bin"
+        target.write_bytes(b"nested")
+        link_dir = scan_root / "linkdir"
+        try:
+            link_dir.symlink_to(real, target_is_directory=True)
+        except OSError as exc:
+            pytest.skip(f"symlink creation unavailable: {exc}")
+        linked = link_dir / "nested.bin"
+        plan, plan_sha = _make_plan(tmp_path)
+        item = _item_from_file(target, item_id="item-anc", plan_sha=plan_sha)
+        item["path"] = str(linked)
+        item["identity"]["path"] = str(linked)
+        manifest = _manifest([item], plan_sha=plan_sha)
+
+        result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
+        assert result.overall == "FAIL"
+        assert result.items[-1].reason_class in {
+            ReasonClass.REPARSE_OR_SYMLINK,
+            ReasonClass.PATH_ESCAPE,
+        }
+
+    def test_protection_loaded_from_run_context(self, tmp_path: Path) -> None:
+        from filesteward.deletion.preflight import load_run_protection_context
+
+        scan_root = tmp_path / "scan"
+        protected = scan_root / "repo"
+        protected.mkdir(parents=True)
+        target = protected / "secret.txt"
+        target.write_bytes(b"secret")
+        run_dir = tmp_path / "run"
+        run_dir.mkdir()
+        (run_dir / "run.json").write_text(
+            json.dumps(
+                {
+                    "run_id": "run-prot",
+                    "protected_roots": [
+                        {"path": str(protected), "source": "operator-declared"}
+                    ],
+                    "managed_paths": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        roots, managed = load_run_protection_context(run_dir)
+        assert managed == ()
+        plan, plan_sha = _make_plan(tmp_path)
+        item = _item_from_file(target, item_id="item-prot2", plan_sha=plan_sha)
+        item["protection_check"] = "UNRELATED"
+        manifest = _manifest([item], plan_sha=plan_sha)
+
+        result = run_preflight(
+            manifest,
+            scan_root=scan_root,
+            cleanup_plan_path=plan,
+            protection_roots=roots,
+            managed_paths=managed,
+        )
+        assert result.overall == "FAIL"
+        assert result.items[-1].reason_class == ReasonClass.PROTECTION_HIT

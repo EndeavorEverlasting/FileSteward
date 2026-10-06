@@ -41,6 +41,7 @@ from filesteward.deletion import (
     write_delete_approval,
     write_preflight_receipt,
 )
+from filesteward.deletion.preflight import load_run_protection_context
 from filesteward.manifest import triage_run_dir, validate_run
 from filesteward.policy.paths import (
     is_lexically_within,
@@ -448,10 +449,15 @@ def _run_delete_preflight(args: argparse.Namespace) -> int:
             raise ValueError(f"missing {DELETE_MANIFEST_FILENAME}")
         scan_root = normalize_declared_path(args.scan_root)
         plan_path = target / "cleanup-plan.csv"
+        protection_roots, managed_paths = load_run_protection_context(target)
         result = run_preflight(
             manifest_path,
             scan_root=scan_root,
-            cleanup_plan_path=plan_path if plan_path.is_file() else None,
+            # Always pass the run-dir default so a declared plan digest cannot
+            # fail-open when cleanup-plan.csv is absent.
+            cleanup_plan_path=plan_path,
+            protection_roots=protection_roots,
+            managed_paths=managed_paths,
         )
         out = write_preflight_receipt(target / "delete-preflight.json", result)
     except (ValueError, OSError, UnicodeError, TypeError, RuntimeError) as exc:
@@ -524,9 +530,9 @@ def _run_delete_approve(args: argparse.Namespace) -> int:
 def _scan_root_allowed_for_execute(scan_root: Path) -> Optional[str]:
     """Return refusal reason, or None if execute may proceed.
 
-    Synthetic temp / pytest roots are the supported seam. Live personal
-    profile trees (under ``Path.home()`` but outside the process temp root)
-    stay behind an explicit operator live-specimen gate.
+    Only admit roots under the process temp directory (``tempfile.gettempdir()``
+    and its ``realpath``). A path component containing ``pytest`` is not enough:
+    ``Path.home()/pytest-victim`` must remain refused.
     """
 
     root = normalize_declared_path(scan_root)
@@ -545,13 +551,7 @@ def _scan_root_allowed_for_execute(scan_root: Path) -> Optional[str]:
         or is_lexically_within(root, temp_root)
         or is_lexically_within(root_real, temp_real)
     )
-    # Pytest tmp_path often uses the long profile path while gettempdir()
-    # returns an 8.3 short path on Windows; admit pytest fixture trees.
-    parts_casefold = [part.casefold() for part in root.parts]
-    under_pytest_tmp = any(
-        part.startswith("pytest-") or part == "pytest" for part in parts_casefold
-    )
-    if under_temp or under_pytest_tmp:
+    if under_temp:
         return None
     home = normalize_declared_path(Path.home())
     under_home = root == home or is_lexically_within(root, home)
@@ -606,7 +606,8 @@ def _run_delete_execute(args: argparse.Namespace) -> int:
     if result.approval_errors:
         for err in result.approval_errors:
             print(f"  - {err}", file=sys.stderr)
-    if result.overall == "FAILED":
+    if result.overall != "SUCCEEDED":
+        # PARTIAL and FAILED are both non-zero; only full success is EXIT_OK.
         return EXIT_INVALID
     return EXIT_OK
 

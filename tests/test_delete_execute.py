@@ -25,6 +25,8 @@ from filesteward.deletion.reclaim import ReclaimState, verify_reclaim
 def _file_item(path: Path, *, item_id: str) -> dict[str, Any]:
     st = os.lstat(path)
     size = int(st.st_size)
+    blocks = getattr(st, "st_blocks", None)
+    allocated = blocks * 512 if isinstance(blocks, int) and blocks > 0 else None
     return {
         "item_id": item_id,
         "path": str(path.resolve()),
@@ -33,8 +35,8 @@ def _file_item(path: Path, *, item_id: str) -> dict[str, Any]:
         "evidence": "synthetic",
         "contract_source": "test",
         "logical_size_bytes": size,
-        "allocated_size_bytes": size,
-        "projected_reclaim_bytes": size,
+        "allocated_size_bytes": allocated,
+        "projected_reclaim_bytes": allocated if allocated is not None else size,
         "reclaim_basis": "synthetic",
         "projection_quality": "allocated-evidence",
         "protection_check": "UNRELATED",
@@ -45,12 +47,13 @@ def _file_item(path: Path, *, item_id: str) -> dict[str, Any]:
         "link_count": getattr(st, "st_nlink", 1) or 1,
         "modified_at": float(st.st_mtime),
         "source_run_id": "run-d4b",
-        "source_cleanup_plan_sha256": "b" * 64,
+        # Empty digest: synthetic fixtures omit cleanup-plan.csv on purpose.
+        "source_cleanup_plan_sha256": "",
         "identity": {
             "path": str(path.resolve()),
             "item_type": "FILE",
             "logical_size_bytes": size,
-            "allocated_size_bytes": size,
+            "allocated_size_bytes": allocated,
             "modified_at": float(st.st_mtime),
             "link_count": getattr(st, "st_nlink", 1) or 1,
         },
@@ -81,7 +84,7 @@ def _dir_item(path: Path, *, item_id: str) -> dict[str, Any]:
         "link_count": 1,
         "modified_at": float(st.st_mtime),
         "source_run_id": "run-d4b",
-        "source_cleanup_plan_sha256": "b" * 64,
+        "source_cleanup_plan_sha256": "",
         "identity": {
             "path": str(path.resolve()),
             "item_type": "DIRECTORY",
@@ -100,7 +103,7 @@ def _manifest(items: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "schema_version": DELETE_MANIFEST_SCHEMA,
         "run_id": "run-d4b",
-        "source_cleanup_plan_sha256": "b" * 64,
+        "source_cleanup_plan_sha256": "",
         "authorization_state": "UNAPPROVED",
         "intended_action": "QUARANTINE",
         "item_count": len(items),
@@ -335,6 +338,135 @@ class TestPermanentDeleteExecutor:
         assert extra.exists()
         assert extra.read_bytes() == b"extra-stay"
         assert len(result.items) == 1
+
+
+class TestExecuteSafetyRepairs:
+    def test_identity_drift_skips_unlink(self, tmp_path: Path, monkeypatch: Any) -> None:
+        from filesteward.deletion import execute as execute_mod
+        from filesteward.deletion.preflight import PreflightResult
+
+        scan = tmp_path / "scan"
+        scan.mkdir()
+        target = scan / "race.bin"
+        target.write_bytes(b"ORIGINAL")
+        items = [_file_item(target, item_id="race-1")]
+        run_dir, _, approval = _prepare_run(tmp_path, items, scan)
+
+        # Fresh preflight forced PASS so execute reaches unlink-time revalidation.
+        monkeypatch.setattr(
+            execute_mod,
+            "run_preflight",
+            lambda *a, **k: PreflightResult(overall="PASS", mutated_filesystem=False),
+        )
+        target.write_bytes(b"REPLACED!")
+
+        result = execute_permanent_delete(
+            run_dir=run_dir,
+            manifest=run_dir / "delete-manifest.json",
+            approval=approval,
+            preflight=run_dir / "delete-preflight.approved.json",
+            scan_root=scan,
+        )
+        assert target.exists()
+        assert target.read_bytes() == b"REPLACED!"
+        assert any(i.reason_class == "IDENTITY_DRIFT" for i in result.items)
+
+    def test_protection_from_run_json_blocks_execute(self, tmp_path: Path) -> None:
+        scan = tmp_path / "scan"
+        protected = scan / "repo"
+        protected.mkdir(parents=True)
+        target = protected / "secret.bin"
+        target.write_bytes(b"secret")
+        items = [_file_item(target, item_id="prot-1")]
+        run_dir, _, approval = _prepare_run(tmp_path, items, scan)
+        (run_dir / "run.json").write_text(
+            json.dumps(
+                {
+                    "run_id": "run-d4b",
+                    "protected_roots": [{"path": str(protected), "source": "test"}],
+                    "managed_paths": [],
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        result = execute_permanent_delete(
+            run_dir=run_dir,
+            manifest=run_dir / "delete-manifest.json",
+            approval=approval,
+            preflight=run_dir / "delete-preflight.approved.json",
+            scan_root=scan,
+        )
+        assert target.exists()
+        assert result.overall == "FAILED"
+        assert any("PASS" in e for e in result.approval_errors) or any(
+            i.reason_class == "PROTECTION_HIT" for i in result.items
+        )
+
+    def test_symlink_parent_escape(self, tmp_path: Path) -> None:
+        import pytest
+
+        scan = tmp_path / "scan"
+        real = scan / "real"
+        real.mkdir(parents=True)
+        target = real / "victim.bin"
+        target.write_bytes(b"via-link")
+        link_parent = scan / "via"
+        try:
+            link_parent.symlink_to(real, target_is_directory=True)
+        except OSError as exc:
+            pytest.skip(f"symlink creation unavailable: {exc}")
+        linked = link_parent / "victim.bin"
+        items = [_file_item(linked, item_id="link-esc")]
+        # Seal identity against the lexical linked path.
+        items[0]["path"] = str(linked)
+        items[0]["identity"]["path"] = str(linked)
+        run_dir = tmp_path / "run"
+        run_dir.mkdir()
+        manifest = _manifest(items)
+        m_path = run_dir / "delete-manifest.json"
+        m_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        synthetic_pf = {
+            "schema_version": PREFLIGHT_SCHEMA_VERSION,
+            "manifest_schema_version": DELETE_MANIFEST_SCHEMA,
+            "overall": "PASS",
+            "mutated_filesystem": False,
+            "baseline_free_bytes": 1,
+            "recalculated_projected_reclaim_bytes": 8,
+            "items": [
+                {
+                    "item_id": "link-esc",
+                    "verdict": "PASS",
+                    "reason_class": "OK",
+                    "detail": "synthetic",
+                }
+            ],
+        }
+        pf_path = run_dir / "delete-preflight.approved.json"
+        pf_path.write_text(
+            json.dumps(synthetic_pf, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        approval = build_delete_approval(
+            manifest=m_path,
+            preflight=pf_path,
+            approved_item_ids=["link-esc"],
+            irreversible_confirmation="token",
+        )
+        write_delete_approval(run_dir / "delete-approval.json", approval)
+
+        result = execute_permanent_delete(
+            run_dir=run_dir,
+            manifest=m_path,
+            approval=approval,
+            preflight=pf_path,
+            scan_root=scan,
+        )
+        assert target.exists()
+        assert result.overall == "FAILED"
 
 
 class TestReclaimVerificationUnit:

@@ -25,7 +25,13 @@ from filesteward.deletion.approval import (
     validate_delete_approval,
 )
 from filesteward.deletion.manifest import DELETE_MANIFEST_FILENAME, sha256_file
-from filesteward.deletion.preflight import run_preflight, write_preflight_receipt
+from filesteward.deletion.preflight import (
+    identity_drift_against_lstat,
+    load_run_protection_context,
+    reparse_or_path_escape,
+    run_preflight,
+    write_preflight_receipt,
+)
 from filesteward.deletion.receipt import (
     DELETE_RECEIPT_FILENAME,
     DELETE_RECEIPT_SCHEMA,
@@ -34,7 +40,8 @@ from filesteward.deletion.receipt import (
 )
 from filesteward.deletion.reclaim import ReclaimVerification, verify_reclaim
 from filesteward.inventory import windows
-from filesteward.policy.paths import is_lexically_within, normalize_declared_path
+from filesteward.policy.paths import normalize_declared_path
+from filesteward.protect import ProtectionIndex, ProtectionRelation
 
 __all__ = [
     "ExecutionResult",
@@ -345,11 +352,19 @@ def execute_permanent_delete(
     pending_manifest["item_count"] = len(pending_manifest["items"])
 
     cleanup_plan = run_path / "cleanup-plan.csv"
+    protection_roots, managed_paths = load_run_protection_context(run_path)
+    protection_index = (
+        ProtectionIndex(protection_roots) if protection_roots else None
+    )
     if pending_ids:
+        # Always pass the run-dir cleanup-plan path so a declared digest cannot
+        # fail-open when the file is absent.
         fresh = run_preflight(
             pending_manifest,
             scan_root=scan,
-            cleanup_plan_path=cleanup_plan if cleanup_plan.is_file() else None,
+            cleanup_plan_path=cleanup_plan,
+            protection_roots=protection_roots,
+            managed_paths=managed_paths,
         )
     else:
         # Nothing left to mutate; synthesize PASS without observing missing paths.
@@ -393,17 +408,37 @@ def execute_permanent_delete(
         path = normalize_declared_path(raw_path)
         item_type = str(item.get("item_type") or "").upper()
 
-        if not is_lexically_within(path, scan):
+        escape = reparse_or_path_escape(path, scan)
+        if escape is not None:
+            reason, detail = escape
             items_out.append(
                 ItemExecutionResult(
                     item_id=item_id,
                     path=str(path),
                     status="FAILED",
-                    reason_class="PATH_ESCAPE",
-                    detail=f"path escapes scan_root {scan}",
+                    reason_class=reason,
+                    detail=detail,
                 )
             )
             continue
+
+        if protection_index is not None:
+            relation = protection_index.relation(path)
+            if relation in (
+                ProtectionRelation.SELF,
+                ProtectionRelation.DESCENDANT,
+                ProtectionRelation.ANCESTOR,
+            ):
+                items_out.append(
+                    ItemExecutionResult(
+                        item_id=item_id,
+                        path=str(path),
+                        status="FAILED",
+                        reason_class="PROTECTION_HIT",
+                        detail=f"protection index hit at execute ({relation.value})",
+                    )
+                )
+                continue
 
         if path.exists() and _is_reparse(path):
             items_out.append(
@@ -418,13 +453,25 @@ def execute_permanent_delete(
             continue
 
         try:
-            if item_type == "DIRECTORY":
-                _delete_directory_if_empty(path)
-            else:
-                st = os.lstat(os.fspath(path))
-                if windows.is_reparse_point(st):
+            st = os.lstat(os.fspath(path))
+            if item_type != "DIRECTORY":
+                drift = identity_drift_against_lstat(item, path, st)
+                if drift is not None:
+                    items_out.append(
+                        ItemExecutionResult(
+                            item_id=item_id,
+                            path=str(path),
+                            status="FAILED",
+                            reason_class="IDENTITY_DRIFT",
+                            detail=drift,
+                        )
+                    )
+                    continue
+                if windows.is_reparse_point(st) or path.is_symlink():
                     raise OSError("reparse detected at unlink time")
                 _delete_file(path)
+            else:
+                _delete_directory_if_empty(path)
             items_out.append(
                 ItemExecutionResult(
                     item_id=item_id,
