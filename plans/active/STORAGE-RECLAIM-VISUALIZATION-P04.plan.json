@@ -286,10 +286,365 @@
       "interactive_browser_smoke": "PASS"
     },
     {
+      "lane_id": "V3-A",
+      "title": "Memory Atlas v3 design + version authority",
+      "dependencies": [],
+      "execution_environment": "CURRENT_CHAT_RUNTIME_PROVIDER_WRITE_PLUS_LOCAL_SUCCESSOR_VALIDATION",
+      "owned": [
+        "v3 design contract",
+        "prior-art expansion",
+        "product version authority and visual bump guard",
+        "active visualization plan"
+      ],
+      "forbidden": [
+        "runtime visual behavior mutation",
+        "private receipt commit",
+        "F7 contract choice",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "isolated versioning unit tests",
+        "dirty-worktree synthetic auto-bump proof",
+        "provider readback",
+        "successor FileSteward focused/full local suite"
+      ],
+      "status": "PROVEN_LOCAL_SUITE",
+      "proof_ceiling": "Design/version authority is provider-persisted. Isolated versioning proof is green; FileSteward repository-local suite is still required."
+    },
+    {
+      "lane_id": "V3-B",
+      "title": "Semantic camera and level-of-detail zoom",
+      "dependencies": [
+        "V3-A"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/camera.py",
+        "tests/test_visualization_camera.py",
+        "minimal non-colliding camera integration seam"
+      ],
+      "forbidden": [
+        "invent hierarchy",
+        "decision-signal ownership",
+        "shared shell redesign before convergence"
+      ],
+      "validation": [
+        "camera state transitions",
+        "home/back orthogonal-state invariants",
+        "micro-node fit semantics",
+        "reduced-motion state equivalence"
+      ],
+      "status": "PROVEN_LOCAL_SUITE",
+      "provider_commit": "a64cf5d866a962922a68de3d1a81f2ef95769f2e",
+      "isolated_proof": "5 camera prototype tests passed; direct-target default aligned to FileSteward 40px product floor"
+    },
+    {
+      "lane_id": "V3-C",
+      "title": "Decision Signal projector",
+      "dependencies": [
+        "V3-A"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/signals.py",
+        "tests/test_visualization_signals.py",
+        "accessible signal projection contract"
+      ],
+      "forbidden": [
+        "mutate evidence or authorization",
+        "camera ownership",
+        "shared shell redesign before convergence"
+      ],
+      "validation": [
+        "gate-to-signal mapping",
+        "first-unresolved dominance",
+        "protected/unapproved no-inviting-glow rules",
+        "state not color-only"
+      ],
+      "status": "PROVEN_LOCAL_SUITE",
+      "provider_commit": "a64cf5d866a962922a68de3d1a81f2ef95769f2e",
+      "isolated_proof": "4 Decision Signal prototype tests passed"
+    },
+    {
+      "lane_id": "V3-D",
+      "title": "Cinematic scene + responsive cross-input convergence",
+      "dependencies": [
+        "V3-B",
+        "V3-C"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/cinematic.py",
+        "src/filesteward/visualization/shell.py",
+        "focused responsive/input acceptance tests"
+      ],
+      "forbidden": [
+        "second mobile state machine",
+        "hover-only capability",
+        "precision micro-target requirement",
+        "F7 contract choice"
+      ],
+      "validation": [
+        "1440 desktop",
+        "constrained laptop overflow regression",
+        "390px phone emulation",
+        "pointer/keyboard/touch semantic convergence",
+        "Home/Escape recovery",
+        "reduced motion"
+      ],
+      "status": "SUITE_GREEN_OPERATOR_VISUAL_REJECTED"
+    },
+    {
+      "lane_id": "V3-E",
+      "title": "Private exact-head live convergence and operator acceptance",
+      "dependencies": [
+        "V3-D"
+      ],
+      "execution_environment": "OPERATOR_WORKSTATION_PRIVATE_RUNTIME",
+      "owned": [
+        "ignored local generated report",
+        "private browser/device evidence"
+      ],
+      "forbidden": [
+        "commit private paths/data",
+        "merge before operator acceptance",
+        "F7 contract choice",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "focused and full repository suite",
+        "version guard",
+        "private validate",
+        "zero source mutation",
+        "desktop/laptop/phone/reduced-motion browser proof",
+        "operator spatial/aesthetic acceptance"
+      ],
+      "status": "REJECTED_NOT_WAITING_ON_OPERATOR"
+    },
+    {
+      "lane_id": "V3-R1",
+      "title": "P13 cinematic language repair",
+      "dependencies": [
+        "V3-D"
+      ],
+      "execution_environment": "CURRENT_CHAT_PROVIDER_WRITE_THEN_LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/experience.py",
+        "bounded shell integration",
+        "tests/test_visualization_v3_experience.py",
+        "P13/P97/P25 durable contracts"
+      ],
+      "forbidden": [
+        "new evidence/authorization semantics",
+        "separate tutorial overlay",
+        "F7",
+        "apply/quarantine/delete"
+      ],
+      "validation": [
+        "focused experience tests",
+        "full suite",
+        "version guard",
+        "desktop/laptop/phone browser rendering",
+        "contextual cursor on fine pointer",
+        "reduced motion",
+        "forced colors"
+      ],
+      "status": "PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
+    },
+    {
+      "lane_id": "V3-R2",
+      "title": "P13 visual self-falsification before operator",
+      "dependencies": [
+        "V3-R1"
+      ],
+      "execution_environment": "OPERATOR_WORKSTATION_PRIVATE_RUNTIME",
+      "owned": [
+        "ignored local browser screenshots/observations only"
+      ],
+      "forbidden": [
+        "ask operator to judge before self-falsification passes",
+        "merge",
+        "F7"
+      ],
+      "validation": [
+        "HOME screenshot materially differs from rejected candidate",
+        "CELL/CHAMBER chrome recession visible",
+        "DIVE/FOCUS/RESOLVE contextual reticle visible on fine pointer",
+        "first unresolved gate emits semantic glow",
+        "Decision Compass teaches MAP -> FOCUS -> RESOLVE -> DECIDE",
+        "Atlas Home + Home hotkey visually persistent"
+      ],
+      "status": "WAITING_ON_V3_R1_LOCAL_VALIDATION"
+    },
+    {
+      "lane_id": "V4-A",
+      "title": "Decision session + approval schema",
+      "dependencies": [
+        "V3-R1"
+      ],
+      "execution_environment": "CURRENT_CHAT_PROVIDER_WRITE_PLUS_LOCAL_VALIDATION",
+      "owned": [
+        "src/filesteward/visualization/decision_flow.py",
+        "src/filesteward/approval.py",
+        "focused synthetic tests",
+        "Decision Chamber design contract"
+      ],
+      "forbidden": [
+        "source-file mutation",
+        "manual disposition promotion",
+        "real operator approval",
+        "quarantine/delete execution"
+      ],
+      "validation": [
+        "decision flow unit tests",
+        "approval binding tests",
+        "local full suite"
+      ],
+      "status": "PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
+    },
+    {
+      "lane_id": "V4-B",
+      "title": "Warm material token system + P130 recurring bump repair",
+      "dependencies": [
+        "V4-A"
+      ],
+      "execution_environment": "CURRENT_CHAT_PROVIDER_WRITE_PLUS_LOCAL_VALIDATION",
+      "owned": [
+        "visual token authority",
+        "versioning automation",
+        "version tests"
+      ],
+      "forbidden": [
+        "blue/cyan dominant Atlas theme",
+        "one-off downstream theme override"
+      ],
+      "validation": [
+        "token contract tests",
+        "version subsequent-pass test",
+        "full suite",
+        "browser contrast/forced-colors"
+      ],
+      "status": "PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
+    },
+    {
+      "lane_id": "V4-BRIDGE",
+      "title": "Localhost Decision Bridge",
+      "dependencies": [
+        "V4-A",
+        "V4-B"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/review_bridge.py protocol",
+        "loopback HTTP adapter",
+        "filesteward review CLI entrypoint",
+        "ignored decision/approval persistence",
+        "same-origin/session-token enforcement"
+      ],
+      "forbidden": [
+        "bind non-loopback",
+        "permissive CORS",
+        "client-only fake authorization",
+        "rewrite CleanupDisposition from operator click",
+        "apply/quarantine/delete filesystem mutation"
+      ],
+      "validation": [
+        "protocol tests",
+        "loopback bind test",
+        "cross-origin mutation rejection",
+        "missing/wrong token rejection",
+        "approval exact-plan validation",
+        "runtime artifact remains ignored/private"
+      ],
+      "status": "IMPLEMENTED_LOCALLY_VALIDATED_UNCOMMITTED"
+    },
+    {
+      "lane_id": "V4-C",
+      "title": "Decision Chamber cinematic integration",
+      "dependencies": [
+        "V4-A",
+        "V4-B",
+        "V4-BRIDGE"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "state badge interaction",
+        "active gate scene",
+        "approval UI/receipt writer",
+        "staged quarantine cinematic",
+        "cross-input adapters"
+      ],
+      "forbidden": [
+        "local-agent product judgment",
+        "direct permanent delete",
+        "evidence promotion from operator click"
+      ],
+      "validation": [
+        "focused integration tests",
+        "full suite",
+        "desktop/laptop/phone/reduced-motion/forced-colors",
+        "private runtime self-falsification"
+      ],
+      "status": "PROVEN_COMMITTED_PUSHED_4e8a529"
+    },
+    {
+      "lane_id": "V4-D",
+      "title": "Atlas Interaction Grammar + diegetic decision affordances",
+      "dependencies": [
+        "V4-C"
+      ],
+      "execution_environment": "LOCAL_AGENT_RUNTIME",
+      "owned": [
+        "src/filesteward/visualization/interaction.py",
+        "presentation-only cue projection",
+        "reticle/cartouche/camera action trace",
+        "PROTECTED/UNAPPROVED/EVIDENCE_GAP status orbs",
+        "quality-tone glow polarity",
+        "native title-tooltip removal on Atlas targets",
+        "prior-art ADOPT/ADAPT/REJECT refresh",
+        "focused interaction tests"
+      ],
+      "forbidden": [
+        "second state machine / XState",
+        "UI framework migration",
+        "evidence/disposition promotion from presentation",
+        "permanent deletion affordance",
+        "merge or undraft PR #15",
+        "F7",
+        "broad P124 rewrite before interaction behavior is green"
+      ],
+      "validation": [
+        "interaction projection unit tests",
+        "no native title on Atlas interaction nodes",
+        "mouse/keyboard/touch semantic parity",
+        "current camera vs last/recent command distinction",
+        "PROTECTED/UNAPPROVED/evidence-gap activation",
+        "illegal action absence",
+        "reduced motion + forced colors",
+        "full suite",
+        "P130 visual-feature after visual mutation"
+      ],
+      "status": "IN_PROGRESS_IMPLEMENTATION",
+      "successor_private_live": {
+        "lane_id": "V4-D4",
+        "owned": [
+          "ignored runtime report",
+          "browser proof",
+          "operator acceptance"
+        ],
+        "forbidden": [
+          "commit private paths/receipts",
+          "permanent deletion",
+          "merge before operator acceptance"
+        ]
+      }
+    },
+    {
       "lane_id": "F7",
       "title": "Contract-selection UX",
       "dependencies": [
-        "F6"
+        "F6",
+        "V3-E"
       ],
       "execution_environment": "SUCCESSOR_PRODUCT_LANE",
       "owned": [
@@ -372,8 +727,8 @@
     }
   ],
   "next_owner": {
-    "prompt": "P07 / F7 operator contract decisions",
-    "first_action": "Operator must approve or reject exact regenerable-prefix candidates for durable --contract selection; do not invent contracts, do not apply/quarantine/delete."
+    "prompt": "P07 / Memory Atlas v4 Decision Chamber mechanical integration",
+    "first_action": "Fetch exact PR head; validate provider-pushed V4 contracts; implement the loopback Decision Bridge and V4-C scene wiring exactly as specified; then run P130 ensure-visual-bump --kind visual-feature --fix and expect 0.3.0 -> 0.4.0 before committing the new visual pass."
   },
   "p100_incidents": [
     {
@@ -386,5 +741,196 @@
       "repair_pr": 10,
       "repair_integrated_main": "78eabf37991d93a8f6259db3bf7ad5a2d06746df"
     }
-  ]
+  ],
+  "memory_atlas_v3": {
+    "status": "V3_D_OPERATOR_REJECTED_P13_REPAIR_PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING",
+    "operator_disposition": "V2_TECHNICALLY_PROVEN_AESTHETIC_ACCEPTANCE_NOT_GRANTED",
+    "canonical_design": "docs/program/storage-reclaim-memory-atlas-v3.md",
+    "baseline_live_head": "900caccda01931f8ce04f879856f57ac12ec008c",
+    "baseline_private_run": "phase5-cdrive-readonly-001",
+    "version_authority": "pyproject.toml:[project].version",
+    "current_product_version": "0.2.0",
+    "first_runtime_v3_bump": "visual-feature -> 0.2.0",
+    "cross_input_owner": "P129",
+    "requested_alias": "P1009",
+    "alias_resolution": "P1009 absent from current Prompt Kit catalog; P129 is canonical semantic owner",
+    "forbidden": [
+      "invent filesystem hierarchy",
+      "commit private receipt contents",
+      "F7 contract choice before v3 live acceptance",
+      "apply/quarantine/delete",
+      "merge PR #15 as final visual result before v3 operator acceptance"
+    ],
+    "provider_commits": {
+      "version_authority": "48643a9211668263cce7aabfcbf31b232c4c3f97",
+      "v3_design": "0c385765e9874a80f9783205d7de7f6432a66556",
+      "camera_signals": "a64cf5d866a962922a68de3d1a81f2ef95769f2e"
+    },
+    "isolated_proof": {
+      "versioning_tests": "5 passed",
+      "dirty_worktree_auto_bump": "0.1.0 -> 0.2.0; guard PASS",
+      "camera_signal_tests": "9 passed",
+      "proof_ceiling": "isolated prototype only; FileSteward-local test suite/browser wiring unproven",
+      "filesteward_local_suite": "314 passed including version lockstep"
+    },
+    "direct_target_contract": {
+      "wcag_external_floor_px": 24,
+      "filesteward_min_px": 40,
+      "filesteward_preferred_px": 44,
+      "owner": "docs/program/storage-reclaim-visual-system.tokens.json"
+    },
+    "execution_boundaries": [
+      {
+        "boundary_id": "V3-A-PLAN-JSON-LITERAL-NEWLINE-20261004",
+        "impact": "machine-readable active plan could not be parsed after a provider update",
+        "proved": "stored plan ended with a literal \\\\n token after the closing JSON object at 8ea3b71491b7982f7fcb809805161afb9eff6ef1",
+        "recovery": "remove the literal trailing token, serialize valid JSON, and read back parseability before further plan mutation",
+        "state": "REPAIRED_IN_THIS_COMMIT"
+      },
+      {
+        "boundary_id": "P13-V3-D-CINEMATIC-OVERHAUL-MISS-20261004",
+        "impact": "suite-green V3-D was routed to operator acceptance despite obvious visual mismatch with the requested overhaul",
+        "proved": "operator screenshots plus exact-head source inspection: generic pointer cursor, preserved three-pane composition, limited ghost/substrate motion, low-salience Home",
+        "recovery": "install high-salience experience layer + executable contract tests + mandatory screenshot self-falsification before operator re-review",
+        "state": "REPAIR_PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING"
+      }
+    ],
+    "operator_rejection": {
+      "head": "4f0eeec88ae0ddba69b580546116f32aa5ef0fa0",
+      "evidence": "operator-provided desktop/laptop screenshots in chat",
+      "disposition": "REJECTED_WITHOUT_TRUSTED_CLICK",
+      "reasons": [
+        "composition remained recognizably the same dashboard",
+        "cinematic motion materially under-shot the requested reference bar",
+        "standard cursor remained",
+        "decision tree did not naturally teach the workflow",
+        "Home/back affordance was technically present but not sufficiently self-evident"
+      ]
+    },
+    "tutorial_disposition": {
+      "P25": "READY_AFTER_PRODUCT_FIX",
+      "P18": "DEFERRED_DO_NOT_DOCUMENT_REJECTED_JOURNEY",
+      "product_owner": "Decision Compass projection from existing camera/gate/authorization state"
+    },
+    "p13_prevention": {
+      "owner": "tests/test_visualization_v3_experience.py + V3-R2 browser self-falsification",
+      "operator_gate_rule": "do not ask operator for aesthetic acceptance when screenshots already contradict the design contract"
+    }
+  },
+  "memory_atlas_v4": {
+    "status": "V4_A_B_PROVIDER_IMPLEMENTED_LOCAL_VALIDATION_PENDING",
+    "canonical_design": "docs/program/storage-reclaim-decision-chamber-v4.md",
+    "target_product_version": "0.3.0",
+    "selected_state_precedent": {
+      "repository": "EndeavorEverlasting/web-excel-repair-triage",
+      "files": [
+        "docs/prompt-kit.js",
+        "docs/prompt-kit-polish.js",
+        "tests/test_prompt_kit_selected_prompt.py"
+      ],
+      "adaptation": "selectedNodeId + activeGateId + openDecisionScene; selected evidence persists while roving gate/open scene change"
+    },
+    "state_contract": {
+      "scenes": [
+        "MAP",
+        "FOCUS",
+        "GATE",
+        "APPROVAL",
+        "STAGED",
+        "CLOSED"
+      ],
+      "unknown_intents": [
+        "RESCAN",
+        "KEEP",
+        "REVIEW_LATER"
+      ],
+      "human_review_intents": [
+        "DECLARE_REGENERABLE_CONTRACT",
+        "KEEP",
+        "REVIEW_LATER"
+      ],
+      "reclaim_unapproved_intents": [
+        "APPROVE_QUARANTINE",
+        "KEEP",
+        "REVIEW_LATER"
+      ],
+      "staged_action": "QUARANTINE",
+      "permanent_delete": "NOT_IMPLEMENTED"
+    },
+    "approval_contract": {
+      "schema": "filesteward.approval/v1",
+      "binds": [
+        "run_id",
+        "cleanup_plan_sha256",
+        "approved_item_ids",
+        "action"
+      ],
+      "only_action": "QUARANTINE",
+      "storage": "ignored var/runs runtime only"
+    },
+    "p13_root_causes": [
+      "canonical visual tokens force blue/navy/cyan back into downstream scenes",
+      "inspection-only presentation leaves operator outside the actual decision transition",
+      "selected evidence, active gate, and open scene were not separately surfaced",
+      "trusted-click/operator judgment was requested before visual self-falsification",
+      "P130 compared only against main and therefore could reuse one version across multiple visual passes on a long-lived branch"
+    ],
+    "previous_next_owner": {
+      "prompt": "P07 / P13 Memory Atlas v3 cinematic repair validation",
+      "first_action": "Fetch the provider-pushed repair head, run tests/test_visualization_v3_experience.py plus the focused/full suite and version guard, regenerate the private report, then perform V3-R2 screenshot/browser self-falsification. Do not ask the operator for another verdict unless those visual gates pass."
+    },
+    "current_product_version": "0.3.0",
+    "palette": {
+      "family": "warm-material",
+      "dark": {
+        "canvas": "#15120F",
+        "shell": "#1C1814",
+        "selected": "#4A3528",
+        "accent": "#D7AA82",
+        "focus": "#E7C49F",
+        "keep": "#A9AD7B",
+        "reclaim": "#86A76A"
+      },
+      "light": {
+        "canvas": "#F3EDE3",
+        "shell": "#FBF7F0",
+        "accent": "#8D5F3F",
+        "keep": "#626B43",
+        "reclaim": "#4F713E"
+      },
+      "forbidden_dominant": [
+        "navy",
+        "electric-blue",
+        "cyan"
+      ]
+    },
+    "p130": {
+      "target": "0.3.0",
+      "reason": "new Decision Chamber capability + canonical theme generation",
+      "recurring_fix": "worktree visual changes now compare against committed HEAD so each new polish pass bumps even when branch already exceeds main",
+      "current_committed_candidate": "0.3.0",
+      "next_visual_feature_pass": "0.4.0",
+      "local_agent_command": "python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-feature --fix",
+      "expected_local_result": "0.3.0 -> 0.4.0 when V4-C introduces new worktree visualization changes"
+    },
+    "decision_bridge": {
+      "cli": "filesteward review <run-dir> [--port 0]",
+      "bind": "127.0.0.1 only",
+      "routes": {
+        "state": "GET /api/v1/state",
+        "decision": "POST /api/v1/decision",
+        "approval": "POST /api/v1/approval"
+      },
+      "mutation_security": [
+        "exact same-origin check",
+        "per-process unpredictable X-FileSteward-Session token",
+        "application/json only",
+        "no permissive CORS",
+        "loopback Host only"
+      ],
+      "persistence": "ignored var/runs only",
+      "evidence_rule": "decision events never rewrite CleanupDisposition; fresh deterministic run owns evidence changes"
+    },
+    "next_wired_visual_version": "0.4.0"
+  }
 }

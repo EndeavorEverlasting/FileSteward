@@ -1,0 +1,195 @@
+{
+  "schema_version": "filesteward.p04-plan/v1",
+  "plan_id": "FILESTEWARD-SYSTEM-STEWARDSHIP-P01-P04-P97-20261004",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "baseline": {
+    "pr": 15,
+    "head_sha": "925aa8e6351af1ccc69e68c98afcd5b253ed2c91",
+    "product_version": "0.5.0",
+    "pr_state": "OPEN_DRAFT",
+    "operator_acceptance": "REJECTED_AS_ENDPOINT"
+  },
+  "mission": "Stabilize FileSteward's next interaction and system-stewardship work through P01 harness contracts, P97 prior art, and P04 dependency-aware factoring without weakening evidence/approval/deletion boundaries.",
+  "external_authority": {
+    "reliability_ledger": "Prompt Scratch Agent Reliability Event Ledger — CURRENT",
+    "incidents": [
+      "INC-2026-10-04-013",
+      "INC-2026-10-04-014"
+    ],
+    "duplication_rule": "Do not create a second mutable reliability ledger in FileSteward."
+  },
+  "lanes": [
+    {
+      "id": "H0",
+      "title": "P01 Harness Stabilization",
+      "dependencies": [],
+      "status": "IMPLEMENTED_ISOLATED_VALIDATION",
+      "owned_paths": [
+        "harness/contracts/**",
+        "harness/artifact-registry.v1.json",
+        "scripts/validate_harness_contracts.py",
+        "tests/test_harness_contracts.py",
+        "docs/program/system-stewardship-prior-art.md",
+        "plans/active/FILESTEWARD-SYSTEM-STEWARDSHIP-P01-P04-P97-2026-10-04.*"
+      ],
+      "forbidden": [
+        "src/filesteward/visualization/**",
+        "merge PR #15",
+        "F7",
+        "PERMANENT_DELETE"
+      ],
+      "proof": [
+        "standalone validator PASS",
+        "focused staging pytest 3 passed",
+        "full repository suite pending local runtime"
+      ]
+    },
+    {
+      "id": "U1",
+      "title": "V4-E Decision Scene Actionability",
+      "dependencies": [
+        "H0"
+      ],
+      "status": "IN_PROGRESS_BRAND_HOME_AND_SETTINGS_SEAM",
+      "parallel_group": "WAVE1",
+      "owned_surface": "visualization interaction/renderers",
+      "partial_proof": [
+        "brand_title GO_HOME via #brand-home data-atlas-action=home",
+        "housekeeping_settings executable seam without OS registration"
+      ],
+      "proof_gates": [
+        "UNKNOWN/HUMAN_REVIEW actionable scenes",
+        "reticle+legend topmost",
+        "Decision Path consequence preview",
+        "metric/title/camera/status scene entrypoints",
+        "classification not color-only",
+        "favicon",
+        "footer status ticker",
+        "low-storage warning scene",
+        "operator live acceptance"
+      ]
+    },
+    {
+      "id": "M1",
+      "title": "Read-only System Health Observer",
+      "dependencies": [
+        "H0"
+      ],
+      "status": "READY_AFTER_H0_LOCAL_PROOF",
+      "parallel_group": "WAVE1",
+      "owned_surface": "new health observation modules/tests",
+      "forbidden": [
+        "cleanup disposition mutation",
+        "approval",
+        "quarantine",
+        "delete"
+      ],
+      "proof_gates": [
+        "freshness",
+        "storage snapshot",
+        "RAM snapshot",
+        "local/private artifact",
+        "stale=>UNKNOWN"
+      ]
+    },
+    {
+      "id": "S1",
+      "title": "Windows Task Scheduler Adapter",
+      "dependencies": [
+        "H0"
+      ],
+      "status": "READY_AFTER_H0_LOCAL_PROOF",
+      "parallel_group": "WAVE1",
+      "owned_surface": "new schedule adapter/modules/tests",
+      "forbidden": [
+        "PERMANENT_DELETE",
+        "SELF_APPROVE",
+        "PROMOTE_EVIDENCE"
+      ],
+      "proof_gates": [
+        "register",
+        "read back enabled/cadence",
+        "idle/power policy",
+        "one observed scheduled run",
+        "artifact readback"
+      ]
+    },
+    {
+      "id": "M2",
+      "title": "Advisory and Warning Engine",
+      "dependencies": [
+        "M1"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "severity tiers",
+        "configurable thresholds",
+        "warning history",
+        "no authority promotion"
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "Local Settings and Schedule Scene",
+      "dependencies": [
+        "S1",
+        "M2"
+      ],
+      "status": "DOMAIN_SEAM_PROTOTYPED_WAITING_SCENERY",
+      "prototype_owner": "src/filesteward/housekeeping_settings.py",
+      "prototype_doc": "docs/program/housekeeping-settings-call-stack.md",
+      "proof_gates": [
+        "private settings",
+        "development default on",
+        "product default opt-in",
+        "next/last run readback",
+        "scenery-native toggle scene"
+      ]
+    },
+    {
+      "id": "Q1",
+      "title": "Approved Quarantine Cadence",
+      "dependencies": [
+        "S2",
+        "manifest-bound approval",
+        "quarantine/apply",
+        "retention policy"
+      ],
+      "status": "BLOCKED_BY_PRODUCT_PROGRAM",
+      "forbidden": [
+        "PERMANENT_DELETE"
+      ]
+    },
+    {
+      "id": "R1",
+      "title": "P124 Structural Readability",
+      "dependencies": [
+        "U1"
+      ],
+      "status": "WAITING",
+      "proof_gates": [
+        "behavior preserved",
+        "hotspot ranked from current code",
+        "ownership edit path clearer"
+      ]
+    }
+  ],
+  "parallelism": {
+    "graph_width_after_H0": 3,
+    "ready_parallel_group": [
+      "U1",
+      "M1",
+      "S1"
+    ],
+    "current_runtime_dispatch": "DEGRADED",
+    "reason": "Current ChatGPT runtime lacks the operator Windows/Cursor execution host; no fake local parallelism claim."
+  },
+  "safety": {
+    "development_schedule_default": "ENABLED",
+    "product_schedule_default": "OPT_IN_DISABLED",
+    "permanent_delete": "FORBIDDEN",
+    "scheduler_may_approve": false,
+    "scheduler_may_promote_evidence": false,
+    "failed_run_disables_scheduler": false
+  }
+}

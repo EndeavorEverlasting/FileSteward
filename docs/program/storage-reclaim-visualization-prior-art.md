@@ -9,6 +9,7 @@
 | System | Observed mechanism | Evidence class | Disposition |
 |---|---|---|---|
 | WinDirStat | Coordinated directory/list, extension/type view, and interactive treemap; central selection updates views; treemap supports zoom/reselection and size/color encoding. | OBSERVED_IMPLEMENTED in official repository; public product docs | **ADAPT** coordinated views + treemap selection model |
+| QDirStat | Tree + treemap coordinated selection; current item gets a strong outline, non-relevant regions can be dimmed, dominant tree items are bold, and treemap zoom is directly operable. | OBSERVED_IMPLEMENTED / current official repository and release documentation | **ADAPT** selection salience, contextual dimming, dominant-item emphasis; reject cleanup actions |
 | SpaceSniffer | Zoomable nested-rectangle treemap, details-on-demand, filters, temporary color tags, live visual feedback, exportable reports. | DOCUMENTED on official Uderzo product/release pages | **ADAPT** zoom/filter/review interactions |
 | WizTree | Treemap plus sortable file tree, emphasis on fast discovery and allocated-space accuracy/hardlink handling. | DOCUMENTED on official product site | **ADAPT** largest-first and physical-space emphasis; no code reuse |
 | TreeSize | Hierarchical list with relative-size bars, treemap, reports, largest-file workflows. | DOCUMENTED on official JAM Software site | **ADAPT** tabular companion and printable/reportable decision surface |
@@ -19,7 +20,8 @@
 ## Source/provenance notes
 
 - WinDirStat's official history says Bernhard Seifert created it in 2003 after using KDirStat; the tree-list + treemap coupling was the central model he wanted on Windows. That history explicitly describes WinDirStat as heavily inspired by/cloning KDirStat's interaction concept.
-- WinDirStat official repository inspected at commit `3abce9a69b80a527f52c0a87482d9b09d343ff0c`: `TreeMapView`, `WinDirStatModel`, extension view, zoom/selection events, and treemap rendering are separate coordinated components.
+- WinDirStat official repository was refreshed for the 2026-10-04 live-polish pass at commit 52b663eeb4887d71fbd4c2013b38f128fdaf0582: TreeMapView::HighlightSelectedItem is a dedicated selection-emphasis seam, while WinDirStatModel broadcasts selection refresh/style and zoom changes across coordinated views.
+- QDirStat official repository was refreshed at commit ab3f28460a61264b7d7bc2fc356a0851e8736f26: its current item is explicitly outlined, dominant items may be bolded in the tree, and its branch-highlighting interaction dims unrelated treemap regions. FileSteward adapts those perception mechanics only; QDirStat cleanup actions remain outside the FileSteward authority model.
 - WinDirStat's official background page currently states GPLv2 while the current official GitHub README states GPLv3-or-later. That public licensing inconsistency is itself a provenance risk. FileSteward is MIT. **Do not copy WinDirStat source.**
 - SpaceSniffer is distributed as freeware; its official site documents behavior but is not a compatible source-code donor for FileSteward. **Mechanisms only.**
 - WizTree and TreeSize are proprietary/commercially licensed products. **No code or asset reuse.**
@@ -86,6 +88,44 @@ The visualization must never convert size, color, age, type, or a hint tag into 
 - Radial/sunburst view: **DEFER** until the rectangular treemap decision flow is proven.
 - Live filesystem mutation/update coupling: **DEFER**; FileSteward's audit and apply boundaries stay separate.
 
+## 2026-10-04 live F6 falsification -> P95/P97 polish target
+
+The first private real-scale browser view falsified an important assumption from the synthetic acceptance floor: **linked selection can be technically correct while still being perceptually ineffective**.
+
+Observed on the real aggregated F6 surface, without committing private receipt contents:
+
+1. A selected small treemap bucket could be technically outlined yet remain extremely difficult to locate among roughly 200 rectangles.
+2. Tiny rectangles attempted to render labels/state text that could not be read at normal desktop viewing distance; unreadable text created noise without adding decision value.
+3. The decision inspector put explanatory evidence before the decision trace, pushing the first unresolved gate below the first viewport for a normal desktop window.
+4. The map showed magnitude by area but not explicit size text on the dominant rectangles, forcing unnecessary cross-pane eye travel.
+5. Selecting a treemap item did not guarantee its navigator row remained visible.
+6. The metric labeled **Free space** is persisted run-baseline evidence, not a continuously refreshed workstation reading. The interface must say **Run baseline free space** rather than imply live currency.
+7. Duplicate or terse bucket basenames remain a later disambiguation/hierarchy problem; the immediate slice must not invent path semantics or distort area.
+
+### P97 pattern disposition for this falsification
+
+| Pattern | Reference | Disposition | FileSteward adaptation |
+| --- | --- | --- | --- |
+| Strong current-item outline | QDirStat + WinDirStat | **ADOPT / ADAPT** | Thicker selected outline, elevated z-order, and a beacon for micro/compact rectangles |
+| Contextual dimming outside focus | QDirStat | **ADAPT** | Slightly dim non-selected rectangles while preserving hover/focus readability; no evidence/state mutation |
+| Dominant-item emphasis | QDirStat | **ADAPT** | Stronger navigator selected row and explicit size inside readable treemap rectangles |
+| Central synchronized selection | WinDirStat | **ADOPT** | One selected node updates map, navigator visibility, selection summary, and decision inspector |
+| Direct cleanup actions from the map | QDirStat / WinDirStat | **REJECT** | FileSteward remains read-only/UNAPPROVED; no apply/delete/quarantine control |
+
+### P95 terminal-value call stack selected for implementation
+
+operator click / keyboard-select
+  -> one node_id becomes current selection
+  -> navigator row is emphasized and scrolled into view
+  -> treemap selection receives high-salience outline / micro-node beacon
+  -> always-readable selection summary shows name + size + disposition + next gate
+  -> decision inspector renders decision trace + next valid action before explanatory evidence
+  -> underlying disposition / authorization / receipt artifacts remain unchanged
+
+This slice deliberately leaves true hierarchical drill-down, current-live free-space telemetry, bucket-path disambiguation, and density/top-N exploration as successor work. Those require different data or interaction contracts; they are not excuses to leave selection illegible now.
+
+**Proof boundary for this slice:** improve perception and interaction only. No contract selection, disposition promotion, approval, apply, quarantine, deletion, or real receipt mutation.
+
 ## P97 conclusion
 
 The strongest starting point is **WinDirStat's coordinated tree + treemap structure combined with SpaceSniffer's zoom/filter immediacy**, implemented independently and coupled to a **FileSteward-native decision trace**.
@@ -100,6 +140,7 @@ The external ecosystem already supplies mature storage-visualization patterns. T
 
 - WinDirStat background/history: https://windirstat.net/background.html
 - WinDirStat official repository: https://github.com/windirstat/windirstat
+- QDirStat official repository: https://github.com/shundhammer/qdirstat
 - SpaceSniffer official product/features: https://www.uderzo.it/main_products/space_sniffer/
 - WizTree official product: https://diskanalyzer.com/
 - TreeSize official product: https://www.jam-software.com/treesize_free
@@ -108,3 +149,80 @@ The external ecosystem already supplies mature storage-visualization patterns. T
 - UMD HCIL Treemap project/history: https://www.cs.umd.edu/projects/hcil/treemap/
 
 These anchors are research provenance only. No third-party assets or source are vendored by this sprint.
+
+## 2026-10-04 Memory Atlas v3 prior-art expansion
+
+This pass follows P97's mechanism-first rule. References are used to extract mechanics; no visual asset, proprietary code, branding, or unsupported hierarchy is copied into FileSteward.
+
+| Reference | Evidence class | Relevant mechanism | FileSteward disposition |
+| --- | --- | --- | --- |
+| AYOCIN ATMOS / Obys — https://ayocin.com/ | operator-observed live reference + public design evidence | authored scale transitions, content-as-transition-medium, immersive scene composition, restrained chrome during focal moments | **ADAPT mechanics only** — forensic storage camera; no asset/code/style copying |
+| CSS Design Awards ATMOS listing | documented independent design evidence | animated/scroll/typographic presentation and high UI/UX/innovation evaluation | **REFERENCE EVIDENCE** only |
+| pbakaus/impeccable — https://github.com/pbakaus/impeccable | observed guidance, Apache-2.0 | one focal motion thesis, structural responsive design, desktop/mobile review, reduced-motion alternatives, durable design-context discipline | **ADOPT design discipline**; no vendoring required |
+| D3 zoomable treemap + d3-zoom | observed implementation/docs | geometry fit/reprojection, opacity continuity, pan/zoom across SVG/HTML/Canvas, pointer/touch | **ADAPT camera mechanics** only; reject D3 hierarchy semantics because FileSteward's evidence is flat |
+| MDN Web Animations / View Transition API | documented platform capability | browser-native animation and progressive same-document view transitions | **ADOPT baseline/progressive split** |
+| W3C WCAG 2.2 target/focus criteria | normative accessibility standard | 24×24 CSS-pixel external target floor with equivalent-control exception; FileSteward already strengthens direct targets to 40px minimum / 44px preferred; focused controls must not be completely obscured | **ADOPT acceptance floor** — micro treemap geometry uses search/navigator + camera fit rather than precision targeting |
+
+### Gap decision
+
+The ecosystem already proves zoomable spatial continuity, authored scene transitions, browser animation primitives, and responsive/cross-input mechanics. The FileSteward-specific gap is their combination with:
+
+- flat evidence preservation;
+- explicit human decision gates;
+- no false reclaim authority;
+- progressive camera scale that makes micro sectors deliberately selectable;
+- semantic decision-signal glow;
+- desktop/laptop/phone interaction languages over one state model;
+- offline single-report operation with private receipt data local.
+
+That combination remains FileSteward-owned program design.
+
+## 2026-10-04 P13/P97 reference disposition after wired-v3 rejection
+
+| Reference | Evidence | Mechanism | Disposition |
+| --- | --- | --- | --- |
+| Motion One / motiondivision | MIT open-source WAAPI-oriented animation primitives | compact animation/timeline/scroll abstractions | **EMULATE MECHANICS, NO DEPENDENCY YET** — FileSteward already owns Web Animations directly |
+| d3-zoom | ISC open-source pan/zoom behavior across HTML/SVG/Canvas, pointer + touch, programmatic transforms | direct manipulation + staged zoom tours | **RETAIN / ADAPT** for camera grammar |
+| Driver.js | MIT, dependency-free product-tour/focus library | spotlight/focus shifting and contextual help | **REJECT AS PRODUCT TUTORIAL** — useful focus mechanics, but a tour overlay would encumber the experience the operator explicitly wants taught by the decision tree |
+| Shepherd | open-source onboarding/tour system with AGPL/commercial licensing | guided tours/training/announcements | **REJECT** — wrong interaction model for this product and unfavorable dependency/license fit |
+| XState | open-source state-machine/statechart tooling | visible state progression and model-based state reasoning | **EMULATE PRINCIPLE, NO NEW STATE OWNER** — FileSteward already has canonical camera + gate state; Decision Compass projects those owners instead of adding XState |
+| Locomotive Scroll | MIT parallax/scroll interaction library | depth/parallax/progress; smart touch degradation | **REJECT AS DEPENDENCY** — scroll-first architecture mismatches the Atlas camera, but parallax restraint reinforces that mobile should not inherit desktop effects blindly |
+
+### Selected gap
+
+The missing capability is not another animation library. It is a **presentation grammar** over the
+already-correct state owners:
+
+- cinematic chrome recession in CELL/CHAMBER;
+- contextual DIVE / FOCUS / RESOLVE pointer language;
+- persistent Home/Back recovery;
+- first-unresolved semantic glow and scan energy;
+- state-driven Decision Compass as the natural tutorial;
+- self-falsifying visual acceptance before operator handoff.
+
+## 2026-10-04 V4-D Atlas Interaction Grammar — prior-art disposition
+
+V4-D completes the presentation grammar gap. Mechanisms only; no vendored code/assets; no new framework dependency.
+
+| Reference | Evidence class | Mechanism | Disposition |
+| --- | --- | --- | --- |
+| pbakaus/impeccable | observed guidance (Apache-2.0) | complete interactive states; motion conveys state; bounded screenshot→defect→repair | **ADOPT** design discipline |
+| Anthropic frontend-design skill | official first-party plugin docs | distinctive intentional UI over generic templates | **ADAPT** product language; no dependency |
+| Radix UI data-state / data-disabled | observed docs | DOM data attributes as styling/behavior contract | **ADAPT** as `data-action` / `data-actionability` / `data-recency` / `data-target-kind` / `data-quality-tone` |
+| React Aria state attributes | observed docs | selected/hovered/pressed/focus-visible as portable state | **ADAPT** parity across pointer/keyboard/touch |
+| WAI tooltip pattern | normative APG | tooltips do not receive focus; choices need non-tooltip surfaces | **ADOPT** — info cartouche vs decision chamber |
+| MDN Popover API / CSS anchor positioning | platform docs | authored overlay attachment + flip | **ADAPT** progressive enhancement for cartouche attachment |
+| View Transition API | platform docs | spatial continuity between DOM states | **DEFER** progressive only; WAAPI remains primary |
+| XState | open-source statecharts | second workflow owner | **REJECT** — `decision_flow` / camera / selection remain authority |
+| Radix/React component migration | ecosystem | replace HTML/JS surfaces | **REJECT** — emulate mechanisms without stack churn |
+
+### Quality polarity (FileSteward-owned)
+
+Color/glow is a presentation projection of persisted disposition/authorization, never authority:
+
+- **ESSENTIAL / KEEP** — warm keep-edge glow (retain)
+- **BLOCKED / PROTECTED** — protected-edge glow; verb `INSPECT BLOCK` / `WHY LOCKED`
+- **RECLAIM_CANDIDATE** — reclaim-edge glow when evidence is reclaim-proven; approval still separate
+- **AMBIGUOUS** — review-edge glow for incomplete/human-review evidence gaps (`? items` ≠ `CleanupDisposition.UNKNOWN`)
+
+Canonical owner: `src/filesteward/visualization/interaction.py` projects cues; renderers consume attributes only.

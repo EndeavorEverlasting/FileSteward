@@ -1,15 +1,17 @@
 """``filesteward`` console entry point.
 
 Command vocabulary is owned by the active plan: ``scan`` / ``validate`` /
-``plan`` / ``visualize`` / ``delete-manifest`` / ``delete-preflight`` /
+``plan`` / ``visualize`` / ``review`` / ``delete-manifest`` / ``delete-preflight`` /
 ``delete-approve`` / ``delete-execute`` / ``apply``. This module must not
 invent a competing command system, and it contains no cleanup judgment:
-it only parses arguments, invokes owned run/delete seams, and maps
+it only parses arguments, invokes owned run/delete/review seams, and maps
 outcomes to exit codes.
 ``apply`` is a refusal seam — it never mutates anything. ``plan`` is
 read-only receipt triage (path-prefix buckets); it never nominates
 reclaim or grants approval. ``visualize`` is read-only report publication
 from validated artifacts; it never mutates source inventory.
+``review`` serves the localhost Decision Bridge; it never binds non-loopback
+and never permanently deletes.
 ``delete-manifest`` emits an UNAPPROVED exact delete set; it never deletes.
 ``delete-preflight`` is read-only observation. ``delete-approve`` writes a
 delete-specific irreversible approval artifact. ``delete-execute`` may
@@ -50,6 +52,7 @@ from filesteward.policy.paths import (
     resolve_run_dir_argument,
 )
 from filesteward.run import CleanupRun, RunResult
+from filesteward.review_bridge import run_review_until_interrupt
 from filesteward.visualization.report import visualize_run_dir
 
 __all__ = [
@@ -173,6 +176,29 @@ def build_parser() -> argparse.ArgumentParser:
     visualize.add_argument(
         "target",
         help="run directory beneath the canonical ignored var/runs/ tree",
+    )
+
+    review = subparsers.add_parser(
+        "review",
+        help=(
+            "serve the localhost Decision Bridge for a validated run; "
+            "loopback-only approvals stage quarantine, never permanent delete"
+        ),
+    )
+    review.add_argument(
+        "target",
+        help="run directory beneath the canonical ignored var/runs/ tree",
+    )
+    review.add_argument(
+        "--port",
+        type=int,
+        default=0,
+        help="loopback TCP port (default: 0 = ephemeral)",
+    )
+    review.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="print the URL without opening a browser",
     )
 
     delete_manifest = subparsers.add_parser(
@@ -399,6 +425,35 @@ def _run_visualize(args: argparse.Namespace) -> int:
         "Report is read-only UNAPPROVED evidence for operator review; "
         "this command produced no contract, no approval, no apply, and no deletion."
     )
+    return EXIT_OK
+
+
+def _run_review(args: argparse.Namespace) -> int:
+    if args.port < 0 or args.port > 65535:
+        print("filesteward review: --port must be in 0..65535", file=sys.stderr)
+        return EXIT_INVALID
+    try:
+        target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
+
+        def _ready(result: object) -> None:
+            print(f"filesteward review: {getattr(result, 'url', '')}")
+            print(f"run_id: {getattr(result, 'run_id', '')}")
+            print(f"cleanup_plan_sha256: {getattr(result, 'cleanup_plan_sha256', '')}")
+            print(f"report: {getattr(result, 'report_path', '')}")
+            print(
+                "Decision Bridge is loopback-only; approvals stage QUARANTINE only; "
+                "NO BYTES REMOVED by this command."
+            )
+
+        run_review_until_interrupt(
+            target,
+            port=args.port,
+            open_browser=not args.no_browser,
+            on_ready=_ready,
+        )
+    except (ValueError, OSError, UnicodeError, TypeError, RuntimeError) as exc:
+        print(f"filesteward review: {exc}", file=sys.stderr)
+        return EXIT_INVALID
     return EXIT_OK
 
 
@@ -633,6 +688,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return _run_plan(args)
     if args.command == "visualize":
         return _run_visualize(args)
+    if args.command == "review":
+        return _run_review(args)
     if args.command == "delete-manifest":
         return _run_delete_manifest(args)
     if args.command == "delete-preflight":
