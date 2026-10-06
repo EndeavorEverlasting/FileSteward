@@ -14,8 +14,10 @@ Read in this order:
 2. `plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md`
 3. `docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md`
 4. `plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.json`
-5. `docs/agent/OPERATOR-DECISION-UX-PATH.md`
-6. `docs/agent/OPERATOR-DELETE-PATH.md`
+5. `harness/contracts/action-scene-impact.v1.json`
+6. `docs/program/action-scene-impact-prior-art-p97-2026-10-06.md`
+7. `docs/agent/OPERATOR-DECISION-UX-PATH.md`
+8. `docs/agent/OPERATOR-DELETE-PATH.md`
 
 Those artifacts own judgment. This handoff does not.
 
@@ -28,12 +30,12 @@ If this handoff conflicts with a canonical artifact, **the canonical artifact wi
 3. Execute the exact integration seam from the canonical seam document.
 4. Record seam ancestry and pre-feature validation evidence.
 5. Implement the canonical requirements.
-6. Drive UX-T01..UX-T22 from `UNPROVEN` toward their required proof ceilings.
+6. Drive every row in the canonical traceability ledger from `UNPROVEN` toward its required proof ceiling.
 7. On validation failure: inspect -> diagnose against the owning row -> repair within scope -> rerun failed/dependent gates.
 8. Refresh `origin/main` at the canonical checkpoints and consume newly landed deletion repairs exactly as prescribed.
 9. Run the full repository/browser/versioning proof stack.
 10. Push/open/update/integrate the implementation PR when the canonical gates permit.
-11. Return an evidence report keyed to UX-T01..UX-T22.
+11. Return an evidence report keyed to every canonical traceability row.
 
 ## No local judgment substitution
 
@@ -82,7 +84,7 @@ BLOCKED_JUDGMENT_GAP: <none or exact unresolved decision>
 TRACEABILITY:
 UX-T01: <state + evidence>
 ...
-UX-T22: <state + evidence>
+UX-T30: <state + evidence>
 
 ARTIFACTS:
 BRANCH:
