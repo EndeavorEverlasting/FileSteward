@@ -1,0 +1,68 @@
+{
+  "schema_version": "filesteward.delete-to-done-plan/v1",
+  "sprint_id": "FILESTEWARD-DELETE-TO-DONE-20261005",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "provider_floor": "210dbb627e2a300a55089eedf932b4e745093b7b",
+  "canonical_local_checkout": "%USERPROFILE%\\dev\\FileSteward",
+  "outcome": "Execute a real bounded permanent deletion from contract-backed Temp reclaim candidates and prove observed C: reclaim in the same iteration.",
+  "operator_authorization": {
+    "status": "GRANTED_IN_CURRENT_OPERATOR_REQUEST",
+    "scope": "%LOCALAPPDATA%\\Temp contract-backed regenerable candidates",
+    "action": "DELETE_PERMANENTLY",
+    "no_repeat_chat_gate": true
+  },
+  "inherited_runtime_candidate": {
+    "run_id": "reclaim-regen-caches-001",
+    "item_count_claim": 8762,
+    "projected_reclaim_bytes_claim_approx": 2450000000,
+    "truth_status": "MUST_REVERIFY_LOCALLY"
+  },
+  "terminal_gate": {
+    "deleted_items_min": 1,
+    "execution_receipt_required": true,
+    "pre_free_bytes_required": true,
+    "post_free_bytes_required": true,
+    "observed_delta_required": true,
+    "readiness_states_are_terminal": false
+  },
+  "prompt_hybrid": [
+    "P01",
+    "P04",
+    "P97",
+    "P83",
+    "P82",
+    "P08"
+  ],
+  "cursor_role": "BOUNDED_LOCAL_EXECUTOR_NOT_JUDGMENT_OWNER",
+  "critical_path": [
+    "refresh_current_truth",
+    "reproduce_or_disprove_pr20_defects",
+    "repair_material_defects",
+    "run_focused_and_full_validation",
+    "integrate_exact_repair",
+    "refresh_canonical_local_main",
+    "resolve_or_regenerate_temp_run",
+    "delete_preflight",
+    "materialize_exact_delete_approval",
+    "delete_execute",
+    "read_execution_receipt",
+    "measure_post_free_bytes",
+    "verify_reclaim"
+  ],
+  "forbidden_terminal_states": [
+    "repair_ready",
+    "tests_green",
+    "pr_open",
+    "pr_merged",
+    "preflight_pass",
+    "approval_written",
+    "ready_to_delete"
+  ],
+  "forbidden_scope": [
+    "ui_polish",
+    "scheduler_work",
+    "semantic_promotion_of_human_review_unknown_protected",
+    "generic_recursive_delete_outside_manifest",
+    "commit_private_live_runtime_artifacts"
+  ]
+}
