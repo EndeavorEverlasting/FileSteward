@@ -262,6 +262,8 @@ def render_decision_chamber_script() -> str:
     decisionLabel: 'NONE',
     auth: 'UNAPPROVED',
     allowedIntents: [],
+    executionState: null,
+    nextItemId: null,
     node: null,
     digest: bridge && bridge.cleanupPlanSha256 ? bridge.cleanupPlanSha256 : null
   };
@@ -356,9 +358,10 @@ def render_decision_chamber_script() -> str:
 
   const sceneBrief = (scene) => {
     if (scene === 'GATE') return 'GATE — inspect the first unresolved evidence gate. No mutation. UNKNOWN/HUMAN_REVIEW stay locked from reclaim.';
-    if (scene === 'RESOLVE') return 'RESOLVE — only decision_flow.allowed_intents() are operable. Delete/remove intent shows LOCKED unless RECLAIM_PROVEN.';
-    if (scene === 'APPROVAL') return 'APPROVAL — authorize exact quarantine scope. Permanent deletion is not implemented. Bytes stay until a later verified quarantine apply.';
-    if (scene === 'STAGED') return 'STAGED — quarantine receipt recorded. NO BYTES REMOVED. Real C: apply remains an operator gate outside this report.';
+    if (scene === 'RESOLVE') return 'RESOLVE — only decision_flow.allowed_intents() are operable. Permanent deletion stays locked unless RECLAIM_PROVEN + PASS preflight.';
+    if (scene === 'APPROVAL') return 'APPROVAL — authorize exact quarantine scope (distinct from permanent delete). Eligible RECLAIM_PROVEN evidence may use one DELETE PERMANENTLY commit through the deletion package.';
+    if (scene === 'STAGED') return 'STAGED — quarantine receipt recorded. NO BYTES REMOVED. Permanent delete is a separate DELETE PERMANENTLY path.';
+    if (scene === 'RESULT') return 'RESULT — deletion receipt/readback. Continue with residual items or verified reclaim.';
     if (scene === 'FOCUS') return 'FOCUS — evidence is framed. Open GATE to inspect, RESOLVE to choose a legal intent.';
     if (scene === 'MAP') return 'MAP — chamber closed. Camera at Atlas Home.';
     return 'Chamber closed.';
@@ -367,15 +370,15 @@ def render_decision_chamber_script() -> str:
   const stageRemovalLockedExplain = () => {
     const upper = ((state.evidence || '') + ' ' + ((state.node && state.node.reclaim_basis) || '')).toUpperCase();
     if (upper.indexOf('UNKNOWN') >= 0) {
-      return 'STAGE REMOVAL LOCKED — disposition UNKNOWN. Rescan or complete evidence before quarantine. Permanent deletion is not implemented. NO BYTES REMOVED.';
+      return 'STAGE REMOVAL LOCKED — disposition UNKNOWN. Rescan or complete evidence before quarantine. Permanent deletion stays unavailable for this disposition.';
     }
     if (upper.indexOf('HUMAN') >= 0) {
-      return 'STAGE REMOVAL LOCKED — HUMAN_REVIEW requires operator contract judgment first. Permanent deletion is not implemented.';
+      return 'STAGE REMOVAL LOCKED — HUMAN_REVIEW requires operator contract judgment first. Permanent deletion stays unavailable for this disposition.';
     }
     if (upper.indexOf('PROTECTED') >= 0 || upper.indexOf('KEEP') >= 0) {
       return 'STAGE REMOVAL LOCKED — evidence is keep/protected. No reclaim path from this state.';
     }
-    return 'STAGE REMOVAL LOCKED — quarantine requires RECLAIM_PROVEN + UNAPPROVED. Permanent deletion is not implemented.';
+    return 'STAGE REMOVAL LOCKED — quarantine requires RECLAIM_PROVEN + UNAPPROVED. Permanent deletion requires the same eligible reclaim set plus PASS preflight.';
   };
 
   const renderSceneNextActions = () => {
@@ -414,6 +417,10 @@ def render_decision_chamber_script() -> str:
           if (chamberBrief) chamberBrief.textContent = opts.explain;
           applyScene();
         });
+      } else if (opts.deletePermanently) {
+        btn.setAttribute('data-decision-intent', 'DELETE_PERMANENTLY');
+        btn.setAttribute('data-consequence', 'DELETE_PERMANENTLY');
+        btn.addEventListener('click', () => postDeletePermanently());
       } else if (opts.intent) {
         btn.setAttribute('data-decision-intent', opts.intent);
         btn.addEventListener('click', () => postDecision(opts.intent));
@@ -455,6 +462,19 @@ def render_decision_chamber_script() -> str:
           });
           return;
         }
+        if (intent === 'DELETE_PERMANENTLY') {
+          if (scene === 'APPROVAL') {
+            addAction({
+              id: 'delete_permanently',
+              label: 'DELETE PERMANENTLY',
+              explain: 'One deliberate DELETE PERMANENTLY commit for the exact eligible RECLAIM_PROVEN set via the deletion package.',
+              mode: 'approve',
+              deletePermanently: true,
+              consequence: 'DELETE_PERMANENTLY'
+            });
+          }
+          return;
+        }
         addAction({
           id: intent.toLowerCase(),
           label: intentLabel(intent),
@@ -464,7 +484,7 @@ def render_decision_chamber_script() -> str:
         });
       });
     }
-    if (!canStage) {
+    if (!canStage && state.allowedIntents.indexOf('DELETE_PERMANENTLY') < 0) {
       addAction({
         id: 'stage_removal_locked',
         label: 'STAGE REMOVAL PATH — LOCKED',
@@ -483,7 +503,7 @@ def render_decision_chamber_script() -> str:
     const showIntents = scene === 'RESOLVE' || scene === 'APPROVAL';
     if (showIntents) {
       state.allowedIntents.forEach((intent) => {
-        if (intent === 'APPROVE_QUARANTINE') return;
+        if (intent === 'APPROVE_QUARANTINE' || intent === 'DELETE_PERMANENTLY') return;
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.textContent = intentLabel(intent);
@@ -704,14 +724,23 @@ def render_decision_chamber_script() -> str:
 
   const absorbState = (payload) => {
     if (!payload) return;
-    state.selectedNodeId = payload.selected_node_id || state.selectedNodeId;
+    if (payload.next_item_id) {
+      state.nextItemId = payload.next_item_id;
+      state.selectedNodeId = payload.next_item_id;
+    } else if (payload.selected_node_id) {
+      state.selectedNodeId = payload.selected_node_id;
+      state.nextItemId = payload.next_item_id || null;
+    }
     state.activeGateId = payload.active_gate_id || null;
-    state.openDecisionScene = payload.open_decision_scene || state.openDecisionScene;
+    if (payload.open_decision_scene) {
+      state.openDecisionScene = payload.open_decision_scene;
+    }
     state.lastScene = payload.last_scene || state.lastScene;
     state.lastTransition = payload.last_transition || state.lastTransition;
     state.evidence = payload.evidence_disposition || state.evidence;
     state.auth = payload.authorization_state || state.auth;
     state.allowedIntents = payload.allowed_intents || [];
+    if (payload.execution_state) state.executionState = payload.execution_state;
     state.node = payload.node || state.node;
     state.digest = payload.cleanup_plan_sha256 || state.digest;
     if (payload.operator_decision && payload.operator_decision.label) {
@@ -719,7 +748,9 @@ def render_decision_chamber_script() -> str:
     } else if (payload.operator_decision && payload.operator_decision.intent) {
       state.decisionLabel = payload.operator_decision.intent.replace(/_/g, ' ') + ' REQUESTED';
     }
-    if (payload.approval && payload.approval.authorization_state === 'APPROVED_FOR_ACTION') {
+    if (payload.approval && payload.approval.authorization_state === 'APPROVED_FOR_ACTION'
+        && payload.open_decision_scene !== 'RESULT'
+        && (!payload.open_decision_scene || payload.open_decision_scene === 'STAGED')) {
       state.openDecisionScene = 'STAGED';
       state.auth = 'APPROVED_FOR_ACTION';
     }
@@ -749,7 +780,7 @@ def render_decision_chamber_script() -> str:
     } else if (upper.indexOf('HUMAN') >= 0) {
       state.allowedIntents = ['DECLARE_REGENERABLE_CONTRACT', 'KEEP', 'REVIEW_LATER'];
     } else if (upper.indexOf('RECLAIM') >= 0) {
-      state.allowedIntents = ['APPROVE_QUARANTINE', 'KEEP', 'REVIEW_LATER'];
+      state.allowedIntents = ['APPROVE_QUARANTINE', 'DELETE_PERMANENTLY', 'KEEP', 'REVIEW_LATER'];
     } else if (upper.indexOf('KEEP') >= 0 || upper.indexOf('PROTECTED') >= 0) {
       state.allowedIntents = [];
     } else {
@@ -792,14 +823,43 @@ def render_decision_chamber_script() -> str:
     }
   };
 
+  const nextOfflineItemId = (currentId) => {
+    const rows = Array.from(document.querySelectorAll('.nav-row[data-node-id], .map-node[data-node-id]'));
+    const ids = [];
+    rows.forEach((row) => {
+      const id = row.getAttribute('data-node-id');
+      if (id && ids.indexOf(id) < 0) ids.push(id);
+    });
+    if (!ids.length) return null;
+    const idx = ids.indexOf(currentId);
+    if (idx < 0) return ids[0];
+    if (idx + 1 < ids.length) return ids[idx + 1];
+    return null;
+  };
+
   const postDecision = async (intent) => {
+    if (intent === 'DELETE_PERMANENTLY') {
+      await postDeletePermanently();
+      return;
+    }
     if (!bridge || !bridge.origin) {
       state.decisionLabel = intent.replace(/_/g, ' ') + ' REQUESTED';
       state.lastScene = state.openDecisionScene;
-      state.lastTransition = intent.toLowerCase();
+      state.lastTransition = intent.toLowerCase() + '_recorded';
       if (intent === 'KEEP' || intent === 'REVIEW_LATER') {
-        state.openDecisionScene = 'RESOLVE';
-        state.lastTransition = intent.toLowerCase() + '_recorded';
+        const fromId = state.selectedNodeId;
+        const nextId = nextOfflineItemId(fromId);
+        state.executionState = 'complete';
+        if (nextId && nextId !== fromId) {
+          state.nextItemId = nextId;
+          localOpenGate(nextId, 'GATE');
+          return;
+        }
+        state.nextItemId = null;
+        state.openDecisionScene = 'MAP';
+        state.lastTransition = intent.toLowerCase() + '_complete_no_next';
+        applyScene();
+        return;
       }
       applyScene();
       return;
@@ -815,6 +875,35 @@ def render_decision_chamber_script() -> str:
         item_id: state.selectedNodeId,
         intent: intent
       })
+    });
+    if (!response.ok) return;
+    absorbState(await response.json());
+  };
+
+  const postDeletePermanently = async () => {
+    if (!state.selectedNodeId) return;
+    if (!bridge || !bridge.origin || !bridge.deletePath) {
+      state.lastTransition = 'delete_permanently_requires_bridge';
+      if (chamberBrief) {
+        chamberBrief.textContent = 'DELETE PERMANENTLY requires the live review bridge deletion path.';
+      }
+      return;
+    }
+    const body = {
+      run_id: bridge.runId,
+      item_id: state.selectedNodeId,
+      irreversible_confirmation: 'DELETE_PERMANENTLY'
+    };
+    if (bridge.scanRoot || bridge.scan_root) {
+      body.scan_root = bridge.scanRoot || bridge.scan_root;
+    }
+    const response = await fetch(bridge.origin + bridge.deletePath, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [bridge.sessionHeader || 'X-FileSteward-Session']: bridge.sessionToken
+      },
+      body: JSON.stringify(body)
     });
     if (!response.ok) return;
     absorbState(await response.json());

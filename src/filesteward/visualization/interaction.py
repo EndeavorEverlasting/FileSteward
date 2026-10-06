@@ -10,7 +10,9 @@ remain owned by classification and approval receipts.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+import json
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Mapping, Protocol
 
@@ -24,8 +26,10 @@ from filesteward.visualization.decision_flow import (
 __all__ = [
     "Availability",
     "Consequence",
+    "ImpactKind",
     "InteractionCue",
     "InteractionVerb",
+    "context_fingerprint",
     "QualityTone",
     "Recency",
     "StatusOrbKind",
@@ -84,6 +88,18 @@ class Consequence(str, Enum):
     RECORD_INTENT = "RECORD_INTENT"
     WRITE_APPROVAL = "WRITE_APPROVAL"
     STAGE_QUARANTINE = "STAGE_QUARANTINE"
+    DELETE_PERMANENTLY = "DELETE_PERMANENTLY"
+
+
+class ImpactKind(str, Enum):
+    ORIENT = "ORIENT"
+    FILTER = "FILTER"
+    CLASSIFY = "CLASSIFY"
+    DECIDE = "DECIDE"
+    AUTHORIZE = "AUTHORIZE"
+    RECLAIM = "RECLAIM"
+    VERIFY = "VERIFY"
+    EXPLORE = "EXPLORE"
 
 
 class QualityTone(str, Enum):
@@ -125,11 +141,59 @@ class InteractionCue:
     label: str
     cursor_mode: str
     quality_tone: QualityTone = QualityTone.NEUTRAL
+    action_id: str = ""
+    source_scene: str = ""
+    destination_scene: str = ""
+    impact_kind: str = ImpactKind.ORIENT.value
+    continuation: str = ""
+    context_fingerprint: str = ""
+
+    def bind(
+        self,
+        *,
+        source_scene: str,
+        destination_scene: str,
+        impact_kind: ImpactKind | str,
+        continuation: str,
+        action_id: str | None = None,
+        selected_node_id: str = "",
+        evidence_disposition: str = "",
+        active_gate_id: str = "",
+        authorization_state: str = "",
+        target_id: str = "",
+        scene_revision: str = "0",
+        execution_or_readback_state: str = "",
+    ) -> "InteractionCue":
+        impact = (
+            impact_kind.value if isinstance(impact_kind, ImpactKind) else str(impact_kind)
+        )
+        registered = action_id or self.action_id or self.verb.value
+        fingerprint = context_fingerprint(
+            scene_id=source_scene,
+            scene_revision=scene_revision,
+            selected_node_id=selected_node_id,
+            evidence_disposition=evidence_disposition,
+            active_gate_id=active_gate_id,
+            authorization_state=authorization_state,
+            target_id=target_id,
+            target_kind=self.target_kind.value,
+            registered_action=registered,
+            execution_or_readback_state=execution_or_readback_state,
+        )
+        return replace(
+            self,
+            action_id=registered,
+            source_scene=source_scene,
+            destination_scene=destination_scene,
+            impact_kind=impact,
+            continuation=continuation,
+            context_fingerprint=fingerprint,
+        )
 
     def as_data(self) -> Mapping[str, str]:
         return {
             "data-target-kind": self.target_kind.value,
-            "data-action": self.verb.value,
+            "data-action": self.action_id or self.verb.value,
             "data-actionability": self.availability.value,
             "data-recency": self.recency.value,
             "data-consequence": self.consequence.value,
@@ -137,7 +201,17 @@ class InteractionCue:
             "data-cursor-mode": self.cursor_mode,
             "data-cue-label": self.label,
             "data-cue-explain": self.explanation,
+            "data-source-scene": self.source_scene,
+            "data-destination-scene": self.destination_scene,
+            "data-impact-kind": self.impact_kind,
+            "data-continuation": self.continuation,
+            "data-context-fingerprint": self.context_fingerprint,
         }
+
+
+def context_fingerprint(**canonical: str) -> str:
+    payload = json.dumps(canonical, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
 def html_data_attrs(cue: InteractionCue) -> str:
@@ -202,6 +276,15 @@ def cue_for_map_node(node: _Node, *, selected: bool) -> InteractionCue:
             label="INSPECT BLOCK",
             cursor_mode="blocked",
             quality_tone=QualityTone.BLOCKED,
+        ).bind(
+            source_scene="MAP",
+            destination_scene="FOCUS",
+            impact_kind=ImpactKind.ORIENT,
+            continuation="Inspect the protection gate; deletion stays unavailable.",
+            action_id="INSPECT_BLOCK",
+            selected_node_id=node.node_id if selected else "",
+            evidence_disposition=disposition.value,
+            target_id=node.node_id,
         )
 
     if selected:
@@ -215,18 +298,35 @@ def cue_for_map_node(node: _Node, *, selected: bool) -> InteractionCue:
             label="FOCUS",
             cursor_mode="focus",
             quality_tone=tone,
+        ).bind(
+            source_scene="MAP",
+            destination_scene="FOCUS",
+            impact_kind=ImpactKind.CLASSIFY,
+            continuation="Open the first unresolved gate or legal intent.",
+            action_id="FOCUS",
+            selected_node_id=node.node_id,
+            evidence_disposition=disposition.value,
+            target_id=node.node_id,
         )
 
     return InteractionCue(
         target_kind=TargetKind.EVIDENCE,
-        verb=InteractionVerb.EXPLORE,
+        verb=InteractionVerb.FOCUS,
         availability=Availability.OPERABLE,
         recency=Recency.IDLE,
         consequence=Consequence.READ_ONLY,
-        explanation="Explore this storage sector without changing evidence or authority.",
-        label="EXPLORE",
-        cursor_mode="explore",
+        explanation="Select this evidence to open decision context. This is not an exploration environment.",
+        label="SELECT",
+        cursor_mode="focus",
         quality_tone=tone,
+    ).bind(
+        source_scene="MAP",
+        destination_scene="FOCUS",
+        impact_kind=ImpactKind.CLASSIFY,
+        continuation="Focus the selected node, then continue to GATE/RESOLVE.",
+        action_id="SELECT",
+        evidence_disposition=disposition.value,
+        target_id=node.node_id,
     )
 
 
@@ -300,15 +400,37 @@ def cue_for_navigation(action: str, *, recency: Recency = Recency.IDLE) -> Inter
             "Open the focused evidence chamber.",
         ),
     }
-    verb, label, cursor, explanation = table.get(
-        key,
-        (
-            InteractionVerb.EXPLORE,
-            "EXPLORE",
-            "explore",
-            "Navigate the Atlas without changing evidence or authority.",
-        ),
+    spec = table.get(key)
+    if spec is None:
+        return InteractionCue(
+            target_kind=TargetKind.NAVIGATION,
+            verb=InteractionVerb.LOCKED,
+            availability=Availability.UNAVAILABLE,
+            recency=recency,
+            consequence=Consequence.READ_ONLY,
+            explanation="Unregistered navigation has no operable effect.",
+            label="LOCKED",
+            cursor_mode="locked",
+            quality_tone=QualityTone.BLOCKED,
+        ).bind(
+            source_scene="MAP",
+            destination_scene="MAP",
+            impact_kind=ImpactKind.ORIENT,
+            continuation="No continuation: unknown action fails closed.",
+            action_id="UNREGISTERED",
+            target_id=key,
+        )
+    verb, label, cursor, explanation = spec
+    impact = (
+        ImpactKind.EXPLORE
+        if verb in {InteractionVerb.DIVE_IN, InteractionVerb.PULL_BACK}
+        else ImpactKind.FILTER
+        if verb is InteractionVerb.LOCATE
+        else ImpactKind.DECIDE
+        if verb is InteractionVerb.RESOLVE
+        else ImpactKind.ORIENT
     )
+    destination = "RESOLVE" if verb is InteractionVerb.RESOLVE else "MAP"
     return InteractionCue(
         target_kind=TargetKind.NAVIGATION,
         verb=verb,
@@ -319,6 +441,13 @@ def cue_for_navigation(action: str, *, recency: Recency = Recency.IDLE) -> Inter
         label=label,
         cursor_mode=cursor,
         quality_tone=QualityTone.NEUTRAL,
+    ).bind(
+        source_scene="MAP",
+        destination_scene=destination,
+        impact_kind=impact,
+        continuation="Visible path remains classify → decide → authorize → reclaim.",
+        action_id=verb.value,
+        target_id=key,
     )
 
 
@@ -510,6 +639,42 @@ def cue_for_intent(
             label="RESCAN",
             cursor_mode="resolve",
             quality_tone=QualityTone.AMBIGUOUS,
+        ).bind(
+            source_scene=flow.scene.value,
+            destination_scene=flow.scene.value,
+            impact_kind=ImpactKind.CLASSIFY,
+            continuation="Wait for authoritative rescan readback, then open the derived scene.",
+            action_id="RESCAN",
+            selected_node_id=flow.selected_node_id,
+            evidence_disposition=flow.disposition.value,
+            active_gate_id=flow.active_gate_id or "",
+            authorization_state=flow.authorization_state.value,
+        )
+
+    if intent is DecisionIntent.DELETE_PERMANENTLY:
+        return InteractionCue(
+            target_kind=TargetKind.INTENT,
+            verb=InteractionVerb.APPROVE,
+            availability=Availability.OPERABLE,
+            recency=Recency.IDLE,
+            consequence=Consequence.DELETE_PERMANENTLY,
+            explanation=(
+                "One deliberate DELETE PERMANENTLY commit for the exact eligible "
+                "RECLAIM_PROVEN set. Creates delete-specific approval, executes, "
+                "and reads the receipt."
+            ),
+            label="DELETE PERMANENTLY",
+            cursor_mode="approve",
+            quality_tone=QualityTone.RECLAIM_CANDIDATE,
+        ).bind(
+            source_scene=flow.scene.value,
+            destination_scene="RESULT",
+            impact_kind=ImpactKind.RECLAIM,
+            continuation="Surface execution receipt and remaining residual items.",
+            action_id="DELETE_PERMANENTLY",
+            selected_node_id=flow.selected_node_id,
+            evidence_disposition=flow.disposition.value,
+            authorization_state=flow.authorization_state.value,
         )
 
     return InteractionCue(
@@ -522,4 +687,14 @@ def cue_for_intent(
         label=intent.value.replace("_", " "),
         cursor_mode="resolve",
         quality_tone=QualityTone.NEUTRAL,
+    ).bind(
+        source_scene=flow.scene.value,
+        destination_scene="CLOSED" if intent in {DecisionIntent.KEEP, DecisionIntent.REVIEW_LATER} else flow.scene.value,
+        impact_kind=ImpactKind.DECIDE,
+        continuation="Advance to the next actionable item or derived scene.",
+        action_id=intent.value,
+        selected_node_id=flow.selected_node_id,
+        evidence_disposition=flow.disposition.value,
+        active_gate_id=flow.active_gate_id or "",
+        authorization_state=flow.authorization_state.value,
     )

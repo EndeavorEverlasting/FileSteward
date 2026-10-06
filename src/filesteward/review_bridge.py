@@ -14,10 +14,11 @@ import json
 import os
 import re
 import secrets
+import shutil
 import tempfile
 import threading
 import webbrowser
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from enum import Enum
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -30,13 +31,30 @@ from filesteward.approval import (
     ApprovalRecord,
     validate_approval_against_plan,
 )
+from filesteward.deletion import (
+    DELETE_ACTION,
+    DELETE_APPROVAL_FILENAME,
+    DELETE_MANIFEST_FILENAME,
+    build_delete_approval,
+    emit_delete_manifest,
+    execute_permanent_delete,
+    load_delete_receipt,
+    run_preflight,
+    write_delete_approval,
+    write_preflight_receipt,
+)
+from filesteward.deletion.preflight import load_run_protection_context
+from filesteward.deletion.receipt import DELETE_RECEIPT_FILENAME
 from filesteward.manifest import validate_run
 from filesteward.models import AuthorizationState, CleanupDisposition
-from filesteward.policy.paths import prove_run_dir_under_runtime
+from filesteward.policy.paths import normalize_declared_path, prove_run_dir_under_runtime
 from filesteward.visualization.decision_flow import (
     DecisionIntent,
     DecisionScene,
+    ExecutionState,
+    PendingAction,
     allowed_intents,
+    choose_intent,
     open_decision_session,
 )
 from filesteward.visualization.html import render_report_html, write_report_html_atomically
@@ -47,6 +65,7 @@ from filesteward.visualization.treemap import layout_treemap
 __all__ = [
     "APPROVAL_PATH",
     "DECISION_PATH",
+    "DELETE_PATH",
     "DECISION_STATE_FILENAME",
     "APPROVAL_RECORD_FILENAME",
     "SESSION_HEADER",
@@ -65,6 +84,7 @@ __all__ = [
 STATE_PATH = "/api/v1/state"
 DECISION_PATH = "/api/v1/decision"
 APPROVAL_PATH = "/api/v1/approval"
+DELETE_PATH = "/api/v1/delete"
 SESSION_HEADER = "X-FileSteward-Session"
 DECISION_STATE_FILENAME = "decision-chamber-state.json"
 APPROVAL_RECORD_FILENAME = "approval-record.json"
@@ -80,6 +100,18 @@ class DecisionBridgeIntent(str, Enum):
     DECLARE_REGENERABLE_CONTRACT = "DECLARE_REGENERABLE_CONTRACT"
     KEEP = "KEEP"
     REVIEW_LATER = "REVIEW_LATER"
+    DELETE_PERMANENTLY = "DELETE_PERMANENTLY"
+
+
+_COMPLETED_OPERATOR_INTENTS = frozenset(
+    {DecisionBridgeIntent.KEEP.value, DecisionBridgeIntent.REVIEW_LATER.value}
+)
+_NON_ACTIONABLE_DISPOSITIONS = frozenset(
+    {
+        CleanupDisposition.PROTECTED,
+        CleanupDisposition.KEEP_PROVEN,
+    }
+)
 
 
 def is_loopback_host(host: str) -> bool:
@@ -230,6 +262,10 @@ class ReviewBridge:
     _plan_rows: list[dict[str, object]] = field(default_factory=list, repr=False)
     _decisions: dict[str, dict[str, object]] = field(default_factory=dict, repr=False)
     _approvals: dict[str, dict[str, object]] = field(default_factory=dict, repr=False)
+    _scene_revision: int = field(default=0, repr=False)
+    _last_transition: str | None = field(default=None, repr=False)
+    _pending_by_item: dict[str, PendingAction] = field(default_factory=dict, repr=False)
+    _execution_by_item: dict[str, ExecutionState] = field(default_factory=dict, repr=False)
 
     @classmethod
     def open(cls, run_dir: Path, *, regenerate_report: bool = True) -> ReviewBridge:
@@ -290,6 +326,7 @@ class ReviewBridge:
             "statePath": STATE_PATH,
             "decisionPath": DECISION_PATH,
             "approvalPath": APPROVAL_PATH,
+            "deletePath": DELETE_PATH,
             "sessionHeader": SESSION_HEADER,
         }
         # Token stays in the process-served HTML only.
@@ -336,31 +373,154 @@ class ReviewBridge:
         }
         _atomic_write_json(self.decision_state_path(), payload)
 
+    def _operator_intent_for(self, item_id: str) -> str | None:
+        recorded = self._decisions.get(item_id) or {}
+        intent = recorded.get("intent")
+        return str(intent) if intent else None
+
+    def _is_completed_item(self, item_id: str) -> bool:
+        return self._operator_intent_for(item_id) in _COMPLETED_OPERATOR_INTENTS
+
+    def _is_actionable_node(self, node: _NodeView) -> bool:
+        if node.disposition in _NON_ACTIONABLE_DISPOSITIONS:
+            return False
+        if self._is_completed_item(node.node_id):
+            return False
+        return True
+
+    def _next_actionable_node(self, after_item_id: str | None) -> _NodeView | None:
+        ids = list(self._nodes)
+        if after_item_id and after_item_id in self._nodes:
+            start = ids.index(after_item_id) + 1
+            ordered = ids[start:] + ids[:start]
+        else:
+            ordered = ids
+        for node_id in ordered:
+            node = self._nodes[node_id]
+            if after_item_id and node_id == after_item_id:
+                continue
+            if self._is_actionable_node(node):
+                return node
+        return None
+
+    def _refresh_nodes(self) -> None:
+        model = build_presentation_model(self.run_dir)
+        nodes = {
+            node.node_id: _NodeView(
+                node_id=node.node_id,
+                disposition=node.disposition,
+                authorization_state=node.authorization_state,
+                gate_steps=node.gate_steps,
+                path=node.path,
+                display_name=node.display_name,
+                reclaim_basis=node.reclaim_basis,
+            )
+            for node in model.nodes
+        }
+        for item_id, approval in self._approvals.items():
+            node = nodes.get(item_id)
+            if node is not None:
+                node.authorization_state = AuthorizationState(
+                    str(approval.get("authorization_state") or AuthorizationState.APPROVED_FOR_ACTION.value)
+                )
+        self._nodes = nodes
+
+    def _classification_views(self) -> dict[str, dict[str, int]]:
+        dispositions: dict[str, int] = {}
+        for node in self._nodes.values():
+            key = node.disposition.value
+            dispositions[key] = dispositions.get(key, 0) + 1
+        operator_intents: dict[str, int] = {}
+        for recorded in self._decisions.values():
+            intent = str(recorded.get("intent") or "")
+            if intent:
+                operator_intents[intent] = operator_intents.get(intent, 0) + 1
+        return {
+            "dispositions": dispositions,
+            "operator_intents": operator_intents,
+        }
+
+    def _session_for(self, node: _NodeView):
+        if self._is_completed_item(node.node_id):
+            closed = open_decision_session(node)
+            return replace(
+                closed,
+                scene=DecisionScene.CLOSED,
+                pending_action=PendingAction.NONE,
+                last_transition=self._last_transition or "complete",
+                execution_state=ExecutionState.COMPLETE,
+            )
+        return open_decision_session(node)
+
     def state_payload(self, item_id: str | None = None) -> dict[str, object]:
         with self._lock:
-            selected = item_id if item_id and item_id in self._nodes else None
-            node = self._nodes.get(selected) if selected else None
-            flow = None
+            requested = item_id if item_id and item_id in self._nodes else None
+            current_item_id = requested
+            selected_id = requested
+            if requested and self._is_completed_item(requested):
+                nxt = self._next_actionable_node(requested)
+                selected_id = nxt.node_id if nxt is not None else requested
+            node = self._nodes.get(selected_id) if selected_id else None
+            flow = self._session_for(node) if node is not None else None
+            pending = self._pending_by_item.get(selected_id or "")
+            execution = self._execution_by_item.get(selected_id or "")
+            if pending is not None and flow is not None:
+                flow = replace(
+                    flow,
+                    pending_action=pending,
+                    execution_state=execution or ExecutionState.PENDING,
+                    last_transition=self._last_transition or flow.last_transition,
+                    scene_revision=self._scene_revision,
+                )
             intents: list[str] = []
-            if node is not None:
-                flow = open_decision_session(node)
+            if flow is not None and not self._is_completed_item(selected_id or ""):
                 intents = [intent.value for intent in allowed_intents(flow)]
-            decision = self._decisions.get(selected or "", {})
-            approval = self._approvals.get(selected or "", {})
+            next_item = selected_id
+            next_scene = flow.scene.value if flow else DecisionScene.MAP.value
+            if requested and self._is_completed_item(requested):
+                nxt = self._next_actionable_node(requested)
+                next_item = nxt.node_id if nxt is not None else None
+                if nxt is not None:
+                    next_scene = self._session_for(nxt).scene.value
+                else:
+                    next_scene = DecisionScene.CLOSED.value
+            decision = self._decisions.get(selected_id or "", {})
+            approval = self._approvals.get(selected_id or "", {})
+            open_scene = flow.scene.value if flow else DecisionScene.MAP.value
+            last_transition = self._last_transition
+            if last_transition is None and flow is not None:
+                last_transition = flow.last_transition
+            execution_state = (
+                execution.value
+                if execution is not None
+                else (flow.execution_state.value if flow else ExecutionState.EXECUTABLE.value)
+            )
+            pending_action = (
+                pending.value
+                if pending is not None
+                else (flow.pending_action.value if flow else PendingAction.NONE.value)
+            )
             return {
                 "run_id": self.run_id,
                 "cleanup_plan_sha256": self.cleanup_plan_sha256,
-                "selected_node_id": selected,
+                "selected_node_id": selected_id,
+                "current_item_id": current_item_id,
+                "next_item_id": next_item,
                 "evidence_disposition": (
                     node.disposition.value if node else None
                 ),
                 "authorization_state": (
                     node.authorization_state.value if node else None
                 ),
-                "open_decision_scene": flow.scene.value if flow else DecisionScene.MAP.value,
+                "open_decision_scene": open_scene,
+                "next_scene": next_scene,
                 "active_gate_id": flow.active_gate_id if flow else None,
                 "last_scene": flow.last_scene.value if flow and flow.last_scene else None,
-                "last_transition": flow.last_transition if flow else None,
+                "last_transition": last_transition,
+                "execution_state": execution_state,
+                "pending_action": pending_action,
+                "scene_revision": self._scene_revision,
+                "classification_views": self._classification_views(),
                 "allowed_intents": intents,
                 "operator_decision": decision or None,
                 "approval": approval or None,
@@ -374,26 +534,28 @@ class ReviewBridge:
                     if node
                     else None
                 ),
-                "staged_copy": "STAGED — QUARANTINE REQUIRED — NO BYTES REMOVED",
+                "staged_copy": (
+                    "STAGED — quarantine staged, NO BYTES REMOVED. "
+                    "Permanent delete uses a separate DELETE PERMANENTLY path when eligible."
+                ),
             }
 
     def record_decision(self, request: DecisionRequest) -> dict[str, object]:
         with self._lock:
             if request.run_id != self.run_id:
                 raise ValueError("run_id does not match the served run")
+            if request.intent is DecisionBridgeIntent.DELETE_PERMANENTLY:
+                raise ValueError("DELETE_PERMANENTLY must use POST /api/v1/delete")
             node = self._nodes.get(request.item_id)
             if node is None:
                 raise ValueError(f"item {request.item_id} is not in the presentation model")
-            flow = open_decision_session(node)
-            allowed = {intent.value for intent in allowed_intents(flow)}
-            # Bridge intents never include APPROVE_QUARANTINE.
-            if request.intent.value not in allowed:
-                raise ValueError(
-                    f"intent {request.intent.value} is not allowed for "
-                    f"{node.disposition.value}/{flow.scene.value}"
-                )
-            if request.intent.value == DecisionIntent.APPROVE_QUARANTINE.value:
+            if self._is_completed_item(request.item_id):
+                return self.state_payload(request.item_id)
+            session = open_decision_session(node)
+            intent = DecisionIntent(request.intent.value)
+            if intent is DecisionIntent.APPROVE_QUARANTINE:
                 raise ValueError("approval must use POST /api/v1/approval")
+            flow = choose_intent(session, intent)
             self._decisions[request.item_id] = {
                 "intent": request.intent.value,
                 "evidence_disposition": node.disposition.value,
@@ -401,7 +563,133 @@ class ReviewBridge:
                 "label": f"Decision: {request.intent.value.replace('_', ' ')} REQUESTED",
             }
             self._persist_decisions()
+            self._scene_revision += 1
+            self._last_transition = flow.last_transition
+            if request.intent in {
+                DecisionBridgeIntent.KEEP,
+                DecisionBridgeIntent.REVIEW_LATER,
+            }:
+                self._pending_by_item.pop(request.item_id, None)
+                self._execution_by_item[request.item_id] = ExecutionState.COMPLETE
+                return self.state_payload(request.item_id)
+            if request.intent in {
+                DecisionBridgeIntent.RESCAN,
+                DecisionBridgeIntent.DECLARE_REGENERABLE_CONTRACT,
+            }:
+                self._pending_by_item[request.item_id] = flow.pending_action
+                self._execution_by_item[request.item_id] = ExecutionState.PENDING
+                before = node.disposition
+                self._refresh_nodes()
+                refreshed = self._nodes.get(request.item_id)
+                if refreshed is None:
+                    return self.state_payload(request.item_id)
+                if refreshed.disposition is before:
+                    self._pending_by_item[request.item_id] = flow.pending_action
+                    self._execution_by_item[request.item_id] = ExecutionState.PENDING
+                else:
+                    self._pending_by_item.pop(request.item_id, None)
+                    self._execution_by_item.pop(request.item_id, None)
+                return self.state_payload(request.item_id)
             return self.state_payload(request.item_id)
+
+    def execute_permanent_delete_ui(
+        self,
+        run_id: str,
+        item_ids: list[str] | tuple[str, ...],
+        scan_root: str | Path,
+        irreversible_confirmation: str,
+    ) -> dict[str, object]:
+        with self._lock:
+            if run_id != self.run_id:
+                raise ValueError("run_id does not match the served run")
+            token = str(irreversible_confirmation or "").strip()
+            if not token:
+                raise ValueError("irreversible_confirmation must be non-empty")
+            if token.upper() == ApprovalAction.QUARANTINE.value:
+                raise ValueError("quarantine approval cannot authorize permanent deletion")
+            ids = [str(item_id) for item_id in item_ids]
+            if not ids:
+                raise ValueError("item_ids must be non-empty")
+            for item_id in ids:
+                node = self._nodes.get(item_id)
+                if node is None:
+                    raise ValueError(f"item {item_id} is not in the presentation model")
+                if node.disposition is not CleanupDisposition.RECLAIM_PROVEN:
+                    raise ValueError(
+                        "permanent deletion requires RECLAIM_PROVEN disposition"
+                    )
+            approval_path = self.approval_record_path()
+            if approval_path.is_file():
+                quarantine = json.loads(approval_path.read_text(encoding="utf-8"))
+                if str(quarantine.get("action") or "") == ApprovalAction.QUARANTINE.value:
+                    # Quarantine receipts are not delete authority; continue
+                    # only through the deletion-package approval below.
+                    pass
+            emit_delete_manifest(self.run_dir)
+            manifest_path = self.run_dir / DELETE_MANIFEST_FILENAME
+            protection_roots, managed_paths = load_run_protection_context(self.run_dir)
+            scan = normalize_declared_path(scan_root)
+            preflight = run_preflight(
+                manifest_path,
+                scan_root=scan,
+                cleanup_plan_path=self.run_dir / "cleanup-plan.csv",
+                protection_roots=protection_roots,
+                managed_paths=managed_paths,
+            )
+            preflight_path = self.run_dir / "delete-preflight.json"
+            write_preflight_receipt(preflight_path, preflight)
+            if preflight.overall != "PASS":
+                raise ValueError(
+                    f"delete preflight did not PASS ({preflight.overall})"
+                )
+            approval = build_delete_approval(
+                manifest=manifest_path,
+                preflight=preflight_path,
+                approved_item_ids=ids,
+                irreversible_confirmation=DELETE_ACTION,
+                run_id=self.run_id,
+            )
+            write_delete_approval(self.run_dir / DELETE_APPROVAL_FILENAME, approval)
+            approved_snapshot = self.run_dir / "delete-preflight.approved.json"
+            shutil.copy2(preflight_path, approved_snapshot)
+            execute_permanent_delete(
+                run_dir=self.run_dir,
+                manifest=manifest_path,
+                approval=self.run_dir / DELETE_APPROVAL_FILENAME,
+                preflight=approved_snapshot,
+                scan_root=scan,
+            )
+            receipt = load_delete_receipt(self.run_dir / DELETE_RECEIPT_FILENAME) or {}
+            items = receipt.get("items") or []
+            counts = {"attempted": 0, "succeeded": 0, "failed": 0, "skipped": 0}
+            if isinstance(items, list):
+                counts["attempted"] = len(items)
+                for item in items:
+                    status = str((item or {}).get("status") or "")
+                    if status == "SUCCEEDED":
+                        counts["succeeded"] += 1
+                    elif status == "FAILED":
+                        counts["failed"] += 1
+                    elif status == "SKIPPED":
+                        counts["skipped"] += 1
+            self._scene_revision += 1
+            self._last_transition = "delete_permanently"
+            focus = ids[0]
+            self._execution_by_item[focus] = ExecutionState.COMPLETE
+            self._pending_by_item.pop(focus, None)
+            payload = self.state_payload(focus)
+            payload["open_decision_scene"] = DecisionScene.RESULT.value
+            payload["next_scene"] = DecisionScene.RESULT.value
+            payload["execution_state"] = ExecutionState.COMPLETE.value
+            payload["pending_action"] = PendingAction.NONE.value
+            payload["deletion_receipt"] = {
+                **counts,
+                "overall": receipt.get("overall"),
+                "reclaim": receipt.get("reclaim"),
+                "free_bytes_before": receipt.get("free_bytes_before"),
+                "free_bytes_after": receipt.get("free_bytes_after"),
+            }
+            return payload
 
     def record_approval(self, request: ApprovalRequest) -> dict[str, object]:
         with self._lock:
@@ -545,7 +833,7 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
 
         def do_POST(self) -> None:  # noqa: N802
             parsed = urlparse(self.path)
-            if parsed.path not in {DECISION_PATH, APPROVAL_PATH}:
+            if parsed.path not in {DECISION_PATH, APPROVAL_PATH, DELETE_PATH}:
                 self._reject(404, "not found")
                 return
             if not self._mutation_guard():
@@ -554,11 +842,34 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
             if data is None:
                 return
             try:
+                if parsed.path == DELETE_PATH:
+                    raw_ids = data.get("item_ids")
+                    if raw_ids is None and data.get("item_id"):
+                        raw_ids = [data.get("item_id")]
+                    if not isinstance(raw_ids, list) or not raw_ids:
+                        self._reject(400, "item_ids or item_id is required")
+                        return
+                    payload = bridge.execute_permanent_delete_ui(
+                        run_id=str(data.get("run_id") or ""),
+                        item_ids=[str(item) for item in raw_ids],
+                        scan_root=str(data.get("scan_root") or ""),
+                        irreversible_confirmation=str(
+                            data.get("irreversible_confirmation") or ""
+                        ),
+                    )
+                    self._json(200, payload)
+                    return
                 if parsed.path == DECISION_PATH:
+                    intent_raw = str(data.get("intent") or "")
+                    if intent_raw == DecisionIntent.DELETE_PERMANENTLY.value:
+                        self._reject(
+                            400, "DELETE_PERMANENTLY must use POST /api/v1/delete"
+                        )
+                        return
                     request = DecisionRequest(
                         run_id=str(data.get("run_id") or ""),
                         item_id=str(data.get("item_id") or ""),
-                        intent=DecisionBridgeIntent(str(data.get("intent") or "")),
+                        intent=DecisionBridgeIntent(intent_raw),
                     )
                     payload = bridge.record_decision(request)
                     self._json(200, payload)

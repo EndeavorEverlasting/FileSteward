@@ -24,7 +24,7 @@
       "owners": "decision_flow.py + scene_surface.py",
       "required_proof": "typed transition + rendered-path parity tests",
       "pass_condition": "all rendered journey scenes exist in canonical typed scene model",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T02",
@@ -32,7 +32,7 @@
       "owners": "decision_flow.py + review_bridge.py",
       "required_proof": "unit transition ownership test",
       "pass_condition": "bridge does not duplicate allowed-intent transition semantics",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T03",
@@ -40,7 +40,7 @@
       "owners": "review_bridge.py + next-target resolver",
       "required_proof": "bridge HTTP + browser journey",
       "pass_condition": "KEEP persists and returns different next target or terminal",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T04",
@@ -48,7 +48,7 @@
       "owners": "review_bridge.py + next-target resolver",
       "required_proof": "bridge HTTP + browser journey",
       "pass_condition": "REVIEW_LATER persists and advances",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T05",
@@ -56,7 +56,7 @@
       "owners": "observation path + bridge",
       "required_proof": "synthetic effect/readback integration",
       "pass_condition": "post-rescan scene derives from refreshed authoritative evidence",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T06",
@@ -64,7 +64,7 @@
       "owners": "contract/evidence owner + bridge",
       "required_proof": "synthetic contract/evidence integration",
       "pass_condition": "presentation never promotes evidence and refreshed evidence determines next scene",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T07",
@@ -72,7 +72,7 @@
       "owners": "review_bridge.py",
       "required_proof": "response/schema test",
       "pass_condition": "response exposes current/next scene, gate, item and execution state",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T08",
@@ -80,7 +80,7 @@
       "owners": "bridge + chamber",
       "required_proof": "all-intent regression",
       "pass_condition": "completed decision cannot return identical active item+gate+scene unless explicitly pending",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T09",
@@ -88,7 +88,7 @@
       "owners": "interaction/scene/chamber",
       "required_proof": "semantic string regression + browser",
       "pass_condition": "no reachable delete-capable scene says permanent deletion is unimplemented",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T10",
@@ -96,7 +96,7 @@
       "owners": "bridge deletion adapter + deletion package",
       "required_proof": "synthetic UI-to-executor integration",
       "pass_condition": "single unchanged exact-scope activation creates delete approval, executes, reads receipt/reclaim",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T11",
@@ -104,7 +104,7 @@
       "owners": "deletion/approval.py + root approval.py",
       "required_proof": "negative tests",
       "pass_condition": "quarantine approval cannot satisfy permanent-delete authorization",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T12",
@@ -112,7 +112,7 @@
       "owners": "decision flow + interaction",
       "required_proof": "parameterized disposition tests + browser",
       "pass_condition": "no executable delete for UNKNOWN/HUMAN_REVIEW/PROTECTED/KEEP",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T13",
@@ -120,7 +120,7 @@
       "owners": "experience.py",
       "required_proof": "browser pointer/focus probe",
       "pass_condition": "stationary pointer reticle moves <=2px or hides; focusin cannot teleport it",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T14",
@@ -128,7 +128,7 @@
       "owners": "experience/interaction",
       "required_proof": "keyboard browser journey",
       "pass_condition": "keyboard focus feedback does not impersonate pointer coordinates",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T15",
@@ -136,7 +136,7 @@
       "owners": "experience.py",
       "required_proof": "browser click probe",
       "pass_condition": "simple click never activates FRAME RANGE",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T16",
@@ -144,7 +144,7 @@
       "owners": "experience.py",
       "required_proof": "browser drag probe",
       "pass_condition": "eligible drag beyond threshold activates and cleans range marquee",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T17",
@@ -152,7 +152,7 @@
       "owners": "cli.py",
       "required_proof": "CLI parser/help + full suite",
       "pass_condition": "review plus all four delete commands survive seam",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T18",
@@ -160,7 +160,7 @@
       "owners": "AGENTS.md + governance",
       "required_proof": "exact readback",
       "pass_condition": "current delete contracts retained; stale permanent-delete prohibition absent",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T19",
@@ -168,7 +168,7 @@
       "owners": "pyproject.toml + __init__.py",
       "required_proof": "P130/version guard",
       "pass_condition": "UI version lineage retained and visual-feature bump applied consistently",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T20",
@@ -176,7 +176,7 @@
       "owners": "visualization stack",
       "required_proof": "browser self-falsification",
       "pass_condition": "desktop/laptop/phone/reduced-motion/forced-colors preserve progression",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T21",
@@ -184,7 +184,7 @@
       "owners": "git graph",
       "required_proof": "merge-base ancestor checks",
       "pass_condition": "implementation head descends from refreshed main and complete PR17 head",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T22",
@@ -192,7 +192,7 @@
       "owners": "proof report",
       "required_proof": "failure/retry ledger",
       "pass_condition": "failed behavioral probes are diagnosed, repaired, rerun and preserved",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T23",
@@ -200,7 +200,7 @@
       "owners": "interaction.py + scene_surface.py + decision_flow.py",
       "required_proof": "projection unit tests + schema/validator",
       "pass_condition": "every operable cue binds source scene, destination scene/context, impact kind, continuation, and freshness fingerprint",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T24",
@@ -208,7 +208,7 @@
       "owners": "interaction.py + experience.py",
       "required_proof": "parameterized projection tests + browser target probes",
       "pass_condition": "EXPLORE appears only for explicit exploration scenes/effects; unselected evidence/default canvas cannot receive generic EXPLORE",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T25",
@@ -216,7 +216,7 @@
       "owners": "interaction.py",
       "required_proof": "negative unit/property tests",
       "pass_condition": "unregistered target/action cannot become an operable custom action cue and cannot silently fall back to EXPLORE",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T26",
@@ -224,7 +224,7 @@
       "owners": "interaction projection + experience.py + chamber",
       "required_proof": "scene/selection/gate/auth mutation tests + browser probe",
       "pass_condition": "scene/selection/disposition/gate/authorization/target/result changes invalidate stale cue; reticle recomputes or hides before next action",
-      "status": "UNPROVEN"
+      "status": "LOCALLY_VALIDATED"
     },
     {
       "id": "UX-T27",
@@ -232,7 +232,7 @@
       "owners": "scene_surface.py + harness contracts",
       "required_proof": "contract validator + scene table tests",
       "pass_condition": "every canonical scene declares purpose, primary impact, success evidence and continuation policy; receipt-only scenes are terminal or expose continuation",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T28",
@@ -240,7 +240,7 @@
       "owners": "interaction projection + renderers",
       "required_proof": "browser click trace + accessible-label assertion",
       "pass_condition": "visible/accessibility label names the immediate executable effect and observed activation matches it",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T29",
@@ -248,7 +248,7 @@
       "owners": "classification/decision owner + filters/scene counts/queues",
       "required_proof": "synthetic decision/classification readback + filter/queue integration test",
       "pass_condition": "authoritative classification/decision result immediately appears in relevant filters/counts/queues without presentation-only mutation",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     },
     {
       "id": "UX-T30",
@@ -256,7 +256,7 @@
       "owners": "scene navigation + chamber/atlas",
       "required_proof": "browser journey across exploration/orientation -> decision -> reclaim",
       "pass_condition": "exploration/orientation never becomes a dead-end scenic loop; a visible truthful continuation leads toward classify/decide/authorize/reclaim/verify",
-      "status": "UNPROVEN"
+      "status": "IMPLEMENTED"
     }
   ],
   "action_scene_impact_contract": "harness/contracts/action-scene-impact.v1.json",

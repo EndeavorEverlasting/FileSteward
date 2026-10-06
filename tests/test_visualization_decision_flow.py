@@ -44,9 +44,10 @@ def test_unknown_opens_first_unresolved_gate_and_cannot_approve() -> None:
             (Step("observation", Status.WAITING, True),),
         )
     )
-    assert state.scene is DecisionScene.GATE
+    assert state.scene is DecisionScene.RESOLVE
     assert state.active_gate_id == "observation"
     assert DecisionIntent.APPROVE_QUARANTINE not in allowed_intents(state)
+    assert DecisionIntent.DELETE_PERMANENTLY not in allowed_intents(state)
     with pytest.raises(ValueError, match="RECLAIM_PROVEN"):
         observe_authorization(state, AuthorizationState.APPROVED_FOR_ACTION)
 
@@ -93,6 +94,10 @@ def test_reclaim_proven_requests_approval_before_staging() -> None:
     requested = choose_intent(state, DecisionIntent.APPROVE_QUARANTINE)
     assert requested.pending_action is PendingAction.REQUEST_APPROVAL
     assert requested.authorization_state is AuthorizationState.UNAPPROVED
+    delete = choose_intent(state, DecisionIntent.DELETE_PERMANENTLY)
+    assert delete.pending_action is PendingAction.DELETE_PERMANENTLY
+    kept = choose_intent(state, DecisionIntent.KEEP)
+    assert kept.scene is DecisionScene.CLOSED
 
     staged = observe_authorization(
         requested, AuthorizationState.APPROVED_FOR_ACTION
@@ -100,6 +105,20 @@ def test_reclaim_proven_requests_approval_before_staging() -> None:
     assert staged.scene is DecisionScene.STAGED
     assert staged.pending_action is PendingAction.QUARANTINE
     assert staged.last_scene is DecisionScene.APPROVAL
+
+
+def test_keep_closes_unknown_scene() -> None:
+    state = open_decision_session(
+        Node(
+            "unknown",
+            CleanupDisposition.UNKNOWN,
+            AuthorizationState.UNAPPROVED,
+            (Step("observation", Status.WAITING, True),),
+        )
+    )
+    kept = choose_intent(state, DecisionIntent.KEEP)
+    assert kept.scene is DecisionScene.CLOSED
+    assert kept.last_scene is DecisionScene.RESOLVE
 
 
 def test_protected_and_keep_nodes_never_open_delete_approval() -> None:

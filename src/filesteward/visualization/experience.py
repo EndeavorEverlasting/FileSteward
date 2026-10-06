@@ -483,7 +483,7 @@ def render_cinematic_experience_script() -> str:
 
   const cueFrom = (target) => {
     if (!(target instanceof Element)) {
-      return { mode: 'explore', label: 'EXPLORE', actionability: 'OPERABLE', explain: 'Explore the Atlas.' };
+      return { mode: 'idle', label: '', actionability: 'UNAVAILABLE', explain: 'No operable action.', impact: '', destination: '', fingerprint: '' };
     }
     const host = target.closest(
       '.decision-guide-step,[data-action],[data-cursor-mode],[data-cue-label],[data-scene-entry],'
@@ -499,22 +499,36 @@ def render_cinematic_experience_script() -> str:
         || (host.classList.contains('signal-hard-stop') ? 'blocked' : null)
         || (host.classList.contains('signal-primary') || host.classList.contains('gate-lead') || host.classList.contains('chamber-gate') ? 'resolve' : null)
         || (host.classList.contains('sector-card') ? 'dive' : null)
-        || (host.classList.contains('map-node') ? 'focus' : 'explore');
+        || (host.classList.contains('map-node') ? 'focus' : null);
+      if (!mode) {
+        return { mode: 'idle', label: '', actionability: 'UNAVAILABLE', explain: 'No registered action.', impact: '', destination: '', fingerprint: '' };
+      }
       const label = host.getAttribute('data-cue-label')
         || host.getAttribute('data-action')
         || (host.classList.contains('decision-guide-step')
           ? ('PREVIEW ' + (host.getAttribute('data-guide-step') || 'PATH'))
           : null)
-        || (mode === 'blocked' ? 'INSPECT BLOCK' : mode === 'dive' ? 'DIVE IN' : mode === 'resolve' ? 'RESOLVE' : mode === 'focus' ? 'FOCUS' : 'EXPLORE');
+        || (mode === 'blocked' ? 'INSPECT BLOCK' : mode === 'dive' ? 'DIVE IN' : mode === 'resolve' ? 'RESOLVE' : mode === 'focus' ? 'SELECT' : '');
+      if (String(label).toUpperCase() === 'EXPLORE' && host.getAttribute('data-impact-kind') !== 'EXPLORE') {
+        return { mode: 'idle', label: '', actionability: 'UNAVAILABLE', explain: 'EXPLORE is reserved.', impact: '', destination: '', fingerprint: '' };
+      }
       return {
         mode,
         label: String(label).split('_').join(' '),
         actionability: host.getAttribute('data-actionability') || 'OPERABLE',
-        explain: host.getAttribute('data-cue-explain') || host.getAttribute('aria-label') || label
+        explain: host.getAttribute('data-cue-explain') || host.getAttribute('aria-label') || label,
+        impact: host.getAttribute('data-impact-kind') || '',
+        destination: host.getAttribute('data-destination-scene') || '',
+        fingerprint: host.getAttribute('data-context-fingerprint') || ''
       };
     }
-    return { mode: 'explore', label: 'EXPLORE', actionability: 'OPERABLE', explain: 'Explore the Atlas.' };
+    return { mode: 'idle', label: '', actionability: 'UNAVAILABLE', explain: 'No operable action on empty canvas.', impact: '', destination: '', fingerprint: '' };
   };
+
+  let pointerModality = 'pointer';
+  let lastPointer = { x: 0, y: 0 };
+  let hideReticleUntilPointer = false;
+  let cueFingerprint = '';
 
   /* Chrome that must stay readable — cartouche docks in Atlas negative space instead. */
   const cartoucheObstacles = () => Array.from(document.querySelectorAll([
@@ -619,13 +633,30 @@ def render_cinematic_experience_script() -> str:
     return bestClear || best || clampToStage(docks[0][0], docks[0][1]);
   };
 
-  const paintCue = (cue, x, y, showCartouche) => {
-    if (reticle && fine.matches && !reduced.matches) {
-      reticle.dataset.cursorMode = cue.mode;
-      reticle.dataset.actionability = cue.actionability;
-      if (reticleLabel) reticleLabel.textContent = cue.label;
-      reticle.classList.add('is-visible', 'is-active');
-      reticle.style.transform = 'translate3d(' + (x - 28) + 'px,' + (y - 28) + 'px,0)';
+  const paintCue = (cue, x, y, showCartouche, moveReticlePos) => {
+    const fp = cue.fingerprint || (cue.mode + '|' + cue.label + '|' + (cue.impact || ''));
+    if (cueFingerprint && fp && cueFingerprint !== fp) {
+      if (reticle) reticle.classList.remove('is-visible', 'is-active');
+    }
+    cueFingerprint = fp;
+    if (!cue.mode || cue.actionability === 'UNAVAILABLE') {
+      if (reticle) reticle.classList.remove('is-visible', 'is-active');
+      if (cartouche) {
+        cartouche.hidden = true;
+        cartouche.setAttribute('aria-hidden', 'true');
+      }
+      return;
+    }
+    if (reticle && fine.matches && !reduced.matches && moveReticlePos !== false) {
+      if (hideReticleUntilPointer) {
+        reticle.classList.remove('is-visible', 'is-active');
+      } else {
+        reticle.dataset.cursorMode = cue.mode;
+        reticle.dataset.actionability = cue.actionability;
+        if (reticleLabel) reticleLabel.textContent = cue.label;
+        reticle.classList.add('is-visible', 'is-active');
+        reticle.style.transform = 'translate3d(' + (x - 28) + 'px,' + (y - 28) + 'px,0)';
+      }
     }
     if (cartouche && showCartouche) {
       if (cartoucheVerb) cartoucheVerb.textContent = cue.label;
@@ -642,8 +673,11 @@ def render_cinematic_experience_script() -> str:
   };
 
   const moveReticle = (event) => {
+    pointerModality = 'pointer';
+    hideReticleUntilPointer = false;
+    lastPointer = { x: event.clientX, y: event.clientY };
     const cue = cueFrom(event.target);
-    paintCue(cue, event.clientX, event.clientY, true);
+    paintCue(cue, event.clientX, event.clientY, true, true);
   };
 
   const syncCameraTrace = () => {
@@ -722,6 +756,8 @@ def render_cinematic_experience_script() -> str:
     const explain = step.getAttribute('data-cue-explain') || '';
     const label = step.getAttribute('data-cue-label') || key;
     const atlas = window.FileStewardAtlas;
+    hideReticleUntilPointer = true;
+    if (reticle) reticle.classList.remove('is-visible', 'is-active');
     openScenePanel(label, explain);
     workspace.dataset.pathPreview = key;
     workspace.dataset.openDecisionScene = key;
@@ -816,8 +852,13 @@ def render_cinematic_experience_script() -> str:
     document.body.appendChild(marquee);
   }
   let rangeDrag = null;
+  const RANGE_THRESHOLD = 8;
   const inChrome = (target) => target instanceof Element && !!target.closest(
-    'input,textarea,button,a,select,[contenteditable="true"],.decision-compass,.decision-chamber'
+    'input,textarea,button,a,select,[contenteditable="true"],.decision-compass,.decision-chamber,'
+    + '.atlas-hud,.filters,.navigator-pane,header.shell,.chamber-actions,.next-action'
+  );
+  const eligibleRangeSurface = (target) => target instanceof Element && !!target.closest(
+    '.map-wrap,.map-stage,#storage-stage,.map-node,[data-atlas-surface]'
   );
   document.addEventListener('selectstart', (event) => {
     if (inChrome(event.target)) return;
@@ -825,16 +866,22 @@ def render_cinematic_experience_script() -> str:
   });
   document.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || inChrome(event.target)) return;
-    if (window.getSelection) window.getSelection().removeAllRanges();
-    rangeDrag = { x: event.clientX, y: event.clientY };
-    marquee.hidden = false;
-    marquee.style.left = rangeDrag.x + 'px';
-    marquee.style.top = rangeDrag.y + 'px';
-    marquee.style.width = '0px';
-    marquee.style.height = '0px';
+    if (!eligibleRangeSurface(event.target)) return;
+    rangeDrag = { x: event.clientX, y: event.clientY, armed: false };
   });
   document.addEventListener('pointermove', (event) => {
     if (!rangeDrag) return;
+    const dx = Math.abs(event.clientX - rangeDrag.x);
+    const dy = Math.abs(event.clientY - rangeDrag.y);
+    if (!rangeDrag.armed) {
+      if (dx < RANGE_THRESHOLD && dy < RANGE_THRESHOLD) return;
+      rangeDrag.armed = true;
+      marquee.hidden = false;
+      marquee.style.left = rangeDrag.x + 'px';
+      marquee.style.top = rangeDrag.y + 'px';
+      marquee.style.width = '0px';
+      marquee.style.height = '0px';
+    }
     const x = Math.min(event.clientX, rangeDrag.x);
     const y = Math.min(event.clientY, rangeDrag.y);
     marquee.style.left = x + 'px';
@@ -845,8 +892,10 @@ def render_cinematic_experience_script() -> str:
       mode: 'focus',
       label: 'FRAME RANGE',
       actionability: 'OPERABLE',
-      explain: 'Immersive range mark. Native browser selection is contained.'
-    }, event.clientX, event.clientY, true);
+      explain: 'Immersive range mark. Native browser selection is contained.',
+      impact: 'FILTER',
+      fingerprint: 'range'
+    }, event.clientX, event.clientY, true, true);
   });
   const endRange = () => {
     rangeDrag = null;
@@ -868,7 +917,24 @@ def render_cinematic_experience_script() -> str:
   app.addEventListener('focusin', (event) => {
     const cue = cueFrom(event.target);
     const rect = event.target instanceof Element ? event.target.getBoundingClientRect() : null;
-    if (rect) paintCue(cue, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
+    if (!rect) return;
+    /* Pointer modality owns the reticle — never teleport to element center. */
+    if (pointerModality === 'pointer') {
+      hideReticleUntilPointer = true;
+      if (reticle) reticle.classList.remove('is-visible', 'is-active');
+      paintCue(cue, lastPointer.x, lastPointer.y, true, false);
+      return;
+    }
+    pointerModality = 'keyboard';
+    hideReticleUntilPointer = true;
+    if (reticle) reticle.classList.remove('is-visible', 'is-active');
+    const x = Number.isFinite(lastPointer.x) && (lastPointer.x || lastPointer.y)
+      ? lastPointer.x
+      : (rect.left + rect.width / 2);
+    const y = Number.isFinite(lastPointer.y) && (lastPointer.x || lastPointer.y)
+      ? lastPointer.y
+      : (rect.top + rect.height / 2);
+    paintCue(cue, x, y, true, false);
   });
 
   guideSteps().forEach((step) => {
@@ -904,7 +970,14 @@ def render_cinematic_experience_script() -> str:
     window.requestAnimationFrame(setGuideState);
   });
 
+  let lastObservedScene = workspace.dataset.openDecisionScene || '';
   const observer = new MutationObserver(() => {
+    const sceneNow = workspace.dataset.openDecisionScene || '';
+    if (sceneNow !== lastObservedScene) {
+      lastObservedScene = sceneNow;
+      hideReticleUntilPointer = true;
+      if (reticle) reticle.classList.remove('is-visible', 'is-active');
+    }
     setGuideState();
     syncCameraTrace();
   });

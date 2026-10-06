@@ -88,12 +88,20 @@ def test_map_node_cues_distinguish_explore_focus_and_protected() -> None:
     focus = cue_for_map_node(reclaim, selected=True)
     block = cue_for_map_node(protected, selected=False)
 
-    assert explore.verb is InteractionVerb.EXPLORE
+    assert explore.verb is InteractionVerb.FOCUS
+    assert explore.label == "SELECT"
+    assert explore.verb is not InteractionVerb.EXPLORE
     assert explore.quality_tone is QualityTone.RECLAIM_CANDIDATE
     assert focus.verb is InteractionVerb.FOCUS
     assert block.verb is InteractionVerb.INSPECT_BLOCK
     assert block.quality_tone is QualityTone.BLOCKED
     assert "title=" not in html_data_attrs(explore)
+    for cue in (explore, focus, block):
+        assert cue.source_scene
+        assert cue.destination_scene
+        assert cue.impact_kind
+        assert cue.continuation
+        assert cue.context_fingerprint
 
 
 def test_navigation_cues_are_deterministic() -> None:
@@ -107,6 +115,9 @@ def test_navigation_cues_are_deterministic() -> None:
     assert brand.verb is InteractionVerb.RETURN
     assert brand.consequence is Consequence.READ_ONLY
     assert brand.label == cue_for_navigation("home").label
+    unknown = cue_for_navigation("not_a_registered_nav")
+    assert unknown.availability is Availability.UNAVAILABLE
+    assert unknown.verb is not InteractionVerb.EXPLORE
 
 
 def test_brand_title_is_truthful_home_affordance() -> None:

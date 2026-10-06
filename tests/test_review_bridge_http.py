@@ -68,10 +68,11 @@ def test_bridge_security_and_decision_flow(review_run: Path) -> None:
             html = response.read().decode("utf-8")
         assert "decision-bridge-runtime" in html
         assert "NO BYTES REMOVED" in html
-        assert "/api/v1/delete" not in html
-        token = json.loads(
+        runtime = json.loads(
             html.split('id="decision-bridge-runtime">', 1)[1].split("</script>", 1)[0]
-        )["sessionToken"]
+        )
+        assert runtime["deletePath"] == "/api/v1/delete"
+        token = runtime["sessionToken"]
         assert token
         assert token not in (review_run / "decision-chamber-state.json").read_text(
             encoding="utf-8"
@@ -93,7 +94,7 @@ def test_bridge_security_and_decision_flow(review_run: Path) -> None:
         assert gate_id is not None
         assert gate_payload is not None
         assert "APPROVE_QUARANTINE" not in gate_payload["allowed_intents"]
-        assert gate_payload["open_decision_scene"] == "GATE"
+        assert gate_payload["open_decision_scene"] in {"GATE", "RESOLVE"}
         legal_intent = (
             "RESCAN"
             if gate_payload["evidence_disposition"] == "UNKNOWN"
@@ -155,6 +156,33 @@ def test_bridge_security_and_decision_flow(review_run: Path) -> None:
         assert (review_run / "decision-chamber-state.json").is_file()
         durable = (review_run / "decision-chamber-state.json").read_text(encoding="utf-8")
         assert token not in durable
+
+        original_scene = body.get("open_decision_scene")
+        original_gate = body.get("active_gate_id")
+        original_selected = body.get("selected_node_id")
+        code, keep_body = _json(
+            f"{origin}{DECISION_PATH}",
+            method="POST",
+            payload={
+                "run_id": result.run_id,
+                "item_id": gate_id,
+                "intent": "KEEP",
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Origin": origin,
+                SESSION_HEADER: token,
+            },
+        )
+        assert code == 200, keep_body
+        pending = keep_body.get("execution_state") == "pending"
+        changed = (
+            keep_body.get("selected_node_id") != original_selected
+            or keep_body.get("open_decision_scene") != original_scene
+            or keep_body.get("active_gate_id") != original_gate
+            or keep_body.get("next_item_id") not in {None, original_selected}
+        )
+        assert pending or changed
 
         # UNKNOWN cannot approve even if a client asks.
         unknown_id = None

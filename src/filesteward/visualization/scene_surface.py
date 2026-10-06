@@ -1,7 +1,8 @@
 """U1 scenery surfaces — header scenes, classification legend, next actions.
 
 Presentation/orchestration helpers only. Legal intents remain owned by
-``decision_flow.allowed_intents()``. Permanent deletion is never offered.
+``decision_flow.allowed_intents()``. Permanent deletion is available through
+the repository-owned deletion package, not through quarantine approval.
 
 Success stacks:
   USER activate metric card
@@ -20,7 +21,7 @@ Success stacks:
     -> operator_next_actions(flow)
     -> KEEP / REVIEW_LATER / … or OPEN APPROVAL for reclaim
     -> APPROVE_QUARANTINE path ends STAGED / NO BYTES REMOVED
-    -> never emits PERMANENT_DELETE
+    -> DELETE_PERMANENTLY uses the deletion-package path when eligible
 
 Failure:
   PROTECTED / no allowed intents
@@ -48,6 +49,8 @@ __all__ = [
     "OperatorNextAction",
     "PaneSceneEntry",
     "PathStepPreview",
+    "assert_noneligible_cannot_delete",
+    "canonical_scene_impacts",
     "classification_legend",
     "evidence_gap_mode_brief",
     "footer_ticker_items",
@@ -182,7 +185,10 @@ def path_step_previews() -> tuple[PathStepPreview, ...]:
             title="STAGED",
             summary="NO BYTES REMOVED",
             cue_label="PREVIEW STAGED",
-            explanation="Quarantine staged — NO BYTES REMOVED. Permanent deletion is not implemented.",
+            explanation=(
+                "Quarantine staged, NO BYTES REMOVED. Permanent delete uses a "
+                "separate DELETE PERMANENTLY path when eligible."
+            ),
             cursor_mode="approve",
             consequence="STAGE_QUARANTINE",
             prerequisites="Validated APPROVED_FOR_ACTION receipt.",
@@ -246,7 +252,7 @@ def footer_ticker_items(
     items = [
         f"AUTH {authorization}",
         f"SCENE {scene_hint}",
-        "NO PERMANENT DELETE — quarantine staging only",
+        "QUARANTINE STAGING ≠ PERMANENT DELETE",
         "Brand title / Home key → Atlas Home",
         "Decision Path steps preview consequence before commit",
         "Legend states ≠ mutation authority",
@@ -400,12 +406,13 @@ def scenery_subtitle(flow: DecisionFlowState, disposition: CleanupDisposition) -
     if flow.scene is DecisionScene.APPROVAL:
         return (
             f"{tone.value.replace('_', ' ')} · scene {scene} · "
-            "delete intent opens approval → quarantine staging — NO BYTES REMOVED"
+            "quarantine approval or DELETE PERMANENTLY for eligible reclaim — "
+            "quarantine stages with NO BYTES REMOVED"
         )
     if flow.scene is DecisionScene.STAGED:
         return (
             f"{tone.value.replace('_', ' ')} · scene {scene} · "
-            "QUARANTINE STAGED — permanent deletion is not implemented"
+            "quarantine staged, NO BYTES REMOVED; permanent delete is a separate path"
         )
     if not allowed_intents(flow):
         return (
@@ -430,7 +437,7 @@ def operator_next_actions(flow: DecisionFlowState) -> tuple[OperatorNextAction, 
                 explanation=(
                     "No legal operator intents from this evidence/authorization state. "
                     "Classification cannot be force-changed here; permanent deletion "
-                    "is not available."
+                    "stays unavailable for this evidence."
                 ),
                 intent=None,
                 opens_approval=False,
@@ -446,9 +453,9 @@ def operator_next_actions(flow: DecisionFlowState) -> tuple[OperatorNextAction, 
                     action_id="open_approval",
                     label="STAGE REMOVAL PATH",
                     explanation=(
-                        "Operator delete/remove intent opens exact-plan approval. "
-                        "Terminal truth: quarantine staging — NO BYTES REMOVED. "
-                        "Permanent deletion is not implemented."
+                        "Operator quarantine intent opens exact-plan approval. "
+                        "Terminal truth: quarantine staged — NO BYTES REMOVED. "
+                        "Permanent delete uses a separate DELETE PERMANENTLY path."
                     ),
                     intent=intent,
                     opens_approval=True,
@@ -503,9 +510,28 @@ def operator_next_actions(flow: DecisionFlowState) -> tuple[OperatorNextAction, 
                     consequence="RECORD_INTENT",
                 )
             )
+            continue
+        if intent is DecisionIntent.DELETE_PERMANENTLY:
+            actions.append(
+                OperatorNextAction(
+                    action_id="delete_permanently",
+                    label="DELETE PERMANENTLY",
+                    explanation=(
+                        "One deliberate DELETE PERMANENTLY commit for the exact "
+                        "eligible RECLAIM_PROVEN set. Uses deletion-package approval, "
+                        "fresh preflight, executor, and receipt — not quarantine."
+                    ),
+                    intent=intent,
+                    opens_approval=False,
+                    consequence="DELETE_PERMANENTLY",
+                )
+            )
 
     # Always surface delete/remove intent fate — never silent absence (ncdu/BleachBit confirm pattern).
-    if DecisionIntent.APPROVE_QUARANTINE not in intents:
+    if (
+        DecisionIntent.APPROVE_QUARANTINE not in intents
+        and DecisionIntent.DELETE_PERMANENTLY not in intents
+    ):
         disp = flow.disposition.value.replace("_", " ")
         actions.append(
             OperatorNextAction(
@@ -515,7 +541,7 @@ def operator_next_actions(flow: DecisionFlowState) -> tuple[OperatorNextAction, 
                     f"Delete/remove intent is blocked for {disp}. "
                     "Quarantine staging requires RECLAIM_PROVEN + UNAPPROVED → APPROVAL. "
                     "UNKNOWN/HUMAN_REVIEW stay on RESCAN / KEEP / REVIEW LATER. "
-                    "Permanent deletion is not implemented. NO BYTES REMOVED."
+                    "Permanent deletion requires RECLAIM_PROVEN and the DELETE PERMANENTLY path."
                 ),
                 intent=None,
                 opens_approval=False,
@@ -525,10 +551,111 @@ def operator_next_actions(flow: DecisionFlowState) -> tuple[OperatorNextAction, 
     return tuple(actions)
 
 
-def assert_no_permanent_delete_actions(actions: Sequence[OperatorNextAction]) -> None:
+def _is_executable_delete_action(action: OperatorNextAction) -> bool:
+    if action.intent is DecisionIntent.DELETE_PERMANENTLY:
+        return True
+    if action.action_id in {
+        "delete_permanently",
+        "delete",
+        "permanent_delete",
+        "permanently_delete",
+    }:
+        return action.consequence != "READ_ONLY"
+    return False
+
+
+def assert_noneligible_cannot_delete(
+    actions: Sequence[OperatorNextAction],
+    flow: DecisionFlowState,
+) -> None:
+    if flow.disposition not in {
+        CleanupDisposition.UNKNOWN,
+        CleanupDisposition.HUMAN_REVIEW,
+        CleanupDisposition.PROTECTED,
+        CleanupDisposition.KEEP_PROVEN,
+    }:
+        return
     for action in actions:
-        blob = f"{action.action_id} {action.label} {action.explanation}".upper()
-        if "PERMANENT" in blob and "NOT IMPLEMENTED" not in blob:
-            raise AssertionError("permanent deletion must remain unavailable")
-        if action.action_id in {"delete", "permanent_delete", "permanently_delete"}:
-            raise AssertionError("delete action ids are forbidden")
+        if _is_executable_delete_action(action):
+            raise AssertionError(
+                "UNKNOWN/HUMAN_REVIEW/PROTECTED/KEEP flows cannot execute delete"
+            )
+
+
+def canonical_scene_impacts() -> tuple[dict[str, object], ...]:
+    """Declare each canonical scene's impact and continuation policy."""
+
+    return (
+        {
+            "scene_id": "MAP",
+            "purpose": "Locate storage pressure without granting reclaim authority.",
+            "primary_impact": "ORIENT",
+            "entry_context": "Atlas overview or search landing.",
+            "operable_actions": ("SELECT", "FOCUS", "DIVE_IN", "PULL_BACK", "LOCATE"),
+            "success_evidence": "A selected evidence node is focused.",
+            "continuation_policy": "Advance focused evidence into FOCUS then GATE/RESOLVE.",
+        },
+        {
+            "scene_id": "FOCUS",
+            "purpose": "Magnify exact evidence while preserving the selected anchor.",
+            "primary_impact": "CLASSIFY",
+            "entry_context": "A selected presentation node.",
+            "operable_actions": ("FOCUS", "OPEN_GATE"),
+            "success_evidence": "Inspector and chamber agree on the selected node.",
+            "continuation_policy": "Open the first unresolved gate or legal intent surface.",
+        },
+        {
+            "scene_id": "GATE",
+            "purpose": "Surface the first unresolved evidence gate.",
+            "primary_impact": "CLASSIFY",
+            "entry_context": "Focused evidence with an unresolved gate.",
+            "operable_actions": ("RESCAN", "KEEP", "REVIEW_LATER", "DECLARE_REGENERABLE_CONTRACT"),
+            "success_evidence": "Active gate id is explicit and legal intents are listed.",
+            "continuation_policy": "Commit a legal intent, then advance from authoritative readback.",
+        },
+        {
+            "scene_id": "RESOLVE",
+            "purpose": "Choose only legal operator intents for the open gate.",
+            "primary_impact": "DECIDE",
+            "entry_context": "An open gate with allowed_intents().",
+            "operable_actions": ("RESCAN", "KEEP", "REVIEW_LATER", "DECLARE_REGENERABLE_CONTRACT"),
+            "success_evidence": "Persisted operator decision and a derived next scene/item.",
+            "continuation_policy": "Do not reopen the same unresolved scene after KEEP/REVIEW_LATER.",
+        },
+        {
+            "scene_id": "APPROVAL",
+            "purpose": "Authorize exact quarantine or eligible permanent-delete scope.",
+            "primary_impact": "AUTHORIZE",
+            "entry_context": "RECLAIM_PROVEN + UNAPPROVED evidence.",
+            "operable_actions": ("APPROVE_QUARANTINE", "DELETE_PERMANENTLY", "KEEP", "REVIEW_LATER"),
+            "success_evidence": "Exact-plan approval or deletion-package approval artifact.",
+            "continuation_policy": "Quarantine continues to STAGED; delete continues to RESULT.",
+        },
+        {
+            "scene_id": "STAGED",
+            "purpose": "Show quarantine staging with no bytes removed.",
+            "primary_impact": "AUTHORIZE",
+            "entry_context": "Validated QUARANTINE APPROVED_FOR_ACTION receipt.",
+            "operable_actions": ("INSPECT_STAGED",),
+            "success_evidence": "STAGED copy states NO BYTES REMOVED.",
+            "continuation_policy": "Permanent delete remains a separate DELETE PERMANENTLY path when eligible.",
+        },
+        {
+            "scene_id": "RESULT",
+            "purpose": "Surface deletion receipt counts and reclaim verification.",
+            "primary_impact": "VERIFY",
+            "entry_context": "Completed DELETE PERMANENTLY executor readback.",
+            "operable_actions": ("REVIEW_RECEIPT",),
+            "success_evidence": "attempted/succeeded/failed/skipped plus reclaim fields.",
+            "continuation_policy": "Continue to residual eligible items or CLOSED.",
+        },
+        {
+            "scene_id": "CLOSED",
+            "purpose": "Terminal keep/protected/completed item is off the reclaim journey.",
+            "primary_impact": "DECIDE",
+            "entry_context": "KEEP, REVIEW_LATER, PROTECTED, KEEP_PROVEN, or finished authorization.",
+            "operable_actions": (),
+            "success_evidence": "Item is not reopened as GATE/RESOLVE.",
+            "continuation_policy": "Advance to the next actionable item when one remains.",
+        },
+    )

@@ -17,9 +17,11 @@ __all__ = [
     "DecisionFlowState",
     "DecisionIntent",
     "DecisionScene",
+    "ExecutionState",
     "PendingAction",
     "allowed_intents",
     "choose_intent",
+    "execution_state_for",
     "observe_authorization",
     "open_decision_session",
 ]
@@ -42,8 +44,10 @@ class DecisionScene(str, Enum):
     MAP = "MAP"
     FOCUS = "FOCUS"
     GATE = "GATE"
+    RESOLVE = "RESOLVE"
     APPROVAL = "APPROVAL"
     STAGED = "STAGED"
+    RESULT = "RESULT"
     CLOSED = "CLOSED"
 
 
@@ -53,6 +57,7 @@ class DecisionIntent(str, Enum):
     KEEP = "KEEP"
     REVIEW_LATER = "REVIEW_LATER"
     APPROVE_QUARANTINE = "APPROVE_QUARANTINE"
+    DELETE_PERMANENTLY = "DELETE_PERMANENTLY"
 
 
 class PendingAction(str, Enum):
@@ -62,6 +67,14 @@ class PendingAction(str, Enum):
     RECORD_KEEP = "RECORD_KEEP"
     REQUEST_APPROVAL = "REQUEST_APPROVAL"
     QUARANTINE = "QUARANTINE"
+    DELETE_PERMANENTLY = "DELETE_PERMANENTLY"
+
+
+class ExecutionState(str, Enum):
+    PENDING = "pending"
+    COMPLETE = "complete"
+    BLOCKED = "blocked"
+    EXECUTABLE = "executable"
 
 
 @dataclass(frozen=True)
@@ -74,6 +87,8 @@ class DecisionFlowState:
     last_scene: DecisionScene | None = None
     pending_action: PendingAction = PendingAction.NONE
     last_transition: str = "open"
+    scene_revision: int = 0
+    execution_state: ExecutionState = ExecutionState.EXECUTABLE
 
 
 def _value(value: object) -> str:
@@ -107,9 +122,9 @@ def open_decision_session(node: _Node) -> DecisionFlowState:
         else:
             scene = DecisionScene.CLOSED
     else:
-        scene = DecisionScene.GATE if active_gate_id else DecisionScene.FOCUS
+        scene = DecisionScene.RESOLVE if active_gate_id else DecisionScene.FOCUS
 
-    return DecisionFlowState(
+    flow = DecisionFlowState(
         selected_node_id=node.node_id,
         scene=scene,
         disposition=disposition,
@@ -121,12 +136,13 @@ def open_decision_session(node: _Node) -> DecisionFlowState:
             else PendingAction.NONE
         ),
     )
+    return replace(flow, execution_state=execution_state_for(flow))
 
 
 def allowed_intents(state: DecisionFlowState) -> tuple[DecisionIntent, ...]:
     """Return operator choices without pretending they are evidence transitions."""
 
-    if state.scene is DecisionScene.GATE:
+    if state.scene in {DecisionScene.GATE, DecisionScene.RESOLVE}:
         if state.disposition is CleanupDisposition.UNKNOWN:
             return (
                 DecisionIntent.RESCAN,
@@ -147,6 +163,7 @@ def allowed_intents(state: DecisionFlowState) -> tuple[DecisionIntent, ...]:
     ):
         return (
             DecisionIntent.APPROVE_QUARANTINE,
+            DecisionIntent.DELETE_PERMANENTLY,
             DecisionIntent.KEEP,
             DecisionIntent.REVIEW_LATER,
         )
@@ -172,20 +189,23 @@ def choose_intent(
     }
 
     if intent is DecisionIntent.RESCAN:
-        return replace(state, pending_action=PendingAction.RESCAN, **common)
+        next_state = replace(state, pending_action=PendingAction.RESCAN, **common)
+        return replace(next_state, execution_state=execution_state_for(next_state))
     if intent is DecisionIntent.DECLARE_REGENERABLE_CONTRACT:
-        return replace(
+        next_state = replace(
             state,
             pending_action=PendingAction.DECLARE_CONTRACT,
             **common,
         )
+        return replace(next_state, execution_state=execution_state_for(next_state))
     if intent is DecisionIntent.KEEP:
-        return replace(
+        next_state = replace(
             state,
             scene=DecisionScene.CLOSED,
             pending_action=PendingAction.RECORD_KEEP,
             **common,
         )
+        return replace(next_state, execution_state=execution_state_for(next_state))
     if intent is DecisionIntent.REVIEW_LATER:
         return replace(
             state,
@@ -193,14 +213,22 @@ def choose_intent(
             pending_action=PendingAction.NONE,
             **common,
         )
+    if intent is DecisionIntent.DELETE_PERMANENTLY:
+        next_state = replace(
+            state,
+            pending_action=PendingAction.DELETE_PERMANENTLY,
+            **common,
+        )
+        return replace(next_state, execution_state=execution_state_for(next_state))
 
     # APPROVE_QUARANTINE is an approval request, not approval itself.
-    return replace(
+    next_state = replace(
         state,
         scene=DecisionScene.APPROVAL,
         pending_action=PendingAction.REQUEST_APPROVAL,
         **common,
     )
+    return replace(next_state, execution_state=execution_state_for(next_state))
 
 
 def observe_authorization(
@@ -240,4 +268,27 @@ def observe_authorization(
             last_transition=authorization.value.lower(),
         )
 
-    return replace(state, authorization_state=authorization)
+    return replace(
+        state,
+        authorization_state=authorization,
+        execution_state=execution_state_for(
+            replace(state, authorization_state=authorization)
+        ),
+    )
+
+
+def execution_state_for(state: DecisionFlowState) -> ExecutionState:
+    if state.pending_action in {
+        PendingAction.RESCAN,
+        PendingAction.DECLARE_CONTRACT,
+        PendingAction.DELETE_PERMANENTLY,
+        PendingAction.REQUEST_APPROVAL,
+    }:
+        return ExecutionState.PENDING
+    if state.scene is DecisionScene.CLOSED:
+        return ExecutionState.COMPLETE
+    if state.scene is DecisionScene.RESULT:
+        return ExecutionState.COMPLETE
+    if not allowed_intents(state) and state.scene is not DecisionScene.STAGED:
+        return ExecutionState.BLOCKED
+    return ExecutionState.EXECUTABLE

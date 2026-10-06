@@ -18,7 +18,7 @@ from filesteward.visualization.decision_flow import (
     open_decision_session,
 )
 from filesteward.visualization.scene_surface import (
-    assert_no_permanent_delete_actions,
+    assert_noneligible_cannot_delete,
     classification_legend,
     evidence_gap_mode_brief,
     footer_ticker_items,
@@ -112,17 +112,18 @@ def test_classification_legend_is_not_color_only() -> None:
     assert all(entry.meaning and entry.label for entry in legend)
 
 
-def test_reclaim_unapproved_offers_stage_removal_not_permanent_delete() -> None:
+def test_reclaim_unapproved_offers_stage_removal_and_permanent_delete() -> None:
     node = _node(disposition=CleanupDisposition.RECLAIM_PROVEN)
     flow = open_decision_session(node)
     actions = operator_next_actions(flow)
-    assert_no_permanent_delete_actions(actions)
     labels = {action.label for action in actions}
     assert "STAGE REMOVAL PATH" in labels
     assert "KEEP" in labels
+    assert "DELETE PERMANENTLY" in labels
     assert "STAGE REMOVAL PATH — LOCKED" not in labels
     assert any(action.intent is DecisionIntent.APPROVE_QUARANTINE for action in actions)
-    assert all("PERMANENT" not in action.label.upper() for action in actions)
+    assert any(action.intent is DecisionIntent.DELETE_PERMANENTLY for action in actions)
+    assert any(action.action_id == "delete_permanently" for action in actions)
     assert any("NO BYTES REMOVED" in action.explanation for action in actions)
 
 
@@ -130,7 +131,7 @@ def test_unknown_surfaces_locked_stage_removal_blocker() -> None:
     node = _node(disposition=CleanupDisposition.UNKNOWN, unresolved=True)
     flow = open_decision_session(node)
     actions = operator_next_actions(flow)
-    assert_no_permanent_delete_actions(actions)
+    assert_noneligible_cannot_delete(actions, flow)
     by_id = {action.action_id: action for action in actions}
     assert "stage_removal_locked" in by_id
     assert "RESCAN" in {a.label for a in actions}
@@ -263,7 +264,7 @@ def test_pane_and_footer_surfaces_exist() -> None:
         scene_hint="APPROVAL",
     )
     assert any("ticker" not in item.lower() for item in ticker)
-    assert any("NO PERMANENT DELETE" in item for item in ticker)
+    assert any("QUARANTINE" in item for item in ticker)
 
 
 def test_shell_renders_legend_metrics_and_next_actions() -> None:

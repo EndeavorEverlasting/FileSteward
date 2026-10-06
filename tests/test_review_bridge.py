@@ -4,6 +4,7 @@ from filesteward.approval import ApprovalAction
 from filesteward.review_bridge import (
     APPROVAL_PATH,
     DECISION_PATH,
+    DELETE_PATH,
     STATE_PATH,
     ApprovalRequest,
     DecisionBridgeIntent,
@@ -16,6 +17,7 @@ def test_bridge_routes_are_versioned_and_loopback_only() -> None:
     assert STATE_PATH == "/api/v1/state"
     assert DECISION_PATH == "/api/v1/decision"
     assert APPROVAL_PATH == "/api/v1/approval"
+    assert DELETE_PATH == "/api/v1/delete"
     assert is_loopback_host("127.0.0.1")
     assert is_loopback_host("localhost")
     assert is_loopback_host("::1")
