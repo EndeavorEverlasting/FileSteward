@@ -17,7 +17,8 @@
     "P83",
     "P82",
     "P01",
-    "P04"
+    "P04",
+    "P97"
   ],
   "execution_mode": "PARALLEL_WITH_LIVE_DELETE_SPRINT",
   "outcome": "Every completed public-UI decision advances to the next authoritative scene/gate/item; eligible permanent deletion is one deliberate exact-scope commit through the repository delete engine; pointer and scenery remain coherent.",
@@ -27,7 +28,11 @@
     "DUX-03 choose_intent reducer bypassed by bridge decision persistence",
     "DUX-04 UI deletion copy/approval route stale relative to merged permanent-delete engine",
     "DUX-05 focusin can teleport fixed pointer reticle to focused element center",
-    "DUX-06 document-level range gesture capture is broader than eligible map drag"
+    "DUX-06 document-level range gesture capture is broader than eligible map drag",
+    "DUX-07 false EXPLORE promise for targets whose activation does not enter/operate an exploration environment",
+    "DUX-08 cue_for_navigation permissive unknown-action fallback becomes operable EXPLORE",
+    "DUX-09 InteractionCue lacks source/destination scene, impact, continuation, and freshness identity",
+    "DUX-10 inherited interaction-scene acceptance does not require scene impact/continuation"
   ],
   "critical_path": [
     "refresh_provider_truth",
@@ -142,7 +147,15 @@
       "UX-T19",
       "UX-T20",
       "UX-T21",
-      "UX-T22"
+      "UX-T22",
+      "UX-T23",
+      "UX-T24",
+      "UX-T25",
+      "UX-T26",
+      "UX-T27",
+      "UX-T28",
+      "UX-T29",
+      "UX-T30"
     ],
     "terminal_rule": "all required rows must reach their specified proof ceiling; PR readiness alone is non-terminal"
   },
@@ -178,5 +191,33 @@
       "state": "BLOCKED_JUDGMENT_GAP",
       "behavior": "advance all independent mechanical work, preserve evidence, return smallest unresolved decision, do not invent judgment"
     }
+  },
+  "action_scene_impact": {
+    "p97_prior_art": "docs/program/action-scene-impact-prior-art-p97-2026-10-06.md",
+    "harness_contract": "harness/contracts/action-scene-impact.v1.json",
+    "theorem": [
+      "ACTION",
+      "SCENE_OR_CONTEXT_TRANSITION",
+      "IMPACT",
+      "READBACK_FEEDBACK",
+      "CONTINUATION"
+    ],
+    "primary_throughline": [
+      "CLASSIFY",
+      "DECIDE",
+      "AUTHORIZE",
+      "RECLAIM",
+      "VERIFY"
+    ],
+    "supporting_impacts": [
+      "ORIENT",
+      "EXPLORE",
+      "FILTER"
+    ],
+    "explore_reserved": true,
+    "generic_explore_fallback_forbidden": true,
+    "stale_projection_fails_closed": true,
+    "context_projection_is_not_second_state_machine": true,
+    "classification_results_feed_filterable_views": true
   }
 }
