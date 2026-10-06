@@ -112,6 +112,23 @@ Reproduce or disprove each against refreshed current truth. Fix every still-mate
 - `load_run_protection_context` treats every `protected-exclusions.csv` item `path` as a `ProtectedRoot` — **VERIFIED_DEFECT** (ANCESTOR rows whose path is the scan root, e.g. `%LOCALAPPDATA%\Temp`, become protection roots; all reclaim candidates under that root then fail preflight with `PROTECTION_HIT`/`DESCENDANT`. Observed: 16605 loaded roots including Temp as git-repository; subset preflight 40/40 PROTECTION_HIT. Fix: roots come from `run.json` `protected_roots` only; CSV `path` is never a root; optional explicit `root`/`protected_root` column only; ANCESTOR rows never contribute roots.)
 - duplicate unresolved review threads for same families — **DUPLICATE** (collapsed into the owners above; Codex/CodeAnt TOCTOU = one fix)
 - new material finding from repairs/tests — **STALE** / none new beyond the verified set above at repair time
+- full-set content hashing of 8,762 Temp items made `delete-preflight` on `reclaim-regen-caches-001` non-terminal in this iteration (CPU-bound, no receipt after ~40 minutes) — **OBSERVED**; same-scope subset used
+- execute replay on `reclaim-temp-largefiles-001` overwrote a prior SUCCEEDED identity with SKIPPED `PRIOR_SUCCEEDED` + one `DELETE_FAILED` (locked VPN temp) and `succeeded_count=0` on the surviving receipt — **OBSERVED**; 35 approved large files were already absent; residual locked file left in place
+
+### OBSERVED FACTS — live Temp deletion (this iteration)
+
+- Integrated repair floor: `main@74506e7af347b8117b5477b3e1dbca4471422db1` (PR #27 ancestry includes PR #24/#26 fail-closed repairs)
+- Session C: free at first refresh: `21607567360` bytes
+- Live run: `reclaim-temp-remaining-001` (bounded `%LOCALAPPDATA%\Temp`, same regenerable contract as `reclaim-regen-caches-001`; stale/full-set identity refreshed inside authorized scope)
+- Preflight: PASS (`items=17`)
+- Approval artifact: `delete-approval.json` action `DELETE_PERMANENTLY`
+- Execution receipt: ignored `var/runs/reclaim-temp-remaining-001/delete-execution-receipt.json`
+- `mode=DELETE_PERMANENTLY` `overall=SUCCEEDED`
+- attempted=17 succeeded=17 failed=0 skipped=0
+- Receipt free bytes before=`22783606784` after=`22849888256` delta=`66281472`
+- Operator `Get-PSDrive C` immediately around execute: before=`22783729664` after=`22849880064` delta=`66150400`
+- Reclaim state: `VERIFIED_RECLAIM` (receipt; concurrent disk activity may inflate delta)
+- Residual: locked `%TEMP%\VPNCA5C.tmp` from the largefile replay (not in the succeeding 17)
 
 ## 5. Execution frame
 
