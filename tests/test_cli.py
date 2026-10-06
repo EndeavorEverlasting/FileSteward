@@ -54,6 +54,7 @@ class TestEntryPointIdentity:
             "validate",
             "plan",
             "visualize",
+            "delete-manifest",
             "apply",
         }
 
@@ -421,6 +422,50 @@ class TestCliExitCodes:
         code = main(["validate", str(s1_run_dir)])
         assert code == EXIT_INVALID
         assert "empty metadata" in capsys.readouterr().err
+
+
+class TestDeleteManifestCli:
+    def test_delete_manifest_emits_unapproved_surface(
+        self, tmp_path: Path, s1_run_dir: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from tests.test_delete_manifest import write_synthetic_run
+
+        write_synthetic_run(s1_run_dir)
+        before_plan = (s1_run_dir / "cleanup-plan.csv").read_bytes()
+        code = main(["delete-manifest", str(s1_run_dir)])
+        assert code == EXIT_OK
+        out = capsys.readouterr().out
+        assert "item_count=1" in out
+        assert "authorization=UNAPPROVED" in out
+        assert "intended_action=QUARANTINE" in out
+        assert "nothing was mutated" in out.casefold()
+        assert "no deletion occurred" in out.casefold()
+        assert (s1_run_dir / "delete-manifest.json").is_file()
+        assert (s1_run_dir / "delete-set.html").is_file()
+        assert (s1_run_dir / "delete-set.txt").is_file()
+        assert (s1_run_dir / "cleanup-plan.csv").read_bytes() == before_plan
+
+    def test_delete_manifest_refuses_outside_runtime(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        foreign = tmp_path / "not-a-run"
+        foreign.mkdir()
+        code = main(["delete-manifest", str(foreign)])
+        assert code == EXIT_INVALID
+        assert "runtime" in capsys.readouterr().err.casefold()
+
+    def test_delete_manifest_refuses_invalid_run(
+        self, s1_run_dir: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from tests.test_delete_manifest import write_synthetic_run
+
+        write_synthetic_run(s1_run_dir)
+        (s1_run_dir / "inventory.csv").write_text("broken\n", encoding="utf-8")
+        code = main(["delete-manifest", str(s1_run_dir)])
+        assert code == EXIT_INVALID
+        err = capsys.readouterr().err
+        assert "delete-manifest" in err
+        assert "Traceback" not in err
 
 
 class TestEntryPointExecutesOutOfProcess:

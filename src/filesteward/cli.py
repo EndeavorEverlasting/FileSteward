@@ -1,14 +1,16 @@
 """``filesteward`` console entry point.
 
 Command vocabulary is owned by the active plan: ``scan`` / ``validate`` /
-``plan`` / ``visualize`` / ``apply``. This module must not invent a competing
-command system, and it contains no cleanup judgment: it only parses
-arguments, invokes ``CleanupRun``/``validate_run``/``triage_run_dir``/
-``visualize_run_dir``, and maps outcomes to exit codes.
+``plan`` / ``visualize`` / ``delete-manifest`` / ``apply``. This module must
+not invent a competing command system, and it contains no cleanup judgment:
+it only parses arguments, invokes ``CleanupRun``/``validate_run``/
+``triage_run_dir``/``visualize_run_dir``/``emit_delete_manifest``, and maps
+outcomes to exit codes.
 ``apply`` is a refusal seam — it never mutates anything. ``plan`` is
 read-only receipt triage (path-prefix buckets); it never nominates
 reclaim or grants approval. ``visualize`` is read-only report publication
 from validated artifacts; it never mutates source inventory.
+``delete-manifest`` emits an UNAPPROVED exact delete set; it never deletes.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from typing import Optional, Sequence
 
 import filesteward
 from filesteward.classify import CacheContract
+from filesteward.deletion import emit_delete_manifest
 from filesteward.manifest import triage_run_dir, validate_run
 from filesteward.policy.paths import (
     prove_run_dir_under_runtime,
@@ -148,6 +151,18 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     visualize.add_argument(
+        "target",
+        help="run directory beneath the canonical ignored var/runs/ tree",
+    )
+
+    delete_manifest = subparsers.add_parser(
+        "delete-manifest",
+        help=(
+            "emit an exact UNAPPROVED delete-manifest from RECLAIM_PROVEN "
+            "cleanup-plan rows; writes operator surface; mutates no scanned targets"
+        ),
+    )
+    delete_manifest.add_argument(
         "target",
         help="run directory beneath the canonical ignored var/runs/ tree",
     )
@@ -296,6 +311,37 @@ def _run_visualize(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _run_delete_manifest(args: argparse.Namespace) -> int:
+    try:
+        target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
+        result = emit_delete_manifest(target)
+    except (ValueError, OSError, UnicodeError, TypeError, RuntimeError) as exc:
+        print(f"filesteward delete-manifest: {exc}", file=sys.stderr)
+        return EXIT_INVALID
+
+    totals = result.totals
+    print(
+        f"filesteward delete-manifest: item_count={result.item_count} "
+        f"authorization={result.authorization_state} "
+        f"intended_action={result.intended_action}"
+    )
+    print(
+        "totals: "
+        f"logical={totals.get('logical_size_bytes')} "
+        f"allocated={totals.get('allocated_size_bytes')} "
+        f"projected_reclaim={totals.get('projected_reclaim_bytes')} "
+        f"quality={totals.get('projection_quality')}"
+    )
+    print(f"manifest: {result.manifest_path}")
+    print(f"surface: {result.html_path}")
+    print(f"surface_text: {result.text_path}")
+    print(
+        "Delete set is UNAPPROVED evidence only; nothing was mutated, "
+        "no deletion occurred, and permanent deletion is not claimed."
+    )
+    return EXIT_OK
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -308,6 +354,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return _run_plan(args)
     if args.command == "visualize":
         return _run_visualize(args)
+    if args.command == "delete-manifest":
+        return _run_delete_manifest(args)
 
     status = _LANE_STATUS[args.command]
     print(
