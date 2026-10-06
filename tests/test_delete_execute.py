@@ -468,6 +468,60 @@ class TestExecuteSafetyRepairs:
         assert target.exists()
         assert result.overall == "FAILED"
 
+    def test_equal_size_mtime_rewrite_refused(self, tmp_path: Path) -> None:
+        scan = tmp_path / "scan"
+        scan.mkdir()
+        target = scan / "rewrite.bin"
+        original = b"SAME-SIZE-PAYLOAD!!"  # 19 bytes
+        target.write_bytes(original)
+        items = [_file_item(target, item_id="rewrite-1")]
+        run_dir, _, approval = _prepare_run(tmp_path, items, scan)
+
+        # Equal-size rewrite with restored mtime after approval.
+        st = os.lstat(target)
+        target.write_bytes(b"REWRITTEN-PAYLOAD!!")  # also 19 bytes
+        os.utime(target, (st.st_atime, st.st_mtime))
+
+        result = execute_permanent_delete(
+            run_dir=run_dir,
+            manifest=run_dir / "delete-manifest.json",
+            approval=approval,
+            preflight=run_dir / "delete-preflight.approved.json",
+            scan_root=scan,
+        )
+        assert target.exists()
+        assert target.read_bytes() == b"REWRITTEN-PAYLOAD!!"
+        assert result.overall == "FAILED"
+        assert (
+            any(i.reason_class == "IDENTITY_DRIFT" for i in result.items)
+            or any("digest" in e.casefold() for e in result.approval_errors)
+            or result.preflight_overall == "FAIL"
+        )
+
+    def test_git_root_rediscovered_at_execute(self, tmp_path: Path) -> None:
+        scan = tmp_path / "scan"
+        repo = scan / "late-repo"
+        repo.mkdir(parents=True)
+        target = repo / "tracked.bin"
+        target.write_bytes(b"git-protected")
+        items = [_file_item(target, item_id="git-1")]
+        run_dir, _, approval = _prepare_run(tmp_path, items, scan)
+        # Create a git marker after approval-time preflight.
+        (repo / ".git").mkdir()
+
+        result = execute_permanent_delete(
+            run_dir=run_dir,
+            manifest=run_dir / "delete-manifest.json",
+            approval=approval,
+            preflight=run_dir / "delete-preflight.approved.json",
+            scan_root=scan,
+        )
+        assert target.exists()
+        assert result.overall == "FAILED"
+        assert any("PASS" in e for e in result.approval_errors) or any(
+            i.reason_class == "PROTECTION_HIT" for i in result.items
+        )
+
 
 class TestReclaimVerificationUnit:
     def test_verified_partial_none_unknown(self) -> None:
