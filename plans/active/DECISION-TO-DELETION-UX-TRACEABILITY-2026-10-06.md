@@ -32,6 +32,15 @@ This matrix is the acceptance ledger. A local agent may not replace a row's proo
 | UX-T21 | Integration ancestry contains both current main safety/deletion line and complete UI lineage | git graph | `git merge-base --is-ancestor` / provider compare evidence | exact implementation head descends from refreshed main and includes PR #17 head via the defined merge seam; no cherry-picked partial reconstruction | DESIGNED / UNPROVEN |
 | UX-T22 | P82 iteration evidence is durable | proof report under ignored/local or tracked non-private docs as appropriate | before/after probe results + failure/retry ledger | failures found during behavioral probes are diagnosed, repaired, rerun, and preserved; first-pass green is not assumed | DESIGNED / UNPROVEN |
 
+| UX-T23 | action scene impact projection complete | `interaction.py + scene_surface.py + decision_flow.py` | projection unit tests + schema/validator | every operable cue binds source scene, destination scene/context, impact kind, continuation, and freshness fingerprint | DESIGNED / UNPROVEN |
+| UX-T24 | explore reserved semantics | `interaction.py + experience.py` | parameterized projection tests + browser target probes | EXPLORE appears only for explicit exploration scenes/effects; unselected evidence/default canvas cannot receive generic EXPLORE | DESIGNED / UNPROVEN |
+| UX-T25 | unknown action fails closed | `interaction.py` | negative unit/property tests | unregistered target/action cannot become an operable custom action cue and cannot silently fall back to EXPLORE | DESIGNED / UNPROVEN |
+| UX-T26 | context projection freshness | `interaction projection + experience.py + chamber` | scene/selection/gate/auth mutation tests + browser probe | scene/selection/disposition/gate/authorization/target/result changes invalidate stale cue; reticle recomputes or hides before next action | DESIGNED / UNPROVEN |
+| UX-T27 | scene primary impact contract | `scene_surface.py + harness contracts` | contract validator + scene table tests | every canonical scene declares purpose, primary impact, success evidence and continuation policy; receipt-only scenes are terminal or expose continuation | DESIGNED / UNPROVEN |
+| UX-T28 | label effect truth | `interaction projection + renderers` | browser click trace + accessible-label assertion | visible/accessibility label names the immediate executable effect and observed activation matches it | DESIGNED / UNPROVEN |
+| UX-T29 | classification compounds filterable views | `classification/decision owner + filters/scene counts/queues` | synthetic decision/classification readback + filter/queue integration test | authoritative classification/decision result immediately appears in relevant filters/counts/queues without presentation-only mutation | DESIGNED / UNPROVEN |
+| UX-T30 | supporting scenes preserve product throughline | `scene navigation + chamber/atlas` | browser journey across exploration/orientation -> decision -> reclaim | exploration/orientation never becomes a dead-end scenic loop; a visible truthful continuation leads toward classify/decide/authorize/reclaim/verify | DESIGNED / UNPROVEN |
+
 ## Required evidence bundles
 
 ### Pure / repository proof
@@ -85,3 +94,21 @@ Rows involving deletion side effects in this UX lane are synthetic-only unless e
 ## P82 retry rule
 
 A failed row does not get waived by another green row. Diagnose the owning defect, repair within scope, rerun the smallest failed gate, then rerun all dependent gates before promotion.
+
+
+## Action → scene → impact evidence bundle
+
+For UX-T23..UX-T30 preserve, per tested interaction:
+
+```text
+source_scene/context_revision
+target_id/kind
+projected_action + visible/accessibility label
+destination_scene/context_revision
+impact_kind
+observed effect/readback
+continuation
+context_fingerprint before/after
+```
+
+At least one negative trace must prove that an unregistered action does **not** become `EXPLORE`, and at least one browser trace must prove that an old cue disappears/recomputes after a scene-context change.
