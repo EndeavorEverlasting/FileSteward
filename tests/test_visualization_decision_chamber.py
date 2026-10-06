@@ -123,3 +123,14 @@ def test_staged_copy_and_warm_palette_contract_remain_present() -> None:
     assert "#15120F" in html or "--fs-bg-canvas" in html
     assert "decision-chamber" in html
     assert "quarantine-rail" in html
+
+
+def test_fetch_state_does_not_force_staged_over_server_approval() -> None:
+    html = render_report_shell(_model())
+    assert "sceneCompatibleWithServer" in html
+    assert "Never force STAGED when server is on APPROVAL" in html
+    # Blind overwrite of openDecisionScene from requestedScene is gone.
+    assert "absorbState(await response.json());\n    if (requestedScene) {\n      state.openDecisionScene = requestedScene;" not in html
+    assert "sceneCompatibleWithServer(requestedScene, payload)" in html
+    assert "runtime.scanRoot" in html or "bridge.scanRoot" in html
+    assert "delete_permanently_missing_scan_root" in html

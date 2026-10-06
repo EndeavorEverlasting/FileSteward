@@ -62,6 +62,32 @@ class TestEntryPointIdentity:
             "apply",
         }
 
+    def test_review_help_does_not_claim_never_permanently_deletes(self) -> None:
+        import filesteward.cli as cli_mod
+
+        parser = build_parser()
+        subparsers_action = next(
+            action
+            for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)
+        )
+        review_parser = subparsers_action.choices["review"]
+        review_help = " ".join(
+            part
+            for part in (
+                getattr(review_parser, "description", None),
+                review_parser.format_help(),
+            )
+            if part
+        )
+        doc = cli_mod.__doc__ or ""
+        combined = f"{review_help}\n{doc}".casefold()
+        assert "never permanently deletes" not in combined
+        assert "/api/v1/delete" in combined or "gated" in combined
+        assert "startup itself does not delete" in doc.casefold() or (
+            "startup does not delete" in combined
+        )
+
     def test_scan_requires_run_dir(self) -> None:
         with pytest.raises(SystemExit) as exc:
             main(["scan", "C:/synthetic/root"])

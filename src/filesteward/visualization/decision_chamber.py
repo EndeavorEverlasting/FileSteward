@@ -805,6 +805,24 @@ def render_decision_chamber_script() -> str:
     applyScene();
   };
 
+  const sceneCompatibleWithServer = (requestedScene, payload) => {
+    if (!requestedScene || !payload) return false;
+    const serverScene = payload.open_decision_scene;
+    const auth = payload.authorization_state;
+    const evidence = String(payload.evidence_disposition || '').toUpperCase();
+    // Never force STAGED when server is on APPROVAL / lacks delete-stage authority.
+    if (requestedScene === 'STAGED') {
+      if (serverScene && serverScene !== 'STAGED') return false;
+      if (auth !== 'APPROVED_FOR_ACTION') return false;
+    }
+    if (requestedScene === 'APPROVAL') {
+      if (auth === 'APPROVED_FOR_ACTION' && serverScene === 'STAGED') return false;
+      if (evidence && evidence.indexOf('RECLAIM') < 0) return false;
+    }
+    if (serverScene === 'RESULT' && requestedScene !== 'RESULT') return false;
+    return true;
+  };
+
   const fetchState = async (id, requestedScene) => {
     if (!bridge || !bridge.origin || !bridge.statePath) {
       localOpenGate(id, requestedScene);
@@ -816,10 +834,14 @@ def render_decision_chamber_script() -> str:
       localOpenGate(id, requestedScene);
       return;
     }
-    absorbState(await response.json());
-    if (requestedScene) {
-      state.openDecisionScene = requestedScene;
-      applyScene();
+    const payload = await response.json();
+    absorbState(payload);
+    // Server readback owns scene; client requestedScene is advisory only.
+    if (requestedScene && sceneCompatibleWithServer(requestedScene, payload)) {
+      if (requestedScene !== state.openDecisionScene) {
+        state.openDecisionScene = requestedScene;
+        applyScene();
+      }
     }
   };
 
@@ -889,14 +911,23 @@ def render_decision_chamber_script() -> str:
       }
       return;
     }
+    const scanRoot = bridge.scanRoot || bridge.scan_root;
+    if (!scanRoot) {
+      state.lastTransition = 'delete_permanently_missing_scan_root';
+      state.executionState = 'blocked';
+      if (chamberBrief) {
+        chamberBrief.textContent =
+          'DELETE PERMANENTLY requires runtime.scanRoot; refusing cwd default.';
+      }
+      applyScene();
+      return;
+    }
     const body = {
       run_id: bridge.runId,
       item_id: state.selectedNodeId,
-      irreversible_confirmation: 'DELETE_PERMANENTLY'
+      irreversible_confirmation: 'DELETE_PERMANENTLY',
+      scan_root: scanRoot
     };
-    if (bridge.scanRoot || bridge.scan_root) {
-      body.scan_root = bridge.scanRoot || bridge.scan_root;
-    }
     const response = await fetch(bridge.origin + bridge.deletePath, {
       method: 'POST',
       headers: {

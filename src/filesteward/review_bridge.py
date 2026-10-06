@@ -40,6 +40,7 @@ from filesteward.deletion import (
     execute_permanent_delete,
     load_delete_receipt,
     run_preflight,
+    scan_root_allowed_for_execute,
     write_delete_approval,
     write_preflight_receipt,
 )
@@ -48,6 +49,7 @@ from filesteward.deletion.receipt import DELETE_RECEIPT_FILENAME
 from filesteward.manifest import validate_run
 from filesteward.models import AuthorizationState, CleanupDisposition
 from filesteward.policy.paths import normalize_declared_path, prove_run_dir_under_runtime
+from filesteward.run import CleanupRun
 from filesteward.visualization.decision_flow import (
     DecisionIntent,
     DecisionScene,
@@ -68,6 +70,7 @@ __all__ = [
     "DELETE_PATH",
     "DECISION_STATE_FILENAME",
     "APPROVAL_RECORD_FILENAME",
+    "OPERATOR_CONTRACT_FILENAME",
     "SESSION_HEADER",
     "STATE_PATH",
     "DecisionBridgeIntent",
@@ -88,7 +91,9 @@ DELETE_PATH = "/api/v1/delete"
 SESSION_HEADER = "X-FileSteward-Session"
 DECISION_STATE_FILENAME = "decision-chamber-state.json"
 APPROVAL_RECORD_FILENAME = "approval-record.json"
+OPERATOR_CONTRACT_FILENAME = "operator-regenerable-contract-decisions.json"
 BRIDGE_RUNTIME_ID = "decision-bridge-runtime"
+_OPERATOR_CONTRACT_SCHEMA = "filesteward.operator-regenerable-contract/v1"
 
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 _LOOPBACK_NAMES = frozenset({"127.0.0.1", "::1", "localhost"})
@@ -257,6 +262,7 @@ class ReviewBridge:
     report_html: str
     origin: str = ""
     host_header: str = "127.0.0.1"
+    scan_root: Path | None = None
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
     _nodes: dict[str, _NodeView] = field(default_factory=dict, repr=False)
     _plan_rows: list[dict[str, object]] = field(default_factory=list, repr=False)
@@ -268,7 +274,13 @@ class ReviewBridge:
     _execution_by_item: dict[str, ExecutionState] = field(default_factory=dict, repr=False)
 
     @classmethod
-    def open(cls, run_dir: Path, *, regenerate_report: bool = True) -> ReviewBridge:
+    def open(
+        cls,
+        run_dir: Path,
+        *,
+        regenerate_report: bool = True,
+        scan_root: str | Path | None = None,
+    ) -> ReviewBridge:
         target = prove_run_dir_under_runtime(run_dir)
         errors = validate_run(target)
         if errors:
@@ -303,22 +315,67 @@ class ReviewBridge:
         with plan_path.open("r", encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle):
                 plan_rows.append(dict(row))
+        loaded_root = cls._load_scan_root_from_run_json(target)
         bridge = cls(
             run_dir=target,
             run_id=model.run_id,
             cleanup_plan_sha256=plan_sha,
             session_token=secrets.token_urlsafe(32),
             report_html=html,
+            scan_root=loaded_root,
             _nodes=nodes,
             _plan_rows=plan_rows,
         )
+        if scan_root is not None:
+            bridge.set_scan_root(scan_root, persist=True)
         bridge._load_persisted()
         return bridge
+
+    @staticmethod
+    def _load_scan_root_from_run_json(run_dir: Path) -> Path | None:
+        meta_path = run_dir / "run.json"
+        if not meta_path.is_file():
+            return None
+        try:
+            data = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            return None
+        if not isinstance(data, dict):
+            return None
+        raw = data.get("scan_root") or data.get("root")
+        if raw is None or str(raw).strip() == "":
+            return None
+        return normalize_declared_path(str(raw))
+
+    def set_scan_root(
+        self, scan_root: str | Path, *, persist: bool = False
+    ) -> Path:
+        root = normalize_declared_path(scan_root)
+        self.scan_root = root
+        if persist:
+            self._persist_scan_root(root)
+        return root
+
+    def _persist_scan_root(self, scan_root: Path) -> None:
+        meta_path = self.run_dir / "run.json"
+        data: dict[str, object] = {}
+        if meta_path.is_file():
+            try:
+                loaded = json.loads(meta_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                raise ValueError(f"unreadable run.json at {meta_path}: {exc}") from exc
+            if not isinstance(loaded, dict):
+                raise ValueError(f"run.json at {meta_path} must be a JSON object")
+            data = dict(loaded)
+        data["scan_root"] = str(scan_root)
+        if not data.get("root"):
+            data["root"] = str(scan_root)
+        _atomic_write_json(meta_path, data)
 
     def bind_origin(self, host: str, port: int) -> None:
         self.host_header = f"{host}:{port}"
         self.origin = f"http://{host}:{port}"
-        runtime = {
+        runtime: dict[str, object] = {
             "origin": self.origin,
             "runId": self.run_id,
             "cleanupPlanSha256": self.cleanup_plan_sha256,
@@ -329,6 +386,8 @@ class ReviewBridge:
             "deletePath": DELETE_PATH,
             "sessionHeader": SESSION_HEADER,
         }
+        if self.scan_root is not None:
+            runtime["scanRoot"] = str(self.scan_root)
         # Token stays in the process-served HTML only.
         self.report_html = inject_bridge_runtime(self.report_html, runtime)
 
@@ -572,25 +631,116 @@ class ReviewBridge:
                 self._pending_by_item.pop(request.item_id, None)
                 self._execution_by_item[request.item_id] = ExecutionState.COMPLETE
                 return self.state_payload(request.item_id)
-            if request.intent in {
-                DecisionBridgeIntent.RESCAN,
-                DecisionBridgeIntent.DECLARE_REGENERABLE_CONTRACT,
-            }:
-                self._pending_by_item[request.item_id] = flow.pending_action
-                self._execution_by_item[request.item_id] = ExecutionState.PENDING
-                before = node.disposition
-                self._refresh_nodes()
-                refreshed = self._nodes.get(request.item_id)
-                if refreshed is None:
-                    return self.state_payload(request.item_id)
-                if refreshed.disposition is before:
-                    self._pending_by_item[request.item_id] = flow.pending_action
-                    self._execution_by_item[request.item_id] = ExecutionState.PENDING
-                else:
-                    self._pending_by_item.pop(request.item_id, None)
-                    self._execution_by_item.pop(request.item_id, None)
+            if request.intent is DecisionBridgeIntent.RESCAN:
+                self._apply_rescan(request.item_id, flow.pending_action)
+                return self.state_payload(request.item_id)
+            if request.intent is DecisionBridgeIntent.DECLARE_REGENERABLE_CONTRACT:
+                self._apply_declare_regenerable_contract(
+                    request.item_id, node, flow.pending_action
+                )
                 return self.state_payload(request.item_id)
             return self.state_payload(request.item_id)
+
+    def _apply_rescan(self, item_id: str, pending: PendingAction) -> None:
+        self._pending_by_item[item_id] = pending
+        self._execution_by_item[item_id] = ExecutionState.PENDING
+        self._last_transition = "rescan_pending"
+        if self.scan_root is None:
+            self._pending_by_item.pop(item_id, None)
+            self._execution_by_item[item_id] = ExecutionState.BLOCKED
+            self._last_transition = (
+                "rescan_blocked_missing_scan_root; operator must supply "
+                "--scan-root or run scan outside UI"
+            )
+            return
+        # CleanupRun refuses non-empty same run_dir reuse; attempt then fail closed.
+        try:
+            CleanupRun(self.scan_root, self.run_dir).execute()
+        except (ValueError, OSError, RuntimeError, TypeError) as exc:
+            self._pending_by_item.pop(item_id, None)
+            self._execution_by_item[item_id] = ExecutionState.BLOCKED
+            self._last_transition = (
+                "rescan_blocked_inplace_not_admitted; "
+                f"{exc}; operator must run scan outside UI"
+            )
+            return
+        before = self._nodes.get(item_id)
+        before_disp = before.disposition if before is not None else None
+        self._refresh_nodes()
+        refreshed = self._nodes.get(item_id)
+        if refreshed is None or refreshed.disposition is before_disp:
+            self._pending_by_item.pop(item_id, None)
+            self._execution_by_item[item_id] = ExecutionState.BLOCKED
+            self._last_transition = (
+                "rescan_blocked_no_disposition_change; "
+                "authoritative evidence unchanged after scan"
+            )
+            return
+        self._pending_by_item.pop(item_id, None)
+        self._execution_by_item.pop(item_id, None)
+        self._last_transition = "rescan_complete_evidence_refreshed"
+
+    def _apply_declare_regenerable_contract(
+        self,
+        item_id: str,
+        node: _NodeView,
+        pending: PendingAction,
+    ) -> None:
+        self._pending_by_item[item_id] = pending
+        self._execution_by_item[item_id] = ExecutionState.PENDING
+        self._last_transition = "declare_regenerable_contract_pending"
+        decisions_path = self.run_dir / OPERATOR_CONTRACT_FILENAME
+        existing: dict[str, object] = {"schema_version": _OPERATOR_CONTRACT_SCHEMA}
+        if decisions_path.is_file():
+            try:
+                loaded = json.loads(decisions_path.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    existing = dict(loaded)
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                existing = {"schema_version": _OPERATOR_CONTRACT_SCHEMA}
+        items = existing.get("decisions")
+        if not isinstance(items, dict):
+            items = {}
+        items[item_id] = {
+            "intent": DecisionBridgeIntent.DECLARE_REGENERABLE_CONTRACT.value,
+            "path": node.path,
+            "evidence_disposition": node.disposition.value,
+            "recorded_at": _utc_now(),
+        }
+        existing["schema_version"] = _OPERATOR_CONTRACT_SCHEMA
+        existing["run_id"] = self.run_id
+        existing["updated_at"] = _utc_now()
+        existing["decisions"] = items
+        _atomic_write_json(decisions_path, existing)
+        before = node.disposition
+        self._refresh_nodes()
+        refreshed = self._nodes.get(item_id)
+        # No classification consumer yet rewrites disposition from this artifact.
+        if refreshed is None or refreshed.disposition is before:
+            self._pending_by_item.pop(item_id, None)
+            self._execution_by_item[item_id] = ExecutionState.BLOCKED
+            self._last_transition = (
+                "declare_regenerable_contract_recorded_awaiting_scan; "
+                "durable operator contract persisted; disposition unchanged "
+                "until a scan consumes contracts"
+            )
+            return
+        self._pending_by_item.pop(item_id, None)
+        self._execution_by_item.pop(item_id, None)
+        self._last_transition = "declare_regenerable_contract_evidence_refreshed"
+
+    def _resolve_scan_root_for_delete(
+        self, scan_root: str | Path | None
+    ) -> Path:
+        raw = str(scan_root).strip() if scan_root is not None else ""
+        if not raw:
+            if self.scan_root is not None:
+                return self.scan_root
+            raise ValueError(
+                "scan_root is required for permanent delete; refusing cwd default. "
+                "Record scan_root via review --scan-root / run.json root, or POST it."
+            )
+        return normalize_declared_path(raw)
 
     def execute_permanent_delete_ui(
         self,
@@ -618,6 +768,11 @@ class ReviewBridge:
                     raise ValueError(
                         "permanent deletion requires RECLAIM_PROVEN disposition"
                     )
+            # Admit scan_root before preflight / approval / execute (same as CLI).
+            scan = self._resolve_scan_root_for_delete(scan_root)
+            refusal = scan_root_allowed_for_execute(scan)
+            if refusal:
+                raise ValueError(refusal)
             approval_path = self.approval_record_path()
             if approval_path.is_file():
                 quarantine = json.loads(approval_path.read_text(encoding="utf-8"))
@@ -628,7 +783,6 @@ class ReviewBridge:
             emit_delete_manifest(self.run_dir)
             manifest_path = self.run_dir / DELETE_MANIFEST_FILENAME
             protection_roots, managed_paths = load_run_protection_context(self.run_dir)
-            scan = normalize_declared_path(scan_root)
             preflight = run_preflight(
                 manifest_path,
                 scan_root=scan,
@@ -652,7 +806,7 @@ class ReviewBridge:
             write_delete_approval(self.run_dir / DELETE_APPROVAL_FILENAME, approval)
             approved_snapshot = self.run_dir / "delete-preflight.approved.json"
             shutil.copy2(preflight_path, approved_snapshot)
-            execute_permanent_delete(
+            result = execute_permanent_delete(
                 run_dir=self.run_dir,
                 manifest=manifest_path,
                 approval=self.run_dir / DELETE_APPROVAL_FILENAME,
@@ -672,19 +826,29 @@ class ReviewBridge:
                         counts["failed"] += 1
                     elif status == "SKIPPED":
                         counts["skipped"] += 1
+            overall = str(result.overall or receipt.get("overall") or "")
             self._scene_revision += 1
-            self._last_transition = "delete_permanently"
             focus = ids[0]
-            self._execution_by_item[focus] = ExecutionState.COMPLETE
             self._pending_by_item.pop(focus, None)
+            if overall == "SUCCEEDED":
+                self._execution_by_item[focus] = ExecutionState.COMPLETE
+                self._last_transition = "delete_permanently"
+                execution_state = ExecutionState.COMPLETE
+            else:
+                self._execution_by_item[focus] = ExecutionState.BLOCKED
+                self._last_transition = (
+                    f"delete_permanently_{overall.lower() or 'failed'}_residual"
+                )
+                execution_state = ExecutionState.BLOCKED
             payload = self.state_payload(focus)
             payload["open_decision_scene"] = DecisionScene.RESULT.value
             payload["next_scene"] = DecisionScene.RESULT.value
-            payload["execution_state"] = ExecutionState.COMPLETE.value
+            payload["execution_state"] = execution_state.value
             payload["pending_action"] = PendingAction.NONE.value
+            payload["last_transition"] = self._last_transition
             payload["deletion_receipt"] = {
                 **counts,
-                "overall": receipt.get("overall"),
+                "overall": overall or receipt.get("overall"),
                 "reclaim": receipt.get("reclaim"),
                 "free_bytes_before": receipt.get("free_bytes_before"),
                 "free_bytes_after": receipt.get("free_bytes_after"),
@@ -849,10 +1013,17 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
                     if not isinstance(raw_ids, list) or not raw_ids:
                         self._reject(400, "item_ids or item_id is required")
                         return
+                    raw_scan = data.get("scan_root")
+                    if raw_scan is None or str(raw_scan).strip() == "":
+                        # Prefer bridge-recorded root; empty string must not
+                        # become cwd via normalize_declared_path.
+                        raw_scan = (
+                            str(bridge.scan_root) if bridge.scan_root is not None else ""
+                        )
                     payload = bridge.execute_permanent_delete_ui(
                         run_id=str(data.get("run_id") or ""),
                         item_ids=[str(item) for item in raw_ids],
-                        scan_root=str(data.get("scan_root") or ""),
+                        scan_root=str(raw_scan),
                         irreversible_confirmation=str(
                             data.get("irreversible_confirmation") or ""
                         ),
@@ -900,6 +1071,7 @@ def serve_review(
     open_browser: bool = True,
     bind_host: str = "127.0.0.1",
     regenerate_report: bool = True,
+    scan_root: str | Path | None = None,
 ) -> ReviewServeResult:
     """Validate, regenerate report, and serve the Decision Bridge on loopback."""
 
@@ -908,7 +1080,11 @@ def serve_review(
     if port < 0 or port > 65535:
         raise ValueError("port must be in 0..65535")
 
-    bridge = ReviewBridge.open(run_dir, regenerate_report=regenerate_report)
+    bridge = ReviewBridge.open(
+        run_dir,
+        regenerate_report=regenerate_report,
+        scan_root=scan_root,
+    )
     handler = _make_handler(bridge)
     try:
         server = ThreadingHTTPServer((bind_host, port), handler)
@@ -942,9 +1118,15 @@ def run_review_until_interrupt(
     *,
     port: int = 0,
     open_browser: bool = True,
+    scan_root: str | Path | None = None,
     on_ready: Optional[Callable[[ReviewServeResult], None]] = None,
 ) -> ReviewServeResult:
-    result = serve_review(run_dir, port=port, open_browser=open_browser)
+    result = serve_review(
+        run_dir,
+        port=port,
+        open_browser=open_browser,
+        scan_root=scan_root,
+    )
     if on_ready is not None:
         on_ready(result)
     try:

@@ -12,6 +12,7 @@ import json
 import os
 import shutil
 import stat
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,17 +41,64 @@ from filesteward.deletion.receipt import (
 )
 from filesteward.deletion.reclaim import ReclaimVerification, verify_reclaim
 from filesteward.inventory import windows
-from filesteward.policy.paths import normalize_declared_path
+from filesteward.policy.paths import is_lexically_within, normalize_declared_path
 from filesteward.protect import ProtectionIndex, ProtectionRelation
 
 __all__ = [
     "ExecutionResult",
     "ItemExecutionResult",
     "execute_permanent_delete",
+    "scan_root_allowed_for_execute",
 ]
 
 PathLike = Union[str, Path]
 JsonLike = Union[Mapping[str, Any], PathLike, DeleteApprovalRecord]
+
+
+def scan_root_allowed_for_execute(scan_root: PathLike) -> Optional[str]:
+    """Return refusal reason, or None if execute may proceed.
+
+    Temp membership uses **only** ``realpath`` containment under
+    ``tempfile.gettempdir()`` (and equality). Lexical-only membership is
+    refused so a junction/symlink under Temp that resolves into the home
+    directory cannot be admitted. Home refusal also consults ``root_real``.
+    A path component containing ``pytest`` is not enough:
+    ``Path.home()/pytest-victim`` must remain refused.
+    """
+
+    root = normalize_declared_path(scan_root)
+    temp_root = normalize_declared_path(tempfile.gettempdir())
+    try:
+        root_real = normalize_declared_path(Path(os.path.realpath(os.fspath(root))))
+        temp_real = normalize_declared_path(
+            Path(os.path.realpath(os.fspath(temp_root)))
+        )
+    except OSError:
+        root_real = root
+        temp_real = temp_root
+    under_temp = root_real == temp_real or is_lexically_within(root_real, temp_real)
+    if under_temp:
+        return None
+    home = normalize_declared_path(Path.home())
+    try:
+        home_real = normalize_declared_path(Path(os.path.realpath(os.fspath(home))))
+    except OSError:
+        home_real = home
+    under_home = (
+        root == home
+        or root_real == home
+        or root_real == home_real
+        or is_lexically_within(root, home)
+        or is_lexically_within(root_real, home)
+        or is_lexically_within(root_real, home_real)
+    )
+    if under_home:
+        return (
+            f"refusing live personal home root {root}; operator live-specimen "
+            "gate is outside this CLI default path (use synthetic temp fixtures)"
+        )
+    # Non-home roots still require --i-understand-irreversible (caller).
+    return None
 
 
 @dataclass

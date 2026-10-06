@@ -20,6 +20,7 @@ from filesteward.deletion.approval import (
 from filesteward.deletion.execute import (
     ExecutionResult,
     execute_permanent_delete,
+    scan_root_allowed_for_execute,
 )
 from filesteward.deletion.manifest import (
     DELETE_MANIFEST_FILENAME,
@@ -80,6 +81,7 @@ __all__ = [
     "render_delete_set_text",
     "request_permanent_delete_set",
     "run_preflight",
+    "scan_root_allowed_for_execute",
     "sha256_file",
     "validate_delete_approval",
     "verify_reclaim",
