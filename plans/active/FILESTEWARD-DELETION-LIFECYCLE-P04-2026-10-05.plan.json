@@ -49,7 +49,7 @@
       "dependencies": [
         "D0"
       ],
-      "status": "READY_AFTER_REFRESH",
+      "status": "IMPLEMENTED_PR19_VALIDATION_REPORTED_NOT_REPRODUCED_HERE",
       "parallel_group": "WAVE_DELETE_1",
       "owned_surface": "deletion manifest + presentation projection",
       "proof_gates": [
@@ -66,7 +66,7 @@
       "dependencies": [
         "D0"
       ],
-      "status": "READY_AFTER_REFRESH",
+      "status": "IMPLEMENTED_PR19_VALIDATION_REPORTED_NOT_REPRODUCED_HERE",
       "parallel_group": "WAVE_DELETE_1",
       "owned_surface": "new deletion preflight/executor modules + focused tests",
       "proof_gates": [
@@ -84,7 +84,7 @@
         "D1",
         "D2"
       ],
-      "status": "WAITING",
+      "status": "NEXT_UNPROVEN_GATE",
       "proof_gates": [
         "action-specific approval",
         "manifest digest bound",
@@ -180,10 +180,25 @@
   },
   "first_unproven_gate": {
     "lanes": [
-      "D1",
-      "D2"
+      "D3"
     ],
-    "dependency": "fresh provider truth from current PR stack",
-    "completion": "operator can see an exact RECLAIM_PROVEN delete set and dry-run preflight can prove those exact items remain current without mutating them"
+    "dependency": "prove D1/D2 on the lowest safe main-based dependency floor with an executable local runner",
+    "completion": "main-targeting deletion branch has D1/D2 + D3 and passes focused deletion tests, full pytest, and git diff --check"
+  },
+  "execution_checkpoint": {
+    "checkpoint_id": "PR19-D1-D2-CLOSE-D3-NEXT-20261005",
+    "provider_head": "54c8ea62d72e2dc66abc4d5bb045fade608cb204",
+    "main_head": "be0406b3047ce07a769fb3f9a14cd6618dbf086e",
+    "d1_d2_state": "IMPLEMENTED_ON_PR19",
+    "historical_validation_report": "59 focused + 415 full pytest; git diff --check clean",
+    "current_agent_reproduction": "BLOCKED_SANDBOX_CANNOT_RESOLVE_GITHUB_FOR_LOCAL_CLONE",
+    "provider_status": "CodeRabbit success; no hosted workflow runs",
+    "dependency_floor_finding": "D1/D2 backend imports resolve on main; stacked UI coupling observed only in CLI/test context",
+    "d3_state": "NOT_COMMITTED",
+    "d3_write_boundary": "provider safety gate blocked branch-visible tree/commit promotion of D3 payload",
+    "empty_isolation_branch": "feature/d3-approval-mainline-20261005@main (0 ahead/0 behind)",
+    "durable_handoff": "PR #19 comment 6007540052",
+    "proof_ceiling": "D1/D2 implemented on PR19; mainline transplant unvalidated; D3 not committed",
+    "next_gate": "local main-based isolated worktree: transplant D1/D2, adapt CLI seam, implement D3, run focused+full pytest and diff hygiene"
   }
 }
