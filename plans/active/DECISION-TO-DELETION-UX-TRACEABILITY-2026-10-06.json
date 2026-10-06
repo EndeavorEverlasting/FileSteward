@@ -1,0 +1,197 @@
+{
+  "schema_version": "filesteward.decision-to-deletion-ux-traceability/v1",
+  "sprint_id": "FILESTEWARD-DECISION-TO-DELETION-UX-20261006",
+  "authority": [
+    "P04",
+    "P83",
+    "P82"
+  ],
+  "canonical_plan": "plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md",
+  "integration_seam": "docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md",
+  "local_handoff": "docs/handoff/DECISION-TO-DELETION-UX-LOCAL-HANDOFF-2026-10-06.md",
+  "status_model": [
+    "UNPROVEN",
+    "IMPLEMENTED",
+    "LOCALLY_VALIDATED",
+    "INTEGRATION_VALIDATED",
+    "MERGED"
+  ],
+  "rows": [
+    {
+      "id": "UX-T01",
+      "requirement": "scene_model_parity",
+      "owners": "decision_flow.py + scene_surface.py",
+      "required_proof": "typed transition + rendered-path parity tests",
+      "pass_condition": "all rendered journey scenes exist in canonical typed scene model",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T02",
+      "requirement": "single_transition_owner",
+      "owners": "decision_flow.py + review_bridge.py",
+      "required_proof": "unit transition ownership test",
+      "pass_condition": "bridge does not duplicate allowed-intent transition semantics",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T03",
+      "requirement": "keep_advances",
+      "owners": "review_bridge.py + next-target resolver",
+      "required_proof": "bridge HTTP + browser journey",
+      "pass_condition": "KEEP persists and returns different next target or terminal",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T04",
+      "requirement": "review_later_advances",
+      "owners": "review_bridge.py + next-target resolver",
+      "required_proof": "bridge HTTP + browser journey",
+      "pass_condition": "REVIEW_LATER persists and advances",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T05",
+      "requirement": "rescan_readback_advances",
+      "owners": "observation path + bridge",
+      "required_proof": "synthetic effect/readback integration",
+      "pass_condition": "post-rescan scene derives from refreshed authoritative evidence",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T06",
+      "requirement": "regenerable_contract_readback",
+      "owners": "contract/evidence owner + bridge",
+      "required_proof": "synthetic contract/evidence integration",
+      "pass_condition": "presentation never promotes evidence and refreshed evidence determines next scene",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T07",
+      "requirement": "explicit_continuation_contract",
+      "owners": "review_bridge.py",
+      "required_proof": "response/schema test",
+      "pass_condition": "response exposes current/next scene, gate, item and execution state",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T08",
+      "requirement": "no_same_gate_loop",
+      "owners": "bridge + chamber",
+      "required_proof": "all-intent regression",
+      "pass_condition": "completed decision cannot return identical active item+gate+scene unless explicitly pending",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T09",
+      "requirement": "deletion_copy_current",
+      "owners": "interaction/scene/chamber",
+      "required_proof": "semantic string regression + browser",
+      "pass_condition": "no reachable delete-capable scene says permanent deletion is unimplemented",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T10",
+      "requirement": "one_gesture_permanent_delete",
+      "owners": "bridge deletion adapter + deletion package",
+      "required_proof": "synthetic UI-to-executor integration",
+      "pass_condition": "single unchanged exact-scope activation creates delete approval, executes, reads receipt/reclaim",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T11",
+      "requirement": "approval_domains_separate",
+      "owners": "deletion/approval.py + root approval.py",
+      "required_proof": "negative tests",
+      "pass_condition": "quarantine approval cannot satisfy permanent-delete authorization",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T12",
+      "requirement": "noneligible_delete_blocked",
+      "owners": "decision flow + interaction",
+      "required_proof": "parameterized disposition tests + browser",
+      "pass_condition": "no executable delete for UNKNOWN/HUMAN_REVIEW/PROTECTED/KEEP",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T13",
+      "requirement": "pointer_reticle_coherent",
+      "owners": "experience.py",
+      "required_proof": "browser pointer/focus probe",
+      "pass_condition": "stationary pointer reticle moves <=2px or hides; focusin cannot teleport it",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T14",
+      "requirement": "keyboard_focus_distinct",
+      "owners": "experience/interaction",
+      "required_proof": "keyboard browser journey",
+      "pass_condition": "keyboard focus feedback does not impersonate pointer coordinates",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T15",
+      "requirement": "ordinary_click_not_range",
+      "owners": "experience.py",
+      "required_proof": "browser click probe",
+      "pass_condition": "simple click never activates FRAME RANGE",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T16",
+      "requirement": "eligible_drag_range_works",
+      "owners": "experience.py",
+      "required_proof": "browser drag probe",
+      "pass_condition": "eligible drag beyond threshold activates and cleans range marquee",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T17",
+      "requirement": "cli_union_preserved",
+      "owners": "cli.py",
+      "required_proof": "CLI parser/help + full suite",
+      "pass_condition": "review plus all four delete commands survive seam",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T18",
+      "requirement": "current_agent_safety_survives",
+      "owners": "AGENTS.md + governance",
+      "required_proof": "exact readback",
+      "pass_condition": "current delete contracts retained; stale permanent-delete prohibition absent",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T19",
+      "requirement": "product_version_reconciled",
+      "owners": "pyproject.toml + __init__.py",
+      "required_proof": "P130/version guard",
+      "pass_condition": "UI version lineage retained and visual-feature bump applied consistently",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T20",
+      "requirement": "cross_mode_continuity",
+      "owners": "visualization stack",
+      "required_proof": "browser self-falsification",
+      "pass_condition": "desktop/laptop/phone/reduced-motion/forced-colors preserve progression",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T21",
+      "requirement": "dual_ancestry",
+      "owners": "git graph",
+      "required_proof": "merge-base ancestor checks",
+      "pass_condition": "implementation head descends from refreshed main and complete PR17 head",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T22",
+      "requirement": "p82_retry_evidence",
+      "owners": "proof report",
+      "required_proof": "failure/retry ledger",
+      "pass_condition": "failed behavioral probes are diagnosed, repaired, rerun and preserved",
+      "status": "UNPROVEN"
+    }
+  ]
+}

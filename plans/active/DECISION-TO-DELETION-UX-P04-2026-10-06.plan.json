@@ -1,0 +1,149 @@
+{
+  "schema_version": "filesteward.decision-to-deletion-ux-plan/v1",
+  "sprint_id": "FILESTEWARD-DECISION-TO-DELETION-UX-20261006",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "provider_floor": "3d3c2e3309430b9492fc7feb01c82ca35bb26e4e",
+  "ui_lineage": [
+    "PR#15",
+    "PR#16",
+    "PR#17"
+  ],
+  "deletion_lineage": [
+    "PR#20",
+    "PR#21",
+    "refresh newer deletion repair before implementation"
+  ],
+  "prompts": [
+    "P83",
+    "P82",
+    "P01",
+    "P04"
+  ],
+  "execution_mode": "PARALLEL_WITH_LIVE_DELETE_SPRINT",
+  "outcome": "Every completed public-UI decision advances to the next authoritative scene/gate/item; eligible permanent deletion is one deliberate exact-scope commit through the repository delete engine; pointer and scenery remain coherent.",
+  "verified_defects": [
+    "DUX-01 split scene authority: browser/docs use RESOLVE but DecisionScene omits it",
+    "DUX-02 ReviewBridge records decision then recomputes unchanged node state",
+    "DUX-03 choose_intent reducer bypassed by bridge decision persistence",
+    "DUX-04 UI deletion copy/approval route stale relative to merged permanent-delete engine",
+    "DUX-05 focusin can teleport fixed pointer reticle to focused element center",
+    "DUX-06 document-level range gesture capture is broader than eligible map drag"
+  ],
+  "critical_path": [
+    "refresh_provider_truth",
+    "establish_ui_plus_deletion_integration_floor",
+    "reproduce_or_disprove_DUX_01_through_06",
+    "unify_scene_transition_authority",
+    "make_post_decision_readback_advance",
+    "fix_pointer_modality_and_range_drag_ownership",
+    "bind_delete_ui_to_delete_manifest_approval_preflight_executor_receipt",
+    "focused_tests",
+    "full_suite",
+    "browser_self_falsification",
+    "integrate_exact_validated_head",
+    "operator_acceptance"
+  ],
+  "deletion_commit": {
+    "action": "DELETE_PERMANENTLY",
+    "one_deliberate_commit_gesture": true,
+    "redundant_confirmation_dialog": false,
+    "exact_manifest_required": true,
+    "fresh_preflight_required": true,
+    "delete_specific_approval_required": true,
+    "execution_receipt_required": true,
+    "reclaim_readback_required": true
+  },
+  "pointer_contract": {
+    "modality_tracking_required": true,
+    "pointer_reticle_moves_only_from_pointer_coordinates": true,
+    "focus_must_not_teleport_pointer_reticle": true,
+    "stationary_transition_max_css_px": 2,
+    "range_drag_requires_eligible_surface": true,
+    "range_drag_requires_movement_threshold": true,
+    "simple_click_must_not_activate_frame_range": true
+  },
+  "terminal_gates": {
+    "same_gate_loop_after_completed_decision": false,
+    "automatic_next_target_required": true,
+    "scene_model_parity_required": true,
+    "stale_permanent_delete_copy_allowed": false,
+    "synthetic_delete_ui_integration_required": true,
+    "full_suite_required": true,
+    "browser_proof_required": true
+  },
+  "forbidden_scope": [
+    "widen_deletion_eligibility",
+    "second_state_machine",
+    "second_delete_executor",
+    "generic_recursive_delete",
+    "ui_copy_only_fix",
+    "interrupt_live_temp_delete_sprint"
+  ],
+  "contract_artifacts": {
+    "traceability_markdown": "plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.md",
+    "traceability_json": "plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.json",
+    "integration_seam": "docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md",
+    "local_handoff": "docs/handoff/DECISION-TO-DELETION-UX-LOCAL-HANDOFF-2026-10-06.md"
+  },
+  "integration_seam": {
+    "implementation_branch": "feature/decision-to-deletion-ux-20261006",
+    "implementation_pr_base": "main",
+    "branch_from": "refreshed origin/main after governance contract lands",
+    "ui_source_branch": "design/u1-brand-home-schedule-seam-20261005",
+    "ui_source_head_observed": "25caadd2245905569ce3b83e9249c30dcccd7884",
+    "merge_strategy": "merge entire UI source with --no-ff --no-commit; resolve by authority map; no selective cherry-pick reconstruction",
+    "refresh_main_again_before_delete_binding": true,
+    "authority_map": {
+      "main_and_governance_win": [
+        "AGENTS.md",
+        "docs/agent/OPERATOR-DELETE-PATH.md",
+        "docs/agent/OPERATOR-DECISION-UX-PATH.md",
+        "src/filesteward/deletion/**",
+        "delete safety tests"
+      ],
+      "ui_lineage_wins": [
+        "src/filesteward/review_bridge.py",
+        "src/filesteward/housekeeping_settings.py",
+        "src/filesteward/visualization/**",
+        "UI-specific docs/tests/harness"
+      ],
+      "additive_manual": {
+        "src/filesteward/cli.py": "preserve review + delete-manifest + delete-preflight + delete-approve + delete-execute",
+        "pyproject.toml + src/filesteward/__init__.py": "retain UI product-version floor, then run repository-owned visual-feature version gate",
+        "approval domains": "retain root quarantine approval and deletion/approval.py as distinct authorities",
+        "AGENTS.md": "start from current main/governance; carry only non-conflicting UI-specific requirements"
+      }
+    },
+    "ancestry_gates": [
+      "refreshed main SHA is ancestor of implementation HEAD",
+      "current PR17 head is ancestor of implementation HEAD"
+    ]
+  },
+  "acceptance_ledger": {
+    "ids": [
+      "UX-T01",
+      "UX-T02",
+      "UX-T03",
+      "UX-T04",
+      "UX-T05",
+      "UX-T06",
+      "UX-T07",
+      "UX-T08",
+      "UX-T09",
+      "UX-T10",
+      "UX-T11",
+      "UX-T12",
+      "UX-T13",
+      "UX-T14",
+      "UX-T15",
+      "UX-T16",
+      "UX-T17",
+      "UX-T18",
+      "UX-T19",
+      "UX-T20",
+      "UX-T21",
+      "UX-T22"
+    ],
+    "terminal_rule": "all required rows must reach their specified proof ceiling; PR readiness alone is non-terminal"
+  }
+}
