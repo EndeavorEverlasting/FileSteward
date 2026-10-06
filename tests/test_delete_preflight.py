@@ -924,6 +924,100 @@ class TestSafetyRepairs:
         with pytest.raises(ValueError, match="protected-exclusions"):
             load_run_protection_context(run_dir)
 
+    def test_exclusion_ancestor_scan_root_not_protection_root(
+        self, tmp_path: Path
+    ) -> None:
+        """ANCESTOR exclusion paths must not become ProtectedRoot entries.
+
+        Live Temp blocker: protected-exclusions.csv records the scan root as
+        an ANCESTOR row; promoting that path to a protection root makes every
+        reclaim candidate under the scan root PROTECTION_HIT/DESCENDANT.
+        """
+        from filesteward.deletion.preflight import load_run_protection_context
+
+        scan_root = tmp_path / "scan"
+        nested_git = scan_root / "nested-repo"
+        nested_git.mkdir(parents=True)
+        (nested_git / ".git").mkdir()
+        sibling = scan_root / "reclaim.bin"
+        sibling.write_bytes(b"reclaim-ok")
+        under_git = nested_git / "secret.bin"
+        under_git.write_bytes(b"secret")
+
+        run_dir = tmp_path / "run"
+        run_dir.mkdir()
+        (run_dir / "run.json").write_text(
+            json.dumps(
+                {
+                    "run_id": "run-csv-overmatch",
+                    "protected_roots": [
+                        {
+                            "path": str(nested_git.resolve()),
+                            "source": "git-repository",
+                        }
+                    ],
+                    "managed_paths": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        # Canonical exclusions header has no explicit root column; path of the
+        # ANCESTOR row is the scan root and must be ignored for root load.
+        (run_dir / "protected-exclusions.csv").write_text(
+            "\n".join(
+                [
+                    "item_id,path,disposition,protection_reason,"
+                    "protection_source,relationship",
+                    (
+                        f"ex-ancestor,{scan_root.resolve()},PROTECTED,"
+                        "ancestor of protected root,git-repository,ANCESTOR"
+                    ),
+                    (
+                        f"ex-self,{nested_git.resolve()},PROTECTED,"
+                        "git repository root,git-repository,SELF"
+                    ),
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+
+        roots, managed = load_run_protection_context(run_dir)
+        assert managed == ()
+        root_paths = {str(Path(r.path).resolve()).casefold() for r in roots}
+        assert str(nested_git.resolve()).casefold() in root_paths
+        assert str(scan_root.resolve()).casefold() not in root_paths
+        assert len(roots) == 1
+
+        plan, plan_sha = _make_plan(tmp_path)
+        ok_item = _item_from_file(sibling, item_id="item-sibling", plan_sha=plan_sha)
+        hit_item = _item_from_file(
+            under_git, item_id="item-under-git", plan_sha=plan_sha
+        )
+        ok_manifest = _manifest([ok_item], plan_sha=plan_sha)
+        hit_manifest = _manifest([hit_item], plan_sha=plan_sha)
+
+        ok_result = run_preflight(
+            ok_manifest,
+            scan_root=scan_root,
+            cleanup_plan_path=plan,
+            protection_roots=roots,
+            managed_paths=managed,
+        )
+        assert ok_result.overall == "PASS"
+        assert ok_result.items[-1].reason_class == ReasonClass.OK
+
+        hit_result = run_preflight(
+            hit_manifest,
+            scan_root=scan_root,
+            cleanup_plan_path=plan,
+            protection_roots=roots,
+            managed_paths=managed,
+        )
+        assert hit_result.overall == "FAIL"
+        assert hit_result.items[-1].reason_class == ReasonClass.PROTECTION_HIT
+
     def test_empty_digest_with_existing_plan_fails(self, tmp_path: Path) -> None:
         scan_root = tmp_path / "scan"
         scan_root.mkdir()
