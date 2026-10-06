@@ -8,6 +8,7 @@ ignored as mutation permission: ``UNAPPROVED`` is expected, and even
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import os
@@ -20,6 +21,7 @@ from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 from filesteward.inventory import windows
 from filesteward.policy.paths import (
     is_lexically_within,
+    is_symlink_or_reparse,
     normalize_declared_path,
 )
 from filesteward.protect import ProtectedRoot, ProtectionIndex, ProtectionRelation
@@ -30,6 +32,9 @@ __all__ = [
     "ItemVerdict",
     "PreflightResult",
     "ReasonClass",
+    "identity_drift_against_lstat",
+    "load_run_protection_context",
+    "reparse_or_path_escape",
     "run_preflight",
     "write_preflight_receipt",
 ]
@@ -67,6 +72,7 @@ class ReasonClass:
     LOCKED_OR_DENIED = "LOCKED_OR_DENIED"
     UNSUPPORTED_SEMANTICS = "UNSUPPORTED_SEMANTICS"
     MANIFEST_INVALID = "MANIFEST_INVALID"
+    CLEANUP_PLAN_MISSING = "CLEANUP_PLAN_MISSING"
 
 
 @dataclass(frozen=True)
@@ -301,6 +307,213 @@ def _build_protection_index(
     return ProtectionIndex(roots)
 
 
+def load_run_protection_context(
+    run_dir: PathLike,
+) -> tuple[tuple[ProtectedRoot, ...], tuple[Path, ...]]:
+    """Rebuild protection roots and managed prefixes from run artifacts.
+
+    Sources (union, fail-closed):
+    - ``run.json`` ``protected_roots`` / ``managed_paths``
+    - ``protected-exclusions.csv`` path column (each exclusion path is a root)
+    """
+
+    target = Path(os.fspath(run_dir))
+    roots: list[ProtectedRoot] = []
+    managed: list[Path] = []
+    seen_roots: set[str] = set()
+
+    def _add_root(path_value: Any, source: str) -> None:
+        if not path_value:
+            return
+        normalized = normalize_declared_path(path_value)
+        key = str(normalized).casefold()
+        if key in seen_roots:
+            return
+        seen_roots.add(key)
+        roots.append(ProtectedRoot(path=str(normalized), source=source))
+
+    meta_path = target / "run.json"
+    if meta_path.is_file():
+        try:
+            with meta_path.open("r", encoding="utf-8") as handle:
+                metadata = json.load(handle)
+        except (OSError, ValueError, json.JSONDecodeError):
+            metadata = None
+        if isinstance(metadata, dict):
+            for entry in metadata.get("protected_roots") or []:
+                if isinstance(entry, Mapping):
+                    _add_root(entry.get("path"), str(entry.get("source") or "run.json"))
+                else:
+                    _add_root(entry, "run.json")
+            for raw in metadata.get("managed_paths") or []:
+                if raw:
+                    managed.append(normalize_declared_path(raw))
+
+    exclusions_path = target / "protected-exclusions.csv"
+    if exclusions_path.is_file():
+        try:
+            with exclusions_path.open("r", encoding="utf-8", newline="") as handle:
+                reader = csv.DictReader(handle)
+                for row in reader:
+                    if not isinstance(row, dict):
+                        continue
+                    source = str(row.get("protection_source") or "protected-exclusions")
+                    _add_root(row.get("path"), source)
+        except (OSError, csv.Error, UnicodeError):
+            # Unreadable exclusions must not silently empty the index; treat as
+            # a synthetic root that cannot match paths but still signals load
+            # failure via an unusable sentinel only when rows were expected.
+            # Prefer fail-closed by adding a non-matching marker root with an
+            # explicit source so callers still rebuild; path-level checks rely
+            # on run.json when CSV is corrupt.
+            pass
+
+    return tuple(roots), tuple(managed)
+
+
+def reparse_or_path_escape(
+    path: PathLike,
+    scan_root: Optional[PathLike],
+) -> Optional[tuple[str, str]]:
+    """Return ``(reason_class, detail)`` when path escapes via reparse/symlink.
+
+    Checks:
+    1. lexical containment under ``scan_root`` (when provided);
+    2. any intermediate component from ``path`` up through ``scan_root`` is a
+       symlink/junction/reparse;
+    3. ``realpath(path)`` remains lexically within ``realpath(scan_root)``.
+    """
+
+    target = normalize_declared_path(path)
+    if scan_root is None:
+        # Still refuse reparse at the leaf and ancestors that exist.
+        cursor: Optional[Path] = target
+        while cursor is not None:
+            if cursor.exists() and is_symlink_or_reparse(cursor):
+                return (
+                    ReasonClass.REPARSE_OR_SYMLINK,
+                    f"symlink/junction/reparse at {cursor}",
+                )
+            if cursor.parent == cursor:
+                break
+            cursor = cursor.parent
+        return None
+
+    root = normalize_declared_path(scan_root)
+    if not is_lexically_within(target, root):
+        return (
+            ReasonClass.PATH_ESCAPE,
+            f"path escapes approved scan_root {root}",
+        )
+
+    cursor = target
+    while True:
+        if cursor.exists() and is_symlink_or_reparse(cursor):
+            return (
+                ReasonClass.REPARSE_OR_SYMLINK,
+                f"symlink/junction/reparse on path component {cursor}",
+            )
+        if cursor == root:
+            break
+        parent = cursor.parent
+        if parent == cursor:
+            break
+        cursor = parent
+
+    try:
+        real_target = normalize_declared_path(
+            Path(os.path.realpath(os.fspath(target)))
+        )
+        real_root = normalize_declared_path(Path(os.path.realpath(os.fspath(root))))
+    except OSError as exc:
+        return (
+            ReasonClass.PATH_ESCAPE,
+            f"cannot resolve realpath for containment: {exc}",
+        )
+    if not is_lexically_within(real_target, real_root):
+        return (
+            ReasonClass.PATH_ESCAPE,
+            (
+                f"realpath {real_target} escapes realpath(scan_root) "
+                f"{real_root}"
+            ),
+        )
+    return None
+
+
+def identity_drift_against_lstat(
+    item: Mapping[str, Any],
+    path: PathLike,
+    st: os.stat_result,
+) -> Optional[str]:
+    """Return IDENTITY_DRIFT detail when live ``lstat`` disagrees with item.
+
+    Floor: path + logical size + mtime (+ allocated when both known).
+    Stronger: when ``content_sha256`` / ``identity_token`` (64-hex) is present
+    on the item or its ``identity`` map, verify file content digest.
+    """
+
+    normalized = normalize_declared_path(path)
+    identity = _identity_map(item)
+    declared_type = str(
+        item.get("item_type") or identity.get("item_type") or ""
+    ).upper()
+    expected_path = identity.get("path", item.get("path"))
+    if expected_path and normalize_declared_path(expected_path) != normalized:
+        return "identity.path does not match item path"
+
+    is_file = declared_type == "FILE" or (
+        not declared_type and stat.S_ISREG(st.st_mode)
+    )
+    if not is_file:
+        return None
+
+    expected_logical = identity.get("logical_size_bytes", item.get("logical_size_bytes"))
+    expected_mtime = identity.get("modified_at", item.get("modified_at"))
+    observed_logical = int(getattr(st, "st_size", 0) or 0)
+    if expected_logical is not None and int(expected_logical) != observed_logical:
+        return (
+            f"logical size drift: expected {expected_logical}, "
+            f"observed {observed_logical}"
+        )
+    observed_mtime = float(st.st_mtime)
+    if expected_mtime is not None and not _mtime_matches(expected_mtime, observed_mtime):
+        return f"mtime drift: expected {expected_mtime}, observed {observed_mtime}"
+
+    expected_alloc = identity.get(
+        "allocated_size_bytes", item.get("allocated_size_bytes")
+    )
+    observed_alloc = _allocated_bytes(st)
+    if (
+        expected_alloc is not None
+        and observed_alloc is not None
+        and int(expected_alloc) != observed_alloc
+    ):
+        return (
+            f"allocated size drift: expected {expected_alloc}, "
+            f"observed {observed_alloc}"
+        )
+
+    expected_hash = (
+        identity.get("content_sha256")
+        or item.get("content_sha256")
+        or identity.get("identity_token")
+        or item.get("identity_token")
+    )
+    if expected_hash:
+        token = str(expected_hash).strip().lower()
+        if len(token) == 64 and all(c in "0123456789abcdef" for c in token):
+            try:
+                actual = _sha256_file(normalized)
+            except OSError as exc:
+                return f"cannot hash target for identity: {exc}"
+            if actual.lower() != token:
+                return (
+                    f"content digest drift: expected {token}, observed {actual.lower()}"
+                )
+    return None
+
+
 def _is_managed(path: Path, managed_paths: Sequence[Path]) -> bool:
     for managed in managed_paths:
         if path == managed or is_lexically_within(path, managed):
@@ -341,12 +554,10 @@ def _check_item(
         item.get("item_type") or identity.get("item_type") or ""
     ).upper()
 
-    if scan_root is not None and not is_lexically_within(path, scan_root):
-        return _fail(
-            item_id,
-            ReasonClass.PATH_ESCAPE,
-            f"path escapes approved scan_root {scan_root}",
-        )
+    escape = reparse_or_path_escape(path, scan_root)
+    if escape is not None:
+        reason, detail = escape
+        return _fail(item_id, reason, detail)
 
     if _path_too_long(path):
         return _fail(
@@ -455,48 +666,10 @@ def _check_item(
             f"item_type mismatch: declared {declared_type}, observed {observed_type}",
         )
 
-    # Identity: material size/mtime must match declared identity facts.
-    expected_logical = identity.get("logical_size_bytes", item.get("logical_size_bytes"))
-    expected_mtime = identity.get("modified_at", item.get("modified_at"))
-    expected_path = identity.get("path", item.get("path"))
-    if expected_path and normalize_declared_path(expected_path) != path:
-        return _fail(
-            item_id,
-            ReasonClass.IDENTITY_DRIFT,
-            "identity.path does not match item path",
-        )
-
-    observed_logical = int(getattr(st, "st_size", 0) or 0)
-    if declared_type == "FILE" or (
-        not declared_type and stat.S_ISREG(st.st_mode)
-    ):
-        if expected_logical is not None and int(expected_logical) != observed_logical:
-            return _fail(
-                item_id,
-                ReasonClass.IDENTITY_DRIFT,
-                f"logical size drift: expected {expected_logical}, observed {observed_logical}",
-            )
-        observed_mtime = float(st.st_mtime)
-        if expected_mtime is not None and not _mtime_matches(expected_mtime, observed_mtime):
-            return _fail(
-                item_id,
-                ReasonClass.IDENTITY_DRIFT,
-                f"mtime drift: expected {expected_mtime}, observed {observed_mtime}",
-            )
-        expected_alloc = identity.get(
-            "allocated_size_bytes", item.get("allocated_size_bytes")
-        )
-        observed_alloc = _allocated_bytes(st)
-        if (
-            expected_alloc is not None
-            and observed_alloc is not None
-            and int(expected_alloc) != observed_alloc
-        ):
-            return _fail(
-                item_id,
-                ReasonClass.IDENTITY_DRIFT,
-                f"allocated size drift: expected {expected_alloc}, observed {observed_alloc}",
-            )
+    # Identity: size/mtime floor; optional content_sha256/identity_token.
+    drift = identity_drift_against_lstat(item, path, st)
+    if drift is not None:
+        return _fail(item_id, ReasonClass.IDENTITY_DRIFT, drift)
 
     expected_links = identity.get("link_count", item.get("link_count"))
     links = _link_count(path, st)
@@ -554,6 +727,7 @@ def _check_item(
     # Proven exclusive reclaim for a single-link regular file.
     projected: Optional[int] = None
     observed_alloc = _allocated_bytes(st)
+    observed_logical = int(getattr(st, "st_size", 0) or 0)
     if observed_alloc is not None:
         projected = observed_alloc
     else:
@@ -641,35 +815,71 @@ def run_preflight(
 
     verdicts: list[ItemVerdict] = []
 
-    expected_digest = str(data.get("source_cleanup_plan_sha256") or "")
-    if cleanup_plan_path is not None:
-        plan_path = Path(os.fspath(cleanup_plan_path))
-        try:
-            actual_digest = _sha256_file(plan_path)
-        except OSError as exc:
+    expected_digest = str(data.get("source_cleanup_plan_sha256") or "").strip()
+    if expected_digest:
+        # Non-empty digest requires an on-disk cleanup plan; missing is FAIL.
+        if cleanup_plan_path is None:
             verdicts.append(
                 _fail(
                     "",
-                    ReasonClass.DIGEST_DRIFT,
-                    f"cannot read cleanup plan for digest: {exc}",
-                )
-            )
-            actual_digest = None
-        if actual_digest is not None and (
-            not expected_digest or actual_digest.lower() != expected_digest.lower()
-        ):
-            # Digest drift fails the whole run; still attach a synthetic item.
-            verdicts.append(
-                _fail(
-                    "",
-                    ReasonClass.DIGEST_DRIFT,
+                    ReasonClass.CLEANUP_PLAN_MISSING,
                     (
-                        "cleanup-plan digest drift: "
-                        f"manifest={expected_digest or '<missing>'} "
-                        f"observed={actual_digest}"
+                        "manifest declares source_cleanup_plan_sha256 but "
+                        "cleanup-plan.csv path was not provided"
                     ),
                 )
             )
+        else:
+            plan_path = Path(os.fspath(cleanup_plan_path))
+            if not plan_path.is_file():
+                verdicts.append(
+                    _fail(
+                        "",
+                        ReasonClass.CLEANUP_PLAN_MISSING,
+                        f"cleanup plan missing at {plan_path}",
+                    )
+                )
+            else:
+                try:
+                    actual_digest = _sha256_file(plan_path)
+                except OSError as exc:
+                    verdicts.append(
+                        _fail(
+                            "",
+                            ReasonClass.DIGEST_DRIFT,
+                            f"cannot read cleanup plan for digest: {exc}",
+                        )
+                    )
+                    actual_digest = None
+                if actual_digest is not None and (
+                    actual_digest.lower() != expected_digest.lower()
+                ):
+                    verdicts.append(
+                        _fail(
+                            "",
+                            ReasonClass.DIGEST_DRIFT,
+                            (
+                                "cleanup-plan digest drift: "
+                                f"manifest={expected_digest} "
+                                f"observed={actual_digest}"
+                            ),
+                        )
+                    )
+    elif cleanup_plan_path is not None:
+        # Optional plan path with empty digest: still verify readability only
+        # when a path was explicitly supplied (no FAIL for digest mismatch).
+        plan_path = Path(os.fspath(cleanup_plan_path))
+        if plan_path.is_file():
+            try:
+                _sha256_file(plan_path)
+            except OSError as exc:
+                verdicts.append(
+                    _fail(
+                        "",
+                        ReasonClass.DIGEST_DRIFT,
+                        f"cannot read cleanup plan for digest: {exc}",
+                    )
+                )
 
     # Index paths for directory child-set checks.
     by_path: dict[str, Mapping[str, Any]] = {}

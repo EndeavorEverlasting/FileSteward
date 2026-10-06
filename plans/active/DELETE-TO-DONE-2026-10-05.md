@@ -97,6 +97,19 @@ PR #20 is merged at `210dbb627e2a300a55089eedf932b4e745093b7b`, but post-merge r
 
 Reproduce or disprove each against refreshed current truth. Fix every still-material defect in the smallest canonical owner. Do not create an architecture redesign.
 
+### OBSERVED FACTS — PR #20 defect family classification (repair lane)
+
+- live-home `pytest-` path bypass — **VERIFIED_DEFECT** (loose component match admitted `Path.home()/pytest-victim`)
+- TOCTOU identity gap before unlink — **VERIFIED_DEFECT**
+- protection/managed not rebuilt into execute/CLI preflight — **VERIFIED_DEFECT**
+- ancestor symlink/junction/reparse escape — **VERIFIED_DEFECT**
+- weak size+mtime identity (equal-size rewrite) — **VERIFIED_DEFECT** (optional `content_sha256`/`identity_token` now enforced when present; floor remains size+mtime)
+- missing `cleanup-plan.csv` digest fail-open — **VERIFIED_DEFECT**
+- PARTIAL execute exit status EXIT_OK — **VERIFIED_DEFECT**
+- allocated-size fixture POSIX `st_blocks*512` mismatch — **VERIFIED_DEFECT**
+- duplicate unresolved review threads for same families — **DUPLICATE** (collapsed into the eight owners above)
+- new material finding from repairs/tests — **STALE** / none new beyond the verified set above at repair time
+
 ## 5. Execution frame
 
 ### Repo / path
