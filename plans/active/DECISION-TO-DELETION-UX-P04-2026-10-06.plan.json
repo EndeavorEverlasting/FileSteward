@@ -145,5 +145,38 @@
       "UX-T22"
     ],
     "terminal_rule": "all required rows must reach their specified proof ceiling; PR readiness alone is non-terminal"
+  },
+  "delegation_contract": {
+    "judgment_owner": "CANONICAL_REMOTE_ARTIFACTS",
+    "local_agent_role": "BOUNDED_EXECUTION_ENGINE",
+    "handoff_role": "NON_AUTHORITATIVE_EXECUTION_PROJECTION",
+    "canonical_precedence": [
+      "plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md",
+      "docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md",
+      "plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.json"
+    ],
+    "local_agent_may": [
+      "refresh_truth",
+      "execute_prescribed_git_seam",
+      "implement_owned_requirements",
+      "run_validation",
+      "diagnose_against_acceptance_rows",
+      "repair_within_scope",
+      "preserve_evidence",
+      "push_pr_integrate_when_gates_allow"
+    ],
+    "local_agent_may_not": [
+      "redesign_product_journey",
+      "change_integration_topology",
+      "invent_conflict_policy",
+      "change_deletion_authority",
+      "reinterpret_acceptance",
+      "add_terminal_gates",
+      "downgrade_failed_proof_to_requirement_change"
+    ],
+    "unresolved_material_judgment": {
+      "state": "BLOCKED_JUDGMENT_GAP",
+      "behavior": "advance all independent mechanical work, preserve evidence, return smallest unresolved decision, do not invent judgment"
+    }
   }
 }

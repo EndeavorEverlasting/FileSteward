@@ -299,3 +299,60 @@ The seam must preserve current main deletion/safety authority while carrying the
 
 UX-T01 through UX-T22 in the traceability matrix are the terminal acceptance ledger. A green implementation PR that leaves a required row unproved is incomplete.
 
+## 15. Delegation topology — judgment stays remote, execution stays local
+
+This section is normative.
+
+The local agent is a **bounded execution engine**, not a sprint designer, product judge, or integration strategist.
+
+Authority is partitioned as follows:
+
+| Artifact | Authority | May local agent reinterpret it? |
+|---|---|---|
+| `DECISION-TO-DELETION-UX-P04-2026-10-06.md` | product/sprint judgment, scope, invariants, intended outcomes | **NO** |
+| `DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md` | resolved graph/integration/conflict judgment | **NO** |
+| `DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.md/.json` | acceptance semantics and proof ceiling | **NO** |
+| `DECISION-TO-DELETION-UX-LOCAL-HANDOFF-2026-10-06.md` | mechanical execution projection | not an authority source |
+
+### Local-agent responsibilities
+
+The local agent **does**:
+- refresh repository/provider/local truth;
+- create the prescribed branch/worktree;
+- perform the prescribed merge;
+- resolve only conflicts whose authority is already specified by the integration seam;
+- implement the canonical requirements;
+- run tests/validators/browser probes;
+- diagnose failures mechanically against the named acceptance row;
+- repair within the already-owned scope;
+- preserve artifacts and evidence;
+- push/open/update/integrate when the canonical gates permit it;
+- return evidence keyed to UX-T01..UX-T22.
+
+The local agent **does not**:
+- redesign the product journey;
+- redefine what "frictionless" means;
+- choose a different integration graph;
+- invent a different conflict policy;
+- weaken or strengthen deletion authority;
+- reinterpret acceptance rows;
+- add new terminal gates;
+- convert a proof failure into a requirement change;
+- decide that a canonical requirement is "unnecessary", "too risky", "future work", or "out of scope".
+
+### Unspecified judgment rule
+
+If execution reaches a genuinely material judgment that is **not resolved** by the canonical plan, integration seam, traceability ledger, current repository contracts, or refreshed provider truth, the local agent must:
+
+1. complete every independent mechanical step;
+2. preserve the exact evidence;
+3. return `BLOCKED_JUDGMENT_GAP` with the smallest unresolved decision;
+4. **not invent the missing judgment locally**.
+
+A normal implementation choice within an already-resolved contract is not a judgment gap.
+
+### Handoff role
+
+The handoff is intentionally thin. It points the agent at canonical judgment and tells it what mechanical sequence to execute. If handoff prose and a canonical artifact differ, the canonical artifact wins.
+
+This separation is itself a P04 acceptance gate. A future handoff that restates or mutates product/integration judgment is a regression.
