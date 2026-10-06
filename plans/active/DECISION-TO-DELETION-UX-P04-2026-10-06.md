@@ -356,3 +356,121 @@ A normal implementation choice within an already-resolved contract is not a judg
 The handoff is intentionally thin. It points the agent at canonical judgment and tells it what mechanical sequence to execute. If handoff prose and a canonical artifact differ, the canonical artifact wins.
 
 This separation is itself a P04 acceptance gate. A future handoff that restates or mutates product/integration judgment is a regression.
+
+## 16. P97 action → scene → impact contract
+
+**P97 evidence:** `docs/program/action-scene-impact-prior-art-p97-2026-10-06.md`  
+**Harness owner:** `harness/contracts/action-scene-impact.v1.json`
+
+The operator-observed `EXPLORE` reticle defect is accepted as a contract failure, not a cosmetic-label issue.
+
+### Additional verified / contract defects
+
+- **DUX-07 — false EXPLORE promise.** The UI lineage projects `EXPLORE` for unselected map evidence even though activation may select/focus/open decision context rather than enter an exploration environment.
+- **DUX-08 — permissive generic fallback.** `cue_for_navigation()` currently falls back to an operable `EXPLORE` projection for unknown action keys.
+- **DUX-09 — context projection lacks destination/impact identity.** `InteractionCue` carries target/verb/availability/consequence but does not bind the cue to source scene, destination scene/context, impact kind, continuation, or a freshness fingerprint.
+- **DUX-10 — scene acceptance stops short of impact.** The inherited `interaction-scene-acceptance.v1.json` requires truthful scenes/explanations but does not require every operable action to produce a named impact and continuation or every scene to declare a primary product impact.
+
+### Canonical theorem
+
+```text
+ACTION
+  -> AUTHORITATIVE SCENE/CONTEXT TRANSITION
+  -> IMPACT
+  -> READBACK/FEEDBACK
+  -> CONTINUATION
+```
+
+A scene is an authored user context, not necessarily a page/modal. A transition may retain the same scene type only when the canonical context revision changes and the effect is visible/measurable.
+
+### FileSteward impact classes
+
+- `ORIENT` — establish truthful context;
+- `FILTER` — narrow to a useful evidence subset;
+- `CLASSIFY` — advance/persist evidence classification through its canonical owner;
+- `DECIDE` — commit/advance operator judgment;
+- `AUTHORIZE` — establish exact action authority;
+- `RECLAIM` — perform contracted cleanup/deletion;
+- `VERIFY` — prove result/reclaim;
+- `EXPLORE` — navigate/inspect evidence in an explicitly exploratory environment.
+
+For FileSteward's main journey, `ORIENT` and `EXPLORE` are supporting impacts. They may not become scenic dead ends that obscure the product through-line: **classify → decide → authorize → reclaim → verify**, with filterable evidence accumulated along the way.
+
+### EXPLORE is reserved, not fallback
+
+`EXPLORE` is legal only when activation actually enters or operates an exploration context with an observable exploration effect.
+
+It is forbidden as:
+- the generic unknown-action fallback;
+- the default verb for unselected evidence;
+- an empty-canvas action with no click effect;
+- a substitute for SELECT / FOCUS / FILTER / OPEN GATE / RESOLVE / APPROVE / DELETE / RETURN.
+
+If there is no registered operable effect, the custom action cursor must be absent or fail closed; it must not invent a promising verb.
+
+### Context engine factoring
+
+Do not add another state machine.
+
+Factor the existing interaction projection so every operable cue is derived from the authoritative context tuple and includes at least:
+
+```text
+scene_id + scene_revision
+selected_node_id
+evidence_disposition
+active_gate_id
+authorization_state
+target_id / target_kind
+registered_action
+availability
+destination_scene/context
+impact_kind
+continuation
+context_fingerprint
+```
+
+Changes to scene, selection, disposition, gate, authorization, target, or execution/readback state invalidate the prior projection. The reticle/cartouche must recompute or disappear before another action.
+
+Renderers consume this projection. Renderers do not choose semantic verbs independently.
+
+### Scene impact requirement
+
+Every canonical scene declares:
+- purpose;
+- primary impact;
+- entry context;
+- operable actions;
+- success evidence;
+- continuation policy.
+
+A receipt/result scene is legal only if it either:
+1. exposes the next continuation; or
+2. truthfully declares terminal success.
+
+### Classification compounding
+
+A classification/decision action is not complete merely because its receipt exists.
+
+After authoritative readback, the resulting classification/decision state must feed:
+- classification filters;
+- relevant scene counts/status;
+- decision queues;
+- future filtered views for KEEP / HUMAN_REVIEW / UNKNOWN / RECLAIM_PROVEN / PROTECTED evidence.
+
+The UI journey therefore improves the operator's future information architecture while it advances cleanup.
+
+### Critical-path insertion
+
+After the integration seam and before visual polish:
+
+```text
+reproduce DUX-07..DUX-10
+ -> factor canonical action-scene-impact projection
+ -> remove generic EXPLORE fallback
+ -> bind all operable cues to destination + impact + continuation
+ -> bind scenes to primary impact
+ -> prove classification/filter readback
+ -> continue existing decision/pointer/delete implementation
+```
+
+The new acceptance rows UX-T23..UX-T30 are terminal sprint gates, not optional polish.

@@ -1,0 +1,115 @@
+{
+  "schema_version": "filesteward.action-scene-impact/v1",
+  "owner": "FileSteward Decision-to-Deletion UX canonical context projection",
+  "purpose": "Guarantee that every operable visible action truthfully resolves from current context to a scene/context transition, measurable impact, feedback, and continuation.",
+  "architecture": {
+    "authority": "projection_only_not_second_state_machine",
+    "canonical_inputs": [
+      "scene_id",
+      "scene_revision",
+      "selected_node_id",
+      "evidence_disposition",
+      "active_gate_id",
+      "authorization_state",
+      "target_id",
+      "target_kind",
+      "registered_action",
+      "execution_or_readback_state"
+    ],
+    "required_projection": [
+      "action_id",
+      "label",
+      "availability",
+      "source_scene",
+      "destination_scene",
+      "impact_kind",
+      "consequence",
+      "continuation",
+      "context_fingerprint"
+    ],
+    "invalidation_inputs": [
+      "scene_id",
+      "scene_revision",
+      "selected_node_id",
+      "evidence_disposition",
+      "active_gate_id",
+      "authorization_state",
+      "target_id",
+      "execution_or_readback_state"
+    ]
+  },
+  "impact_kinds": [
+    "ORIENT",
+    "FILTER",
+    "CLASSIFY",
+    "DECIDE",
+    "AUTHORIZE",
+    "RECLAIM",
+    "VERIFY",
+    "EXPLORE"
+  ],
+  "exploration_contract": {
+    "reserved_verb": "EXPLORE",
+    "rule": "EXPLORE is legal only when activation enters or operates an explicitly exploratory scene/context and produces a recognizable exploration effect.",
+    "legal_examples": [
+      "drill_or_zoom_storage_region",
+      "pan_or_navigate_exploration_surface",
+      "enter_evidence_browsing_scene",
+      "details_on_demand_inside_exploration_context"
+    ],
+    "forbidden_uses": [
+      "generic_unknown_action_fallback",
+      "unselected_evidence_default",
+      "empty_canvas_with_no_click_effect",
+      "target_whose_real_effect_is_focus",
+      "target_whose_real_effect_is_filter",
+      "target_whose_real_effect_is_decision_or_approval",
+      "target_with_no_operable_action"
+    ]
+  },
+  "global_invariants": [
+    "every_operable_action_has_registered_action_id",
+    "every_operable_action_has_source_scene_and_destination_scene",
+    "every_operable_action_has_impact_kind_and_continuation",
+    "visible_label_describes_immediate_effect",
+    "activation_effect_matches_visible_and_accessible_label",
+    "unknown_action_does_not_fall_back_to_operable_explore",
+    "scene_or_context_change_invalidates_prior_projection",
+    "selection_gate_authorization_or_result_change_invalidates_prior_projection",
+    "completed_action_surfaces_result_and_next_continuation",
+    "every_scene_declares_primary_impact",
+    "supporting_exploration_or_orientation_scene_preserves_visible_path_to_decision_classification_or_reclaim",
+    "classification_and_decision_results_feed_canonical_filterable_views",
+    "renderers_do_not_invent_action_semantics",
+    "projection_never_promotes_evidence_or_grants_authority"
+  ],
+  "scene_contract": {
+    "required_fields": [
+      "scene_id",
+      "purpose",
+      "primary_impact",
+      "entry_context",
+      "operable_actions",
+      "success_evidence",
+      "continuation_policy"
+    ],
+    "same_scene_transition_rule": "Destination may retain the same scene type only when canonical context revision changes and the effect is visible/measurable.",
+    "receipt_only_rule": "A status/receipt scene must expose continuation or intentionally declare terminal success."
+  },
+  "fail_closed": {
+    "unregistered_target_action": "do_not_render_operable_custom_action_cursor",
+    "stale_projection": "hide_or_recompute_before_next_action",
+    "ambiguous_destination": "block_action_projection_and_fail_validation",
+    "missing_impact": "block_action_projection_and_fail_validation"
+  },
+  "proof_requirements": [
+    "static_contract_validator",
+    "projection_unit_tests",
+    "unknown_action_negative_test",
+    "explore_reserved_semantics_test",
+    "scene_change_stale_cue_test",
+    "label_to_effect_browser_test",
+    "classification_filter_readback_test",
+    "cross_mode_browser_scene_impact_trace"
+  ]
+}

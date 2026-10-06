@@ -57,12 +57,22 @@ These paths/contracts are current safety/governance authority. Never take stale 
 - `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
 - `docs/agent/OPERATOR-DELETE-PATH.md`
 - `docs/agent/OPERATOR-DECISION-UX-PATH.md`
+- `harness/contracts/action-scene-impact.v1.json`
+- `docs/program/action-scene-impact-prior-art-p97-2026-10-06.md`
 - `plans/active/DELETE-TO-DONE-2026-10-05.*`
 - `plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.*`
 - `src/filesteward/deletion/**`
 - deletion tests guarding manifest/preflight/approval/executor/receipt/reclaim
 
 In particular, the stale UI-lineage statement **"Permanent deletion is outside the current MVP"** is forbidden from surviving the seam.
+
+### ACTION-SEMANTICS RECONCILIATION
+
+The UI lineage's existing `interaction-scene-acceptance.v1.json`, `interaction.py`, and scene/cursor docs are implementation inputs, but they are stale where they permit generic `EXPLORE` or omit destination/impact/continuation semantics.
+
+The current-main `action-scene-impact.v1.json` contract wins those semantic conflicts.
+
+Preserve the UI implementation surface, then adapt it to the new contract. Do not take an older "EXPLORE by default" behavior merely because it is implemented on PR #17.
 
 ### UI LINEAGE WINS product implementation baseline
 

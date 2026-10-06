@@ -4,7 +4,8 @@
   "authority": [
     "P04",
     "P83",
-    "P82"
+    "P82",
+    "P97"
   ],
   "canonical_plan": "plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md",
   "integration_seam": "docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md",
@@ -192,6 +193,72 @@
       "required_proof": "failure/retry ledger",
       "pass_condition": "failed behavioral probes are diagnosed, repaired, rerun and preserved",
       "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T23",
+      "requirement": "action_scene_impact_projection_complete",
+      "owners": "interaction.py + scene_surface.py + decision_flow.py",
+      "required_proof": "projection unit tests + schema/validator",
+      "pass_condition": "every operable cue binds source scene, destination scene/context, impact kind, continuation, and freshness fingerprint",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T24",
+      "requirement": "explore_reserved_semantics",
+      "owners": "interaction.py + experience.py",
+      "required_proof": "parameterized projection tests + browser target probes",
+      "pass_condition": "EXPLORE appears only for explicit exploration scenes/effects; unselected evidence/default canvas cannot receive generic EXPLORE",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T25",
+      "requirement": "unknown_action_fails_closed",
+      "owners": "interaction.py",
+      "required_proof": "negative unit/property tests",
+      "pass_condition": "unregistered target/action cannot become an operable custom action cue and cannot silently fall back to EXPLORE",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T26",
+      "requirement": "context_projection_freshness",
+      "owners": "interaction projection + experience.py + chamber",
+      "required_proof": "scene/selection/gate/auth mutation tests + browser probe",
+      "pass_condition": "scene/selection/disposition/gate/authorization/target/result changes invalidate stale cue; reticle recomputes or hides before next action",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T27",
+      "requirement": "scene_primary_impact_contract",
+      "owners": "scene_surface.py + harness contracts",
+      "required_proof": "contract validator + scene table tests",
+      "pass_condition": "every canonical scene declares purpose, primary impact, success evidence and continuation policy; receipt-only scenes are terminal or expose continuation",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T28",
+      "requirement": "label_effect_truth",
+      "owners": "interaction projection + renderers",
+      "required_proof": "browser click trace + accessible-label assertion",
+      "pass_condition": "visible/accessibility label names the immediate executable effect and observed activation matches it",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T29",
+      "requirement": "classification_compounds_filterable_views",
+      "owners": "classification/decision owner + filters/scene counts/queues",
+      "required_proof": "synthetic decision/classification readback + filter/queue integration test",
+      "pass_condition": "authoritative classification/decision result immediately appears in relevant filters/counts/queues without presentation-only mutation",
+      "status": "UNPROVEN"
+    },
+    {
+      "id": "UX-T30",
+      "requirement": "supporting_scenes_preserve_product_throughline",
+      "owners": "scene navigation + chamber/atlas",
+      "required_proof": "browser journey across exploration/orientation -> decision -> reclaim",
+      "pass_condition": "exploration/orientation never becomes a dead-end scenic loop; a visible truthful continuation leads toward classify/decide/authorize/reclaim/verify",
+      "status": "UNPROVEN"
     }
-  ]
+  ],
+  "action_scene_impact_contract": "harness/contracts/action-scene-impact.v1.json",
+  "p97_prior_art": "docs/program/action-scene-impact-prior-art-p97-2026-10-06.md"
 }
