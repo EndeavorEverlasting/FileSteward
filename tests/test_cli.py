@@ -54,6 +54,10 @@ class TestEntryPointIdentity:
             "validate",
             "plan",
             "visualize",
+            "delete-manifest",
+            "delete-preflight",
+            "delete-approve",
+            "delete-execute",
             "apply",
         }
 
@@ -421,6 +425,192 @@ class TestCliExitCodes:
         code = main(["validate", str(s1_run_dir)])
         assert code == EXIT_INVALID
         assert "empty metadata" in capsys.readouterr().err
+
+
+class TestDeleteManifestCli:
+    def test_delete_manifest_emits_unapproved_surface(
+        self, tmp_path: Path, s1_run_dir: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from tests.test_delete_manifest import write_synthetic_run
+
+        write_synthetic_run(s1_run_dir)
+        before_plan = (s1_run_dir / "cleanup-plan.csv").read_bytes()
+        code = main(["delete-manifest", str(s1_run_dir)])
+        assert code == EXIT_OK
+        out = capsys.readouterr().out
+        assert "item_count=1" in out
+        assert "authorization=UNAPPROVED" in out
+        assert "intended_action=QUARANTINE" in out
+        assert "nothing was mutated" in out.casefold()
+        assert "no deletion occurred" in out.casefold()
+        assert (s1_run_dir / "delete-manifest.json").is_file()
+        assert (s1_run_dir / "delete-set.html").is_file()
+        assert (s1_run_dir / "delete-set.txt").is_file()
+        assert (s1_run_dir / "cleanup-plan.csv").read_bytes() == before_plan
+
+    def test_delete_manifest_refuses_outside_runtime(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        foreign = tmp_path / "not-a-run"
+        foreign.mkdir()
+        code = main(["delete-manifest", str(foreign)])
+        assert code == EXIT_INVALID
+        assert "runtime" in capsys.readouterr().err.casefold()
+
+    def test_delete_manifest_refuses_invalid_run(
+        self, s1_run_dir: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from tests.test_delete_manifest import write_synthetic_run
+
+        write_synthetic_run(s1_run_dir)
+        (s1_run_dir / "inventory.csv").write_text("broken\n", encoding="utf-8")
+        code = main(["delete-manifest", str(s1_run_dir)])
+        assert code == EXIT_INVALID
+        err = capsys.readouterr().err
+        assert "delete-manifest" in err
+        assert "Traceback" not in err
+
+
+class TestDeleteLifecycleCli:
+    def test_execute_requires_irreversible_flag(
+        self, s1_run_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        scan = tmp_path / "scan"
+        scan.mkdir()
+        code = main(
+            [
+                "delete-execute",
+                str(s1_run_dir),
+                "--scan-root",
+                str(scan),
+            ]
+        )
+        assert code == EXIT_INVALID
+        assert "i-understand-irreversible" in capsys.readouterr().err
+
+    def test_execute_refuses_personal_home_root(
+        self, s1_run_dir: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        code = main(
+            [
+                "delete-execute",
+                str(s1_run_dir),
+                "--scan-root",
+                str(Path.home()),
+                "--i-understand-irreversible",
+            ]
+        )
+        assert code == EXIT_INVALID
+        err = capsys.readouterr().err.casefold()
+        assert "personal" in err or "home" in err
+
+    def test_preflight_approve_execute_temp_fixture(
+        self, s1_run_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """End-to-end CLI on synthetic temp only — proves bytes gone."""
+
+        from filesteward.deletion.manifest import DELETE_MANIFEST_SCHEMA
+
+        s1_run_dir.mkdir(parents=True, exist_ok=True)
+        scan = tmp_path / "scan"
+        scan.mkdir()
+        target = scan / "victim.bin"
+        payload = b"CLI-DELETE-PROOF" * 256
+        target.write_bytes(payload)
+        st = target.stat()
+        item = {
+            "item_id": "cli-victim",
+            "path": str(target.resolve()),
+            "item_type": "FILE",
+            "disposition": "RECLAIM_PROVEN",
+            "evidence": "synthetic",
+            "contract_source": "cli-test",
+            "logical_size_bytes": int(st.st_size),
+            "allocated_size_bytes": int(st.st_size),
+            "projected_reclaim_bytes": int(st.st_size),
+            "reclaim_basis": "synthetic",
+            "projection_quality": "allocated-evidence",
+            "protection_check": "UNRELATED",
+            "is_managed": False,
+            "is_cloud_placeholder": False,
+            "is_symlink": False,
+            "is_reparse_point": False,
+            "link_count": 1,
+            "modified_at": float(st.st_mtime),
+            "source_run_id": "cli-run",
+            "source_cleanup_plan_sha256": "c" * 64,
+            "identity": {
+                "path": str(target.resolve()),
+                "item_type": "FILE",
+                "logical_size_bytes": int(st.st_size),
+                "allocated_size_bytes": int(st.st_size),
+                "modified_at": float(st.st_mtime),
+                "link_count": 1,
+            },
+            "intended_action": "QUARANTINE",
+            "reversibility": "REVERSIBLE_QUARANTINE",
+        }
+        manifest = {
+            "schema_version": DELETE_MANIFEST_SCHEMA,
+            "run_id": "cli-run",
+            "source_cleanup_plan_sha256": "c" * 64,
+            "authorization_state": "UNAPPROVED",
+            "intended_action": "QUARANTINE",
+            "item_count": 1,
+            "totals": {
+                "logical_size_bytes": int(st.st_size),
+                "allocated_size_bytes": int(st.st_size),
+                "projected_reclaim_bytes": int(st.st_size),
+                "projection_quality": "allocated-evidence",
+            },
+            "untouched": {
+                "human_review_count": 0,
+                "protected_count": 0,
+                "unknown_count": 0,
+                "keep_proven_count": 0,
+                "note": "cli synthetic",
+            },
+            "items": [item],
+        }
+        (s1_run_dir / "delete-manifest.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+        code = main(
+            [
+                "delete-preflight",
+                str(s1_run_dir),
+                "--scan-root",
+                str(scan),
+            ]
+        )
+        assert code == EXIT_OK, capsys.readouterr()
+        assert (s1_run_dir / "delete-preflight.json").is_file()
+
+        code = main(
+            [
+                "delete-approve",
+                str(s1_run_dir),
+                "--irreversible-confirmation",
+                "CLI-TOKEN",
+            ]
+        )
+        assert code == EXIT_OK, capsys.readouterr()
+        assert (s1_run_dir / "delete-approval.json").is_file()
+
+        code = main(
+            [
+                "delete-execute",
+                str(s1_run_dir),
+                "--scan-root",
+                str(scan),
+                "--i-understand-irreversible",
+            ]
+        )
+        assert code == EXIT_OK, capsys.readouterr()
+        assert not target.exists()
+        assert (s1_run_dir / "delete-execution-receipt.json").is_file()
 
 
 class TestEntryPointExecutesOutOfProcess:
