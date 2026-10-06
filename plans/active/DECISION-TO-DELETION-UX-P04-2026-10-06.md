@@ -269,3 +269,33 @@ PASS requires:
 - Do not move the reticle from focus geometry while pointer modality is active.
 - Do not widen deletion eligibility.
 - Do not block the live deletion sprint on this UX work.
+
+## 14. Canonical traceability + integration seam
+
+The following artifacts are not successor planning. They are part of this sprint's execution contract:
+
+- `plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.md`
+- `plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.json`
+- `docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md`
+- `docs/handoff/DECISION-TO-DELETION-UX-LOCAL-HANDOFF-2026-10-06.md`
+
+### Integration decision
+
+The implementation branch is `feature/decision-to-deletion-ux-20261006`, created from refreshed current `main` after this governance contract lands.
+
+The complete PR #17 UI lineage is merged into that branch with `--no-ff --no-commit`; it is **not** rebuilt by selective cherry-pick and the implementation PR does **not** target PR #17.
+
+Conflict authority is already decided in the integration-seam document. The local agent is not authorized to replace it with a different graph strategy.
+
+The seam must preserve current main deletion/safety authority while carrying the complete UI lineage:
+
+- current main / this contract win safety/governance;
+- PR #17 wins the visualization/review product baseline;
+- `cli.py` is an additive manual reconciliation preserving `review` plus `delete-manifest`, `delete-preflight`, `delete-approve`, and `delete-execute`;
+- quarantine approval and deletion approval remain distinct domains;
+- product version uses the UI lineage floor and the repository-owned visual-feature versioning gate, never main's stale `0.1.0`.
+
+### Acceptance ownership
+
+UX-T01 through UX-T22 in the traceability matrix are the terminal acceptance ledger. A green implementation PR that leaves a required row unproved is incomplete.
+
