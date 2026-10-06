@@ -47,11 +47,24 @@ Examples:
 
 A defect discovery is therefore not a terminal state. A successful repair is not a terminal state. A merged repair is not a terminal state. The iteration continues to deletion.
 
-## Current first production seam
+## Current production seams
 
-The first production deletion seam is contract-backed regenerable data under the operator's process temp root, including the existing Temp reclaim program. Do not widen from this seam into semantically ambiguous personal files merely to increase deletion volume.
+Permanent-delete execute admits these contract-backed regenerable roots (realpath containment):
 
-When the named historical run is no longer current, regenerate a fresh run from the same bounded Temp root and contract. The run identity may change; the authorized outcome and scope do not silently expand.
+1. the operator's process temp root (`tempfile.gettempdir()`), including the Temp reclaim program;
+2. the explicit regenerable-cache allowlist in `filesteward.deletion.regenerable`:
+   - `%LOCALAPPDATA%\npm-cache`
+   - `%LOCALAPPDATA%\ms-playwright`
+   - `%LOCALAPPDATA%\CrashDumps`
+   - `%LOCALAPPDATA%\pip\Cache`
+   - Chrome `Default\Cache` and `Default\Code Cache` only (not the whole profile)
+   - `%PROGRAMDATA%\Package Cache`
+
+For those seams, preflight may seal identity with size+mtime only (skip full-file SHA-256) so large cache trees remain terminal; execute still uses open→fstat→unlink TOCTOU, and hashes when a content digest is present.
+
+Do not widen from these seams into semantically ambiguous personal files, whole browser profiles, OneDrive, or other home trees merely to increase deletion volume.
+
+When a named historical run is no longer current, regenerate a fresh run from the same bounded authorized root and contract. The run identity may change; the authorized outcome and scope do not silently expand.
 
 ## Required live sequence
 

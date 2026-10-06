@@ -42,6 +42,7 @@ from filesteward.deletion import (
     write_preflight_receipt,
 )
 from filesteward.deletion.preflight import load_run_protection_context
+from filesteward.deletion.regenerable import is_under_regenerable_cache_allowlist
 from filesteward.manifest import triage_run_dir, validate_run
 from filesteward.policy.paths import (
     is_lexically_within,
@@ -533,8 +534,13 @@ def _scan_root_allowed_for_execute(scan_root: Path) -> Optional[str]:
     Temp membership uses **only** ``realpath`` containment under
     ``tempfile.gettempdir()`` (and equality). Lexical-only membership is
     refused so a junction/symlink under Temp that resolves into the home
-    directory cannot be admitted. Home refusal also consults ``root_real``.
-    A path component containing ``pytest`` is not enough:
+    directory cannot be admitted.
+
+    Explicit regenerable-cache allowlist roots (npm-cache, pip\\Cache,
+    ms-playwright, CrashDumps, Chrome cache/code-cache dirs, ProgramData
+    Package Cache) are admitted even when they sit under the user profile.
+    Arbitrary personal home trees remain refused. Home refusal also consults
+    ``root_real``. A path component containing ``pytest`` is not enough:
     ``Path.home()/pytest-victim`` must remain refused.
     """
 
@@ -550,6 +556,8 @@ def _scan_root_allowed_for_execute(scan_root: Path) -> Optional[str]:
         temp_real = temp_root
     under_temp = root_real == temp_real or is_lexically_within(root_real, temp_real)
     if under_temp:
+        return None
+    if is_under_regenerable_cache_allowlist(root_real):
         return None
     home = normalize_declared_path(Path.home())
     try:

@@ -1063,7 +1063,17 @@ class TestSafetyRepairs:
         assert result.items[-1].reason_class == ReasonClass.IDENTITY_DRIFT
         assert "invalid" in result.items[-1].detail.casefold()
 
-    def test_pass_seals_content_sha256(self, tmp_path: Path) -> None:
+    def test_pass_seals_content_sha256(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import tempfile
+
+        # Isolate process temp: pytest tmp lives under real Temp, which now
+        # uses size+mtime seal; this test proves full SHA-256 seal elsewhere.
+        isolated = tmp_path / "isolated-temp"
+        isolated.mkdir()
+        monkeypatch.setattr(tempfile, "gettempdir", lambda: str(isolated))
+
         scan_root = tmp_path / "scan"
         scan_root.mkdir()
         target = scan_root / "seal.bin"
