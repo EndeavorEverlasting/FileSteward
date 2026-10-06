@@ -189,3 +189,17 @@ It is eligible to merge only when:
 - ancestry and authority-map checks pass.
 
 The old stacked UI PRs remain source/history and may be closed or dispositioned separately after successful integration; their closure is not part of this sprint's product acceptance gate.
+
+## Local-agent conflict boundary
+
+This document is the integration judgment owner.
+
+The local agent may mechanically apply the authority map above. It may not choose an alternate merge topology, selectively reconstruct the UI lineage, or resolve a material conflict by product preference.
+
+If a conflict is not covered by this document or by a more specific canonical repository contract:
+- preserve the conflict/evidence;
+- continue independent non-conflicting work;
+- return `BLOCKED_JUDGMENT_GAP` naming the exact paths/symbols and competing authorities;
+- do not make a new policy decision in the local lane.
+
+Routine code-level reconciliation that preserves the already-declared authority is implementation, not new judgment.
