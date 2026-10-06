@@ -905,3 +905,101 @@ class TestSafetyRepairs:
         )
         assert result.overall == "FAIL"
         assert result.items[-1].reason_class == ReasonClass.PROTECTION_HIT
+
+    def test_malformed_run_json_fails_closed(self, tmp_path: Path) -> None:
+        from filesteward.deletion.preflight import load_run_protection_context
+
+        run_dir = tmp_path / "run"
+        run_dir.mkdir()
+        (run_dir / "run.json").write_text("{not-json", encoding="utf-8")
+        with pytest.raises(ValueError, match="run.json"):
+            load_run_protection_context(run_dir)
+
+    def test_malformed_exclusions_csv_fails_closed(self, tmp_path: Path) -> None:
+        from filesteward.deletion.preflight import load_run_protection_context
+
+        run_dir = tmp_path / "run"
+        run_dir.mkdir()
+        (run_dir / "protected-exclusions.csv").write_bytes(b"\xff\xfe\x00bad")
+        with pytest.raises(ValueError, match="protected-exclusions"):
+            load_run_protection_context(run_dir)
+
+    def test_empty_digest_with_existing_plan_fails(self, tmp_path: Path) -> None:
+        scan_root = tmp_path / "scan"
+        scan_root.mkdir()
+        target = scan_root / "ok.bin"
+        target.write_bytes(b"ABCDEFGH")
+        plan, _plan_sha = _make_plan(tmp_path)
+        item = _item_from_file(target, item_id="item-empty-digest", plan_sha="")
+        manifest = _manifest([item], plan_sha="")
+
+        result = run_preflight(
+            manifest, scan_root=scan_root, cleanup_plan_path=plan
+        )
+        assert result.overall == "FAIL"
+        assert any(v.reason_class == ReasonClass.DIGEST_DRIFT for v in result.items)
+
+    def test_item_digest_without_top_level_fails(self, tmp_path: Path) -> None:
+        scan_root = tmp_path / "scan"
+        scan_root.mkdir()
+        target = scan_root / "ok.bin"
+        target.write_bytes(b"ABCDEFGH")
+        item = _item_from_file(target, item_id="item-only", plan_sha="b" * 64)
+        manifest = _manifest([item], plan_sha="")
+        # No cleanup-plan.csv on disk; item still declares a plan digest.
+        result = run_preflight(
+            manifest, scan_root=scan_root, cleanup_plan_path=None
+        )
+        assert result.overall == "FAIL"
+        assert any(v.reason_class == ReasonClass.DIGEST_DRIFT for v in result.items)
+
+    def test_invalid_content_sha256_token_fails(self, tmp_path: Path) -> None:
+        scan_root = tmp_path / "scan"
+        scan_root.mkdir()
+        target = scan_root / "hashed.bin"
+        target.write_bytes(b"v1-content")
+        plan, plan_sha = _make_plan(tmp_path)
+        item = _item_from_file(target, item_id="item-bad-hash", plan_sha=plan_sha)
+        item["content_sha256"] = "not-a-valid-sha256"
+        item["identity"]["content_sha256"] = "not-a-valid-sha256"
+        manifest = _manifest([item], plan_sha=plan_sha)
+
+        result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
+        assert result.overall == "FAIL"
+        assert result.items[-1].reason_class == ReasonClass.IDENTITY_DRIFT
+        assert "invalid" in result.items[-1].detail.casefold()
+
+    def test_pass_seals_content_sha256(self, tmp_path: Path) -> None:
+        scan_root = tmp_path / "scan"
+        scan_root.mkdir()
+        target = scan_root / "seal.bin"
+        payload = b"seal-me-please"
+        target.write_bytes(payload)
+        plan, plan_sha = _make_plan(tmp_path)
+        item = _item_from_file(target, item_id="item-seal", plan_sha=plan_sha)
+        manifest = _manifest([item], plan_sha=plan_sha)
+
+        result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
+        assert result.overall == "PASS"
+        assert result.items[-1].content_sha256 == _sha256_bytes(payload)
+        receipt = result.to_dict()
+        assert receipt["items"][-1]["content_sha256"] == _sha256_bytes(payload)
+
+    def test_realpath_escape_from_scan_root(self, tmp_path: Path) -> None:
+        from filesteward.deletion.preflight import reparse_or_path_escape
+
+        scan_root = tmp_path / "scan"
+        outside = tmp_path / "outside"
+        scan_root.mkdir()
+        outside.mkdir()
+        target = outside / "escaped.bin"
+        target.write_bytes(b"escaped")
+        link = scan_root / "escape-link"
+        try:
+            link.symlink_to(target, target_is_directory=False)
+        except OSError as exc:
+            pytest.skip(f"symlink creation unavailable: {exc}")
+        # Lexical path is under scan_root, but realpath escapes.
+        result = reparse_or_path_escape(link, scan_root)
+        assert result is not None
+        assert result[0] in {ReasonClass.REPARSE_OR_SYMLINK, ReasonClass.PATH_ESCAPE}

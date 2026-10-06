@@ -523,6 +523,53 @@ class TestDeleteLifecycleCli:
         err = capsys.readouterr().err.casefold()
         assert "personal" in err or "home" in err
 
+    def test_scan_root_temp_membership_uses_realpath_only(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Junction/symlink under temp resolving outside temp must be refused."""
+
+        import os
+        import tempfile
+
+        from filesteward import cli as cli_mod
+        from filesteward.policy.paths import normalize_declared_path
+
+        fake_temp = tmp_path / "fake-temp"
+        fake_temp.mkdir()
+        outside = tmp_path / "outside-home-like"
+        outside.mkdir()
+        link = fake_temp / "escape-junction"
+        try:
+            link.symlink_to(outside, target_is_directory=True)
+        except OSError as exc:
+            pytest.skip(f"symlink/junction unavailable: {exc}")
+
+        monkeypatch.setattr(tempfile, "gettempdir", lambda: str(fake_temp))
+        # Home check should also catch when realpath lands under home; force
+        # home to the outside target so refusal is unambiguous.
+        monkeypatch.setattr(Path, "home", classmethod(lambda cls: outside))
+
+        refusal = cli_mod._scan_root_allowed_for_execute(link)
+        assert refusal is not None
+        root_real = normalize_declared_path(Path(os.path.realpath(link)))
+        assert not str(root_real).casefold().startswith(
+            str(normalize_declared_path(fake_temp)).casefold() + os.sep.casefold()
+        ) or "home" in refusal.casefold() or "personal" in refusal.casefold()
+        assert "home" in refusal.casefold() or "personal" in refusal.casefold()
+
+    def test_scan_root_realpath_under_temp_admitted(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import tempfile
+
+        from filesteward import cli as cli_mod
+
+        fake_temp = tmp_path / "fake-temp"
+        scan = fake_temp / "scan"
+        scan.mkdir(parents=True)
+        monkeypatch.setattr(tempfile, "gettempdir", lambda: str(fake_temp))
+        assert cli_mod._scan_root_allowed_for_execute(scan) is None
+
     def test_execute_partial_returns_nonzero(
         self, s1_run_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

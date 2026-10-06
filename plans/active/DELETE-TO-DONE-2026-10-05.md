@@ -97,17 +97,19 @@ PR #20 is merged at `210dbb627e2a300a55089eedf932b4e745093b7b`, but post-merge r
 
 Reproduce or disprove each against refreshed current truth. Fix every still-material defect in the smallest canonical owner. Do not create an architecture redesign.
 
-### OBSERVED FACTS — PR #20 defect family classification (repair lane)
+### OBSERVED FACTS — PR #20 / #24 defect family classification (repair lane)
 
 - live-home `pytest-` path bypass — **VERIFIED_DEFECT** (loose component match admitted `Path.home()/pytest-victim`)
-- TOCTOU identity gap before unlink — **VERIFIED_DEFECT**
-- protection/managed not rebuilt into execute/CLI preflight — **VERIFIED_DEFECT**
-- ancestor symlink/junction/reparse escape — **VERIFIED_DEFECT**
-- weak size+mtime identity (equal-size rewrite) — **VERIFIED_DEFECT** (optional `content_sha256`/`identity_token` now enforced when present; floor remains size+mtime)
-- missing `cleanup-plan.csv` digest fail-open — **VERIFIED_DEFECT**
+- TOCTOU identity gap before unlink — **VERIFIED_DEFECT** (open→fstat/hash→unlink; POSIX hold-fd; Windows close-then-unlink)
+- protection/managed not rebuilt into execute/CLI preflight — **VERIFIED_DEFECT** (run artifacts + fresh git rediscovery union)
+- ancestor symlink/junction/reparse escape — **VERIFIED_DEFECT** (component walk + `realpath(path)` within `realpath(scan_root)`)
+- weak size+mtime identity (equal-size rewrite) — **VERIFIED_DEFECT** (preflight seals `content_sha256`; invalid tokens FAIL; approval/fresh/unlink enforce)
+- missing `cleanup-plan.csv` digest fail-open — **VERIFIED_DEFECT** (empty digest + existing plan → `DIGEST_DRIFT`; item digests require top-level)
 - PARTIAL execute exit status EXIT_OK — **VERIFIED_DEFECT**
 - allocated-size fixture POSIX `st_blocks*512` mismatch — **VERIFIED_DEFECT**
-- duplicate unresolved review threads for same families — **DUPLICATE** (collapsed into the eight owners above)
+- temp lexical OR admitting junction into home — **VERIFIED_DEFECT** (temp membership realpath-only; home checks `root_real`)
+- `load_run_protection_context` silent empty on malformed artifacts — **VERIFIED_DEFECT** (raise `ValueError`; no partial CSV)
+- duplicate unresolved review threads for same families — **DUPLICATE** (collapsed into the owners above; Codex/CodeAnt TOCTOU = one fix)
 - new material finding from repairs/tests — **STALE** / none new beyond the verified set above at repair time
 
 ## 5. Execution frame

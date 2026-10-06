@@ -530,8 +530,11 @@ def _run_delete_approve(args: argparse.Namespace) -> int:
 def _scan_root_allowed_for_execute(scan_root: Path) -> Optional[str]:
     """Return refusal reason, or None if execute may proceed.
 
-    Only admit roots under the process temp directory (``tempfile.gettempdir()``
-    and its ``realpath``). A path component containing ``pytest`` is not enough:
+    Temp membership uses **only** ``realpath`` containment under
+    ``tempfile.gettempdir()`` (and equality). Lexical-only membership is
+    refused so a junction/symlink under Temp that resolves into the home
+    directory cannot be admitted. Home refusal also consults ``root_real``.
+    A path component containing ``pytest`` is not enough:
     ``Path.home()/pytest-victim`` must remain refused.
     """
 
@@ -545,16 +548,22 @@ def _scan_root_allowed_for_execute(scan_root: Path) -> Optional[str]:
     except OSError:
         root_real = root
         temp_real = temp_root
-    under_temp = (
-        root == temp_root
-        or root_real == temp_real
-        or is_lexically_within(root, temp_root)
-        or is_lexically_within(root_real, temp_real)
-    )
+    under_temp = root_real == temp_real or is_lexically_within(root_real, temp_real)
     if under_temp:
         return None
     home = normalize_declared_path(Path.home())
-    under_home = root == home or is_lexically_within(root, home)
+    try:
+        home_real = normalize_declared_path(Path(os.path.realpath(os.fspath(home))))
+    except OSError:
+        home_real = home
+    under_home = (
+        root == home
+        or root_real == home
+        or root_real == home_real
+        or is_lexically_within(root, home)
+        or is_lexically_within(root_real, home)
+        or is_lexically_within(root_real, home_real)
+    )
     if under_home:
         return (
             f"refusing live personal home root {root}; operator live-specimen "

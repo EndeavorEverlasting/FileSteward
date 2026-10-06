@@ -27,7 +27,7 @@ from filesteward.deletion.approval import (
 from filesteward.deletion.manifest import DELETE_MANIFEST_FILENAME, sha256_file
 from filesteward.deletion.preflight import (
     identity_drift_against_lstat,
-    load_run_protection_context,
+    merge_execute_protection_context,
     reparse_or_path_escape,
     run_preflight,
     write_preflight_receipt,
@@ -156,13 +156,122 @@ def _prior_succeeded(
     return out
 
 
-def _delete_file(path: Path) -> None:
-    st = os.lstat(os.fspath(path))
-    if windows.is_reparse_point(st) or path.is_symlink():
-        raise OSError("refuse unlink of reparse/symlink")
-    if not stat.S_ISREG(st.st_mode):
-        raise OSError(f"not a regular file: mode={st.st_mode}")
-    os.unlink(os.fspath(path))
+def _sha256_fd(fd: int) -> str:
+    digest = hashlib.sha256()
+    position = os.lseek(fd, 0, os.SEEK_CUR)
+    os.lseek(fd, 0, os.SEEK_SET)
+    try:
+        while True:
+            chunk = os.read(fd, 1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    finally:
+        os.lseek(fd, position, os.SEEK_SET)
+    return digest.hexdigest()
+
+
+def _preflight_content_digests(preflight_source: Any) -> dict[str, str]:
+    """Map item_id -> content_sha256 sealed in an approval-time preflight."""
+
+    if isinstance(preflight_source, Mapping):
+        data = dict(preflight_source)
+    elif isinstance(preflight_source, (str, Path)):
+        path = Path(os.fspath(preflight_source))
+        if not path.is_file():
+            return {}
+        data = _load_json(path)
+    else:
+        return {}
+    out: dict[str, str] = {}
+    for row in data.get("items") or []:
+        if not isinstance(row, Mapping):
+            continue
+        item_id = str(row.get("item_id") or "")
+        digest = str(row.get("content_sha256") or "").strip().lower()
+        if item_id and len(digest) == 64 and all(
+            c in "0123456789abcdef" for c in digest
+        ):
+            out[item_id] = digest
+    return out
+
+
+def _bind_item_content_digest(
+    item: Mapping[str, Any], digest: str
+) -> dict[str, Any]:
+    bound = dict(item)
+    bound["content_sha256"] = digest
+    identity = dict(bound.get("identity") or {})
+    identity["content_sha256"] = digest
+    bound["identity"] = identity
+    return bound
+
+
+class IdentityDriftError(OSError):
+    """Raised when open-fd identity validation fails before unlink."""
+
+
+def _delete_file(path: Path, item: Mapping[str, Any]) -> None:
+    """Validate identity on an open fd, then unlink that same path object.
+
+    POSIX: ``os.unlink`` while the fd remains open so a replacement at the
+    name cannot become the unlinked inode (classic open→fstat→unlink hold).
+    Windows: the CRT ``os.open`` path does not request ``FILE_SHARE_DELETE``,
+    so unlink-while-open is unavailable; we fstat/hash via the open handle,
+    close, then ``os.unlink`` immediately. Residual TOCTOU on Windows is
+    narrower than a separate lstat-then-unlink path lookup, but not zero.
+    """
+
+    flags = os.O_RDONLY
+    if hasattr(os, "O_BINARY"):
+        flags |= os.O_BINARY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(os.fspath(path), flags)
+    unlink_after_close = os.name == "nt"
+    try:
+        st = os.fstat(fd)
+        if windows.is_reparse_point(st):
+            raise OSError("refuse unlink of reparse/symlink")
+        try:
+            if path.is_symlink():
+                raise OSError("refuse unlink of reparse/symlink")
+        except OSError as exc:
+            if "refuse unlink" in str(exc):
+                raise
+            raise OSError(f"cannot inspect symlink state: {exc}") from exc
+        if not stat.S_ISREG(st.st_mode):
+            raise OSError(f"not a regular file: mode={st.st_mode}")
+        observed_hash = _sha256_fd(fd)
+        drift = identity_drift_against_lstat(
+            item,
+            path,
+            st,
+            observed_content_sha256=observed_hash,
+        )
+        if drift is not None:
+            raise IdentityDriftError(drift)
+        # When the item carried no digest, still require the fd hash to match
+        # any approval-sealed content_sha256 injected onto the item.
+        declared = (
+            (item.get("identity") or {}).get("content_sha256")
+            if isinstance(item.get("identity"), Mapping)
+            else None
+        ) or item.get("content_sha256")
+        if declared:
+            token = str(declared).strip().lower()
+            if token and observed_hash.lower() != token:
+                raise IdentityDriftError(
+                    f"content digest drift: expected {token}, "
+                    f"observed {observed_hash.lower()}"
+                )
+        if not unlink_after_close:
+            os.unlink(os.fspath(path))
+            return
+    finally:
+        os.close(fd)
+    if unlink_after_close:
+        os.unlink(os.fspath(path))
 
 
 def _delete_directory_if_empty(path: Path) -> None:
@@ -352,10 +461,48 @@ def execute_permanent_delete(
     pending_manifest["item_count"] = len(pending_manifest["items"])
 
     cleanup_plan = run_path / "cleanup-plan.csv"
-    protection_roots, managed_paths = load_run_protection_context(run_path)
+    try:
+        protection_roots, managed_paths = merge_execute_protection_context(
+            run_path, scan
+        )
+    except ValueError as exc:
+        result = ExecutionResult(
+            overall="FAILED",
+            run_dir=run_path,
+            receipt_path=receipt_path,
+            items=items_out,
+            free_bytes_before=free_before,
+            free_bytes_after=None,
+            reclaim=None,
+            started_at_unix=started,
+            ended_at_unix=time.time(),
+            approval_errors=(f"protection rediscovery failed: {exc}",),
+            preflight_overall="",
+        )
+        _write_receipt(result, approval_data, manifest_data, {})
+        return result
     protection_index = (
         ProtectionIndex(protection_roots) if protection_roots else None
     )
+
+    # Inject approval-time sealed content digests so fresh preflight and
+    # unlink-time identity checks refuse equal-size+mtime rewrites.
+    sealed_digests = _preflight_content_digests(approval_time_preflight)
+    if sealed_digests:
+        rebound: list[Mapping[str, Any]] = []
+        for item_id in pending_ids:
+            item = by_id.get(item_id)
+            if item is None:
+                continue
+            digest = sealed_digests.get(item_id)
+            if digest:
+                bound = _bind_item_content_digest(item, digest)
+                by_id[item_id] = bound
+                rebound.append(bound)
+            else:
+                rebound.append(item)
+        pending_manifest["items"] = rebound
+
     if pending_ids:
         # Always pass the run-dir cleanup-plan path so a declared digest cannot
         # fail-open when the file is absent.
@@ -373,6 +520,41 @@ def execute_permanent_delete(
         fresh = PreflightResult(overall="PASS", mutated_filesystem=False, items=[])
     write_preflight_receipt(current_pf, fresh)
     preflight_data = fresh.to_dict()
+
+    # Cross-check fresh sealed digests against approval-time seals when the
+    # fresh receipt actually recorded per-item digests (skip empty synthetic
+    # PASS stubs used only in unit tests).
+    if sealed_digests and fresh.overall == "PASS":
+        fresh_digests = _preflight_content_digests(preflight_data)
+        if fresh_digests:
+            for item_id, expected in sealed_digests.items():
+                if item_id not in pending_ids:
+                    continue
+                observed = fresh_digests.get(item_id)
+                if observed != expected:
+                    errors_early = [
+                        (
+                            f"content digest drift for {item_id}: "
+                            f"approved={expected} fresh={observed!r}"
+                        )
+                    ]
+                    result = ExecutionResult(
+                        overall="FAILED",
+                        run_dir=run_path,
+                        receipt_path=receipt_path,
+                        items=items_out,
+                        free_bytes_before=free_before,
+                        free_bytes_after=None,
+                        reclaim=None,
+                        started_at_unix=started,
+                        ended_at_unix=time.time(),
+                        approval_errors=tuple(errors_early),
+                        preflight_overall=str(fresh.overall),
+                    )
+                    _write_receipt(
+                        result, approval_data, manifest_data, preflight_data
+                    )
+                    return result
 
     errors = _validate_for_execute(
         approval_data,
@@ -453,24 +635,13 @@ def execute_permanent_delete(
             continue
 
         try:
-            st = os.lstat(os.fspath(path))
             if item_type != "DIRECTORY":
-                drift = identity_drift_against_lstat(item, path, st)
-                if drift is not None:
-                    items_out.append(
-                        ItemExecutionResult(
-                            item_id=item_id,
-                            path=str(path),
-                            status="FAILED",
-                            reason_class="IDENTITY_DRIFT",
-                            detail=drift,
-                        )
-                    )
-                    continue
+                # open→fstat/hash validate→unlink (same inode/name object).
+                _delete_file(path, item)
+            else:
+                st = os.lstat(os.fspath(path))
                 if windows.is_reparse_point(st) or path.is_symlink():
                     raise OSError("reparse detected at unlink time")
-                _delete_file(path)
-            else:
                 _delete_directory_if_empty(path)
             items_out.append(
                 ItemExecutionResult(
@@ -489,6 +660,16 @@ def execute_permanent_delete(
                     status="FAILED",
                     reason_class="IDENTITY_MISSING",
                     detail="path missing at delete time",
+                )
+            )
+        except IdentityDriftError as exc:
+            items_out.append(
+                ItemExecutionResult(
+                    item_id=item_id,
+                    path=str(path),
+                    status="FAILED",
+                    reason_class="IDENTITY_DRIFT",
+                    detail=str(exc),
                 )
             )
         except OSError as exc:

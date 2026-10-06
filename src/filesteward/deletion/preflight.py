@@ -32,8 +32,10 @@ __all__ = [
     "ItemVerdict",
     "PreflightResult",
     "ReasonClass",
+    "discover_scan_protection_roots",
     "identity_drift_against_lstat",
     "load_run_protection_context",
+    "merge_execute_protection_context",
     "reparse_or_path_escape",
     "run_preflight",
     "write_preflight_receipt",
@@ -82,14 +84,18 @@ class ItemVerdict:
     reason_class: str
     detail: str
     projected_reclaim_bytes: Optional[int] = None
+    content_sha256: Optional[str] = None
 
-    def to_dict(self) -> dict[str, str]:
-        return {
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
             "item_id": self.item_id,
             "verdict": self.verdict,
             "reason_class": self.reason_class,
             "detail": self.detail,
         }
+        if self.content_sha256:
+            payload["content_sha256"] = self.content_sha256
+        return payload
 
 
 @dataclass
@@ -135,6 +141,7 @@ def _pass(
     detail: str = "identity matches; reclaim exclusive",
     *,
     projected_reclaim_bytes: Optional[int] = None,
+    content_sha256: Optional[str] = None,
 ) -> ItemVerdict:
     return ItemVerdict(
         item_id=item_id,
@@ -142,7 +149,12 @@ def _pass(
         reason_class=ReasonClass.OK,
         detail=detail,
         projected_reclaim_bytes=projected_reclaim_bytes,
+        content_sha256=content_sha256,
     )
+
+
+def _is_sha256_hex(token: str) -> bool:
+    return len(token) == 64 and all(c in "0123456789abcdef" for c in token)
 
 
 def _sha256_file(path: Path) -> str:
@@ -315,6 +327,9 @@ def load_run_protection_context(
     Sources (union, fail-closed):
     - ``run.json`` ``protected_roots`` / ``managed_paths``
     - ``protected-exclusions.csv`` path column (each exclusion path is a root)
+
+    Unreadable or malformed ``run.json`` / ``protected-exclusions.csv`` raise
+    ``ValueError`` (fail closed). Partial CSV loads are never returned.
     """
 
     target = Path(os.fspath(run_dir))
@@ -337,38 +352,80 @@ def load_run_protection_context(
         try:
             with meta_path.open("r", encoding="utf-8") as handle:
                 metadata = json.load(handle)
-        except (OSError, ValueError, json.JSONDecodeError):
-            metadata = None
-        if isinstance(metadata, dict):
-            for entry in metadata.get("protected_roots") or []:
-                if isinstance(entry, Mapping):
-                    _add_root(entry.get("path"), str(entry.get("source") or "run.json"))
-                else:
-                    _add_root(entry, "run.json")
-            for raw in metadata.get("managed_paths") or []:
-                if raw:
-                    managed.append(normalize_declared_path(raw))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError(
+                f"unreadable or malformed run.json at {meta_path}: {exc}"
+            ) from exc
+        if not isinstance(metadata, dict):
+            raise ValueError(f"run.json at {meta_path} must be a JSON object")
+        for entry in metadata.get("protected_roots") or []:
+            if isinstance(entry, Mapping):
+                _add_root(entry.get("path"), str(entry.get("source") or "run.json"))
+            else:
+                _add_root(entry, "run.json")
+        for raw in metadata.get("managed_paths") or []:
+            if raw:
+                managed.append(normalize_declared_path(raw))
 
     exclusions_path = target / "protected-exclusions.csv"
     if exclusions_path.is_file():
         try:
             with exclusions_path.open("r", encoding="utf-8", newline="") as handle:
                 reader = csv.DictReader(handle)
-                for row in reader:
-                    if not isinstance(row, dict):
-                        continue
-                    source = str(row.get("protection_source") or "protected-exclusions")
-                    _add_root(row.get("path"), source)
-        except (OSError, csv.Error, UnicodeError):
-            # Unreadable exclusions must not silently empty the index; treat as
-            # a synthetic root that cannot match paths but still signals load
-            # failure via an unusable sentinel only when rows were expected.
-            # Prefer fail-closed by adding a non-matching marker root with an
-            # explicit source so callers still rebuild; path-level checks rely
-            # on run.json when CSV is corrupt.
-            pass
+                if reader.fieldnames is None:
+                    raise ValueError("protected-exclusions.csv missing header row")
+                rows = list(reader)
+        except (OSError, csv.Error, UnicodeError, ValueError) as exc:
+            raise ValueError(
+                f"unreadable or malformed protected-exclusions.csv at "
+                f"{exclusions_path}: {exc}"
+            ) from exc
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError(
+                    f"malformed protected-exclusions.csv row at {exclusions_path}"
+                )
+            source = str(row.get("protection_source") or "protected-exclusions")
+            _add_root(row.get("path"), source)
 
     return tuple(roots), tuple(managed)
+
+
+def discover_scan_protection_roots(
+    scan_root: PathLike,
+) -> tuple[ProtectedRoot, ...]:
+    """Rediscover git/worktree protection roots under ``scan_root``.
+
+    Fail closed when discovery itself raises. An empty discovery result
+    (no git roots under the scan) is allowed and returns ``()``.
+    """
+
+    root = normalize_declared_path(scan_root)
+    try:
+        return ProtectionIndex.from_git_discovery(root).roots
+    except OSError as exc:
+        raise ValueError(
+            f"protection rediscovery unavailable for scan_root {root}: {exc}"
+        ) from exc
+
+
+def merge_execute_protection_context(
+    run_dir: PathLike,
+    scan_root: PathLike,
+) -> tuple[tuple[ProtectedRoot, ...], tuple[Path, ...]]:
+    """Union run-artifact protection with fresh scan rediscovery."""
+
+    artifact_roots, managed = load_run_protection_context(run_dir)
+    discovered = discover_scan_protection_roots(scan_root)
+    seen: set[str] = set()
+    merged: list[ProtectedRoot] = []
+    for root in (*artifact_roots, *discovered):
+        key = str(normalize_declared_path(root.path)).casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(root)
+    return tuple(merged), managed
 
 
 def reparse_or_path_escape(
@@ -380,7 +437,7 @@ def reparse_or_path_escape(
     Checks:
     1. lexical containment under ``scan_root`` (when provided);
     2. any intermediate component from ``path`` up through ``scan_root`` is a
-       symlink/junction/reparse;
+       symlink/junction/reparse (including ``scan_root`` itself);
     3. ``realpath(path)`` remains lexically within ``realpath(scan_root)``.
     """
 
@@ -430,7 +487,8 @@ def reparse_or_path_escape(
             ReasonClass.PATH_ESCAPE,
             f"cannot resolve realpath for containment: {exc}",
         )
-    if not is_lexically_within(real_target, real_root):
+    # Containment must use realpath(scan_root), not the lexical scan_root alone.
+    if real_target != real_root and not is_lexically_within(real_target, real_root):
         return (
             ReasonClass.PATH_ESCAPE,
             (
@@ -441,16 +499,34 @@ def reparse_or_path_escape(
     return None
 
 
+def _declared_content_digest(item: Mapping[str, Any]) -> Optional[str]:
+    identity = _identity_map(item)
+    raw = (
+        identity.get("content_sha256")
+        or item.get("content_sha256")
+        or identity.get("identity_token")
+        or item.get("identity_token")
+    )
+    if raw is None:
+        return None
+    token = str(raw).strip()
+    return token or None
+
+
 def identity_drift_against_lstat(
     item: Mapping[str, Any],
     path: PathLike,
     st: os.stat_result,
+    *,
+    observed_content_sha256: Optional[str] = None,
 ) -> Optional[str]:
     """Return IDENTITY_DRIFT detail when live ``lstat`` disagrees with item.
 
     Floor: path + logical size + mtime (+ allocated when both known).
-    Stronger: when ``content_sha256`` / ``identity_token`` (64-hex) is present
-    on the item or its ``identity`` map, verify file content digest.
+    Stronger: when ``content_sha256`` / ``identity_token`` is present, verify
+    file content digest. Non-empty but invalid (not 64 hex) tokens FAIL;
+    they are never ignored. ``observed_content_sha256`` may supply a digest
+    already computed from an open fd (TOCTOU-safe unlink path).
     """
 
     normalized = normalize_declared_path(path)
@@ -494,23 +570,24 @@ def identity_drift_against_lstat(
             f"observed {observed_alloc}"
         )
 
-    expected_hash = (
-        identity.get("content_sha256")
-        or item.get("content_sha256")
-        or identity.get("identity_token")
-        or item.get("identity_token")
-    )
-    if expected_hash:
-        token = str(expected_hash).strip().lower()
-        if len(token) == 64 and all(c in "0123456789abcdef" for c in token):
+    expected_hash = _declared_content_digest(item)
+    if expected_hash is not None:
+        token = expected_hash.lower()
+        if not _is_sha256_hex(token):
+            return (
+                f"invalid content digest token (want 64 hex): {expected_hash!r}"
+            )
+        if observed_content_sha256 is not None:
+            actual = observed_content_sha256.lower()
+        else:
             try:
                 actual = _sha256_file(normalized)
             except OSError as exc:
                 return f"cannot hash target for identity: {exc}"
-            if actual.lower() != token:
-                return (
-                    f"content digest drift: expected {token}, observed {actual.lower()}"
-                )
+        if actual.lower() != token:
+            return (
+                f"content digest drift: expected {token}, observed {actual.lower()}"
+            )
     return None
 
 
@@ -666,7 +743,7 @@ def _check_item(
             f"item_type mismatch: declared {declared_type}, observed {observed_type}",
         )
 
-    # Identity: size/mtime floor; optional content_sha256/identity_token.
+    # Identity: size/mtime floor; content digest required for regular files.
     drift = identity_drift_against_lstat(item, path, st)
     if drift is not None:
         return _fail(item_id, ReasonClass.IDENTITY_DRIFT, drift)
@@ -725,6 +802,21 @@ def _check_item(
         )
 
     # Proven exclusive reclaim for a single-link regular file.
+    # Seal observed content digest into the PASS verdict so approval-bound
+    # preflight and fresh execute preflight can refuse equal-size+mtime rewrites.
+    declared_digest = _declared_content_digest(item)
+    if declared_digest is not None:
+        sealed_digest = declared_digest.lower()
+    else:
+        try:
+            sealed_digest = _sha256_file(path)
+        except OSError as exc:
+            return _fail(
+                item_id,
+                ReasonClass.IDENTITY_DRIFT,
+                f"cannot hash target for identity seal: {exc}",
+            )
+
     projected: Optional[int] = None
     observed_alloc = _allocated_bytes(st)
     observed_logical = int(getattr(st, "st_size", 0) or 0)
@@ -740,7 +832,11 @@ def _check_item(
         else:
             projected = observed_logical
 
-    return _pass(item_id, projected_reclaim_bytes=projected)
+    return _pass(
+        item_id,
+        projected_reclaim_bytes=projected,
+        content_sha256=sealed_digest,
+    )
 
 
 def run_preflight(
@@ -816,7 +912,29 @@ def run_preflight(
     verdicts: list[ItemVerdict] = []
 
     expected_digest = str(data.get("source_cleanup_plan_sha256") or "").strip()
-    if expected_digest:
+    plan_path = (
+        Path(os.fspath(cleanup_plan_path)) if cleanup_plan_path is not None else None
+    )
+    plan_exists = plan_path is not None and plan_path.is_file()
+    item_declares_plan_digest = any(
+        isinstance(raw, Mapping)
+        and str(raw.get("source_cleanup_plan_sha256") or "").strip()
+        for raw in items_raw
+    )
+    # Empty top-level digest fails closed when a cleanup plan exists on disk
+    # or when any item declares a plan digest (align item-level with top-level).
+    if not expected_digest and (plan_exists or item_declares_plan_digest):
+        verdicts.append(
+            _fail(
+                "",
+                ReasonClass.DIGEST_DRIFT,
+                (
+                    "source_cleanup_plan_sha256 is empty but cleanup-plan.csv "
+                    "exists or item-level plan digests are present"
+                ),
+            )
+        )
+    elif expected_digest:
         # Non-empty digest requires an on-disk cleanup plan; missing is FAIL.
         if cleanup_plan_path is None:
             verdicts.append(
@@ -830,7 +948,7 @@ def run_preflight(
                 )
             )
         else:
-            plan_path = Path(os.fspath(cleanup_plan_path))
+            assert plan_path is not None
             if not plan_path.is_file():
                 verdicts.append(
                     _fail(
@@ -865,21 +983,6 @@ def run_preflight(
                             ),
                         )
                     )
-    elif cleanup_plan_path is not None:
-        # Optional plan path with empty digest: still verify readability only
-        # when a path was explicitly supplied (no FAIL for digest mismatch).
-        plan_path = Path(os.fspath(cleanup_plan_path))
-        if plan_path.is_file():
-            try:
-                _sha256_file(plan_path)
-            except OSError as exc:
-                verdicts.append(
-                    _fail(
-                        "",
-                        ReasonClass.DIGEST_DRIFT,
-                        f"cannot read cleanup plan for digest: {exc}",
-                    )
-                )
 
     # Index paths for directory child-set checks.
     by_path: dict[str, Mapping[str, Any]] = {}
