@@ -26,7 +26,9 @@ A local agent MAY:
 - produce a proposed-action manifest;
 - execute synthetic tests and validators;
 - surface ambiguity to the operator;
-- perform an explicitly approved, bounded, revalidated quarantine action in a future execution phase.
+- perform an explicitly approved, bounded, revalidated quarantine action;
+- perform an explicitly approved, bounded, revalidated permanent-delete action only through the repository-owned deletion lifecycle;
+- repair repository defects, validate, integrate, regenerate bounded runtime artifacts, execute the approved action, and verify reclaim in one continuous iteration when the operator has already authorized that exact outcome.
 
 A local agent MUST NOT:
 
@@ -37,7 +39,9 @@ A local agent MUST NOT:
 - self-approve its own manifest;
 - weaken tests or policies to make a candidate pass;
 - treat failure to find evidence of value as evidence of disposability;
-- use AI confidence as a substitute for deterministic evidence.
+- use AI confidence as a substitute for deterministic evidence;
+- invent repeated operator approval gates after a bounded action has already been explicitly authorized;
+- stop at repair-readiness, test-green, PR-green, merge, preflight, or approval-artifact creation when live deletion/reclaim proof is still the authorized terminal outcome.
 
 When meaning, uniqueness, provenance, recoverability, personal relevance, or current usefulness requires interpretation, the correct terminal state is `HUMAN_REVIEW`.
 
@@ -69,7 +73,9 @@ UNAPPROVED -> APPROVED_FOR_ACTION -> APPLIED -> VERIFIED
 
 An agent-generated manifest begins `UNAPPROVED`.
 
-Only a distinct operator-approval artifact bound to an exact manifest digest/run ID/row set may authorize future action.
+Only a distinct operator-approval artifact bound to an exact manifest digest/run ID/row set may authorize action.
+
+A clear natural-language operator instruction that identifies the bounded run/scope/action is sufficient intent to create that local approval artifact. The artifact provides exact binding and replay resistance; it is not a prompt for another conversational permission round.
 
 No `HUMAN_REVIEW`, `UNKNOWN`, or `PROTECTED` item may be automatically promoted into an approved action.
 
@@ -80,8 +86,10 @@ Any unresolved conflict moves away from action:
 - `RECLAIM_PROVEN` + new ambiguity -> `HUMAN_REVIEW`
 - any disposition + protection evidence -> `PROTECTED`
 - incomplete scan / unreadable child -> `UNKNOWN` or decomposition
-- stale identity / changed file at apply time -> refuse action
+- stale identity / changed file at apply time -> refuse that stale item/action until refreshed
 - uncertain reclaim math -> estimate, never "proven bytes"
+
+Fail-closed behavior protects the candidate set; it does not automatically terminate the entire authorized iteration. Repairable implementation defects are repaired and revalidated. Stale artifacts are regenerated within the same bounded authorized scope. Independent still-valid approved items may continue when the contract permits partial execution.
 
 No rule may resolve conflict toward deletion merely to make progress.
 
@@ -91,7 +99,7 @@ A protected repository/worktree root protects itself and its descendants.
 
 If a candidate directory is an ancestor that contains a protected subtree, the whole-directory action is prohibited and the directory must be decomposed. Unrelated siblings remain independently evaluable.
 
-Protection must be rebuilt immediately before any future mutation. Audit-time protection evidence is not permanent authority.
+Protection must be rebuilt immediately before mutation. Audit-time protection evidence is not permanent authority.
 
 ## 5. Ambiguity belongs to the operator
 
@@ -145,9 +153,11 @@ baseline_free_bytes + cumulative_projected_reclaim_bytes >= target_free_bytes
 
 The target is free space, not a fixed amount to delete.
 
+For live delete proof, projected bytes do not satisfy the terminal gate. Measure free space before and after and record the strongest supported verification state.
+
 ## 8. Windows traversal safety
 
-Default read-only scanning must not:
+Default read-only scanning and mutation preflight must not:
 
 - recursively follow junctions/reparse points;
 - silently follow symlink targets as normal child content;
@@ -158,33 +168,54 @@ Default read-only scanning must not:
 
 Scan gaps become explicit `UNKNOWN` evidence.
 
-## 9. No permanent deletion in the current MVP
+Deletion containment must account for ancestor reparse/junction/symlink redirection, not only the leaf target.
 
-FileSteward's current repository contract excludes permanent deletion.
+## 9. Permanent deletion is supported only through the gated delete lifecycle
 
-For ordinary files, a future operator-approved cleanup action goes to quarantine first and produces an audit/restore record.
+Permanent deletion is no longer categorically outside the product.
 
-Application-managed/native caches may eventually require a separate direct-purge adapter where quarantine is technically inappropriate. That must be an explicit adapter contract with its own proof, not an exception invented by a local agent.
+It is allowed only when all required controls are present:
+
+1. exact manifest-enumerated `RECLAIM_PROVEN` set;
+2. current cleanup-plan/source evidence and digest;
+3. fresh preflight against the real bounded scan root;
+4. freshly rebuilt protection/managed state;
+5. a distinct `DELETE_PERMANENTLY` approval artifact bound to the exact manifest/preflight/item set;
+6. explicit irreversible execution flag;
+7. executor-side revalidation immediately before each unlink/rmdir;
+8. no reparse/symlink target traversal;
+9. per-item execution receipt;
+10. before/after free-space observation and reclaim verification.
+
+A quarantine approval must never satisfy permanent deletion.
+
+The initial supported live seam is contract-backed regenerable data such as the process Temp root. Semantic personal/project data remains outside automatic permanent deletion unless a separate explicit contract exists.
+
+Do not substitute a generic `rm -rf`, `Remove-Item -Recurse`, wildcard deletion, or broad OS cleanup command for the repository-owned executor when FileSteward is the active path.
+
+See `docs/agent/OPERATOR-DELETE-PATH.md`.
 
 ## 10. Audit and apply are separate proof boundaries
 
-A live audit may propose reclaim candidates. It may not mutate them.
+A live audit may propose reclaim candidates. It may not mutate them merely because the audit exists.
 
-Future apply must revalidate:
+Apply/delete must revalidate:
 
 - exact approved manifest digest;
-- explicit approved rows/actions;
+- exact approved rows/actions;
 - source still inside approved scope;
 - source still exists;
 - item identity has not materially changed;
 - protection index freshly rebuilt;
 - no new protected overlap;
 - canonical survivor still exists for duplicate-based actions;
-- quarantine destination capacity;
-- collision rules;
+- cleanup-plan/source digest still exists and matches;
+- ancestor reparse/junction/symlink path remains safe;
 - filesystem semantics needed for the action.
 
-Any mismatch fails closed.
+Any mismatch fails that stale action closed.
+
+However, once the operator has already authorized the bounded delete outcome, mismatch handling remains inside the same iteration: refresh/regenerate/reapprove the newly exact bounded set when the original authorization still covers the same scope/action, then continue to execution. Do not turn revalidation into repeated permission theater.
 
 ## 11. Private data boundary
 
@@ -210,7 +241,7 @@ Tracked examples and tests must use synthetic/sanitized fixtures.
 
 ## 12. Isolate -> Build -> Prove -> Stop/Ship
 
-Before mutation:
+Before repository mutation:
 
 1. refresh origin/provider truth;
 2. work on an isolated task branch/worktree;
@@ -219,23 +250,26 @@ Before mutation:
 5. build the smallest correct change;
 6. run the owning validators/tests;
 7. report skipped/failed checks honestly;
-8. stop at the requested proof boundary.
+8. integrate an exact validated repair when repository rules authorize it;
+9. if the requested authorized outcome is live deletion, refresh the canonical local checkout and continue through delete execution + runtime proof.
 
-Do not live-scan or cross into a more sensitive data/mutation phase merely because the preceding phase passed. Repository integration is different: an exact validated head should merge into the refreshed default branch when required repository-owned gates/reviews/dependencies/protection rules are green, merge authority is available, and no explicit prohibition remains. Release/deploy follows its own repository promotion contract; do not invent an extra conversational confirmation gate when that contract already authorizes promotion.
+A phase boundary is not automatically a user boundary. Do not stop merely because a predecessor implementation phase completed if the same operator request explicitly requires the next executable outcome and the user-only authorization for that outcome is already present.
 
-## 13. Real-data gate
+Repository integration and live filesystem mutation remain different proof states, but an authorized delete sprint may cross both sequentially in one iteration.
 
-Synthetic implementation proof and real workstation observation are different authorization domains.
+## 13. Real-data and real-mutation gate
 
-Phase 1-4 implementation may use only synthetic/temp fixtures.
+Synthetic implementation proof and real workstation observation/mutation are different authorization domains.
 
-A real `C:` scan begins only after:
+A real `C:` scan or deletion begins only after:
 
-- synthetic gates are green;
-- exact read-only command is shown;
-- operator explicitly authorizes crossing into real workstation observation.
+- required synthetic/repository gates for the owned path are green;
+- the bounded real root/run/action is known;
+- operator authorization for crossing into that bounded real domain exists.
 
-Read-only does not mean privacy-free.
+Once the operator has explicitly authorized that exact bounded real outcome, do not re-ask at each internal command boundary. Materialize the repository-required local artifact and proceed.
+
+If the exact run artifact has become stale but the operator authorized the same bounded scope/action, regenerate the run within that scope and continue. Do not broaden scope silently.
 
 ## 14. Reporting semantics
 
@@ -247,9 +281,12 @@ Final reports distinguish exactly:
 - committed
 - pushed
 - PR-open
+- merged
 - live-audited
 - operator-approved
 - applied
 - verified-reclaimed
 
-Never turn a skipped check, estimate, design assertion, or reviewer/status badge into higher proof.
+For an authorized deletion sprint, `applied` requires a real execution receipt with at least one successful deletion. `verified-reclaimed` requires measured runtime evidence.
+
+If `succeeded=0`, the deletion outcome is not complete.
