@@ -319,14 +319,38 @@ def _build_protection_index(
     return ProtectionIndex(roots)
 
 
+def _exclusions_explicit_root_column(
+    fieldnames: Sequence[Optional[str]],
+) -> Optional[str]:
+    """Return the CSV header name for an explicit protection-root column.
+
+    The exclusion item ``path`` column is never a root column: ANCESTOR rows
+    record the scan root (or other ancestor) as ``path``, which must not be
+    promoted into ``ProtectedRoot``. Only an explicit root column is consulted.
+    """
+
+    names = [name for name in fieldnames if isinstance(name, str) and name]
+    by_fold = {name.casefold(): name for name in names}
+    for candidate in ("protected_root", "root"):
+        if candidate in by_fold:
+            return by_fold[candidate]
+    return None
+
+
 def load_run_protection_context(
     run_dir: PathLike,
 ) -> tuple[tuple[ProtectedRoot, ...], tuple[Path, ...]]:
     """Rebuild protection roots and managed prefixes from run artifacts.
 
     Sources (union, fail-closed):
-    - ``run.json`` ``protected_roots`` / ``managed_paths``
-    - ``protected-exclusions.csv`` path column (each exclusion path is a root)
+    - ``run.json`` ``protected_roots`` / ``managed_paths`` (canonical roots)
+    - ``protected-exclusions.csv`` only when an explicit root column exists
+      (``protected_root`` or ``root``); the exclusion ``path`` column is never
+      treated as a protection root. ANCESTOR exclusion rows never contribute
+      roots.
+
+    An empty root list with a valid exclusions CSV is allowed when ``run.json``
+    supplies roots or when execute-time rediscovery fills the gap.
 
     Unreadable or malformed ``run.json`` / ``protected-exclusions.csv`` raise
     ``ValueError`` (fail closed). Partial CSV loads are never returned.
@@ -374,19 +398,29 @@ def load_run_protection_context(
                 reader = csv.DictReader(handle)
                 if reader.fieldnames is None:
                     raise ValueError("protected-exclusions.csv missing header row")
+                fieldnames = tuple(reader.fieldnames)
                 rows = list(reader)
         except (OSError, csv.Error, UnicodeError, ValueError) as exc:
             raise ValueError(
                 f"unreadable or malformed protected-exclusions.csv at "
                 f"{exclusions_path}: {exc}"
             ) from exc
+        root_column = _exclusions_explicit_root_column(fieldnames)
         for row in rows:
             if not isinstance(row, dict):
                 raise ValueError(
                     f"malformed protected-exclusions.csv row at {exclusions_path}"
                 )
+            # Exclusion item paths (including ANCESTOR scan-root rows) are
+            # never protection roots. Only an explicit root column may add
+            # roots, and ANCESTOR rows are skipped even then.
+            relationship = str(row.get("relationship") or "").strip().upper()
+            if relationship == "ANCESTOR":
+                continue
+            if root_column is None:
+                continue
             source = str(row.get("protection_source") or "protected-exclusions")
-            _add_root(row.get("path"), source)
+            _add_root(row.get(root_column), source)
 
     return tuple(roots), tuple(managed)
 
