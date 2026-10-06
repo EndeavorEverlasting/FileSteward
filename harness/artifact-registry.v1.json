@@ -1,0 +1,42 @@
+{
+  "schema_version": "filesteward.harness-artifact-registry/v1",
+  "owner": "FileSteward P01 harness",
+  "artifacts": [
+    {
+      "id": "SYSTEM_HEALTH_SNAPSHOT",
+      "path": "harness/contracts/system-health-snapshot.v1.json",
+      "kind": "contract",
+      "consumer": [
+        "future health observer",
+        "warning scenes",
+        "runtime diagnostics"
+      ]
+    },
+    {
+      "id": "HOUSEKEEPING_SCHEDULE",
+      "path": "harness/contracts/housekeeping-schedule.v1.json",
+      "kind": "contract",
+      "consumer": [
+        "future Windows Task Scheduler adapter",
+        "settings scene"
+      ]
+    },
+    {
+      "id": "INTERACTION_SCENE_ACCEPTANCE",
+      "path": "harness/contracts/interaction-scene-acceptance.v1.json",
+      "kind": "acceptance contract",
+      "consumer": [
+        "V4-E UI",
+        "browser sampler",
+        "operator acceptance"
+      ]
+    }
+  ],
+  "external_authorities": [
+    {
+      "name": "Prompt Scratch Agent Reliability Event Ledger",
+      "authority": "mutable reliability incident/attempt history",
+      "duplication_rule": "do not create a second FileSteward reliability ledger"
+    }
+  ]
+}
