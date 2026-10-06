@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 
+from filesteward.deletion.regenerable import allows_size_mtime_identity_seal
 from filesteward.inventory import windows
 from filesteward.policy.paths import (
     is_lexically_within,
@@ -836,12 +837,15 @@ def _check_item(
         )
 
     # Proven exclusive reclaim for a single-link regular file.
-    # Seal observed content digest into the PASS verdict so approval-bound
-    # preflight and fresh execute preflight can refuse equal-size+mtime rewrites.
+    # Default: seal observed content digest so approval-bound preflight and
+    # fresh execute preflight can refuse equal-size+mtime rewrites.
+    # Regenerable-cache / temp contract roots skip full-file hashing and seal
+    # with size+mtime only (open→fstat→unlink TOCTOU remains at execute).
     declared_digest = _declared_content_digest(item)
+    sealed_digest: Optional[str] = None
     if declared_digest is not None:
         sealed_digest = declared_digest.lower()
-    else:
+    elif scan_root is None or not allows_size_mtime_identity_seal(scan_root):
         try:
             sealed_digest = _sha256_file(path)
         except OSError as exc:

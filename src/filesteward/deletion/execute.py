@@ -26,6 +26,7 @@ from filesteward.deletion.approval import (
 )
 from filesteward.deletion.manifest import DELETE_MANIFEST_FILENAME, sha256_file
 from filesteward.deletion.preflight import (
+    _declared_content_digest,
     identity_drift_against_lstat,
     merge_execute_protection_context,
     reparse_or_path_escape,
@@ -217,9 +218,12 @@ def _delete_file(path: Path, item: Mapping[str, Any]) -> None:
     POSIX: ``os.unlink`` while the fd remains open so a replacement at the
     name cannot become the unlinked inode (classic open→fstat→unlink hold).
     Windows: the CRT ``os.open`` path does not request ``FILE_SHARE_DELETE``,
-    so unlink-while-open is unavailable; we fstat/hash via the open handle,
+    so unlink-while-open is unavailable; we fstat(/hash) via the open handle,
     close, then ``os.unlink`` immediately. Residual TOCTOU on Windows is
     narrower than a separate lstat-then-unlink path lookup, but not zero.
+
+    When the item carries no content digest (regenerable-cache size+mtime
+    seal), identity is validated via open→fstat only — no full-file hash.
     """
 
     flags = os.O_RDONLY
@@ -242,7 +246,10 @@ def _delete_file(path: Path, item: Mapping[str, Any]) -> None:
             raise OSError(f"cannot inspect symlink state: {exc}") from exc
         if not stat.S_ISREG(st.st_mode):
             raise OSError(f"not a regular file: mode={st.st_mode}")
-        observed_hash = _sha256_fd(fd)
+        declared = _declared_content_digest(item)
+        observed_hash: Optional[str] = None
+        if declared is not None:
+            observed_hash = _sha256_fd(fd)
         drift = identity_drift_against_lstat(
             item,
             path,
@@ -253,14 +260,9 @@ def _delete_file(path: Path, item: Mapping[str, Any]) -> None:
             raise IdentityDriftError(drift)
         # When the item carried no digest, still require the fd hash to match
         # any approval-sealed content_sha256 injected onto the item.
-        declared = (
-            (item.get("identity") or {}).get("content_sha256")
-            if isinstance(item.get("identity"), Mapping)
-            else None
-        ) or item.get("content_sha256")
         if declared:
             token = str(declared).strip().lower()
-            if token and observed_hash.lower() != token:
+            if token and observed_hash is not None and observed_hash.lower() != token:
                 raise IdentityDriftError(
                     f"content digest drift: expected {token}, "
                     f"observed {observed_hash.lower()}"

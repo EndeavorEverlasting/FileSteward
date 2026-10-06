@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from filesteward.deletion.approval import (
     build_delete_approval,
     write_delete_approval,
@@ -468,7 +470,16 @@ class TestExecuteSafetyRepairs:
         assert target.exists()
         assert result.overall == "FAILED"
 
-    def test_equal_size_mtime_rewrite_refused(self, tmp_path: Path) -> None:
+    def test_equal_size_mtime_rewrite_refused(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import tempfile
+
+        # Isolate process temp so this non-regenerable scan still seals SHA-256.
+        isolated = tmp_path / "isolated-temp"
+        isolated.mkdir()
+        monkeypatch.setattr(tempfile, "gettempdir", lambda: str(isolated))
+
         scan = tmp_path / "scan"
         scan.mkdir()
         target = scan / "rewrite.bin"
