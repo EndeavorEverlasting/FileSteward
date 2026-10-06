@@ -78,5 +78,72 @@
     "generic_recursive_delete",
     "ui_copy_only_fix",
     "interrupt_live_temp_delete_sprint"
-  ]
+  ],
+  "contract_artifacts": {
+    "traceability_markdown": "plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.md",
+    "traceability_json": "plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.json",
+    "integration_seam": "docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md",
+    "local_handoff": "docs/handoff/DECISION-TO-DELETION-UX-LOCAL-HANDOFF-2026-10-06.md"
+  },
+  "integration_seam": {
+    "implementation_branch": "feature/decision-to-deletion-ux-20261006",
+    "implementation_pr_base": "main",
+    "branch_from": "refreshed origin/main after governance contract lands",
+    "ui_source_branch": "design/u1-brand-home-schedule-seam-20261005",
+    "ui_source_head_observed": "25caadd2245905569ce3b83e9249c30dcccd7884",
+    "merge_strategy": "merge entire UI source with --no-ff --no-commit; resolve by authority map; no selective cherry-pick reconstruction",
+    "refresh_main_again_before_delete_binding": true,
+    "authority_map": {
+      "main_and_governance_win": [
+        "AGENTS.md",
+        "docs/agent/OPERATOR-DELETE-PATH.md",
+        "docs/agent/OPERATOR-DECISION-UX-PATH.md",
+        "src/filesteward/deletion/**",
+        "delete safety tests"
+      ],
+      "ui_lineage_wins": [
+        "src/filesteward/review_bridge.py",
+        "src/filesteward/housekeeping_settings.py",
+        "src/filesteward/visualization/**",
+        "UI-specific docs/tests/harness"
+      ],
+      "additive_manual": {
+        "src/filesteward/cli.py": "preserve review + delete-manifest + delete-preflight + delete-approve + delete-execute",
+        "pyproject.toml + src/filesteward/__init__.py": "retain UI product-version floor, then run repository-owned visual-feature version gate",
+        "approval domains": "retain root quarantine approval and deletion/approval.py as distinct authorities",
+        "AGENTS.md": "start from current main/governance; carry only non-conflicting UI-specific requirements"
+      }
+    },
+    "ancestry_gates": [
+      "refreshed main SHA is ancestor of implementation HEAD",
+      "current PR17 head is ancestor of implementation HEAD"
+    ]
+  },
+  "acceptance_ledger": {
+    "ids": [
+      "UX-T01",
+      "UX-T02",
+      "UX-T03",
+      "UX-T04",
+      "UX-T05",
+      "UX-T06",
+      "UX-T07",
+      "UX-T08",
+      "UX-T09",
+      "UX-T10",
+      "UX-T11",
+      "UX-T12",
+      "UX-T13",
+      "UX-T14",
+      "UX-T15",
+      "UX-T16",
+      "UX-T17",
+      "UX-T18",
+      "UX-T19",
+      "UX-T20",
+      "UX-T21",
+      "UX-T22"
+    ],
+    "terminal_rule": "all required rows must reach their specified proof ceiling; PR readiness alone is non-terminal"
+  }
 }
