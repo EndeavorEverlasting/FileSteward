@@ -399,3 +399,17 @@ D2 produces a no-mutation preflight engine that can prove whether those exact it
 They converge only when the operator can see the exact set **and** the engine can prove the set is still current.
 
 That convergence, not further cosmetic polish, unlocks D3 approval and the first real removal experiment.
+
+
+## 2026-10-05 continuity checkpoint — D1/D2 closed on PR #19; D3 is next
+
+- PR #19 provider head before this checkpoint: `54c8ea62d72e2dc66abc4d5bb045fade608cb204`.
+- D1 exact delete-manifest/operator surface and D2 fail-closed no-mutation preflight are implemented on PR #19. Historical branch report: **59 focused + 415 full pytest**, diff hygiene clean. This agent could not reproduce those tests because its sandbox cannot resolve `github.com`; treat that as a reproduction boundary, not a regression signal.
+- Provider inspection shows the D1/D2 backend imports resolve from current `main@be0406b3047ce07a769fb3f9a14cd6618dbf086e`. The observed stack dependency is CLI/test context around the UI branch's `review` command, so deletion should be transplanted to a main-based lane rather than remain blocked behind PR #15/#16/#17.
+- **D3 is the first unproven gate:** a separate versioned irreversible approval bound to exact D1 manifest digest, exact D2 PASS receipt digest, canonical item IDs/hash/count, exact projected reclaim, exact action `DELETE_PERMANENTLY`, and operator confirmation identity.
+- D1 remains `UNAPPROVED` with intended action `QUARANTINE`; D3 must be a separate authority artifact. QUARANTINE authority cannot be reinterpreted as permanent-delete authority.
+- Provider write boundary: `feature/d3-approval-mainline-20261005` exists at `main` but is **0 ahead / 0 behind** because the connected safety gate blocked tree/commit promotion of the prepared D3 payload. No D3 code commit is claimed.
+- Durable execution handoff: PR #19 comment `6007540052`.
+- D4B permanent-delete executor, D5 execution receipt, D6 measured reclaim, and any live C: mutation remain unimplemented/unproven. Live mutation still requires synthetic destructive proof plus explicit operator approval of one bounded regenerable specimen.
+
+**Next proof gate:** in a local isolated worktree based on refreshed `main`, transplant D1/D2 without the UI stack, adapt only the CLI/test seam, implement D3, then run focused deletion tests + full pytest + `git diff --check`. Only after that proof should the deletion lane open a main-targeting integration PR.
