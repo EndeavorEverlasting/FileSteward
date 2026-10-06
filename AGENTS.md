@@ -7,6 +7,7 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 1. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
 2. `docs/agent/CANONICAL-PATHS.md` (including §4.1 recovery discoverability)
 3. `docs/agent/OPERATOR-DELETE-PATH.md` when the requested outcome includes real deletion or reclaim
+4. `docs/agent/OPERATOR-DECISION-UX-PATH.md` when modifying the public Decision Chamber, Atlas interaction flow, or deletion controls
 4. The active plan under `plans/active/` for the requested sprint
 5. `README.md` safety, privacy, and MVP boundaries
 
