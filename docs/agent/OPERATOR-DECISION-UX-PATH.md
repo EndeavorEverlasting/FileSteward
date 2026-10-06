@@ -23,3 +23,42 @@ The physical-pointer reticle belongs to pointer coordinates. Keyboard/focus pres
 ## Durable owner
 
 The active implementation/proof plan is `plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md` and its machine-readable sibling.
+
+## Action → scene → impact rule
+
+Every operable visible action is a promise:
+
+```text
+current canonical context
+ -> truthful action
+ -> scene/context transition
+ -> named impact
+ -> feedback/readback
+ -> continuation
+```
+
+The public UI must not render an inviting action verb whose activation does not produce the promised effect.
+
+### EXPLORE
+
+`EXPLORE` is reserved for explicitly exploratory environments and effects. It is not a generic fallback for unknown targets, unselected evidence, empty canvas, or actions whose real effect is focus/filter/decision/authorization/deletion.
+
+Unknown or stale action projection fails closed. Do not fabricate an operable fallback.
+
+### Context continuity
+
+The cursor/cartouche/action projection is derived from canonical scene, selection, evidence disposition, gate, authorization, target, destination, and impact. When any owning context changes, the prior cue is invalid and must be recomputed or hidden.
+
+Presentation remains a projection; it does not become another authority owner.
+
+### Scene impact
+
+Every scene must declare what impact it delivers and how the operator continues. FileSteward's primary through-line is:
+
+```text
+classify -> decide -> authorize -> reclaim -> verify
+```
+
+Exploration/orientation supports that journey rather than replacing it.
+
+Classification and decision results must remain available to later filterable views and decision queues after authoritative readback.
