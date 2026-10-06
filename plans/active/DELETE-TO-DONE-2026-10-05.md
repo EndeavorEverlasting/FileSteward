@@ -109,6 +109,7 @@ Reproduce or disprove each against refreshed current truth. Fix every still-mate
 - allocated-size fixture POSIX `st_blocks*512` mismatch — **VERIFIED_DEFECT**
 - temp lexical OR admitting junction into home — **VERIFIED_DEFECT** (temp membership realpath-only; home checks `root_real`)
 - `load_run_protection_context` silent empty on malformed artifacts — **VERIFIED_DEFECT** (raise `ValueError`; no partial CSV)
+- `load_run_protection_context` treats every `protected-exclusions.csv` item `path` as a `ProtectedRoot` — **VERIFIED_DEFECT** (ANCESTOR rows whose path is the scan root, e.g. `%LOCALAPPDATA%\Temp`, become protection roots; all reclaim candidates under that root then fail preflight with `PROTECTION_HIT`/`DESCENDANT`. Observed: 16605 loaded roots including Temp as git-repository; subset preflight 40/40 PROTECTION_HIT. Fix: roots come from `run.json` `protected_roots` only; CSV `path` is never a root; optional explicit `root`/`protected_root` column only; ANCESTOR rows never contribute roots.)
 - duplicate unresolved review threads for same families — **DUPLICATE** (collapsed into the owners above; Codex/CodeAnt TOCTOU = one fix)
 - new material finding from repairs/tests — **STALE** / none new beyond the verified set above at repair time
 
