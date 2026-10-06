@@ -1,7 +1,7 @@
 # Decision-to-Deletion UX Traceability Matrix — 2026-10-06
 
 **Sprint:** `FILESTEWARD-DECISION-TO-DELETION-UX-20261006`  
-**Authority:** P04 acceptance factoring + P83 claim verification + P82 measure/critique/refine  
+**Authority:** P04 acceptance factoring + P83 claim verification + P82 measure/critique/refine + P97 prior-art/gap judgment  
 **Status at creation:** remote contract implemented; product implementation not yet performed  
 **Canonical plan:** `plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md`
 
