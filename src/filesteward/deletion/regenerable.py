@@ -54,8 +54,6 @@ def regenerable_cache_allowlist_roots() -> list[Path]:
                 / "Code Cache",
             ]
         )
-    if program_data:
-        roots.append(Path(program_data) / "Package Cache")
     return [normalize_declared_path(p) for p in roots]
 
 
