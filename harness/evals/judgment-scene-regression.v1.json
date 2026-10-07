@@ -1,0 +1,271 @@
+{
+  "schema_version": "filesteward.judgment-scene-regression-ledger/v1",
+  "owner": "P94 retained behavior + P82 falsification for FileSteward judgment scenes",
+  "purpose": "Prevent local agents from flattening, restyling, or semantically weakening the immersive decision experience while implementing dependency-aware judgment.",
+  "sources": {
+    "file_steward_lineage": [
+      "PR #29 feat(ux): Decision Chamber continuity through permanent-delete binding",
+      "harness/contracts/action-scene-impact.v1.json",
+      "plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md"
+    ],
+    "prompt_kit": [
+      "P94 Regression Test & Live Behavior Guard",
+      "P106 UX Product Designer & Interaction Architect",
+      "P108 UX Polish & Sophistication Refiner",
+      "P110 UX Integrity & Cross-Viewport Acceptance Guard"
+    ]
+  },
+  "protected_behaviors": [
+    {
+      "id": "PB01",
+      "behavior": "The existing MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED decision tree remains the tutorial; no separate product tour replaces it.",
+      "proof": [
+        "static presence",
+        "browser journey"
+      ]
+    },
+    {
+      "id": "PB02",
+      "behavior": "EXPLORE remains reserved for genuine exploration; ordinary selection/focus/decision actions use truthful verbs.",
+      "proof": [
+        "projection unit test",
+        "unknown-action negative test"
+      ]
+    },
+    {
+      "id": "PB03",
+      "behavior": "Brand/title and canonical Home action return through the existing Atlas Home owner; no second navigation state machine is created.",
+      "proof": [
+        "projection unit test",
+        "browser activation via pointer + keyboard"
+      ]
+    },
+    {
+      "id": "PB04",
+      "behavior": "Search, filters, selection, and other orthogonal state survive unrelated scene transitions and visibility changes.",
+      "proof": [
+        "composed-state regression",
+        "browser journey"
+      ]
+    },
+    {
+      "id": "PB05",
+      "behavior": "Blocked/protected states remain visibly blocked and never gain an inviting reclaim/delete affordance.",
+      "proof": [
+        "negative fixture",
+        "browser action reachability"
+      ]
+    },
+    {
+      "id": "PB06",
+      "behavior": "The accepted warm material / Memory Atlas visual world is preserved during refinement; bounded implementation may not silently reset the product into a generic dashboard.",
+      "proof": [
+        "token regression",
+        "desktop+narrow screenshot review"
+      ]
+    },
+    {
+      "id": "PB07",
+      "behavior": "Contextual reticle/custom pointer remains scoped to the Atlas interaction region and supported pointer/motion conditions.",
+      "proof": [
+        "static behavior test",
+        "desktop browser proof",
+        "reduced-motion proof"
+      ]
+    },
+    {
+      "id": "PB08",
+      "behavior": "Cross-input semantics remain one capability model with pointer/keyboard/touch adapters; no second mobile state machine.",
+      "proof": [
+        "semantic action parity",
+        "supported-mode browser proof"
+      ]
+    },
+    {
+      "id": "PB09",
+      "behavior": "Every operable action produces a scene/context transition, named impact, feedback/readback, and continuation; dead clicks are regressions.",
+      "proof": [
+        "action trace",
+        "browser journey"
+      ]
+    },
+    {
+      "id": "PB10",
+      "behavior": "Technical safety facts are resolved by deterministic adapters/reducers before HUMAN_REVIEW; the operator is not asked to guess ownership, serviceability, repository uniqueness, or regenerability.",
+      "proof": [
+        "workflow fixture",
+        "negative judgment fixture"
+      ]
+    },
+    {
+      "id": "PB11",
+      "behavior": "Human judgment is limited to value/preference and exact destructive authorization after technical safety resolution.",
+      "proof": [
+        "action-family fixture",
+        "authorization fixture"
+      ]
+    },
+    {
+      "id": "PB12",
+      "behavior": "Classification and decisions persist into filterable views/queues and remain available after returning Home.",
+      "proof": [
+        "persistence projection test",
+        "browser readback"
+      ]
+    },
+    {
+      "id": "PB13",
+      "behavior": "Motion communicates state/progress/transition only; decorative choreography must not obscure or delay task completion.",
+      "proof": [
+        "reduced-motion check",
+        "visual critique"
+      ]
+    },
+    {
+      "id": "PB14",
+      "behavior": "Static HTML/unit proof cannot close a live UX claim; supported viewport/input modes require bounded live proof.",
+      "proof": [
+        "acceptance receipt"
+      ]
+    },
+    {
+      "id": "PB15",
+      "behavior": "Deleting, weakening, or rewriting a test/fixture to fit a broken candidate does not count as a repair; accepted behavior remains the oracle unless explicit redesign authority changes it.",
+      "proof": [
+        "diff review",
+        "negative mutation fixture"
+      ]
+    }
+  ],
+  "defect_families": [
+    {
+      "id": "SCENE_FLATTENED_TO_DASHBOARD",
+      "negative_fixture": "Implementation replaces scripted scene progression with a generic list/cards/dashboard while actions still exist.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "DEAD_CLICK_NO_IMPACT",
+      "negative_fixture": "Visible operable control changes no canonical context, impact, or continuation.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "GENERIC_EXPLORE_FALLBACK",
+      "negative_fixture": "Unknown or non-exploratory action is rendered as EXPLORE.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "ORTHOGONAL_STATE_ERASED",
+      "negative_fixture": "Opening/closing a gate or toggling visibility clears active search/filter/selection without user intent.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "DUPLICATE_HOME_OWNER",
+      "negative_fixture": "New scene adds a separate Home/router state owner instead of existing Atlas Home authority.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "VISUAL_WORLD_RESET",
+      "negative_fixture": "Bounded feature work replaces accepted Memory Atlas material/interaction language with generic dashboard styling.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "STATIC_ONLY_LIVE_CLAIM",
+      "negative_fixture": "Agent declares cross-viewport/input UX complete from static/unit checks alone.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "UNSCRIPTED_JUDGMENT",
+      "negative_fixture": "Local agent invents a question, choice, scene, or action because canonical judgment is missing.",
+      "expected": "BLOCKED_JUDGMENT_GAP"
+    },
+    {
+      "id": "TECHNICAL_FACT_DELEGATED_TO_OPERATOR",
+      "negative_fixture": "UI asks user whether bytes are safe/regenerable/app-owned/repo-unique before safe adapters are exhausted.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "SAFETY_GATE_SKIPPED",
+      "negative_fixture": "Value decision or authorization appears before current attribution/consequence/recoverability gates are satisfied.",
+      "expected": "FAIL"
+    }
+  ],
+  "positive_controls": [
+    {
+      "id": "PC01",
+      "case": "Selecting an unknown large directory preserves current search/filter state, enters FOCUS, then automatically routes to attribution checks.",
+      "expected_trace": [
+        "ATLAS_HOME",
+        "TARGET_FOCUS",
+        "EVIDENCE_GATE",
+        "ATTRIBUTION_RESOLVE"
+      ]
+    },
+    {
+      "id": "PC02",
+      "case": "Installed app serviceability bytes resolve to protected consequence; operator is offered KEEP/REVIEW_LATER, not raw delete.",
+      "expected_trace": [
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "VALUE_DECISION"
+      ]
+    },
+    {
+      "id": "PC03",
+      "case": "Regenerable app cache proves recovery, offers CLEAN_CACHE, authorizes exact action, verifies measured reclaim, and returns to next decision.",
+      "expected_trace": [
+        "RECOVERABILITY_RESOLVE",
+        "VALUE_DECISION",
+        "AUTHORIZATION_GATE",
+        "RECLAIM_EXECUTION",
+        "VERIFY_RETURN"
+      ]
+    },
+    {
+      "id": "PC04",
+      "case": "Clean pushed reproducible repo clone is technically safe but remains an operator value decision before removal.",
+      "expected_trace": [
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "RECOVERABILITY_RESOLVE",
+        "VALUE_DECISION"
+      ]
+    },
+    {
+      "id": "PC05",
+      "case": "Post-action health regression routes to incident recovery and freezes same-family automatic eligibility until classified.",
+      "expected_trace": [
+        "RECLAIM_EXECUTION",
+        "INCIDENT_RECOVERY",
+        "VERIFY_RETURN"
+      ]
+    }
+  ],
+  "acceptance_matrix": {
+    "static": [
+      "all scene IDs referenced by transitions exist",
+      "every scene has primary impact and success evidence",
+      "all mutation paths pass VALUE_DECISION -> AUTHORIZATION_GATE",
+      "EXPLORE is not a fallback",
+      "regression ledger covers every preserved tutorial stage"
+    ],
+    "focused_tests": [
+      "projection/action semantics",
+      "composed state",
+      "filter persistence",
+      "dependency gate ordering",
+      "blocked action reachability",
+      "negative defect families"
+    ],
+    "live_browser": [
+      "desktop",
+      "narrow viewport",
+      "reduced motion",
+      "forced colors",
+      "supported keyboard path",
+      "supported pointer path",
+      "supported touch/phone path when product-declared"
+    ],
+    "p82_loop": "HYPOTHESIS -> BUILD/PROBE -> MEASURE -> CRITIQUE -> DECIDE; first PASS is a checkpoint, not automatic closure."
+  },
+  "mutation_rule": "Any change to scripted scenes, accepted interaction grammar, or protected behavior requires updating this ledger plus a negative fixture and positive control; local agents may not delete the oracle to make a candidate pass."
+}
