@@ -1,0 +1,148 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "FILESTEWARD-DEPENDENCY-AWARE-JUDGMENT-20261007",
+  "lane_id": "COORDINATOR_TO_LOCAL_EXECUTION",
+  "role": "local execution coordinator",
+  "canonical_plan_ref": "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.plan.json",
+  "contract_refs": [
+    "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/evals/judgment-scene-regression.v1.json",
+    "harness/contracts/action-scene-impact.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/contracts/execution-handoff-packet.schema.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json"
+  ],
+  "provider_base_sha": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+  "provider_head_sha": "f2ee67e7a95dabc24fe824a3168fefc279ac9448",
+  "local_head_sha_or_unknown": "UNKNOWN_NOT_OBSERVED",
+  "completed_facts": [
+    {
+      "fact": "Generic ProgramData Package Cache admission has been removed from the regenerable runtime allowlist on the remote branch.",
+      "evidence": [
+        "src/filesteward/deletion/regenerable.py",
+        "tests/test_regenerable_cache_roots.py"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Deterministic judgment scenes and technical-before-human decision ordering are encoded.",
+      "evidence": [
+        "harness/contracts/judgment-scene-workflow.v1.json",
+        "harness/contracts/storage-dependency-judgment.v1.json"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Immersive Decision Chamber behavior has a retained P94 regression ledger.",
+      "evidence": [
+        "harness/evals/judgment-scene-regression.v1.json"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "The P04 execution loop, typed handoff packet, and P82 review gates are durable repository artifacts.",
+      "evidence": [
+        "harness/contracts/execution-handoff-loop.v1.json",
+        "harness/contracts/execution-handoff-packet.schema.v1.json",
+        "harness/evals/execution-handoff-review-gates.v1.json",
+        "docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "J0_LOCAL_PROOF",
+      "action": "Refresh local branch to the current remote head, run focused Package Cache/deletion regression tests, then run the repository-required full suite on the exact candidate.",
+      "depends_on": [],
+      "acceptance": "RG3 and RG6 pass on an exact locally observed head; no Package Cache generic execute admission remains."
+    },
+    {
+      "work_id": "J1_WISPR_INCIDENT",
+      "action": "Recover ignored reclaim receipts and read-only Wispr installation/runtime/serviceability evidence; establish PROVEN, DISPROVEN, or CORRELATED_UNRESOLVED causal state.",
+      "depends_on": [],
+      "acceptance": "Causal state is evidence-backed; private evidence remains uncommitted; any repair mutation has a covering operator gate."
+    },
+    {
+      "work_id": "J2_APP_ATTRIBUTION",
+      "action": "Implement read-only Windows application attribution adapters and focused synthetic tests.",
+      "depends_on": [],
+      "acceptance": "Representative installed-app ownership and consequence evidence is normalized without Win32_Product."
+    },
+    {
+      "work_id": "J3_REPO_ATTRIBUTION",
+      "action": "Implement repository/project attribution by enriching ProtectionIndex evidence without weakening deletion protection.",
+      "depends_on": [],
+      "acceptance": "Dirty/unique work is distinguished from reproducible clone/generated output with focused tests."
+    },
+    {
+      "work_id": "J4_DEPENDENCY_REDUCER",
+      "action": "Converge J2 and J3 into normalized dependency/consequence reduction and explainability.",
+      "depends_on": [
+        "J2_APP_ATTRIBUTION",
+        "J3_REPO_ATTRIBUTION"
+      ],
+      "acceptance": "Unknown/protected states fail away from automatic reclaim and legal action reasons are explainable."
+    },
+    {
+      "work_id": "J5_DELETION_INTEGRATION",
+      "action": "Bind current dependency evidence to manifest/preflight/executor/receipt and recheck proof-relevant state immediately before each destructive mutation.",
+      "depends_on": [
+        "J0_LOCAL_PROOF",
+        "J4_DEPENDENCY_REDUCER"
+      ],
+      "acceptance": "Dependency drift fails closed before mutation and receipt binds the immediate evidence revision."
+    },
+    {
+      "work_id": "J6_SCRIPTED_SCENES",
+      "action": "After PR #29/main lineage reconciliation, implement the canonical judgment-scene script without weakening the retained immersive behavior.",
+      "depends_on": [
+        "J4_DEPENDENCY_REDUCER"
+      ],
+      "acceptance": "RG7 and RG8 pass; classifications persist into filterable views and composed state is retained."
+    },
+    {
+      "work_id": "J7_P82_FINAL",
+      "action": "Run retained negative/positive corpus, full suite, bounded live UX acceptance, and one safe live read-only attribution proof.",
+      "depends_on": [
+        "J5_DELETION_INTEGRATION",
+        "J6_SCRIPTED_SCENES"
+      ],
+      "acceptance": "No protected/serviceability false-positive eligibility and no retained-scene regression."
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "local worktrees/branches created for declared lanes only",
+    "lane-owned files defined by the canonical plan and refreshed P04 partition"
+  ],
+  "forbidden_surfaces": [
+    "default branch direct writes",
+    "private var/runs evidence in Git",
+    "J6 visualization surfaces from backend lanes",
+    "canonical judgment/scene semantics invented by local implementers",
+    "tests or regression oracles weakened merely to fit a candidate"
+  ],
+  "dependencies": [],
+  "external_prerequisites": [
+    "J6 requires refreshed PR #29 + current main Memory Atlas/Decision Chamber lineage before visualization mutation",
+    "workstation repair or destructive mutation requires exact covering operator authority"
+  ],
+  "proof_receipts": [
+    "harness/evals/judgment-scene-p82-validation-2026-10-07.json"
+  ],
+  "proof_ceiling": "Remote provider source/contracts are encoded and statically read back. Local pytest/full suite, browser/live UX, workstation incident attribution, merge readiness, and subsequent lane implementation remain unproven.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [
+    "var/runs/** — local ignored evidence pointer only; do not copy contents into tracked packet"
+  ],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": "NONE",
+  "exact_next_action": {
+    "phase": "RECOVER",
+    "action": "In the canonical local checkout, fetch/prune provider truth, inspect local status/head and Entire capabilities, then consume this packet and immediately execute J0_LOCAL_PROOF while dispatching dependency-independent J1/J2/J3 through non-conflicting local worktrees/agents when available.",
+    "owner": "local execution coordinator",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "Return a successor filesteward.execution-handoff-packet/v1 plus exact heads, changed files, validations actually run, failed-and-repaired evidence, review state, proof ceiling, and the next executable transition. Continue yourself instead of stopping at the packet when the next transition remains executable."
+}
