@@ -110,14 +110,16 @@
       "id": "J6",
       "title": "Scenes and filtered decision views",
       "depends_on": [
-        "J4",
-        "refreshed PR29/main UX truth"
+        "J4"
       ],
       "gate": "exact scripted scenes implemented without weakening protected immersive behavior; browser acceptance matrix proven",
       "owned": [
         "implementation of harness/contracts/judgment-scene-workflow.v1.json",
         "retained behavior from harness/evals/judgment-scene-regression.v1.json",
         "reconciled PR #29 visualization lineage"
+      ],
+      "external_prerequisites": [
+        "refresh and reconcile PR #29 / current main UX lineage before visualization mutation"
       ]
     },
     {
