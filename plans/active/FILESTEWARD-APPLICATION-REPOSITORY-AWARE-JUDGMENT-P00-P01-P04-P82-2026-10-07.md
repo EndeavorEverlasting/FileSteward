@@ -510,3 +510,92 @@ That proves **remote static design/harness consistency only**. Local tests, brow
 Provider review found that the first pass documented the Package Cache incident lock while runtime source still admitted that root. The branch now removes that generic runtime admission and inverts the focused regression so Package Cache must be refused. The handoff also requires a covering operator gate before installer repair, requires dependency evidence to be refreshed immediately before each removal, and records PR #29 reconciliation as an external J6 prerequisite rather than a lane ID.
 
 This raises J0 to **implemented on the remote branch + provider-read-back statically validated**. Local focused and full test execution remain unproven.
+
+
+## 20. P04 operating loop — execution survives handoff
+
+The execution spine is now repository-owned:
+
+`harness/contracts/execution-handoff-loop.v1.json`
+
+```text
+RECOVER
+ -> PARTITION
+ -> DISPATCH
+ -> EXECUTE
+ -> PROVE
+ -> REVIEW
+ -> CONVERGE
+ -> CONTINUE
+```
+
+The loop intentionally prevents a new agent/runtime from turning accepted work back into planning.
+
+Key rules:
+
+- completed facts become inputs to remaining work;
+- remaining work is repartitioned from current truth rather than copied blindly;
+- dependency-ready independent lanes launch without operator prompt-shuttling when a safe adapter exists;
+- one blocked lane does not stop independent lanes;
+- review failure routes to a named repair owner and retry;
+- a passing gate advances automatically under existing authority;
+- `PLAN_READY`, `HANDOFF_WRITTEN`, `PR_OPEN`, and `MERGEABLE` are explicitly non-terminal.
+
+## 21. Typed handoff protocol
+
+Canonical protocol:
+
+- `docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md`
+- `harness/contracts/execution-handoff-packet.schema.v1.json`
+- current successor packet: `docs/handoff/FILESTEWARD-DEPENDENCY-AWARE-CURRENT-HANDOFF-2026-10-07.json`
+
+The packet carries completed facts, remaining work, ownership, dependencies, external prerequisites, proof receipts, proof ceiling, review state, private-evidence pointers, judgment/autonomy gaps, and one executable next action.
+
+Captured SHA fields use `*_at_capture`. This is deliberate: persisting the packet itself moves the tracked branch head. The receiver therefore treats captured heads as continuity evidence and RG0 refreshes current provider/local truth before mutation.
+
+If the same agent can execute the packet's next transition, it should consume that transition itself rather than stopping because a handoff artifact now exists.
+
+## 22. Next review gates
+
+Canonical gate map:
+
+`harness/evals/execution-handoff-review-gates.v1.json`
+
+The next critical gates are:
+
+| Gate | Transition protected | Current significance |
+| --- | --- | --- |
+| RG0_CURRENT_TRUTH | every pickup -> partition | refresh remote/local state before using captured packet heads |
+| RG1_OWNERSHIP_COLLISION | partition -> dispatch | J1/J2/J3 may parallelize only with disjoint mutation owners |
+| RG3_FOCUSED_PROOF | execute -> review | J0 Package Cache repair still needs local focused proof |
+| RG5_PROVIDER_REVIEW | review -> merge candidate | refresh exact PR #33 head and material review after changes |
+| RG6_LOCAL_FULL_PROOF | merge candidate -> merge | local repository suite is still required; provider green is insufficient |
+| RG7_PR29_VISUAL_LINEAGE | J4 -> J6 visual mutation | refresh/reconcile PR #29 and incumbent Memory Atlas before touching scenery |
+| RG8_LIVE_UX_ACCEPTANCE | J6 implementation -> J6 PROVEN | desktop/narrow/reduced-motion/forced-colors/input proof |
+| RG9_LIVE_MUTATION_AUTHORITY | preflight -> workstation mutation | exact action, current evidence, exact scope, current authorization |
+| RG10_POST_ACTION_VERIFY | mutation -> terminal | receipt + measured impact + health verification |
+
+Gate failure invalidates the attempted transition, **not the scheduler**.
+
+## 23. P82 handoff-protocol falsification
+
+Receipt:
+
+`harness/evals/execution-handoff-p82-validation-2026-10-07.json`
+
+**Remote result: PASS — 27/27 checks.**
+
+The falsification matrix verifies that the protocol rejects:
+
+- stale captured heads treated as present truth;
+- unresolved material review hidden by green tests;
+- provider green substituted for local full proof;
+- J6 launched from stale PR #29 lineage;
+- static HTML/string checks promoted to live UX proof;
+- mutation outside the exact operator gate;
+- terminal success without post-action health verification;
+- a blocked lane disabling independent work;
+- operator prompt-shuttling when a safe automated adapter exists;
+- stopping at plan/handoff/PR-open/mergeable.
+
+This is still a **remote protocol proof**, not actual local execution evidence. The next local receiver must run RG0, execute J0 local proof, and dispatch J1/J2/J3 when safe independent adapters are available.
