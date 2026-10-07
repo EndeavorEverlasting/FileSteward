@@ -189,7 +189,9 @@ It is allowed only when all required controls are present:
 
 A quarantine approval must never satisfy permanent deletion.
 
-The supported live seams are contract-backed regenerable data under the process Temp root and the explicit regenerable-cache allowlist (npm-cache, pip\\Cache, ms-playwright, CrashDumps, Chrome cache/code-cache dirs, ProgramData Package Cache). Semantic personal/project data remains outside automatic permanent deletion unless a separate explicit contract exists.
+The supported live seams are contract-backed regenerable data under the process Temp root and the explicit regenerable-cache allowlist (npm-cache, pip\\Cache, ms-playwright, CrashDumps, Chrome cache/code-cache dirs) **only where the owning adapter still proves regenerability**. Semantic personal/project data remains outside automatic permanent deletion unless a separate explicit contract exists.
+
+**Incident lock — ProgramData Package Cache:** generic `%PROGRAMDATA%\\Package Cache` admission is prohibited. Installer/package caches can be application serviceability dependencies; location under a cache-named root is not proof of regenerability. Until a per-entry application/serviceability adapter proves an orphan contract, these paths are `PROTECTED` for automatic deletion and may not become `RECLAIM_PROVEN` from age/size/path heuristics. See `harness/contracts/storage-dependency-judgment.v1.json`.
 
 Do not substitute a generic `rm -rf`, `Remove-Item -Recurse`, wildcard deletion, or broad OS cleanup command for the repository-owned executor when FileSteward is the active path.
 
