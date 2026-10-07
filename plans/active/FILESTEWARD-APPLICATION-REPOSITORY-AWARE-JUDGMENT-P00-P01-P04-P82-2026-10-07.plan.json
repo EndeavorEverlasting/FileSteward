@@ -196,7 +196,11 @@
     "A16 local agents report BLOCKED_JUDGMENT_GAP rather than inventing scene semantics"
   ],
   "remote_p82_validation": {
-    "state": "PENDING_PROVIDER_READBACK",
-    "scope": "static cross-contract/transition validation only; no claim of local/browser runtime proof"
+    "state": "PASS",
+    "receipt": "harness/evals/judgment-scene-p82-validation-2026-10-07.json",
+    "checks_passed": 15,
+    "checks_failed": 0,
+    "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT",
+    "proof_ceiling": "No local test, browser, current-visual, workstation-runtime, or merge-readiness claim."
   }
 }
