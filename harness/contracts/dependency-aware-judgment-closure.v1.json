@@ -1,0 +1,199 @@
+{
+  "schema_version": "filesteward.judgment-closure/v1",
+  "closure_id": "FILESTEWARD-DEPENDENCY-AWARE-JUDGMENT-CLOSURE-20261007",
+  "purpose": "Eliminate architectural/product choices from the local execution handoff so Cursor/OpenCode perform evidence gathering, implementation, tests, conflict mechanics, and live proof rather than product judgment.",
+  "status": "JUDGMENT_CLOSED_FOR_CURRENT_SPRINT",
+  "blocked_judgment_gap": "NONE",
+  "provider_snapshot_at_decision": {
+    "main_sha": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+    "pr33": {
+      "number": 33,
+      "head_sha": "dcc4b8e6e8a79b0d02fd50f9f12b7ec5b6e2abdc",
+      "state": "open",
+      "mergeable": true
+    },
+    "pr29": {
+      "number": 29,
+      "head_sha": "c093f2cb69d69be153fcf983b6ad785636825b7e",
+      "state": "open",
+      "mergeable": false,
+      "ahead_of_main": 62,
+      "behind_main": 6
+    }
+  },
+  "integration_order": [
+    "Wave 1 may execute concurrently from refreshed PR33 foundation truth: J0 local proof, J1 read-only Wispr incident, J2 app attribution, J3 repo attribution.",
+    "PR33 is the foundation/containment contract PR. Do not expand its provider scope with J2/J3/J4/J5/J6 feature implementation before RG3/RG5/RG6 are satisfied and PR33 is merged.",
+    "J2 and J3 may implement concurrently in isolated local worktrees forked from the refreshed PR33 head while J0 proves PR33. Their provider PRs target refreshed main only after PR33 merges; rebase onto that main and rerun invalidated proof before opening/refreshing provider PRs.",
+    "J4 begins only after J2 and J3 are integrated into main.",
+    "J5 begins after J0 foundation is in main and J4 is integrated.",
+    "J6 begins after J4 is integrated and RG7 performs the fixed PR29 selective-port procedure.",
+    "J7 begins only after J5 and J6 are integrated and their exact-head proofs are current."
+  ],
+  "wave1_worktrees": {
+    "J0": {
+      "branch": "plan/application-repo-aware-judgment-20261007",
+      "worktree": "canonical/foundation checkout",
+      "mutation_owner": "PR33 foundation files only",
+      "parallel_safe": true
+    },
+    "J1": {
+      "branch": "runtime-evidence-only unless a proven diagnostic defect needs a tracked fix",
+      "worktree": "canonical checkout or dedicated read-only shell",
+      "mutation_owner": "ignored var/runs/**; tracked diagnose/runbook only if defect proven",
+      "parallel_safe": true
+    },
+    "J2": {
+      "branch": "feature/windows-app-attribution-20261007",
+      "worktree": "%USERPROFILE%\\dev\\worktrees\\FileSteward\\j2-app-attribution",
+      "mutation_owner": "src/filesteward/ownership/windows_app.py + tests/test_ownership_windows_app.py",
+      "parallel_safe": true
+    },
+    "J3": {
+      "branch": "feature/repository-attribution-20261007",
+      "worktree": "%USERPROFILE%\\dev\\worktrees\\FileSteward\\j3-repo-attribution",
+      "mutation_owner": "src/filesteward/ownership/repository.py + tests/test_ownership_repository.py",
+      "parallel_safe": true
+    }
+  },
+  "module_boundaries": {
+    "package_root": "src/filesteward/ownership",
+    "J2": {
+      "owns": [
+        "src/filesteward/ownership/windows_app.py",
+        "tests/test_ownership_windows_app.py"
+      ],
+      "may_add_private_helpers_under": "src/filesteward/ownership/_windows_*",
+      "forbidden": [
+        "src/filesteward/visualization/**",
+        "src/filesteward/deletion/**",
+        "shared graph/reducer modules owned by J4"
+      ]
+    },
+    "J3": {
+      "owns": [
+        "src/filesteward/ownership/repository.py",
+        "tests/test_ownership_repository.py"
+      ],
+      "may_add_private_helpers_under": "src/filesteward/ownership/_git_*",
+      "forbidden": [
+        "src/filesteward/visualization/**",
+        "src/filesteward/deletion/**",
+        "shared graph/reducer modules owned by J4"
+      ]
+    },
+    "J4": {
+      "branch": "feature/storage-ownership-reducer-20261007",
+      "owns": [
+        "src/filesteward/ownership/graph.py",
+        "src/filesteward/ownership/reducer.py",
+        "src/filesteward/ownership/__init__.py",
+        "tests/test_ownership_graph.py",
+        "tests/test_ownership_reducer.py"
+      ],
+      "rule": "J4 imports J2/J3 normalized evidence and implements most-protective-edge-wins. J4 may adapt J2/J3 interfaces only through explicit compatibility edits after their merge; do not duplicate their probes."
+    },
+    "J5": {
+      "branch": "feature/dependency-aware-delete-preflight-20261007",
+      "owns": [
+        "src/filesteward/deletion/preflight.py",
+        "src/filesteward/deletion/execute.py",
+        "direct manifest/receipt code required to bind dependency revision",
+        "focused deletion/preflight tests"
+      ],
+      "rule": "Preserve exact-manifest -> approval -> fresh dependency recheck -> bounded executor -> per-item receipt. Current main safety wins over any older PR29 deletion hunk."
+    },
+    "J6": {
+      "branch": "integration/j6-pr29-lineage-20261007",
+      "owns": [
+        "src/filesteward/visualization/**",
+        "src/filesteward/review_bridge.py",
+        "src/filesteward/approval.py",
+        "Decision Chamber/Memory Atlas tests",
+        "interaction-scene acceptance contract",
+        "visual system docs/tokens",
+        "versioning support needed by accepted visual feature"
+      ],
+      "rule": "Implement canonical judgment-scene workflow inside preserved PR29 visual lineage. J6 is the sole visualization mutation owner."
+    }
+  },
+  "pr29_strategy": {
+    "disposition": "SELECTIVE_LINEAGE_PORT_NOT_WHOLE_BRANCH_MERGE",
+    "reason": [
+      "PR29 is 62 commits ahead but 6 behind main and currently non-mergeable.",
+      "It mixes the desired Memory Atlas/Decision Chamber lineage with unrelated stewardship, deletion, CLI, and governance changes.",
+      "Whole-branch merge would reintroduce stale safety/runtime decisions and create avoidable conflict judgment."
+    ],
+    "timing": "Run only after J4 is integrated into refreshed main.",
+    "source_ref": "c093f2cb69d69be153fcf983b6ad785636825b7e",
+    "destination_branch": "integration/j6-pr29-lineage-20261007",
+    "destination_base": "refreshed main after J4 integration",
+    "port_allowlist": [
+      "src/filesteward/visualization/**",
+      "src/filesteward/review_bridge.py",
+      "src/filesteward/approval.py",
+      "harness/contracts/interaction-scene-acceptance.v1.json",
+      "docs/program/storage-reclaim-atlas-interaction-grammar-v4d.md",
+      "docs/program/storage-reclaim-decision-chamber-v4.md",
+      "docs/program/storage-reclaim-memory-atlas-v2.md",
+      "docs/program/storage-reclaim-memory-atlas-v3.md",
+      "docs/program/storage-reclaim-visual-system.md",
+      "docs/program/storage-reclaim-visual-system.tokens.json",
+      "plans/active/DECISION-TO-DELETION-UX-TRACEABILITY-2026-10-06.json",
+      "tests/test_approval.py",
+      "tests/test_decision_ux_continuity.py",
+      "tests/test_experience_pointer_range.py",
+      "tests/test_review_bridge.py",
+      "tests/test_review_bridge_http.py",
+      "tests/test_scene_surface.py",
+      "tests/test_visualization_*.py",
+      "scripts/versioning.py",
+      "docs/program/product-versioning.md",
+      "tests/test_versioning.py"
+    ],
+    "explicit_exclusions": [
+      "AGENTS.md",
+      "src/filesteward/deletion/**",
+      "docs/agent/**",
+      "harness/contracts/storage-*.json",
+      "harness/contracts/execution-*.json",
+      "harness/evals/execution-*.json",
+      "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-*",
+      "src/filesteward/housekeeping_settings.py",
+      "housekeeping/system-stewardship plans and contracts not otherwise required by current main"
+    ],
+    "shared_file_policy": {
+      "src/filesteward/cli.py": "Do not checkout PR29 wholesale. Diff PR29 and port only the review/Decision-Chamber command registration and routing needed to expose the accepted UX. Preserve all current main scan/delete/ownership safety behavior.",
+      "pyproject.toml": "Keep refreshed-main dependencies/version metadata as baseline. Add only dependencies/entrypoints actually required by the selectively ported UX. Recompute product version with the repository versioning gate; do not copy PR29's historical version number blindly.",
+      "src/filesteward/__init__.py": "Keep current main exports/version authority; add only exports required by selectively ported UX."
+    },
+    "regression_rule": "After port, canonical P94/P110 ledgers and current contracts outrank PR29 implementation details. Adapt PR29 code to the current scene/ownership contracts; never weaken current contracts to make PR29 pass."
+  },
+  "human_judgment_boundary": {
+    "already_closed": [
+      "which technical evidence to gather",
+      "how app/repo ownership is classified",
+      "how multi-owner conflicts reduce",
+      "whether Entire can declare legacy/disposable",
+      "which UX lineage to preserve",
+      "how PR29 is integrated",
+      "which lane owns each mutation surface",
+      "whether review gates stop unrelated lanes"
+    ],
+    "remains_operator_owned_at_runtime": [
+      "keep/remove preference for an otherwise technically safe application or reproducible repository",
+      "exact destructive/repair authorization when not already covered by prior operator intent"
+    ],
+    "local_agent_rule": "Cursor must not escalate a technical design choice already closed here. Escalate only a new fact that makes this closure internally inconsistent or creates a genuinely uncovered operator value/authority decision."
+  },
+  "provider_pr_policy": {
+    "PR33": "Foundation only. Pass local proof + exact-head review, merge, then use refreshed main as provider base for J2/J3.",
+    "J2": "Separate focused PR after PR33 merge/rebase.",
+    "J3": "Separate focused PR after PR33 merge/rebase.",
+    "J4": "Separate convergence PR after J2/J3 integration.",
+    "J5": "Separate deletion-integration PR after J4.",
+    "J6": "Separate selective-lineage integration PR after J4; do not mutate PR29 itself as the primary convergence mechanism.",
+    "J7": "Validation may repair owning branches/PRs; no omnibus feature PR unless a cross-lane defect requires a narrowly explained convergence commit."
+  },
+  "terminal_rule": "No local architectural/product judgment remains for the current known graph. Cursor's next work is execution, evidence, conflict mechanics under the authority matrix, and validation."
+}
