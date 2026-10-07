@@ -7,7 +7,11 @@
     "P00",
     "P01",
     "P04",
-    "P82"
+    "P82",
+    "P94",
+    "P106",
+    "P108",
+    "P110"
   ],
   "capacity_policy": {
     "target_free_ratio": 0.2,
@@ -109,7 +113,12 @@
         "J4",
         "refreshed PR29/main UX truth"
       ],
-      "gate": "attribution and consequence are actionable scene impacts"
+      "gate": "exact scripted scenes implemented without weakening protected immersive behavior; browser acceptance matrix proven",
+      "owned": [
+        "implementation of harness/contracts/judgment-scene-workflow.v1.json",
+        "retained behavior from harness/evals/judgment-scene-regression.v1.json",
+        "reconciled PR #29 visualization lineage"
+      ]
     },
     {
       "id": "J7",
@@ -117,9 +126,10 @@
       "depends_on": [
         "J0",
         "J4",
-        "J5"
+        "J5",
+        "J6"
       ],
-      "gate": "zero protected/serviceability false-positive deletion eligibility"
+      "gate": "zero protected/serviceability false-positive eligibility and zero retained-scene regression across required live modes"
     }
   ],
   "entire_policy": {
@@ -146,5 +156,47 @@
     "J1",
     "J2",
     "J3"
-  ]
+  ],
+  "judgment_scene_workflow": {
+    "workflow_ref": "harness/contracts/judgment-scene-workflow.v1.json",
+    "regression_ledger_ref": "harness/evals/judgment-scene-regression.v1.json",
+    "protected_tutorial": [
+      "MAP",
+      "FOCUS",
+      "GATE",
+      "RESOLVE",
+      "APPROVAL",
+      "STAGED"
+    ],
+    "rule": "Technical facts resolve deterministically first; operator judgment is reserved for value/preference and exact action approval.",
+    "local_agent_role": "IMPLEMENT_SCRIPT_DO_NOT_AUTHOR_PRODUCT_JUDGMENT"
+  },
+  "design_hardening": {
+    "mode": "OPERATE",
+    "preserve_incumbent_visual_world": true,
+    "local_prompt_owners": [
+      "P94",
+      "P106",
+      "P108",
+      "P110"
+    ],
+    "upstream_sources": [
+      "pbakaus/impeccable skill/SKILL.src.md blob c413ae26e832b36d54603353f1c7a0ae04784eea",
+      "pbakaus/impeccable skill/reference/operate.md blob 5e4666de08f63f55c832c7bb2511cc9ad8068744",
+      "anthropics/claude-code frontend-design SKILL.md blob a5333457c414d20d625f307df945842c0952ecc3"
+    ],
+    "rule": "Upstream is craft prior art, not mutation authority."
+  },
+  "acceptance_gates": [
+    "A11 scripted judgment workflow has no missing transition targets",
+    "A12 technical safety facts cannot be delegated to operator before safe adapter exhaustion",
+    "A13 existing MAP->FOCUS->GATE->RESOLVE->APPROVAL->STAGED tutorial remains intact",
+    "A14 P94 regression ledger negative fixtures fail and positive controls pass",
+    "A15 bounded live browser acceptance covers desktop+narrow+reduced-motion+forced-colors and supported input modes",
+    "A16 local agents report BLOCKED_JUDGMENT_GAP rather than inventing scene semantics"
+  ],
+  "remote_p82_validation": {
+    "state": "PENDING_PROVIDER_READBACK",
+    "scope": "static cross-contract/transition validation only; no claim of local/browser runtime proof"
+  }
 }
