@@ -204,5 +204,66 @@
     "checks_failed": 0,
     "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT_AND_J0_SOURCE",
     "proof_ceiling": "Provider-read-back source and contract shape only; no local pytest, browser, current-visual, workstation-runtime, or merge-readiness claim."
-  }
+  },
+  "execution_handoff": {
+    "loop_ref": "harness/contracts/execution-handoff-loop.v1.json",
+    "packet_schema_ref": "harness/contracts/execution-handoff-packet.schema.v1.json",
+    "protocol_ref": "docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md",
+    "review_gates_ref": "harness/evals/execution-handoff-review-gates.v1.json",
+    "phases": [
+      "RECOVER",
+      "PARTITION",
+      "DISPATCH",
+      "EXECUTE",
+      "PROVE",
+      "REVIEW",
+      "CONVERGE",
+      "CONTINUE"
+    ],
+    "non_terminal": [
+      "PLAN_READY",
+      "HANDOFF_WRITTEN",
+      "PR_OPEN",
+      "MERGEABLE"
+    ],
+    "rule": "A receiver consumes completed facts, recomputes only remaining work, launches dependency-ready lanes, and executes the exact next action without operator relaunch when authority permits."
+  },
+  "next_review_gates": [
+    {
+      "gate": "RG0_CURRENT_TRUTH",
+      "applies": "every local-agent pickup"
+    },
+    {
+      "gate": "RG1_OWNERSHIP_COLLISION",
+      "applies": "before J1/J2/J3 parallel dispatch"
+    },
+    {
+      "gate": "RG3_FOCUSED_PROOF",
+      "applies": "J0 source repair before provider/merge progression"
+    },
+    {
+      "gate": "RG5_PROVIDER_REVIEW",
+      "applies": "after any material PR #33 head change"
+    },
+    {
+      "gate": "RG6_LOCAL_FULL_PROOF",
+      "applies": "before PR #33 merge claim"
+    },
+    {
+      "gate": "RG7_PR29_VISUAL_LINEAGE",
+      "applies": "before J6 visualization mutation"
+    },
+    {
+      "gate": "RG8_LIVE_UX_ACCEPTANCE",
+      "applies": "before J6 scene integration is PROVEN"
+    },
+    {
+      "gate": "RG9_LIVE_MUTATION_AUTHORITY",
+      "applies": "before workstation repair/delete mutation"
+    },
+    {
+      "gate": "RG10_POST_ACTION_VERIFY",
+      "applies": "before whole sprint terminal success"
+    }
+  ]
 }
