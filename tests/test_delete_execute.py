@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts, low_capacity
+
 import json
 import os
 from pathlib import Path
@@ -13,15 +15,31 @@ from filesteward.deletion.approval import (
     build_delete_approval,
     write_delete_approval,
 )
-from filesteward.deletion.execute import execute_permanent_delete
+from filesteward.deletion.execute import execute_permanent_delete as _execute_permanent_delete
 from filesteward.deletion.manifest import DELETE_MANIFEST_SCHEMA
 from filesteward.deletion.preflight import (
     PREFLIGHT_SCHEMA_VERSION,
-    run_preflight,
+    run_preflight as _run_preflight,
     write_preflight_receipt,
 )
 from filesteward.deletion.receipt import DELETE_RECEIPT_FILENAME, load_delete_receipt
 from filesteward.deletion.reclaim import ReclaimState, verify_reclaim
+
+
+def run_preflight(manifest, **kwargs):
+    kwargs.setdefault("capacity_reader", low_capacity)
+    source = Path(kwargs["source_artifact_dir"]) if "source_artifact_dir" in kwargs else Path(manifest["items"][0]["path"]).parent.parent / "synthetic-owner-sources"
+    bind_source_artifacts(manifest, source)
+    kwargs.setdefault("source_artifact_dir", source)
+    kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
+    return _run_preflight(manifest, **kwargs)
+
+
+def execute_permanent_delete(run_dir, **kwargs):
+    kwargs.setdefault("capacity_reader", low_capacity)
+    manifest = json.loads((Path(run_dir) / "delete-manifest.json").read_text(encoding="utf-8"))
+    kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
+    return _execute_permanent_delete(run_dir=run_dir, **kwargs)
 
 
 def _file_item(path: Path, *, item_id: str) -> dict[str, Any]:
@@ -33,6 +51,7 @@ def _file_item(path: Path, *, item_id: str) -> dict[str, Any]:
         "item_id": item_id,
         "path": str(path.resolve()),
         "item_type": "FILE",
+        "ownership": ownership_binding(str(path.resolve())),
         "disposition": "RECLAIM_PROVEN",
         "evidence": "synthetic",
         "contract_source": "test",
@@ -70,6 +89,7 @@ def _dir_item(path: Path, *, item_id: str) -> dict[str, Any]:
         "item_id": item_id,
         "path": str(path.resolve()),
         "item_type": "DIRECTORY",
+        "ownership": ownership_binding(str(path.resolve())),
         "disposition": "RECLAIM_PROVEN",
         "evidence": "synthetic",
         "contract_source": "test",
@@ -132,10 +152,11 @@ def _prepare_run(
     run_dir = tmp_path / "run"
     run_dir.mkdir()
     manifest = _manifest(items)
+    bind_source_artifacts(manifest, run_dir)
     m_path = run_dir / "delete-manifest.json"
     m_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    pf = run_preflight(manifest, scan_root=scan_root)
+    pf = run_preflight(manifest, scan_root=scan_root, source_artifact_dir=run_dir)
     assert pf.overall == "PASS", [i.to_dict() for i in pf.items]
     pf_path = run_dir / "delete-preflight.json"
     write_preflight_receipt(pf_path, pf)
@@ -153,6 +174,7 @@ def _prepare_run(
 
 
 class TestPermanentDeleteExecutor:
+    @pytest.mark.skipif(os.name != "nt", reason="Windows handle-bound destructive proof")
     def test_deletes_files_and_empty_dir_bytes_gone(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
         nested = scan / "cache"
@@ -193,6 +215,24 @@ class TestPermanentDeleteExecutor:
             ReclaimState.UNKNOWN,
         }
 
+    def test_unsupported_native_platform_refuses_approved_delete(self, tmp_path: Path, monkeypatch) -> None:
+        from filesteward.deletion import native
+        monkeypatch.setattr(native, "SUPPORTED", False)
+        scan = tmp_path / "scan"
+        scan.mkdir()
+        target = scan / "retained.bin"
+        payload = b"unsupported-platform-must-retain"
+        target.write_bytes(payload)
+        run_dir, _, approval = _prepare_run(tmp_path, [_file_item(target, item_id="unsupported")], scan)
+        result = execute_permanent_delete(
+            run_dir=run_dir, manifest=run_dir / "delete-manifest.json", approval=approval,
+            preflight=run_dir / "delete-preflight.approved.json", scan_root=scan,
+        )
+        assert result.overall == "FAILED"
+        assert target.read_bytes() == payload
+        assert all(item.status != "SUCCEEDED" for item in result.items)
+        assert any(item.reason_class == "ATOMIC_DELETE_PROTOCOL_UNAVAILABLE" for item in result.items)
+
     def test_refuses_without_valid_approval(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
         scan.mkdir()
@@ -225,6 +265,7 @@ class TestPermanentDeleteExecutor:
         run_dir = tmp_path / "run"
         run_dir.mkdir()
         manifest = _manifest(items)
+        bind_source_artifacts(manifest, run_dir)
         m_path = run_dir / "delete-manifest.json"
         m_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         # Build a synthetic PASS preflight for approval binding only (execute will
@@ -266,6 +307,7 @@ class TestPermanentDeleteExecutor:
         assert outside.exists()
         assert any("PASS" in e for e in result.approval_errors)
 
+    @pytest.mark.skipif(os.name != "nt", reason="Windows handle-bound destructive proof")
     def test_interruption_skips_prior_succeeded(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
         scan.mkdir()
@@ -297,6 +339,7 @@ class TestPermanentDeleteExecutor:
         assert all(i.status == "SKIPPED" for i in second.items)
         assert (run_dir / DELETE_RECEIPT_FILENAME).is_file()
 
+    @pytest.mark.skipif(os.name != "nt", reason="Windows handle-bound destructive proof")
     def test_does_not_enlarge_approved_set(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
         scan.mkdir()
@@ -312,9 +355,10 @@ class TestPermanentDeleteExecutor:
         run_dir = tmp_path / "run"
         run_dir.mkdir()
         manifest = _manifest(items)
+        bind_source_artifacts(manifest, run_dir)
         m_path = run_dir / "delete-manifest.json"
         m_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        pf = run_preflight(manifest, scan_root=scan)
+        pf = run_preflight(manifest, scan_root=scan, source_artifact_dir=run_dir)
         assert pf.overall == "PASS"
         write_preflight_receipt(run_dir / "delete-preflight.json", pf)
         (run_dir / "delete-preflight.approved.json").write_bytes(
@@ -345,7 +389,7 @@ class TestPermanentDeleteExecutor:
 class TestExecuteSafetyRepairs:
     def test_identity_drift_skips_unlink(self, tmp_path: Path, monkeypatch: Any) -> None:
         from filesteward.deletion import execute as execute_mod
-        from filesteward.deletion.preflight import PreflightResult
+        from filesteward.deletion.preflight import PreflightResult, ItemVerdict
 
         scan = tmp_path / "scan"
         scan.mkdir()
@@ -355,10 +399,13 @@ class TestExecuteSafetyRepairs:
         run_dir, _, approval = _prepare_run(tmp_path, items, scan)
 
         # Fresh preflight forced PASS so execute reaches unlink-time revalidation.
+        approved_rows = json.loads((run_dir / "delete-preflight.approved.json").read_text())["items"]
+        forced_rows = [ItemVerdict(row["item_id"], "PASS", "OK", "forced fixture observation",
+                                  file_object_identity=row["file_object_identity"]) for row in approved_rows]
         monkeypatch.setattr(
             execute_mod,
             "run_preflight",
-            lambda *a, **k: PreflightResult(overall="PASS", mutated_filesystem=False),
+            lambda *a, **k: PreflightResult(overall="PASS", mutated_filesystem=False, items=forced_rows),
         )
         target.write_bytes(b"REPLACED!")
 
@@ -428,6 +475,7 @@ class TestExecuteSafetyRepairs:
         run_dir = tmp_path / "run"
         run_dir.mkdir()
         manifest = _manifest(items)
+        bind_source_artifacts(manifest, run_dir)
         m_path = run_dir / "delete-manifest.json"
         m_path.write_text(
             json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"

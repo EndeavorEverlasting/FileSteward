@@ -46,8 +46,9 @@ from filesteward.policy.paths import (
 )
 from filesteward.protect import ProtectedRoot, ProtectionIndex, ProtectionRelation
 from filesteward.ownership.actions import (
-    OwnershipResolver, unresolved_ownership, plan_owner_actions, admit_cleanup_disposition,
+    ActionKind, OwnershipResolver, unresolved_ownership, plan_owner_actions, admit_cleanup_disposition,
 )
+from filesteward.ownership.capacity import CapacityCandidate, plan_capacity_strategy
 
 __all__ = ["CleanupRun", "RunResult"]
 
@@ -70,6 +71,7 @@ _ARTIFACT_FILENAMES = (
     "cleanup-summary.md",
     "run.json",
     "owner-action-plan.json",
+    "capacity-strategy.json",
 )
 
 
@@ -103,6 +105,7 @@ class CleanupRun:
         baseline_free_bytes: Optional[int] = None,
         scan_deps: Optional[ScanDeps] = None,
         ownership_resolver: OwnershipResolver = unresolved_ownership,
+        capacity_total_bytes: Optional[int] = None,
     ) -> None:
         for name, value in (
             ("target_free_bytes", target_free_bytes),
@@ -128,6 +131,9 @@ class CleanupRun:
         self._baseline_free_bytes = baseline_free_bytes
         self._scan_deps = scan_deps
         self._ownership_resolver = ownership_resolver
+        if capacity_total_bytes is not None and (type(capacity_total_bytes) is not int or capacity_total_bytes <= 0):
+            raise ValueError("capacity_total_bytes must be a positive integer")
+        self._capacity_total_bytes = capacity_total_bytes
 
     def execute(self) -> RunResult:
         root = normalize_declared_path(self._root)
@@ -216,6 +222,7 @@ class CleanupRun:
         unknown_bytes = 0
         inventory_items = 0
         action_rows = []
+        action_plans = {}
 
         exclude_roots = (str(runtime),) if exclude_runtime else ()
         scan_stream = iter_inventory(
@@ -271,6 +278,7 @@ class CleanupRun:
                     )
 
             subtree_complete[item.item_id] = gates.observation_complete
+            action_plans[item.item_id] = (action_plan, disposition, item.logical_size_bytes)
             final_disposition[item.item_id] = disposition
             children.setdefault(os.path.dirname(item.path), []).append(
                 item.item_id
@@ -453,6 +461,44 @@ class CleanupRun:
         stop_row, stop_note = self._stop_point(
             plan_rows, baseline, self._target_free_bytes
         )
+        capacity_candidates = []
+        projected_by_id = {row["item_id"]: row for row in plan_rows}
+        for item_id, (plan, disposition, logical_size) in action_plans.items():
+            for action in plan.actions:
+                if action is ActionKind.RAW_DELETE_REGENERABLE_ARTIFACT and disposition is not CleanupDisposition.RECLAIM_PROVEN:
+                    continue
+                if disposition in {CleanupDisposition.PROTECTED, CleanupDisposition.UNKNOWN, CleanupDisposition.KEEP_PROVEN}:
+                    continue
+                row = projected_by_id.get(item_id)
+                capacity_candidates.append(CapacityCandidate(item_id, plan, action,
+                    0 if row and row["projection_quality"] == "container-row" else row["projected_reclaim_bytes"] if row else logical_size,
+                    "container-row" if row and row["projection_quality"] == "container-row" else row["reclaim_basis"] if row else "logical estimate"))
+        # Capacity prioritization uses one fresh paired snapshot after scanning.
+        # Explicit synthetic measurements remain caller-owned inputs.
+        total_capacity = self._capacity_total_bytes
+        capacity_free = self._baseline_free_bytes
+        measurement_error = None
+        if total_capacity is None or capacity_free is None:
+            try:
+                snapshot = shutil.disk_usage(root)
+                if total_capacity is None:
+                    total_capacity = int(snapshot.total)
+                if capacity_free is None:
+                    capacity_free = int(snapshot.free)
+            except OSError as exc:
+                measurement_error = "CAPACITY_MEASUREMENT_UNAVAILABLE:" + type(exc).__name__
+        strategy_data = {"schema_version": "filesteward.capacity-strategy/v1", "status": "UNKNOWN",
+                         "candidates": [], "projection_basis": "estimate",
+                         "total_bytes": total_capacity, "free_bytes": capacity_free}
+        if measurement_error is None and total_capacity is not None and capacity_free is not None:
+            try:
+                strategy_data.update(asdict(plan_capacity_strategy(capacity_candidates,
+                                     total_bytes=total_capacity, free_bytes=capacity_free)))
+            except ValueError:
+                measurement_error = "CAPACITY_MEASUREMENT_INCONSISTENT"
+        if measurement_error:
+            strategy_data["measurement_error"] = measurement_error
+        (run_dir / "capacity-strategy.json").write_text(json.dumps(strategy_data, indent=2) + "\n", encoding="utf-8")
 
         artifacts.write_inventory(run_dir / "inventory.csv", inventory_rows)
         (run_dir / "owner-action-plan.json").write_text(
@@ -487,6 +533,8 @@ class CleanupRun:
                 for protected in index
             ],
             "managed_paths": list(self._managed_paths),
+            "cleanup_plan_role": "discovery_evidence_not_execution_set",
+            "capacity_strategy_ref": "capacity-strategy.json",
         }
         artifacts.write_run_metadata(run_dir / "run.json", metadata)
 

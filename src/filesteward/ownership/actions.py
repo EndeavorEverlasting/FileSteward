@@ -4,9 +4,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import ntpath
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Callable
 
 from filesteward.models import CleanupDisposition
@@ -61,7 +63,7 @@ class OwnershipEvidence:
 
     def fresh(self, now: float | None = None) -> bool:
         age = (time.time() if now is None else now) - self.observed_at_unix
-        return self.adapters_complete and 0 <= age <= 300
+        return self.adapters_complete is True and 0 <= age <= 300
 
 
 OwnershipResolver = Callable[[str], OwnershipEvidence]
@@ -115,8 +117,10 @@ def plan_owner_actions(path: str, evidence: OwnershipEvidence) -> ActionPlan:
 
     roots = (os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Installer"),
              os.path.join(os.environ.get("PROGRAMDATA", r"C:\ProgramData"), "Package Cache"))
-    if any(path_intersects(path, root) for root in roots):
+    if any(path_intersects(ntpath.normpath(path), root) for root in roots):
         return result(CleanupDisposition.PROTECTED, (ActionKind.KEEP,), ("SERVICEABILITY_DEPENDENCY_PRESENT",))
+    if not (PureWindowsPath(path).is_absolute() or PurePosixPath(path).is_absolute()) or ".." in path.replace("\\", "/").split("/"):
+        return result(CleanupDisposition.UNKNOWN, (ActionKind.INVESTIGATE_ORPHAN,), ("PATH_NOT_CANONICAL",))
     protective = [e for e in edges if e.edge_type in _PROTECTIVE_EDGES
                   or e.lifecycle_hint in {"APP_ACTIVE_REQUIRED", "APP_BROKEN_REQUIRED", "REPO_ACTIVE"}]
     if protective or (judgment and judgment.disposition is CleanupDisposition.PROTECTED):
@@ -151,7 +155,7 @@ def plan_owner_actions(path: str, evidence: OwnershipEvidence) -> ActionPlan:
                     and e.lifecycle_hint == "REGENERABLE_ARTIFACT" for e in edges)
     if not generated or not proof:
         return result(CleanupDisposition.HUMAN_REVIEW, (ActionKind.INVESTIGATE_ORPHAN,), ("REGENERATION_PROOF_MISSING",))
-    if not proof.raw_delete_allowed:
+    if proof.raw_delete_allowed is not True:
         return result(CleanupDisposition.HUMAN_REVIEW, (ActionKind.CLEAN_GENERATED_OUTPUT,), ("SEMANTIC_ACTION_REQUIRED",))
     return result(CleanupDisposition.RECLAIM_PROVEN, (ActionKind.RAW_DELETE_REGENERABLE_ARTIFACT,), ())
 

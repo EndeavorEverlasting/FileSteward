@@ -1,113 +1,163 @@
 {
-  "schema_version": "filesteward.execution-handoff-packet/v1",
-  "created_for": "FILESTEWARD-SAFE-CAPACITY-20261007",
-  "repository": "EndeavorEverlasting/FileSteward",
-  "canonical_checkout": "%USERPROFILE%\\dev\\FileSteward",
-  "provider_floor": "main@81cc58c51b55c249710b1438b11a956fea8efe12",
-  "planning_branch": "plan/safe-capacity-p04-p82-20261007",
-  "objective": "Implement the next dependency-aware capacity-recovery slice without making local product-judgment decisions.",
-  "recover_first": [
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "FILESTEWARD-SAFE-CAPACITY-20261007",
+  "lane_id": "K3-K5-CONVERGENCE",
+  "role": "successor execution coordinator",
+  "canonical_plan_ref": "plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.plan.json",
+  "contract_refs": [
     "AGENTS.md",
-    "plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.md",
-    "plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.plan.json",
-    "harness/evals/storage-reclamation-p82-corpus.v1.json",
     "harness/contracts/storage-dependency-judgment.v1.json",
     "harness/contracts/storage-ownership-evidence-graph.v1.json",
-    "src/filesteward/ownership/windows_app.py",
-    "src/filesteward/ownership/repository.py",
-    "src/filesteward/ownership/graph.py",
-    "src/filesteward/ownership/reducer.py",
-    "src/filesteward/deletion/preflight.py",
-    "src/filesteward/deletion/execute.py"
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/contracts/execution-handoff-packet.schema.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json",
+    "harness/evals/storage-reclamation-p82-corpus.v1.json"
   ],
-  "current_truth": {
-    "J0": "merged",
-    "J2": "merged via PR #34",
-    "J3": "merged via PR #35; follow-up conflict marker repair via PR #36",
-    "J4": "merged via PR #37",
-    "J1": "local forensic lane only; do not fabricate remote proof",
-    "J5": "next critical path",
-    "J6": "reconcile PR #29 before visualization edits",
-    "J7": "not yet proven"
-  },
-  "lanes": [
+  "provider_base_sha_at_capture": "93c2254c271bcda95323285d52627f34c280718a",
+  "provider_head_sha_at_capture": "93c2254c271bcda95323285d52627f34c280718a",
+  "local_head_sha_at_capture_or_unknown": "3caac64aac4f71829d8ea8072e17d604bda821b5",
+  "completed_facts": [
     {
-      "id": "K1-K2",
-      "owned_scope": [
-        "ownership-aware cleanup-plan admission",
-        "semantic action planner",
-        "focused tests"
+      "fact": "J0/J2/J3/J4 retained from provider floor; not reimplemented.",
+      "evidence": [
+        "main@c66fe8b50c5fb3d12449a9a9e62d81e109982cda"
       ],
-      "forbidden_scope": [
-        "visualization",
-        "new generic cleanup roots",
-        "live deletion"
-      ],
-      "acceptance": [
-        "app/serviceability/repo protection cannot emit raw-delete action",
-        "unknown emits investigate only",
-        "exact generated/regenerable artifacts require proof"
-      ]
+      "proof_state": "MERGED"
     },
     {
-      "id": "K3",
-      "depends_on": [
-        "K1-K2"
+      "fact": "K1/K2 ownership admission and semantic actions merged before K3 mutation.",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/39",
+        "main@93c2254c271bcda95323285d52627f34c280718a",
+        "harness/evals/safe-capacity-k1-k2-proof-2026-10-07.json"
       ],
-      "owned_scope": [
-        "delete manifest/preflight dependency binding",
-        "fresh ownership re-resolution",
-        "reason classes",
-        "focused tests"
-      ],
-      "forbidden_scope": [
-        "executor redesign",
-        "UI"
-      ],
-      "acceptance": [
-        "ownership revision drift fails",
-        "semantic action required blocks raw delete",
-        "protective edge blocks raw delete"
-      ]
+      "proof_state": "MERGED"
     },
     {
-      "id": "K5",
-      "depends_on": [
-        "K1-K2"
+      "fact": "K3 binds owner graph/proof/source digests and re-resolves immediately before destruction; K5 admits canonical legal ranking and stops at 20% healthy capacity.",
+      "evidence": [
+        "harness/evals/safe-capacity-k3-k5-proof-2026-10-07.json",
+        "src/filesteward/deletion/ownership.py",
+        "src/filesteward/ownership/capacity.py"
       ],
-      "owned_scope": [
-        "legal action ranking",
-        "20%/10% capacity prioritization",
-        "stop rule",
-        "tests"
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Exact behavioral candidate full suite: 546 passed, 7 Windows privilege skips.",
+      "evidence": [
+        "var/proof/safe-capacity/provider-repairs-full-final.txt",
+        "3caac64aac4f71829d8ea8072e17d604bda821b5"
       ],
-      "forbidden_scope": [
-        "changing deletion authority"
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "PR29 refreshed as OPEN/CONFLICTING; no UI reconciliation or visualization mutation performed.",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/29",
+        "head@c093f2cb69d69be153fcf983b6ad785636825b7e"
       ],
-      "acceptance": [
-        "only legal actions ranked",
-        "healthy capacity stops further deletion pressure"
-      ]
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "All seven initial PR40 review findings repaired; native object/capacity/source membership negatives and positive controls passed.",
+      "evidence": [
+        "harness/evals/safe-capacity-k3-k5-proof-2026-10-07.json",
+        "3caac64aac4f71829d8ea8072e17d604bda821b5"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
     }
   ],
-  "integration_boundary": "K1-K2 merge before K3 mutates delete preflight contracts. K6 remains separate until PR #29 is refreshed and reconciled.",
-  "proof_required": [
-    "focused tests",
-    "full repository suite on exact head",
-    "provider head readback",
-    "review-thread reconciliation",
-    "P82 corpus run",
-    "bounded workstation read-only attribution before any live canary"
+  "remaining_work": [
+    {
+      "work_id": "CONVERGE-K3-K5",
+      "action": "Refresh provider branch feature/safe-capacity-k3-20261007 and its PR. If already merged, verify main contains exact candidate and proof-input hashes and skip reimplementation. Otherwise reconcile exact head/review gates, merge and verify canonical main.",
+      "depends_on": [
+        "K1",
+        "K2"
+      ],
+      "acceptance": "Exact validated source retained in canonical provider main; no unresolved material reviews."
+    },
+    {
+      "work_id": "K4",
+      "action": "Implement action/owner/proof/capacity receipt and semantic action health postconditions using existing receipt protocol; current immediate ownership receipt is partial only.",
+      "depends_on": [
+        "K3"
+      ],
+      "acceptance": "Complete receipt/postcondition tests and full repository gate; no claimed live bytes from estimates."
+    },
+    {
+      "work_id": "K6",
+      "action": "Refresh and selectively reconcile PR29 lineage against current ownership/deletion/scene contracts before website decision-scene edits.",
+      "depends_on": [
+        "K2",
+        "PR29 reconciliation"
+      ],
+      "acceptance": "Canonical action/attribution/consequence projected without second state machine; retained scene regressions."
+    },
+    {
+      "work_id": "K7",
+      "action": "Complete production ownership adapter and bounded read-only attribution before any separately scoped live canary.",
+      "depends_on": [
+        "K3",
+        "K4",
+        "K5",
+        "bounded operator scope"
+      ],
+      "acceptance": "Owner-safe live receipt, app/repository postconditions, and measured free-space delta; synthetic proof is insufficient."
+    }
   ],
-  "report_format": [
-    "completed work",
-    "created/modified files",
-    "validation and proof",
-    "skipped checks and why",
-    "unresolved gaps/risks",
-    "artifact/log paths",
-    "branch/PR/commit/git status",
-    "deployment/production state",
-    "next useful command or decision"
-  ]
+  "owned_mutation_surfaces": [
+    "src/filesteward/ownership",
+    "src/filesteward/deletion",
+    "src/filesteward/run.py",
+    "tests",
+    "harness/evals/safe-capacity proof receipts",
+    "docs/handoff current packet",
+    "docs/agent/OPERATOR-DELETE-PATH.md native/capacity protocol update"
+  ],
+  "forbidden_surfaces": [
+    "raw application/serviceability/repository/unknown deletion",
+    "Windows Installer and generic ProgramData Package Cache raw deletion",
+    "Entire absence as legacy evidence",
+    "visualization before PR29 reconciliation",
+    "unscoped live workstation scan/deletion",
+    "unrelated worktree changes"
+  ],
+  "dependencies": [
+    "K1/K2 main merge 93c2254c271bcda95323285d52627f34c280718a",
+    "P82 oracle and current ownership/deletion contracts"
+  ],
+  "external_prerequisites": [
+    "Explicit bounded workstation observation/mutation scope before live proof",
+    "Production ownership adapter completeness",
+    "PR29 selective reconciliation before K6",
+    "Windows native object-bound adapter required for permanent mutation; unsupported platforms refuse."
+  ],
+  "proof_receipts": [
+    "harness/evals/safe-capacity-k1-k2-proof-2026-10-07.json",
+    "harness/evals/safe-capacity-k3-k5-proof-2026-10-07.json"
+  ],
+  "proof_ceiling": "Synthetic ownership/action/delete safety, exact temporary-fixture deletion receipts, installed CLI lifecycle, and repository regression only. No live workstation attribution, destructive canary, measured reclaimed bytes, app health postconditions, deployment, or website alignment.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [
+    "%USERPROFILE%/dev/worktrees/FileSteward/safe-capacity-k3/var/proof/safe-capacity/",
+    "Sibling K5 worktree contains uncommitted dependency validation changes; preserve it.",
+    "Initial Desktop clone is noncanonical and preserved; normal checkout is %USERPROFILE%/dev/FileSteward."
+  ],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": {
+    "missing_adapter": "Complete operational Windows ownership evidence resolver and bounded live authorization scope",
+    "evidence": [
+      "src/filesteward/ownership/actions.py unresolved_ownership default",
+      "No real workstation scan/delete/capacity readback performed"
+    ],
+    "repair_route": "Implement evidence collection behind existing resolver contract; obtain exact observation/canary scope only when ready, then execute repository-owned gates."
+  },
+  "exact_next_action": {
+    "phase": "CONVERGE",
+    "action": "Refresh exact provider PR for feature/safe-capacity-k3-20261007; verify integration, skip completed K1/K2/K3/K5, then partition K4 backend and PR29 reconciliation lanes.",
+    "owner": "successor coordinator",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "CHANGED | PROVED | NEXT; exact branch/commit/PR and provider readback, tests/retries/skips, receipt paths, live and website proof boundaries, and successor packet. Never report whole outcome closed from synthetic proof."
 }

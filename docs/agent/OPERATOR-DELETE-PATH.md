@@ -59,7 +59,9 @@ Permanent-delete execute admits these contract-backed regenerable roots (realpat
    - `%LOCALAPPDATA%\pip\Cache`
    - Chrome `Default\Cache` and `Default\Code Cache` only (not the whole profile)
 
-For those seams, preflight may seal identity with size+mtime only (skip full-file SHA-256) so large cache trees remain terminal; execute still uses open→fstat→unlink TOCTOU, and hashes when a content digest is present.
+For those seams, preflight may seal identity with size+mtime only (skip full-file SHA-256); this never replaces exact affirmative ownership and regeneration evidence. Windows execute pins ancestor names and the target with native handles, validates identity/content and current ownership, then deletes through `SetFileInformationByHandle` on that same target handle. Sharing/access failures refuse mutation, with no pathname-delete fallback. Platforms without a proven object-bound deletion adapter return `ATOMIC_DELETE_PROTOCOL_UNAVAILABLE`.
+
+Preflight and each final execution boundary refresh current capacity. Healthy capacity (20% free) stops further deletion pressure; unavailable capacity fails closed. The 10% critical threshold changes prioritization only. Scan-time ownership timestamps remain provenance: an old capture can proceed only when newly resolved complete evidence is fresh and its bound ownership/regeneration digests still match. A finite timestamp from the future is invalid.
 
 
 ### Incident lock — installed application trees under AppData

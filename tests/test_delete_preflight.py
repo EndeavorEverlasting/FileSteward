@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts, low_capacity, bind_synthetic_discovery
+
 import hashlib
 import json
 import os
@@ -17,7 +19,7 @@ from filesteward.deletion.preflight import (
     MANIFEST_SCHEMA_VERSION,
     PREFLIGHT_SCHEMA_VERSION,
     ReasonClass,
-    run_preflight,
+    run_preflight as _run_preflight,
     write_preflight_receipt,
 )
 from filesteward.protect import ProtectedRoot
@@ -25,6 +27,22 @@ from filesteward.protect import ProtectedRoot
 # ---------------------------------------------------------------------------
 # Helpers — construct frozen delete-manifest dicts without D1 producer
 # ---------------------------------------------------------------------------
+
+
+def run_preflight(manifest, **kwargs):
+    kwargs.setdefault("capacity_reader", low_capacity)
+    bind_synthetic_discovery(manifest, kwargs.get("cleanup_plan_path"))
+    if kwargs.get("cleanup_plan_path") is not None:
+        source = Path(kwargs["cleanup_plan_path"]).parent
+    elif manifest["items"]:
+        source = Path(manifest["items"][0]["path"]).parent.parent / "synthetic-owner-sources"
+    else:
+        source = None
+    if source is not None:
+        bind_source_artifacts(manifest, source)
+        kwargs.setdefault("source_artifact_dir", source)
+    kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
+    return _run_preflight(manifest, **kwargs)
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -103,6 +121,7 @@ def _item_from_file(
         "source_run_id": run_id,
         "source_cleanup_plan_sha256": plan_sha,
         "identity": identity,
+        "ownership": ownership_binding(identity["path"]),
         "intended_action": "QUARANTINE",
         "reversibility": "REVERSIBLE_QUARANTINE",
     }
@@ -138,6 +157,7 @@ def _item_from_dir(
         "source_run_id": run_id,
         "source_cleanup_plan_sha256": plan_sha,
         "identity": identity,
+        "ownership": ownership_binding(identity["path"]),
         "intended_action": "QUARANTINE",
         "reversibility": "REVERSIBLE_QUARANTINE",
     }
@@ -372,11 +392,12 @@ class TestFailClosed:
         item["path"] = str((scan_root / "link.txt").absolute())
         item["identity"]["path"] = item["path"]
         before_real = _snapshot(real)
+        item["ownership"] = ownership_binding(item["path"])
         manifest = _manifest([item], plan_sha=plan_sha)
 
         result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
         assert result.overall == "FAIL"
-        assert result.items[-1].reason_class == ReasonClass.REPARSE_OR_SYMLINK
+        assert next(verdict for verdict in result.items if verdict.item_id == item["item_id"]).reason_class == ReasonClass.REPARSE_OR_SYMLINK
         assert _snapshot(real) == before_real
 
     def test_reparse_detection_unit_with_stub(self, tmp_path: Path) -> None:
@@ -444,7 +465,7 @@ class TestFailClosed:
 
         result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
         assert result.overall == "FAIL"
-        assert result.items[-1].reason_class == ReasonClass.REPARSE_OR_SYMLINK
+        assert any(v.reason_class == ReasonClass.REPARSE_OR_SYMLINK for v in result.items)
 
     def test_protection_hit(self, tmp_path: Path) -> None:
         scan_root = tmp_path / "scan"
@@ -773,6 +794,7 @@ class TestFailClosed:
             "source_run_id": "run",
             "source_cleanup_plan_sha256": plan_sha,
             "identity": identity,
+        "ownership": ownership_binding(identity["path"]),
             "intended_action": "QUARANTINE",
             "reversibility": "REVERSIBLE_QUARANTINE",
         }
@@ -858,11 +880,12 @@ class TestSafetyRepairs:
         item = _item_from_file(target, item_id="item-anc", plan_sha=plan_sha)
         item["path"] = str(linked)
         item["identity"]["path"] = str(linked)
+        item["ownership"] = ownership_binding(item["path"])
         manifest = _manifest([item], plan_sha=plan_sha)
 
         result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
         assert result.overall == "FAIL"
-        assert result.items[-1].reason_class in {
+        assert next(verdict for verdict in result.items if verdict.item_id == item["item_id"]).reason_class in {
             ReasonClass.REPARSE_OR_SYMLINK,
             ReasonClass.PATH_ESCAPE,
         }
@@ -1016,7 +1039,7 @@ class TestSafetyRepairs:
             managed_paths=managed,
         )
         assert hit_result.overall == "FAIL"
-        assert hit_result.items[-1].reason_class == ReasonClass.PROTECTION_HIT
+        assert next(verdict for verdict in hit_result.items if verdict.item_id == hit_item["item_id"]).reason_class == ReasonClass.PROTECTION_HIT
 
     def test_empty_digest_with_existing_plan_fails(self, tmp_path: Path) -> None:
         scan_root = tmp_path / "scan"
