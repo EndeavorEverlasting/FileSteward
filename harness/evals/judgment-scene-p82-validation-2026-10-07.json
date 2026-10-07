@@ -1,0 +1,133 @@
+{
+  "schema_version": "filesteward.judgment-scene-p82-validation/v1",
+  "validation_date": "2026-10-07",
+  "branch": "plan/application-repo-aware-judgment-20261007",
+  "result": "PASS",
+  "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT",
+  "proof_ceiling": "Does not prove local Python tests, browser behavior, current visual appearance, workstation runtime, or PR merge readiness.",
+  "checked_artifacts": {
+    "workflow": {
+      "path": "harness/contracts/judgment-scene-workflow.v1.json",
+      "blob_sha": "a32b24d56ff83bc17e8205af3c71e8108c0eeeff"
+    },
+    "regression": {
+      "path": "harness/evals/judgment-scene-regression.v1.json",
+      "blob_sha": "8a0b367125c9eefd4e78a8880fef2a58ef134079"
+    },
+    "action": {
+      "path": "harness/contracts/action-scene-impact.v1.json",
+      "blob_sha": "400ba9672c9be2bce03929a50097c9ef288c0c84"
+    },
+    "storage": {
+      "path": "harness/contracts/storage-dependency-judgment.v1.json",
+      "blob_sha": "374ef1ac311bf61d8efb1f9e882a06fe3a10fcf7"
+    },
+    "plan": {
+      "path": "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.plan.json",
+      "blob_sha": "b39daf69980a36084d8dd185b17acfac782c5e1f"
+    }
+  },
+  "checks": [
+    {
+      "id": "P82-01",
+      "name": "provider JSON parse",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-02",
+      "name": "all transition targets declared",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-03",
+      "name": "AUTHORIZATION_GATE incoming transitions only from VALUE_DECISION",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-04",
+      "name": "RECLAIM_EXECUTION incoming transitions only from AUTHORIZATION_GATE",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-05",
+      "name": "ATTRIBUTION/CONSEQUENCE/RECOVERABILITY precede VALUE_DECISION",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-06",
+      "name": "MAP->FOCUS->GATE->RESOLVE->APPROVAL->STAGED tutorial preserved",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-07",
+      "name": "action/storage/plan bind same workflow ref",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-08",
+      "name": "action/storage/plan bind same regression-ledger ref",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-09",
+      "name": "retained controls present: 15 protected / 10 negative / 5 positive",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-10",
+      "name": "missing judgment binds BLOCKED_JUDGMENT_GAP across contract/AGENTS/handoff",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-11",
+      "name": "technical safety is machine-resolved before human review",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-12",
+      "name": "J6 is script-owned and regression-ledger-owned",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-13",
+      "name": "human-readable plan persists script/regression/upstream provenance",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-14",
+      "name": "live/browser proof remains explicitly unclaimed",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-15",
+      "name": "open PR #29 collision remains explicit before J6",
+      "result": "PASS"
+    }
+  ],
+  "provider_snapshot": {
+    "main_floor": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+    "planning_branch_ahead_by": 16,
+    "planning_branch_behind_by": 0,
+    "pr29": {
+      "state": "open",
+      "mergeable": false,
+      "head_sha": "c093f2cb69d69be153fcf983b6ad785636825b7e",
+      "base_sha": "4fc1634b84ca42460980e9dfaf8cb46b8b0d05e6",
+      "interpretation": "visualization lineage remains an unresolved collision/preservation owner; refresh before J6"
+    },
+    "pr33": {
+      "state": "open",
+      "mergeable": false,
+      "head_sha_at_validation": "04f9f0abce0e4ba744d672d02c807e94a312e86b",
+      "base_sha": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+      "interpretation": "provider mergeability not promoted to PASS; this receipt validates contracts only"
+    }
+  },
+  "next_required_proof": [
+    "local focused contract/regression tests",
+    "implementation of scripted scenes against refreshed PR #29 lineage",
+    "bounded browser acceptance desktop+narrow+reduced-motion+forced-colors",
+    "supported pointer/keyboard/touch semantic parity",
+    "full repository suite on exact implementation head"
+  ]
+}
