@@ -42,7 +42,10 @@ from filesteward.deletion import (
     write_preflight_receipt,
 )
 from filesteward.deletion.preflight import load_run_protection_context
-from filesteward.deletion.regenerable import is_under_regenerable_cache_allowlist
+from filesteward.deletion.regenerable import (
+    is_under_protected_package_cache,
+    is_under_regenerable_cache_allowlist,
+)
 from filesteward.manifest import triage_run_dir, validate_run
 from filesteward.policy.paths import (
     is_lexically_within,
@@ -554,6 +557,11 @@ def _scan_root_allowed_for_execute(scan_root: Path) -> Optional[str]:
     except OSError:
         root_real = root
         temp_real = temp_root
+    if is_under_protected_package_cache(root_real):
+        return (
+            f"refusing protected installer/serviceability root {root}; "
+            "ProgramData Package Cache is not a generic delete-execute seam"
+        )
     under_temp = root_real == temp_real or is_lexically_within(root_real, temp_real)
     if under_temp:
         return None

@@ -1,0 +1,179 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "FILESTEWARD-DEPENDENCY-AWARE-JUDGMENT-20261007",
+  "lane_id": "COORDINATOR_TO_LOCAL_EXECUTION",
+  "role": "local execution coordinator",
+  "canonical_plan_ref": "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.plan.json",
+  "contract_refs": [
+    "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json",
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/evals/judgment-scene-regression.v1.json",
+    "harness/contracts/action-scene-impact.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/contracts/execution-handoff-packet.schema.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json",
+    "harness/contracts/dependency-aware-judgment-closure.v1.json"
+  ],
+  "provider_base_sha_at_capture": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+  "provider_head_sha_at_capture": "444a1de1ad578cb97b092a6e70183fd97e5402f4",
+  "local_head_sha_at_capture_or_unknown": "UNKNOWN_NOT_OBSERVED",
+  "completed_facts": [
+    {
+      "fact": "Generic ProgramData Package Cache admission has been removed from the regenerable runtime allowlist on the remote branch.",
+      "evidence": [
+        "src/filesteward/deletion/regenerable.py",
+        "tests/test_regenerable_cache_roots.py"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Deterministic judgment scenes and technical-before-human decision ordering are encoded.",
+      "evidence": [
+        "harness/contracts/judgment-scene-workflow.v1.json",
+        "harness/contracts/storage-dependency-judgment.v1.json"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Immersive Decision Chamber behavior has a retained P94 regression ledger.",
+      "evidence": [
+        "harness/evals/judgment-scene-regression.v1.json"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "The P04 execution loop, typed handoff packet, and P82 review gates are durable repository artifacts.",
+      "evidence": [
+        "harness/contracts/execution-handoff-loop.v1.json",
+        "harness/contracts/execution-handoff-packet.schema.v1.json",
+        "harness/evals/execution-handoff-review-gates.v1.json",
+        "docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Cross-domain ownership graph now distinguishes application, repository/worktree, toolchain/service/task/package, generated-output, shared-dependency, and user-data relationships. Entire enriches repo activity/change-impact evidence but cannot independently mark content legacy or disposable.",
+      "evidence": [
+        "harness/contracts/storage-ownership-evidence-graph.v1.json",
+        "harness/contracts/storage-dependency-judgment.v1.json",
+        "harness/contracts/judgment-scene-workflow.v1.json",
+        "harness/evals/judgment-scene-regression.v1.json"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "A read-only Wispr broken-install diagnostic and evidence-first recovery runbook are now tracked. The probe captures uninstall metadata, missing serviceability executables, Wispr process paths, documented install/data path presence, and Squirrel log tails into ignored var/runs without deleting files, mutating registry, or terminating processes.",
+      "evidence": [
+        "scripts/windows/diagnose-wispr-install.ps1",
+        "docs/handoff/WISPR-FLOW-BROKEN-INSTALL-RECOVERY-2026-10-07.md"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Architectural/product judgment for the current known graph is closed: integration order, exact J2/J3/J4/J5/J6 ownership, PR #29 selective-lineage strategy, provider PR policy, and remaining human boundary are repository-owned.",
+      "evidence": [
+        "harness/contracts/dependency-aware-judgment-closure.v1.json",
+        "docs/handoff/FILESTEWARD-EXECUTION-REVIEW-CHECKLIST-2026-10-07.md"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "J0_LOCAL_PROOF",
+      "action": "Refresh local branch to the current remote head, run focused Package Cache/deletion regression tests, then run the repository-required full suite on the exact candidate.",
+      "depends_on": [],
+      "acceptance": "RG3 and RG6 pass on an exact locally observed head; no Package Cache generic execute admission remains."
+    },
+    {
+      "work_id": "J1_WISPR_INCIDENT",
+      "action": "Run scripts/windows/diagnose-wispr-install.ps1 first. Classify the actual Squirrel failure from ignored var/runs evidence before any repair mutation. Only then perform the smallest semantic repair required, preserving Wispr user data and pre-repair evidence.",
+      "depends_on": [],
+      "acceptance": "Diagnostic.json + setup-log evidence exist; failure class is evidence-backed; no blind reinstall loop or raw registry/app-data deletion occurs; repair is followed by launch + registration consistency verification."
+    },
+    {
+      "work_id": "J2_APP_ATTRIBUTION",
+      "action": "Create/refresh branch feature/windows-app-attribution-20261007 from the refreshed PR #33 foundation head in its dedicated worktree. Implement src/filesteward/ownership/windows_app.py plus tests/test_ownership_windows_app.py (and private _windows_* helpers only). Produce read-only Windows app/runtime/serviceability ownership edges; do not touch visualization or deletion surfaces.",
+      "depends_on": [],
+      "acceptance": "Installed-app/runtime/serviceability ownership is normalized and contributes edges into the cross-domain ownership graph without Win32_Product; user-facing classification can explain Required by app / Broken app dependency."
+    },
+    {
+      "work_id": "J3_REPO_ATTRIBUTION",
+      "action": "Create/refresh branch feature/repository-attribution-20261007 from the refreshed PR #33 foundation head in %USERPROFILE%\\dev\\worktrees\\FileSteward\\j3-repo-attribution. Implement src/filesteward/ownership/repository.py plus tests/test_ownership_repository.py (and private _git_* helpers only), reusing ProtectionIndex and Entire only as context evidence.",
+      "depends_on": [],
+      "acceptance": "Repo lifecycle reducer distinguishes ACTIVE / STABLE / LEGACY_CANDIDATE / GENERATED_OUTPUT; age or Entire absence alone never produces legacy/reclaim; dirty/unique work remains protected."
+    },
+    {
+      "work_id": "J4_DEPENDENCY_REDUCER",
+      "action": "After PR #33 merges and J2/J3 are rebased to refreshed main and integrated, create feature/storage-ownership-reducer-20261007. Own graph.py, reducer.py, ownership/__init__.py, and their focused tests. Consume J2/J3 evidence, preserve simultaneous owners, and implement most-protective-edge-wins.",
+      "depends_on": [
+        "J2_APP_ATTRIBUTION",
+        "J3_REPO_ATTRIBUTION"
+      ],
+      "acceptance": "Unknown/conflicting/shared dependency fails away from automatic reclaim; UI can explain what owns the bytes, what depends on them, and why the lifecycle label was reached."
+    },
+    {
+      "work_id": "J5_DELETION_INTEGRATION",
+      "action": "After J4 integration, create feature/dependency-aware-delete-preflight-20261007. Bind the current ownership-graph revision into manifest/preflight/executor/per-item receipt; re-evaluate proof-relevant dependency state immediately before each mutation and fail closed on drift.",
+      "depends_on": [
+        "J0_LOCAL_PROOF",
+        "J4_DEPENDENCY_REDUCER"
+      ],
+      "acceptance": "Dependency drift fails closed before mutation and receipt binds the immediate evidence revision."
+    },
+    {
+      "work_id": "J6_SCRIPTED_SCENES",
+      "action": "After J4 integration, create integration/j6-pr29-lineage-20261007 from refreshed main. Treat PR #29 head c093f2cb69d69be153fcf983b6ad785636825b7e as a selective lineage donor, not a whole-branch merge. Port only the allowlist and apply the shared-file policies in harness/contracts/dependency-aware-judgment-closure.v1.json; current safety/ownership/deletion contracts win. Then implement the canonical judgment-scene workflow and run RG7/RG8.",
+      "depends_on": [
+        "J4_DEPENDENCY_REDUCER"
+      ],
+      "acceptance": "RG7 and RG8 pass; scenes surface plain-language owner/dependency badges (Required by app, Part of active repo, Stable repo, Legacy repo candidate, Shared dependency, Unknown ownership) with evidence-backed reasons and persisted classifications."
+    },
+    {
+      "work_id": "J7_P82_FINAL",
+      "action": "Run retained negative/positive corpus, full suite, bounded live UX acceptance, and one safe live read-only attribution proof.",
+      "depends_on": [
+        "J5_DELETION_INTEGRATION",
+        "J6_SCRIPTED_SCENES"
+      ],
+      "acceptance": "No protected/serviceability false-positive eligibility and no retained-scene regression."
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "local worktrees/branches created for declared lanes only",
+    "lane-owned files defined by the canonical plan and refreshed P04 partition"
+  ],
+  "forbidden_surfaces": [
+    "default branch direct writes",
+    "private var/runs evidence in Git",
+    "J6 visualization surfaces from backend lanes",
+    "canonical judgment/scene semantics invented by local implementers",
+    "tests or regression oracles weakened merely to fit a candidate"
+  ],
+  "dependencies": [],
+  "external_prerequisites": [
+    "PR #33 foundation must pass RG3/RG5/RG6 and merge before J2/J3 provider integration; J2/J3 may implement locally in parallel from the refreshed PR #33 head meanwhile.",
+    "J6 must follow the selective PR #29 lineage-port procedure in harness/contracts/dependency-aware-judgment-closure.v1.json after J4 is integrated.",
+    "Workstation repair or destructive mutation requires the exact semantic action to be covered by existing operator authority or the missing RG9 gate."
+  ],
+  "proof_receipts": [
+    "harness/evals/judgment-scene-p82-validation-2026-10-07.json",
+    "harness/evals/execution-handoff-p82-validation-2026-10-07.json",
+    "harness/evals/judgment-closure-p82-validation-2026-10-07.json"
+  ],
+  "proof_ceiling": "Remote provider contracts now close the current architectural/product judgment, define exact Wave 1 ownership and PR #29 selective-port strategy, and have prior static P82 protocol validation. Local implementation, local pytest/full suite, actual parallel dispatch, live browser UX, workstation attribution/repair, merge readiness, and runtime deletion proof remain unproven.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [
+    "var/runs/** — local ignored evidence pointer only; do not copy contents into tracked packet"
+  ],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": "NONE",
+  "exact_next_action": {
+    "phase": "RECOVER",
+    "action": "Refresh provider/local truth and Entire capability first. Then execute Wave 1 without another planning pass: (1) J0 run focused Package Cache tests and full repository suite on the exact PR #33 foundation head; (2) J1 run the read-only Wispr diagnostic and classify evidence before any repair; (3) dispatch J2 in feature/windows-app-attribution-20261007; (4) dispatch J3 in feature/repository-attribution-20261007. Keep the four ownership surfaces disjoint. If J0 passes RG3/RG5/RG6, merge PR #33, rebase J2/J3 onto refreshed main, rerun invalidated proof, and continue the closed graph.",
+    "owner": "local execution coordinator",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "Return a successor filesteward.execution-handoff-packet/v1 plus the completed FILESTEWARD-EXECUTION-REVIEW-CHECKLIST-2026-10-07.md state, exact heads, changed files, tests/validators actually run, failed-and-repaired evidence, provider review state, proof ceiling, and one exact next transition. Do not propose alternate architecture unless a genuinely new fact contradicts the judgment-closure contract."
+}

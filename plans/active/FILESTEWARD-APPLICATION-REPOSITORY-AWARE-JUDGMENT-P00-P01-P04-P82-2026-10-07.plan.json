@@ -1,0 +1,298 @@
+{
+  "schema_version": "filesteward.dependency-aware-judgment-plan/v1",
+  "plan_id": "FILESTEWARD-DEPENDENCY-AWARE-JUDGMENT-20261007",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "planning_floor": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+  "prompts": [
+    "P00",
+    "P01",
+    "P04",
+    "P82",
+    "P94",
+    "P106",
+    "P108",
+    "P110"
+  ],
+  "capacity_policy": {
+    "target_free_ratio": 0.2,
+    "critical_free_ratio": 0.1,
+    "authority": "PRIORITIZATION_ONLY_NOT_DELETION_AUTHORITY"
+  },
+  "incident": {
+    "observed": "Wispr Flow stopped working after the 2026-10-06/07 reclaim work",
+    "causal_state": "UNPROVEN",
+    "allowed_terminal_states": [
+      "CAUSAL_LINK_PROVEN",
+      "CAUSAL_LINK_DISPROVEN",
+      "CORRELATED_UNRESOLVED"
+    ],
+    "private_evidence_location": "var/runs/**"
+  },
+  "emergency_containment": {
+    "programdata_package_cache": "PROTECTED_GENERIC_ROOT",
+    "rule": "Cache-looking path is not regenerability proof; generic ProgramData Package Cache permanent-delete admission must be removed before broader cleanup."
+  },
+  "invariants": [
+    "absence_of_ownership_evidence_is_not_disposability_evidence",
+    "application_runtime_or_serviceability_dependency_cannot_be_RECLAIM_PROVEN",
+    "repository_dirty_unpushed_or_unique_evidence_is_protected",
+    "git_protection_index_remains_authoritative_for_repo_deletion_safety",
+    "entire_context_tools_are_advisory_not_mutation_authority",
+    "scene_actions_must_deliver_named_impact_and_continuation",
+    "capacity_target_prioritizes_work_but_never_weakens_evidence_or_authorization"
+  ],
+  "lanes": [
+    {
+      "id": "J0",
+      "title": "Emergency containment",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "src/filesteward/deletion/regenerable.py",
+        "tests/test_regenerable_cache_roots.py",
+        "docs/agent/LOCAL-AGENT-PROTECTIONS.md",
+        "docs/agent/OPERATOR-DELETE-PATH.md"
+      ],
+      "gate": "generic ProgramData Package Cache deletion impossible"
+    },
+    {
+      "id": "J1",
+      "title": "Wispr incident evidence",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "ignored var/runs evidence",
+        "read-only workstation application evidence"
+      ],
+      "gate": "causal state proven/disproven/unresolved without private commit"
+    },
+    {
+      "id": "J2",
+      "title": "Windows application attribution adapters",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "src/filesteward/ownership/windows_app.py",
+        "tests/test_ownership_windows_app.py",
+        "private _windows_* helpers only"
+      ],
+      "gate": "installed app ownership/consequence explainable",
+      "branch": "feature/windows-app-attribution-20261007"
+    },
+    {
+      "id": "J3",
+      "title": "Repository/project attribution adapters",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "src/filesteward/ownership/repository.py",
+        "tests/test_ownership_repository.py",
+        "private _git_* helpers only"
+      ],
+      "gate": "dirty/reproducible/generated distinctions proven",
+      "branch": "feature/repository-attribution-20261007"
+    },
+    {
+      "id": "J4",
+      "title": "Dependency graph and disposition reducer",
+      "depends_on": [
+        "J2",
+        "J3"
+      ],
+      "gate": "normalized consequence evidence drives disposition",
+      "branch": "feature/storage-ownership-reducer-20261007",
+      "owned": [
+        "src/filesteward/ownership/graph.py",
+        "src/filesteward/ownership/reducer.py",
+        "src/filesteward/ownership/__init__.py",
+        "tests/test_ownership_graph.py",
+        "tests/test_ownership_reducer.py"
+      ]
+    },
+    {
+      "id": "J5",
+      "title": "Deletion integration",
+      "depends_on": [
+        "J0",
+        "J4"
+      ],
+      "gate": "preflight blocks stale/unsafe dependency state",
+      "branch": "feature/dependency-aware-delete-preflight-20261007"
+    },
+    {
+      "id": "J6",
+      "title": "Scenes and filtered decision views",
+      "depends_on": [
+        "J4"
+      ],
+      "gate": "exact scripted scenes implemented without weakening protected immersive behavior; browser acceptance matrix proven",
+      "owned": [
+        "implementation of harness/contracts/judgment-scene-workflow.v1.json",
+        "retained behavior from harness/evals/judgment-scene-regression.v1.json",
+        "reconciled PR #29 visualization lineage"
+      ],
+      "external_prerequisites": [
+        "J4 integrated into refreshed main",
+        "apply PR29 selective-port procedure from judgment closure contract"
+      ],
+      "branch": "integration/j6-pr29-lineage-20261007"
+    },
+    {
+      "id": "J7",
+      "title": "P82 falsification and live proof",
+      "depends_on": [
+        "J0",
+        "J4",
+        "J5",
+        "J6"
+      ],
+      "gate": "zero protected/serviceability false-positive eligibility and zero retained-scene regression across required live modes"
+    }
+  ],
+  "entire_policy": {
+    "orientation": [
+      "entire status --json",
+      "entire agent-help --json"
+    ],
+    "context_sources": [
+      "checkpoints",
+      "sessions",
+      "search",
+      "Brain when installed",
+      "Graph when installed"
+    ],
+    "mini": "DISCOVER_RUNTIME_CAPABILITY_DO_NOT_FABRICATE",
+    "authority": "CONTEXT_ONLY_CURRENT_SOURCE_RUNTIME_GIT_PROVIDER_TESTS_WIN"
+  },
+  "ui_collision": {
+    "current_pr": 29,
+    "source_head_at_decision": "c093f2cb69d69be153fcf983b6ad785636825b7e",
+    "disposition": "SELECTIVE_LINEAGE_PORT_NOT_WHOLE_BRANCH_MERGE",
+    "strategy_ref": "harness/contracts/dependency-aware-judgment-closure.v1.json",
+    "rule": "After J4 integration, create the dedicated J6 branch from refreshed main and selectively port only the allowlisted PR29 lineage. Current safety/ownership/deletion contracts remain authoritative."
+  },
+  "first_successor": [
+    "J0",
+    "J1",
+    "J2",
+    "J3"
+  ],
+  "judgment_scene_workflow": {
+    "workflow_ref": "harness/contracts/judgment-scene-workflow.v1.json",
+    "regression_ledger_ref": "harness/evals/judgment-scene-regression.v1.json",
+    "protected_tutorial": [
+      "MAP",
+      "FOCUS",
+      "GATE",
+      "RESOLVE",
+      "APPROVAL",
+      "STAGED"
+    ],
+    "rule": "Technical facts resolve deterministically first; operator judgment is reserved for value/preference and exact action approval.",
+    "local_agent_role": "IMPLEMENT_SCRIPT_DO_NOT_AUTHOR_PRODUCT_JUDGMENT"
+  },
+  "design_hardening": {
+    "mode": "OPERATE",
+    "preserve_incumbent_visual_world": true,
+    "local_prompt_owners": [
+      "P94",
+      "P106",
+      "P108",
+      "P110"
+    ],
+    "upstream_sources": [
+      "pbakaus/impeccable skill/SKILL.src.md blob c413ae26e832b36d54603353f1c7a0ae04784eea",
+      "pbakaus/impeccable skill/reference/operate.md blob 5e4666de08f63f55c832c7bb2511cc9ad8068744",
+      "anthropics/claude-code frontend-design SKILL.md blob a5333457c414d20d625f307df945842c0952ecc3"
+    ],
+    "rule": "Upstream is craft prior art, not mutation authority."
+  },
+  "acceptance_gates": [
+    "A11 scripted judgment workflow has no missing transition targets",
+    "A12 technical safety facts cannot be delegated to operator before safe adapter exhaustion",
+    "A13 existing MAP->FOCUS->GATE->RESOLVE->APPROVAL->STAGED tutorial remains intact",
+    "A14 P94 regression ledger negative fixtures fail and positive controls pass",
+    "A15 bounded live browser acceptance covers desktop+narrow+reduced-motion+forced-colors and supported input modes",
+    "A16 local agents report BLOCKED_JUDGMENT_GAP rather than inventing scene semantics"
+  ],
+  "remote_p82_validation": {
+    "state": "PASS",
+    "receipt": "harness/evals/judgment-scene-p82-validation-2026-10-07.json",
+    "checks_passed": 19,
+    "checks_failed": 0,
+    "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT_AND_J0_SOURCE",
+    "proof_ceiling": "Provider-read-back source and contract shape only; no local pytest, browser, current-visual, workstation-runtime, or merge-readiness claim."
+  },
+  "execution_handoff": {
+    "loop_ref": "harness/contracts/execution-handoff-loop.v1.json",
+    "packet_schema_ref": "harness/contracts/execution-handoff-packet.schema.v1.json",
+    "protocol_ref": "docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md",
+    "review_gates_ref": "harness/evals/execution-handoff-review-gates.v1.json",
+    "phases": [
+      "RECOVER",
+      "PARTITION",
+      "DISPATCH",
+      "EXECUTE",
+      "PROVE",
+      "REVIEW",
+      "CONVERGE",
+      "CONTINUE"
+    ],
+    "non_terminal": [
+      "PLAN_READY",
+      "HANDOFF_WRITTEN",
+      "PR_OPEN",
+      "MERGEABLE"
+    ],
+    "rule": "A receiver consumes completed facts, recomputes only remaining work, launches dependency-ready lanes, and executes the exact next action without operator relaunch when authority permits.",
+    "p82_validation_ref": "harness/evals/execution-handoff-p82-validation-2026-10-07.json",
+    "p82_validation_state": "PASS_27_OF_27_REMOTE_PROTOCOL_FALSIFICATION",
+    "proof_ceiling": "Protocol structure/falsification proven remotely; local validator, actual dispatch, local tests, live UX, workstation runtime, and merge readiness remain separate."
+  },
+  "next_review_gates": [
+    {
+      "gate": "RG0_CURRENT_TRUTH",
+      "applies": "every local-agent pickup"
+    },
+    {
+      "gate": "RG1_OWNERSHIP_COLLISION",
+      "applies": "before J1/J2/J3 parallel dispatch"
+    },
+    {
+      "gate": "RG3_FOCUSED_PROOF",
+      "applies": "J0 source repair before provider/merge progression"
+    },
+    {
+      "gate": "RG5_PROVIDER_REVIEW",
+      "applies": "after any material PR #33 head change"
+    },
+    {
+      "gate": "RG6_LOCAL_FULL_PROOF",
+      "applies": "before PR #33 merge claim"
+    },
+    {
+      "gate": "RG7_PR29_VISUAL_LINEAGE",
+      "applies": "before J6 visualization mutation"
+    },
+    {
+      "gate": "RG8_LIVE_UX_ACCEPTANCE",
+      "applies": "before J6 scene integration is PROVEN"
+    },
+    {
+      "gate": "RG9_LIVE_MUTATION_AUTHORITY",
+      "applies": "before workstation repair/delete mutation"
+    },
+    {
+      "gate": "RG10_POST_ACTION_VERIFY",
+      "applies": "before whole sprint terminal success"
+    }
+  ],
+  "judgment_closure": {
+    "state": "CLOSED_FOR_CURRENT_KNOWN_GRAPH",
+    "contract_ref": "harness/contracts/dependency-aware-judgment-closure.v1.json",
+    "blocked_judgment_gap": "NONE",
+    "rule": "Cursor executes the closed integration order, lane ownership, module boundaries, PR29 selective-port policy, and provider PR policy. It does not choose an alternate architecture.",
+    "p82_validation_ref": "harness/evals/judgment-closure-p82-validation-2026-10-07.json",
+    "p82_validation_state": "PASS_20_OF_20_REMOTE_JUDGMENT_CLOSURE"
+  }
+}

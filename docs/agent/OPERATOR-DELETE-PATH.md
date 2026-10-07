@@ -58,9 +58,26 @@ Permanent-delete execute admits these contract-backed regenerable roots (realpat
    - `%LOCALAPPDATA%\CrashDumps`
    - `%LOCALAPPDATA%\pip\Cache`
    - Chrome `Default\Cache` and `Default\Code Cache` only (not the whole profile)
-   - `%PROGRAMDATA%\Package Cache`
 
 For those seams, preflight may seal identity with size+mtime only (skip full-file SHA-256) so large cache trees remain terminal; execute still uses open→fstat→unlink TOCTOU, and hashes when a content digest is present.
+
+
+### Incident lock — installed application trees under AppData
+
+A directory is **not** disposable because it lives under `%LOCALAPPDATA%`, `%APPDATA%`, or another user-scoped application-data root.
+
+Before a whole application-like directory can become eligible for reclaim, FileSteward must resolve Windows application ownership. If uninstall/install/modify/repair/update metadata, a service, scheduled task, running executable/module, shortcut, package identity, or executable metadata binds an installed application to the candidate tree, raw file deletion is forbidden.
+
+A particularly important fail-closed state is a surviving Windows installed-app registration whose registered uninstaller/updater/repair executable is missing. That state is **APP_INSTALLATION_BROKEN + APP_SERVICEABILITY_DEPENDENCY**, not an orphan signal. The legal path is semantic repair/reinstall when the operator wants the application, or registered/vendor uninstall recovery when the operator wants it removed. Reinstall availability by itself never authorizes raw deletion.
+
+The regression archetype is the Wispr Flow incident: Windows still reports Wispr Flow installed while its registered `%LOCALAPPDATA%\WisprFlow\Update.exe` is absent. FileSteward must make this class of mistake mechanically unreachable without depending on the user to recognize that an AppData folder is actually the application's live installation/serviceability tree.
+
+
+### Incident lock — application serviceability caches
+
+`%PROGRAMDATA%\Package Cache` is **not** a generic regenerable seam. FileSteward must refuse automatic permanent deletion of that root until the dependency-aware storage judgment contract is implemented and a per-entry adapter proves an orphan/serviceability-safe disposition. Cache-like naming, age, or size does not establish regenerability.
+
+The governing contract is `harness/contracts/storage-dependency-judgment.v1.json`, and the active implementation plan is `plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.md`.
 
 Do not widen from these seams into semantically ambiguous personal files, whole browser profiles, OneDrive, or other home trees merely to increase deletion volume.
 

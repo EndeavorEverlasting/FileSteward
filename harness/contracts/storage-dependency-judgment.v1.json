@@ -1,0 +1,187 @@
+{
+  "schema_version": "filesteward.storage-dependency-judgment/v1",
+  "owner": "FileSteward dependency-aware cleanup judgment",
+  "purpose": "Prevent cache/path heuristics from breaking installed applications or repositories while preserving low-friction storage decisions.",
+  "capacity_policy": {
+    "target_free_ratio": 0.2,
+    "critical_free_ratio": 0.1,
+    "authority": "priority_only"
+  },
+  "protected_generic_roots": [
+    {
+      "root": "%PROGRAMDATA%\\Package Cache",
+      "reason": "installer/serviceability dependency risk",
+      "automatic_delete": false,
+      "future_orphan_handling": "per-entry evidence may reach HUMAN_REVIEW only until an explicit orphan/serviceability contract is proven"
+    }
+  ],
+  "evidence_domains": [
+    "application_installation",
+    "application_runtime",
+    "application_serviceability",
+    "service",
+    "scheduled_task",
+    "package_manager",
+    "repository",
+    "toolchain",
+    "user_data"
+  ],
+  "consequence_classes": [
+    "APP_RUNTIME_DEPENDENCY",
+    "APP_SERVICEABILITY_DEPENDENCY",
+    "APP_INSTALLATION_BROKEN",
+    "APP_CACHE_REGENERABLE",
+    "APP_CACHE_UNKNOWN",
+    "SERVICE_DEPENDENCY",
+    "SCHEDULED_TASK_DEPENDENCY",
+    "REPOSITORY_TRACKED",
+    "REPOSITORY_DIRTY_OR_UNPUSHED",
+    "REPOSITORY_REPRODUCIBLE_CLONE",
+    "TOOLCHAIN_DEPENDENCY",
+    "USER_DATA",
+    "ORPHAN_CANDIDATE",
+    "UNKNOWN_OWNERSHIP"
+  ],
+  "promotion_rules": {
+    "to_protected": [
+      "app runtime dependency",
+      "app serviceability dependency",
+      "service dependency",
+      "scheduled task dependency",
+      "dirty/unpushed/unique repository evidence",
+      "toolchain dependency",
+      "registered installed application whose install/uninstall/repair/update target intersects the candidate tree",
+      "broken or missing registered uninstaller/repair/update executable whose expected path intersects the candidate tree"
+    ],
+    "to_human_review": [
+      "unknown ownership",
+      "ambiguous orphan candidate",
+      "clean reproducible clone whose removal still requires operator disposition"
+    ],
+    "to_reclaim_proven": [
+      "explicit adapter-backed regenerable cache with deterministic regeneration evidence",
+      "repository-generated/build artifact whose generating source and boundary are proven"
+    ],
+    "forbidden": [
+      "age_only",
+      "size_only",
+      "path_name_only",
+      "cache_name_only",
+      "missing_ownership_evidence",
+      "AI_confidence_only"
+    ]
+  },
+  "repository_rules": {
+    "git_discovery_owner": "ProtectionIndex.from_git_discovery",
+    "classification_may_enrich_but_not_weaken_protection": true,
+    "required_evidence": [
+      "dirty",
+      "staged",
+      "untracked",
+      "branch",
+      "worktree",
+      "remote",
+      "push_or_reproducibility_state_when_available"
+    ],
+    "entire_evidence": {
+      "role": "context accelerator and repo relationship/activity evidence; not deletion authority",
+      "required_discovery": [
+        "entire status --json",
+        "entire agent-help --json"
+      ],
+      "graph_when_available": [
+        "use working-tree graph queries for current code relationships/change impact",
+        "use --head comparison when committed baseline matters",
+        "treat Entire session/checkpoint evidence as activity context only"
+      ],
+      "legacy_rule": "No repo/file is legacy from age, inactivity, or Entire absence alone. REPO_LEGACY_CANDIDATE requires clean/recoverable/no-active-worktree/no-current-dependency/no-unique-work evidence across canonical adapters."
+    }
+  },
+  "application_rules": {
+    "preferred_action": "semantic owner action such as clean-cache/uninstall/repair before raw file deletion",
+    "forbidden_inventory_probe": "Win32_Product",
+    "package_cache_generic_delete": false,
+    "path_location_is_never_disposition": true,
+    "local_appdata_whole_app_directory_generic_delete": false,
+    "installed_application_intersection_rule": "If uninstall/install/modify/repair/update metadata, service/task/shortcut/runtime evidence, or executable metadata binds an installed application to the candidate tree, raw file deletion is forbidden. Route to semantic application action.",
+    "broken_registration_rule": "If Windows reports the application installed but its registered uninstall/repair/update executable is missing, classify APP_INSTALLATION_BROKEN + APP_SERVICEABILITY_DEPENDENCY, protect the tree from raw deletion, and route only to REPAIR_APPLICATION or UNINSTALL_APPLICATION.",
+    "required_windows_attribution_evidence": [
+      "HKLM/HKCU uninstall entries in both registry views",
+      "InstallLocation when present",
+      "UninstallString/QuietUninstallString/ModifyPath/repair/update executable paths when present",
+      "running executable/module evidence when safely observable",
+      "service and scheduled-task references",
+      "shortcut targets as corroboration",
+      "file product/company/signature metadata as corroboration",
+      "AppX/MSIX/package-manager evidence when applicable"
+    ],
+    "semantic_actions_before_raw_delete": [
+      "CLEAN_CACHE only for adapter-proven regenerable cache boundaries",
+      "REPAIR_APPLICATION for broken installed applications the operator wants to keep",
+      "UNINSTALL_APPLICATION through registered/vendor semantics when the operator wants removal"
+    ],
+    "canonical_semantic_actions": {
+      "CLEAN_CACHE": "Clean only an adapter-proven regenerable application cache boundary.",
+      "REPAIR_APPLICATION": "Use vendor/installer semantic repair or reinstall while preserving user data and serviceability evidence.",
+      "UNINSTALL_APPLICATION": "Use registered/vendor semantic uninstall. If uninstall serviceability is broken, restore/repair the uninstall path first; never substitute raw file deletion."
+    }
+  },
+  "destructive_execution": {
+    "require_current_dependency_evidence": true,
+    "stale_evidence": "FAIL_CLOSED",
+    "receipt_must_bind_dependency_revision": true,
+    "require_dependency_recheck_immediately_before_each_mutation": true,
+    "per_item_drift": "FAIL_CLOSED_BEFORE_MUTATION",
+    "target_identity_revalidation_is_not_dependency_freshness": true,
+    "receipt_must_bind_immediate_dependency_revision": true
+  },
+  "entire": {
+    "role": "context_accelerator_not_authority",
+    "orientation": [
+      "entire status --json",
+      "entire agent-help --json"
+    ],
+    "optional": [
+      "Entire Brain",
+      "Entire Graph",
+      "runtime-discovered plugins"
+    ],
+    "unverified_named_capability": "Mini must be discovered locally before use"
+  },
+  "scene_projection": {
+    "through_line": [
+      "CAPACITY",
+      "ATTRIBUTION",
+      "EVIDENCE",
+      "DECIDE",
+      "AUTHORIZE",
+      "RECLAIM",
+      "VERIFY"
+    ],
+    "must_feed_filterable_views": true,
+    "no_dead_clicks": true,
+    "workflow_ref": "harness/contracts/judgment-scene-workflow.v1.json",
+    "regression_ledger_ref": "harness/evals/judgment-scene-regression.v1.json",
+    "human_review_is_not_a_dead_end": true
+  },
+  "judgment_workflow": {
+    "workflow_ref": "harness/contracts/judgment-scene-workflow.v1.json",
+    "regression_ledger_ref": "harness/evals/judgment-scene-regression.v1.json",
+    "unknown_ownership_initial_route": "ATTRIBUTION_RESOLVE",
+    "human_review_only_after_safe_adapter_exhaustion": true,
+    "human_review_required_payload": [
+      "exact_unresolved_fact",
+      "safe_probes_attempted",
+      "why_fact_changes_safety_or_recoverability",
+      "legal_operator_choices_only"
+    ],
+    "ownership_graph_ref": "harness/contracts/storage-ownership-evidence-graph.v1.json"
+  },
+  "operator_judgment_boundary": {
+    "technical_safety": "MACHINE_RESOLVE",
+    "value_preference": "OPERATOR_DECIDE",
+    "destructive_authorization": "OPERATOR_AUTHORIZE",
+    "rule": "Do not ask the operator to guess ownership, serviceability, regenerability, repository uniqueness, or other safely measurable technical facts. FileSteward must collapse app/repo/toolchain/shared dependency evidence into a clear classification before presenting choices."
+  },
+  "ownership_graph_ref": "harness/contracts/storage-ownership-evidence-graph.v1.json"
+}

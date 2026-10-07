@@ -163,7 +163,7 @@ class TestRegenerableAllowlist:
         refusal = cli_mod._scan_root_allowed_for_execute(local)
         assert refusal is not None
 
-    def test_package_cache_listed(
+    def test_package_cache_refused_by_generic_regenerable_allowlist(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         pd = tmp_path / "ProgramData"
@@ -172,9 +172,11 @@ class TestRegenerableAllowlist:
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "Local"))
         monkeypatch.setenv("PROGRAMDATA", str(pd))
         roots = regenerable_cache_allowlist_roots()
-        assert normalize_declared_path(pkg) in roots
-        assert is_under_regenerable_cache_allowlist(pkg) is True
-        assert cli_mod._scan_root_allowed_for_execute(pkg) is None
+        assert normalize_declared_path(pkg) not in roots
+        assert is_under_regenerable_cache_allowlist(pkg) is False
+        assert allows_size_mtime_identity_seal(pkg) is False
+        refusal = cli_mod._scan_root_allowed_for_execute(pkg)
+        assert refusal is not None
 
 
 class TestSizeMtimeIdentitySeal:

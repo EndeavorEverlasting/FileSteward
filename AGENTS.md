@@ -9,14 +9,27 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 3. `docs/agent/OPERATOR-DELETE-PATH.md` when the requested outcome includes real deletion or reclaim
 4. `docs/agent/OPERATOR-DECISION-UX-PATH.md` when modifying the public Decision Chamber, Atlas interaction flow, or deletion controls
 5. `harness/contracts/action-scene-impact.v1.json` when modifying cursor/action labels, scene/context transitions, or interaction projection
-6. The active plan under `plans/active/` for the requested sprint
-7. `README.md` safety, privacy, and MVP boundaries
+6. `harness/contracts/judgment-scene-workflow.v1.json` when modifying any judgment-bearing scene, gate, transition, or operator choice
+7. `harness/evals/judgment-scene-regression.v1.json` when modifying the Decision Chamber / Memory Atlas experience or its protected behavior
+8. `harness/contracts/storage-dependency-judgment.v1.json` when classifying/deleting application-managed, installer/serviceability, repository, toolchain, or otherwise ownership-sensitive storage
+9. `harness/contracts/storage-ownership-evidence-graph.v1.json` when determining what owns/depends on a path, resolving app-vs-repo/shared dependencies, or labeling repository lifecycle as active/stable/legacy-candidate/generated-output
+10. `harness/contracts/execution-handoff-loop.v1.json` and `harness/contracts/execution-handoff-packet.schema.v1.json` when receiving, dispatching, converging, or handing off execution
+11. `harness/evals/execution-handoff-review-gates.v1.json` before advancing review/merge/live-proof transitions
+12. The active plan under `plans/active/` for the requested sprint
+13. `README.md` safety, privacy, and MVP boundaries
 
 If any required contract cannot be read, stop. Do not reconstruct it from memory.
 
 ## Non-negotiable local-agent boundary
 
 - Do not resolve semantic ambiguity for the operator.
+- Judgment-bearing UX is script-owned: implement `harness/contracts/judgment-scene-workflow.v1.json`; do not invent, flatten, rename, or compress scenes/choices to bridge a gap.
+- Technical safety facts must be resolved through safe adapters/reducers before asking the operator.
+- Storage may have multiple simultaneous owners/dependencies. Build and reduce the cross-domain ownership graph; never let a less-protective app/repo/toolchain classification erase a more-protective edge.
+- Entire CLI/Graph is a context accelerator for repo relationships, worktree/current-change impact, and activity evidence. It never independently declares storage legacy or disposable; absence from Entire is not evidence of dispensability. Human judgment is reserved for value/preference and exact action approval.
+- If the canonical scene script lacks a required mapping, emit `BLOCKED_JUDGMENT_GAP` with the exact missing judgment; do not author product policy locally. Independent safe lanes may continue.
+- PR #29 is a selective lineage donor, not a whole-branch merge authority. Follow `harness/contracts/dependency-aware-judgment-closure.v1.json`; current safety/ownership/deletion contracts win over stale PR #29 runtime hunks.
+- Accepted immersive behavior is an oracle. Do not delete/weaken tests, fixtures, interaction grammar, or visual identity merely to make a candidate pass; changes require explicit redesign authority plus retained-regression updates.
 - Do not infer that a file is disposable from age, size, extension, filename, location, inactivity, or apparent duplication.
 - Do not promote `HUMAN_REVIEW`, `UNKNOWN`, or `PROTECTED` into a reclaim/action state.
 - Do not let an agent-generated manifest authorize its own mutation.
@@ -25,6 +38,17 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - A clear natural-language operator authorization for a bounded named run/scope/action is sufficient intent to create the required local approval artifact. Do not invent magic phrases, UI toggles, or repeated conversational approvals at each seam.
 - Once a bounded deletion outcome is authorized, repository repair, tests, commit, PR, merge, preflight PASS, and approval-artifact creation are intermediate states. Continue through live deletion and runtime proof in the same iteration unless a genuine unrepairable external/user-only blocker remains.
 - Real workstation scans, private paths, filenames, hashes, queues, manifests, approvals, and receipts belong in ignored runtime storage, never committed fixtures.
+
+## Execution handoff discipline
+
+A handoff is executable state, not a planning restart.
+
+- Follow `harness/contracts/execution-handoff-loop.v1.json`: RECOVER -> PARTITION -> DISPATCH -> EXECUTE -> PROVE -> REVIEW -> CONVERGE -> CONTINUE.
+- Produce/consume packets conforming to `harness/contracts/execution-handoff-packet.schema.v1.json`.
+- Review transitions use `harness/evals/execution-handoff-review-gates.v1.json`; a failed gate routes to repair and retry, not scheduler shutdown.
+- Completed facts are inputs to remaining work. Do not repeat them merely because a new agent took over.
+- If independent lanes are ready, launch them through available safe adapters; do not make the operator shuttle prompts when automation exists.
+- Passing a gate is permission to continue under existing authority. `PLAN_READY`, `HANDOFF_WRITTEN`, `PR_OPEN`, and `MERGEABLE` are non-terminal states.
 
 ## Sprint discipline
 
