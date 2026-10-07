@@ -28,8 +28,10 @@ Historical SHAs are evidence floors only. Refresh before mutation.
 5. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
 6. `docs/agent/OPERATOR-DELETE-PATH.md`
 7. `harness/contracts/action-scene-impact.v1.json`
-8. `plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md`
-9. `docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md`
+8. `harness/contracts/judgment-scene-workflow.v1.json`
+9. `harness/evals/judgment-scene-regression.v1.json`
+10. `plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md`
+11. `docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md`
 
 If handoff prose conflicts with those artifacts, the canonical artifact wins.
 
@@ -48,6 +50,21 @@ entire agent-help --json
 ```
 
 If Entire Brain/Graph are installed, use them for context recovery and change-impact discovery. Verify current source/runtime/provider truth afterward. If the operator-mentioned Mini capability is not present in current Entire help/plugin output, do not invent it.
+
+## Deterministic judgment-scene rule
+
+Local agents are **implementation executors, not scene authors**.
+
+- Implement the exact scene graph and scripts in `harness/contracts/judgment-scene-workflow.v1.json`.
+- Treat `harness/evals/judgment-scene-regression.v1.json` as the retained P94 oracle.
+- Resolve technical safety facts automatically/read-only before HUMAN_REVIEW whenever the contract names an adapter path.
+- Ask the operator only for value/preference or exact action approval after technical safety is resolved.
+- If required judgment is absent, return `BLOCKED_JUDGMENT_GAP` with the missing fact/transition. Do **not** improvise a scene, modal, dashboard, action label, or decision rule.
+- Preserve the existing `MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED` tutorial. New attribution/consequence/recoverability work lives inside deterministic RESOLVE subscenes.
+- Preserve the incumbent Memory Atlas visual/interaction world during refinement. A backend or bounded feature lane has no authority to flatten it into generic cards/tables or reset its interaction grammar.
+- Never weaken/delete an accepted test, fixture, or protected behavior merely to fit a candidate.
+
+The workflow intentionally allows read-only technical RESOLVE scenes to auto-advance when the result is deterministic and remains inspectable in the action/evidence trace. That is how judgment friction is removed without transferring safety judgment to an agent or to the operator.
 
 ## Execution graph
 
@@ -138,13 +155,20 @@ Preflight must fail closed when proof-relevant ownership/dependency state drifte
 
 Do not replace the existing exact-manifest -> approval -> executor -> receipt architecture.
 
-### Lane J6 — scenes / filtered views
+### Lane J6 — scripted scenes / filtered views
 
 Do not start by independently rewriting the visualization lineage.
 
-Refresh PR #29 and main first. Reconcile according to the canonical Decision-to-Deletion seam.
+Refresh PR #29 and main first. Reconcile according to the canonical Decision-to-Deletion seam, then implement **the existing script** rather than designing another one.
 
-Add attribution/application/repository scenes so every actionable click produces named impact and continuation. Persist resulting classifications into filterable views/queues.
+Required implementation owners:
+- `harness/contracts/judgment-scene-workflow.v1.json` — scene order, entry/exit rules, automatic technical resolution, legal operator choices, copy semantics, continuation;
+- `harness/evals/judgment-scene-regression.v1.json` — protected immersive behavior, negative fixtures, positive controls, live acceptance matrix;
+- `harness/contracts/action-scene-impact.v1.json` — action projection and fail-closed binding.
+
+The key flow remains `MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED`. Attribution, consequence, recoverability, and value judgment are scripted RESOLVE subscenes. Technical subscenes should auto-run/auto-advance when safe and deterministic; human interruption is reserved for real value choice and exact action approval.
+
+Persist resulting classifications/decisions into filterable views/queues and preserve unrelated search/filter/selection state across scene changes.
 
 ### Lane J7 — P82 falsification
 
@@ -158,6 +182,21 @@ Iterate until:
 - full suite passes on exact head.
 
 Then perform one bounded live **read-only** attribution proof before proposing any new broad live cleanup.
+
+### P94 + P110 retained-scene acceptance
+
+A green unit suite is not enough for a live UX claim.
+
+Before J6/J7 can report scene integration PROVEN:
+1. run the negative defect families and positive controls from the regression ledger;
+2. prove composed state (search/filter/selection) across unrelated scene transitions;
+3. prove truthful pointer + keyboard paths and touch/phone when product-declared supported;
+4. perform bounded browser acceptance on desktop, narrow viewport, reduced-motion, and forced-colors states;
+5. inspect the result against the incumbent Memory Atlas visual world and interaction grammar;
+6. repair defects without editing the oracle to match the broken candidate;
+7. rerun one bounded confirmation pass.
+
+If live/browser tooling is unavailable, keep live acceptance UNPROVEN; do not substitute static HTML/string checks.
 
 ## Parallel execution
 
