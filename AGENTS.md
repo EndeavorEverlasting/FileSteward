@@ -28,6 +28,7 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - Storage may have multiple simultaneous owners/dependencies. Build and reduce the cross-domain ownership graph; never let a less-protective app/repo/toolchain classification erase a more-protective edge.
 - Entire CLI/Graph is a context accelerator for repo relationships, worktree/current-change impact, and activity evidence. It never independently declares storage legacy or disposable; absence from Entire is not evidence of dispensability. Human judgment is reserved for value/preference and exact action approval.
 - If the canonical scene script lacks a required mapping, emit `BLOCKED_JUDGMENT_GAP` with the exact missing judgment; do not author product policy locally. Independent safe lanes may continue.
+- PR #29 is a selective lineage donor, not a whole-branch merge authority. Follow `harness/contracts/dependency-aware-judgment-closure.v1.json`; current safety/ownership/deletion contracts win over stale PR #29 runtime hunks.
 - Accepted immersive behavior is an oracle. Do not delete/weaken tests, fixtures, interaction grammar, or visual identity merely to make a candidate pass; changes require explicit redesign authority plus retained-regression updates.
 - Do not infer that a file is disposable from age, size, extension, filename, location, inactivity, or apparent duplication.
 - Do not promote `HUMAN_REVIEW`, `UNKNOWN`, or `PROTECTED` into a reclaim/action state.
