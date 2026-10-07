@@ -599,3 +599,65 @@ The falsification matrix verifies that the protocol rejects:
 - stopping at plan/handoff/PR-open/mergeable.
 
 This is still a **remote protocol proof**, not actual local execution evidence. The next local receiver must run RG0, execute J0 local proof, and dispatch J1/J2/J3 when safe independent adapters are available.
+
+
+## 24. Judgment closure — Cursor receives execution, not architecture
+
+Canonical closure:
+
+`harness/contracts/dependency-aware-judgment-closure.v1.json`
+
+For the current known graph, architectural/product judgment is closed.
+
+### Integration order
+
+1. Wave 1 may run concurrently from refreshed PR #33 foundation truth: J0 local proof, J1 Wispr evidence, J2 app attribution, J3 repo attribution.
+2. PR #33 remains the foundation/containment contract PR. It must pass RG3/RG5/RG6 and merge before J2/J3 provider integration.
+3. J2/J3 may implement locally in isolated worktrees while J0 proves PR #33. After PR #33 merges, rebase both onto refreshed main, rerun invalidated proof, and use separate focused PRs.
+4. J4 begins after J2/J3 integration.
+5. J5 begins after J4.
+6. J6 begins after J4 and uses the fixed PR #29 selective-lineage procedure.
+7. J7 begins after J5/J6 integration.
+
+### PR #29 decision
+
+PR #29 is **not** a branch to merge wholesale.
+
+At judgment close it is 62 commits ahead / 6 behind main and mixes desired Memory Atlas / Decision Chamber lineage with unrelated or stale safety/governance/runtime work.
+
+The J6 owner therefore:
+
+- creates `integration/j6-pr29-lineage-20261007` from refreshed main after J4;
+- treats PR #29 head `c093f2cb69d69be153fcf983b6ad785636825b7e` as a lineage donor unless refreshed provider truth changes the head;
+- selectively ports only the allowlist in the closure contract;
+- excludes PR #29 deletion/safety/governance/housekeeping surfaces;
+- ports only the Decision-Chamber/review CLI routing from PR #29 rather than replacing current `cli.py`;
+- keeps current `pyproject.toml` as baseline and recomputes the product version through the repository version gate;
+- adapts the ported UX to current P94/P110 + ownership/judgment contracts rather than weakening those contracts.
+
+No local agent is authorized to choose a different merge/rebase architecture.
+
+### Exact lane ownership
+
+- **J2:** `src/filesteward/ownership/windows_app.py`, `tests/test_ownership_windows_app.py`, private `_windows_*` helpers.
+- **J3:** `src/filesteward/ownership/repository.py`, `tests/test_ownership_repository.py`, private `_git_*` helpers.
+- **J4:** `ownership/graph.py`, `ownership/reducer.py`, `ownership/__init__.py`, focused graph/reducer tests.
+- **J5:** deletion preflight/executor + exact manifest/receipt dependency-revision integration.
+- **J6:** visualization lineage, review bridge, approval, Decision Chamber tests, visual contracts/tokens/versioning support.
+
+### Remaining human boundary
+
+The operator still owns only:
+
+- value/preference for an otherwise technically safe application/repository;
+- exact repair/destructive authorization when prior intent does not already cover that action.
+
+Cursor does not escalate already-closed technical/product judgment.
+
+## 25. Exact review checklist
+
+Cursor must use:
+
+`docs/handoff/FILESTEWARD-EXECUTION-REVIEW-CHECKLIST-2026-10-07.md`
+
+The checklist operationalizes RG0-RG10 and is the expected return/readback surface. A failed gate routes to repair; it does not reopen architecture or stop independent lanes.
