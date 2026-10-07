@@ -1,0 +1,113 @@
+{
+  "schema_version": "filesteward.execution-handoff-packet/v1",
+  "created_for": "FILESTEWARD-SAFE-CAPACITY-20261007",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "canonical_checkout": "%USERPROFILE%\\dev\\FileSteward",
+  "provider_floor": "main@81cc58c51b55c249710b1438b11a956fea8efe12",
+  "planning_branch": "plan/safe-capacity-p04-p82-20261007",
+  "objective": "Implement the next dependency-aware capacity-recovery slice without making local product-judgment decisions.",
+  "recover_first": [
+    "AGENTS.md",
+    "plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.md",
+    "plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.plan.json",
+    "harness/evals/storage-reclamation-p82-corpus.v1.json",
+    "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json",
+    "src/filesteward/ownership/windows_app.py",
+    "src/filesteward/ownership/repository.py",
+    "src/filesteward/ownership/graph.py",
+    "src/filesteward/ownership/reducer.py",
+    "src/filesteward/deletion/preflight.py",
+    "src/filesteward/deletion/execute.py"
+  ],
+  "current_truth": {
+    "J0": "merged",
+    "J2": "merged via PR #34",
+    "J3": "merged via PR #35; follow-up conflict marker repair via PR #36",
+    "J4": "merged via PR #37",
+    "J1": "local forensic lane only; do not fabricate remote proof",
+    "J5": "next critical path",
+    "J6": "reconcile PR #29 before visualization edits",
+    "J7": "not yet proven"
+  },
+  "lanes": [
+    {
+      "id": "K1-K2",
+      "owned_scope": [
+        "ownership-aware cleanup-plan admission",
+        "semantic action planner",
+        "focused tests"
+      ],
+      "forbidden_scope": [
+        "visualization",
+        "new generic cleanup roots",
+        "live deletion"
+      ],
+      "acceptance": [
+        "app/serviceability/repo protection cannot emit raw-delete action",
+        "unknown emits investigate only",
+        "exact generated/regenerable artifacts require proof"
+      ]
+    },
+    {
+      "id": "K3",
+      "depends_on": [
+        "K1-K2"
+      ],
+      "owned_scope": [
+        "delete manifest/preflight dependency binding",
+        "fresh ownership re-resolution",
+        "reason classes",
+        "focused tests"
+      ],
+      "forbidden_scope": [
+        "executor redesign",
+        "UI"
+      ],
+      "acceptance": [
+        "ownership revision drift fails",
+        "semantic action required blocks raw delete",
+        "protective edge blocks raw delete"
+      ]
+    },
+    {
+      "id": "K5",
+      "depends_on": [
+        "K1-K2"
+      ],
+      "owned_scope": [
+        "legal action ranking",
+        "20%/10% capacity prioritization",
+        "stop rule",
+        "tests"
+      ],
+      "forbidden_scope": [
+        "changing deletion authority"
+      ],
+      "acceptance": [
+        "only legal actions ranked",
+        "healthy capacity stops further deletion pressure"
+      ]
+    }
+  ],
+  "integration_boundary": "K1-K2 merge before K3 mutates delete preflight contracts. K6 remains separate until PR #29 is refreshed and reconciled.",
+  "proof_required": [
+    "focused tests",
+    "full repository suite on exact head",
+    "provider head readback",
+    "review-thread reconciliation",
+    "P82 corpus run",
+    "bounded workstation read-only attribution before any live canary"
+  ],
+  "report_format": [
+    "completed work",
+    "created/modified files",
+    "validation and proof",
+    "skipped checks and why",
+    "unresolved gaps/risks",
+    "artifact/log paths",
+    "branch/PR/commit/git status",
+    "deployment/production state",
+    "next useful command or decision"
+  ]
+}

@@ -1,5 +1,7 @@
 # Application / Repository-Aware Storage Judgment — P00 + P01 + P04 + P82 — 2026-10-07
 
+> **Execution status (2026-10-07): SUPERSEDED FOR NEXT-LANE ORDERING.** J0/J2/J3/J4 are now merged. Preserve this document as the foundation/safety doctrine, but use `plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.md` for current execution order, acceptance gates, and the K1-K7 successor graph.
+
 **Sprint ID:** `FILESTEWARD-DEPENDENCY-AWARE-JUDGMENT-20261007`  
 **Repository:** `EndeavorEverlasting/FileSteward`  
 **Planning floor:** `main@610f4fe624bfdf7c9577bcbc28ac2bea394c81f5`  
