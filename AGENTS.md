@@ -9,15 +9,21 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 3. `docs/agent/OPERATOR-DELETE-PATH.md` when the requested outcome includes real deletion or reclaim
 4. `docs/agent/OPERATOR-DECISION-UX-PATH.md` when modifying the public Decision Chamber, Atlas interaction flow, or deletion controls
 5. `harness/contracts/action-scene-impact.v1.json` when modifying cursor/action labels, scene/context transitions, or interaction projection
-6. `harness/contracts/storage-dependency-judgment.v1.json` when classifying/deleting application-managed, installer/serviceability, repository, toolchain, or otherwise ownership-sensitive storage
-7. The active plan under `plans/active/` for the requested sprint
-8. `README.md` safety, privacy, and MVP boundaries
+6. `harness/contracts/judgment-scene-workflow.v1.json` when modifying any judgment-bearing scene, gate, transition, or operator choice
+7. `harness/evals/judgment-scene-regression.v1.json` when modifying the Decision Chamber / Memory Atlas experience or its protected behavior
+8. `harness/contracts/storage-dependency-judgment.v1.json` when classifying/deleting application-managed, installer/serviceability, repository, toolchain, or otherwise ownership-sensitive storage
+9. The active plan under `plans/active/` for the requested sprint
+10. `README.md` safety, privacy, and MVP boundaries
 
 If any required contract cannot be read, stop. Do not reconstruct it from memory.
 
 ## Non-negotiable local-agent boundary
 
 - Do not resolve semantic ambiguity for the operator.
+- Judgment-bearing UX is script-owned: implement `harness/contracts/judgment-scene-workflow.v1.json`; do not invent, flatten, rename, or compress scenes/choices to bridge a gap.
+- Technical safety facts must be resolved through safe adapters/reducers before asking the operator. Human judgment is reserved for value/preference and exact action approval.
+- If the canonical scene script lacks a required mapping, emit `BLOCKED_JUDGMENT_GAP` with the exact missing judgment; do not author product policy locally. Independent safe lanes may continue.
+- Accepted immersive behavior is an oracle. Do not delete/weaken tests, fixtures, interaction grammar, or visual identity merely to make a candidate pass; changes require explicit redesign authority plus retained-regression updates.
 - Do not infer that a file is disposable from age, size, extension, filename, location, inactivity, or apparent duplication.
 - Do not promote `HUMAN_REVIEW`, `UNKNOWN`, or `PROTECTED` into a reclaim/action state.
 - Do not let an agent-generated manifest authorize its own mutation.
