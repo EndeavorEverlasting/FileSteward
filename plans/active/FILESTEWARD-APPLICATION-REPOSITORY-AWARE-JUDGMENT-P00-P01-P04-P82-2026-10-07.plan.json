@@ -200,9 +200,9 @@
   "remote_p82_validation": {
     "state": "PASS",
     "receipt": "harness/evals/judgment-scene-p82-validation-2026-10-07.json",
-    "checks_passed": 15,
+    "checks_passed": 19,
     "checks_failed": 0,
-    "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT",
-    "proof_ceiling": "No local test, browser, current-visual, workstation-runtime, or merge-readiness claim."
+    "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT_AND_J0_SOURCE",
+    "proof_ceiling": "Provider-read-back source and contract shape only; no local pytest, browser, current-visual, workstation-runtime, or merge-readiness claim."
   }
 }
