@@ -1,0 +1,271 @@
+{
+  "schema_version": "filesteward.storage-reclamation-p82-corpus/v1",
+  "purpose": "Adversarial oracle for capacity recovery without application/repository damage.",
+  "expected_global_invariants": [
+    "No protected/serviceability/unique fixture may become RAW_DELETE_REGENERABLE_ARTIFACT.",
+    "Unknown ownership never becomes RECLAIM_PROVEN.",
+    "A stale ownership graph revision fails permanent-delete preflight.",
+    "Capacity urgency changes ordering only; it does not weaken gates."
+  ],
+  "cases": [
+    {
+      "id": "APP-SQUIRREL-LIVE",
+      "kind": "application",
+      "fixture": "user-scoped Squirrel/Electron installation with Update.exe and uninstall registration",
+      "expected": [
+        "PROTECTED",
+        "UNINSTALL_APPLICATION or REPAIR_APPLICATION",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "APP-BROKEN-REGISTRATION",
+      "kind": "application",
+      "fixture": "installed-app registration survives but updater/uninstaller path is missing; Wispr archetype",
+      "expected": [
+        "PROTECTED",
+        "APP_INSTALLATION_BROKEN",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "MSI-INSTALLER-CACHE",
+      "kind": "application",
+      "fixture": "Windows Installer cache entry used for repair/update/uninstall",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "WIX-BURN-CACHE",
+      "kind": "application",
+      "fixture": "WiX/Burn ProgramData Package Cache entry",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "APP-CACHE-REGENERABLE",
+      "kind": "application",
+      "fixture": "owner-attributed cache with deterministic regeneration recipe",
+      "expected": [
+        "semantic CLEAN_CACHE preferred",
+        "raw_delete only if exact artifact contract allows"
+      ]
+    },
+    {
+      "id": "APP-CACHE-IN-INSTALL",
+      "kind": "application",
+      "fixture": "cache-named leaf nested beneath registered installation root",
+      "expected": [
+        "whole root PROTECTED",
+        "leaf requires explicit owner cache contract"
+      ]
+    },
+    {
+      "id": "APP-RUNNING",
+      "kind": "application",
+      "fixture": "running executable/module points into candidate",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "APP-SERVICE",
+      "kind": "application",
+      "fixture": "Windows service ImagePath points into candidate",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "APP-TASK",
+      "kind": "application",
+      "fixture": "Scheduled Task action points into candidate",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "APP-MSIX",
+      "kind": "application",
+      "fixture": "MSIX/AppX package install root",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "APP-PORTABLE",
+      "kind": "application",
+      "fixture": "portable PE app with shortcut evidence but no uninstall registration",
+      "expected": [
+        "not RECLAIM_PROVEN",
+        "HUMAN_REVIEW only after adapter exhaustion"
+      ]
+    },
+    {
+      "id": "APP-SHARED",
+      "kind": "application",
+      "fixture": "path simultaneously owned by multiple applications/repository",
+      "expected": [
+        "most-protective-edge-wins",
+        "raw_delete=false if any protective edge"
+      ]
+    },
+    {
+      "id": "UNKNOWN-DIR",
+      "kind": "application",
+      "fixture": "large unknown third-party directory",
+      "expected": [
+        "UNKNOWN or HUMAN_REVIEW",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "REPO-CLEAN-PUSHED",
+      "kind": "repository",
+      "fixture": "clean clone with reachable remote and push-equivalence",
+      "expected": [
+        "operator value decision",
+        "whole repo never auto-delete"
+      ]
+    },
+    {
+      "id": "REPO-DIRTY",
+      "kind": "repository",
+      "fixture": "dirty repo",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "REPO-STAGED",
+      "kind": "repository",
+      "fixture": "staged changes",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "REPO-UNTRACKED",
+      "kind": "repository",
+      "fixture": "untracked unique files",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "REPO-LOCAL-BRANCH",
+      "kind": "repository",
+      "fixture": "local-only or unpushed branch",
+      "expected": [
+        "PROTECTED",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "REPO-WORKTREE",
+      "kind": "repository",
+      "fixture": "detached/linked worktree",
+      "expected": [
+        "PROTECTED unless exact generated leaf proven"
+      ]
+    },
+    {
+      "id": "REPO-NESTED",
+      "kind": "repository",
+      "fixture": "nested repository or submodule",
+      "expected": [
+        "preserve nested protection graph"
+      ]
+    },
+    {
+      "id": "REPO-GENERATED",
+      "kind": "repository",
+      "fixture": "generated build output inside otherwise protected repository",
+      "expected": [
+        "exact generated output may be cleanable",
+        "repo remains protected"
+      ]
+    },
+    {
+      "id": "REPO-NETWORK-DOWN",
+      "kind": "repository",
+      "fixture": "remote/provider unavailable",
+      "expected": [
+        "no reproducibility promotion",
+        "raw_delete=false"
+      ]
+    },
+    {
+      "id": "REPO-ENTIRE-ABSENT",
+      "kind": "repository",
+      "fixture": "Entire has no session/activity evidence for valid repository",
+      "expected": [
+        "absence is non-authoritative",
+        "not legacy by absence"
+      ]
+    },
+    {
+      "id": "FS-REPARSE",
+      "kind": "filesystem",
+      "fixture": "symlink/junction/reparse target",
+      "expected": [
+        "preflight fail"
+      ]
+    },
+    {
+      "id": "FS-HARDLINK",
+      "kind": "filesystem",
+      "fixture": "hardlink ambiguity",
+      "expected": [
+        "preflight fail"
+      ]
+    },
+    {
+      "id": "RACE-TARGET-DRIFT",
+      "kind": "race",
+      "fixture": "target identity changes after plan",
+      "expected": [
+        "preflight fail"
+      ]
+    },
+    {
+      "id": "RACE-OWNER-DRIFT",
+      "kind": "race",
+      "fixture": "ownership registration changes after approval",
+      "expected": [
+        "OWNERSHIP_REVISION_DRIFT",
+        "preflight fail"
+      ]
+    },
+    {
+      "id": "RACE-APP-UPDATE",
+      "kind": "race",
+      "fixture": "app update rewrites ownership/serviceability between approval and execute",
+      "expected": [
+        "fresh attribution required",
+        "preflight fail if graph changed"
+      ]
+    }
+  ],
+  "metrics": {
+    "protected_false_positive_raw_delete": 0,
+    "raw_delete_without_regeneration_proof": 0,
+    "raw_delete_windows_installer_cache": 0,
+    "raw_delete_programdata_package_cache": 0,
+    "registered_app_root_raw_delete": 0,
+    "stale_ownership_revision_accepted": 0,
+    "unknown_to_reclaim": 0,
+    "unique_repo_to_reclaim": 0
+  }
+}
