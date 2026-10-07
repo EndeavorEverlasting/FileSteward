@@ -11,9 +11,9 @@
     "role",
     "canonical_plan_ref",
     "contract_refs",
-    "provider_base_sha",
-    "provider_head_sha",
-    "local_head_sha_or_unknown",
+    "provider_base_sha_at_capture",
+    "provider_head_sha_at_capture",
+    "local_head_sha_at_capture_or_unknown",
     "completed_facts",
     "remaining_work",
     "owned_mutation_surfaces",
@@ -57,15 +57,15 @@
         "minLength": 1
       }
     },
-    "provider_base_sha": {
+    "provider_base_sha_at_capture": {
       "type": "string",
       "pattern": "^[0-9a-f]{40}$"
     },
-    "provider_head_sha": {
+    "provider_head_sha_at_capture": {
       "type": "string",
       "pattern": "^[0-9a-f]{40}$"
     },
-    "local_head_sha_or_unknown": {
+    "local_head_sha_at_capture_or_unknown": {
       "oneOf": [
         {
           "type": "string",
