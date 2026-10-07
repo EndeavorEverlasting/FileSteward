@@ -1,0 +1,123 @@
+{
+  "schema_version": "filesteward.execution-handoff-p82-validation/v1",
+  "validation_date": "2026-10-07",
+  "branch": "plan/application-repo-aware-judgment-20261007",
+  "result": "PASS",
+  "checks_passed": 27,
+  "checks_failed": 0,
+  "proof_level": "REMOTE_PROVIDER_STATIC_PROTOCOL_FALSIFICATION",
+  "proof_ceiling": "Proves provider-read-back structure and adversarial protocol invariants. Does not prove local packet validator implementation, local pytest, actual parallel dispatch, browser/live UX, workstation runtime, or merge readiness.",
+  "artifacts": {
+    "loop": {
+      "path": "harness/contracts/execution-handoff-loop.v1.json",
+      "blob_sha": "386e0b2817e2a57c3eac939c38b575022041ee82"
+    },
+    "packet_schema": {
+      "path": "harness/contracts/execution-handoff-packet.schema.v1.json",
+      "blob_sha": "75c8f05c7a7bba205114bc52867e7383c199ffb6"
+    },
+    "review_gates": {
+      "path": "harness/evals/execution-handoff-review-gates.v1.json",
+      "blob_sha": "c36cd61d253af45d0e64b3837ba2963d95f1291b"
+    },
+    "current_packet": {
+      "path": "docs/handoff/FILESTEWARD-DEPENDENCY-AWARE-CURRENT-HANDOFF-2026-10-07.json",
+      "blob_sha": "3643664aab6694f31fef186b9b97881912860347"
+    },
+    "protocol": {
+      "path": "docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md",
+      "blob_sha": "f8dd5c254543c4f5f8972c0eb691def43cce39f8"
+    },
+    "plan": {
+      "path": "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.plan.json",
+      "blob_sha": "eca00a6ad7c3692e26960af2657e5c10f40ad1b5"
+    }
+  },
+  "verified_invariants": [
+    "all machine artifacts parse",
+    "packet contains every schema-required field",
+    "captured SHA fields are explicit evidence floors",
+    "RECOVER->PARTITION->DISPATCH->EXECUTE->PROVE->REVIEW->CONVERGE->CONTINUE order is canonical",
+    "all eleven review gates are unique and present",
+    "stale head is rejected at RG0",
+    "unresolved material review is rejected at RG5",
+    "merge readiness cannot be claimed without repository-local full proof at RG6",
+    "J6 cannot mutate visuals before refreshed PR #29 lineage at RG7",
+    "static-only UX proof is rejected at RG8",
+    "live mutation exceeding the operator gate is rejected at RG9",
+    "post-action success requires receipt/capacity/health verification at RG10",
+    "gate failure does not disable scheduler or unrelated work",
+    "operator-as-manual-scheduler is a forbidden end state",
+    "PLAN_READY/HANDOFF_WRITTEN/PR_OPEN/MERGEABLE are non-terminal",
+    "passing a gate continues automatically under existing authority",
+    "current packet dependencies resolve",
+    "J1/J2/J3 remain parallel-width independent lanes",
+    "J4/J5/J7 dependency chain is typed",
+    "PR #29 is external prerequisite rather than fake lane dependency",
+    "proof states are typed and remote proof is not promoted to local proof",
+    "exact next action is executable without new operator input",
+    "AGENTS and local handoff bind the protocol",
+    "active plan binds the next review gates"
+  ],
+  "falsified_failure_scenarios": [
+    {
+      "scenario": "packet carries stale historical head as current truth",
+      "expected": "RG0 rejects until refreshed",
+      "result": "PASS"
+    },
+    {
+      "scenario": "material review remains unresolved but tests are green",
+      "expected": "RG5 rejects",
+      "result": "PASS"
+    },
+    {
+      "scenario": "provider status is green but local full suite has not run",
+      "expected": "RG6 rejects merge readiness",
+      "result": "PASS"
+    },
+    {
+      "scenario": "agent starts J6 from stale PR #29 state",
+      "expected": "RG7 rejects",
+      "result": "PASS"
+    },
+    {
+      "scenario": "agent claims live UX from static HTML/string inspection",
+      "expected": "RG8 rejects",
+      "result": "PASS"
+    },
+    {
+      "scenario": "repair/delete exceeds existing operator authority",
+      "expected": "RG9 rejects",
+      "result": "PASS"
+    },
+    {
+      "scenario": "action receipt exists but post-action health is not checked",
+      "expected": "RG10 rejects terminal state",
+      "result": "PASS"
+    },
+    {
+      "scenario": "one lane blocks and scheduler stops all independent work",
+      "expected": "protocol rejects; independent lanes continue",
+      "result": "PASS"
+    },
+    {
+      "scenario": "agent asks operator to paste dependency-ready lanes despite available automation",
+      "expected": "forbidden non-terminal state",
+      "result": "PASS"
+    },
+    {
+      "scenario": "agent stops at plan/handoff/PR-open/mergeable",
+      "expected": "forbidden non-terminal state",
+      "result": "PASS"
+    }
+  ],
+  "next_required_proof": [
+    "local schema/packet validator or equivalent repository-owned validation",
+    "focused J0 deletion regression on exact local head",
+    "full repository-local suite on exact candidate",
+    "actual parallel dispatch evidence for J1/J2/J3 when safe adapters exist",
+    "PR #29 refresh/reconciliation before J6",
+    "bounded live UX acceptance before J6 PROVEN",
+    "workstation incident/app attribution evidence"
+  ]
+}
