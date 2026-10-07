@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from safe_capacity_fixtures import action_record
+
 import hashlib
 import json
 import shutil
@@ -197,6 +199,10 @@ def write_synthetic_run(
             )
         )
 
+    (run_dir / "owner-action-plan.json").write_text(json.dumps({
+        "schema_version": "filesteward.owner-action-plan/v1",
+        "items": [action_record(row["path"], row["item_id"]) for row in plan],
+    }), encoding="utf-8")
     write_inventory(run_dir / "inventory.csv", inventory)
     write_human_review(run_dir / "human-review.csv", review)
     write_cleanup_plan(run_dir / "cleanup-plan.csv", plan)

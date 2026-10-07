@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from safe_capacity_fixtures import ownership_binding, resolver_for
+
 import hashlib
 import json
 import os
@@ -17,7 +19,7 @@ from filesteward.deletion.preflight import (
     MANIFEST_SCHEMA_VERSION,
     PREFLIGHT_SCHEMA_VERSION,
     ReasonClass,
-    run_preflight,
+    run_preflight as _run_preflight,
     write_preflight_receipt,
 )
 from filesteward.protect import ProtectedRoot
@@ -25,6 +27,11 @@ from filesteward.protect import ProtectedRoot
 # ---------------------------------------------------------------------------
 # Helpers — construct frozen delete-manifest dicts without D1 producer
 # ---------------------------------------------------------------------------
+
+
+def run_preflight(manifest, **kwargs):
+    kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
+    return _run_preflight(manifest, **kwargs)
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -103,6 +110,7 @@ def _item_from_file(
         "source_run_id": run_id,
         "source_cleanup_plan_sha256": plan_sha,
         "identity": identity,
+        "ownership": ownership_binding(identity["path"]),
         "intended_action": "QUARANTINE",
         "reversibility": "REVERSIBLE_QUARANTINE",
     }
@@ -138,6 +146,7 @@ def _item_from_dir(
         "source_run_id": run_id,
         "source_cleanup_plan_sha256": plan_sha,
         "identity": identity,
+        "ownership": ownership_binding(identity["path"]),
         "intended_action": "QUARANTINE",
         "reversibility": "REVERSIBLE_QUARANTINE",
     }
@@ -773,6 +782,7 @@ class TestFailClosed:
             "source_run_id": "run",
             "source_cleanup_plan_sha256": plan_sha,
             "identity": identity,
+        "ownership": ownership_binding(identity["path"]),
             "intended_action": "QUARANTINE",
             "reversibility": "REVERSIBLE_QUARANTINE",
         }

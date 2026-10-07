@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from safe_capacity_fixtures import ownership_binding, resolver_for
+
 import json
 import os
 from pathlib import Path
@@ -13,15 +15,26 @@ from filesteward.deletion.approval import (
     build_delete_approval,
     write_delete_approval,
 )
-from filesteward.deletion.execute import execute_permanent_delete
+from filesteward.deletion.execute import execute_permanent_delete as _execute_permanent_delete
 from filesteward.deletion.manifest import DELETE_MANIFEST_SCHEMA
 from filesteward.deletion.preflight import (
     PREFLIGHT_SCHEMA_VERSION,
-    run_preflight,
+    run_preflight as _run_preflight,
     write_preflight_receipt,
 )
 from filesteward.deletion.receipt import DELETE_RECEIPT_FILENAME, load_delete_receipt
 from filesteward.deletion.reclaim import ReclaimState, verify_reclaim
+
+
+def run_preflight(manifest, **kwargs):
+    kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
+    return _run_preflight(manifest, **kwargs)
+
+
+def execute_permanent_delete(run_dir, **kwargs):
+    manifest = json.loads((Path(run_dir) / "delete-manifest.json").read_text(encoding="utf-8"))
+    kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
+    return _execute_permanent_delete(run_dir=run_dir, **kwargs)
 
 
 def _file_item(path: Path, *, item_id: str) -> dict[str, Any]:
@@ -33,6 +46,7 @@ def _file_item(path: Path, *, item_id: str) -> dict[str, Any]:
         "item_id": item_id,
         "path": str(path.resolve()),
         "item_type": "FILE",
+        "ownership": ownership_binding(str(path.resolve())),
         "disposition": "RECLAIM_PROVEN",
         "evidence": "synthetic",
         "contract_source": "test",
@@ -70,6 +84,7 @@ def _dir_item(path: Path, *, item_id: str) -> dict[str, Any]:
         "item_id": item_id,
         "path": str(path.resolve()),
         "item_type": "DIRECTORY",
+        "ownership": ownership_binding(str(path.resolve())),
         "disposition": "RECLAIM_PROVEN",
         "evidence": "synthetic",
         "contract_source": "test",
