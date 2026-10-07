@@ -12,6 +12,10 @@ Canonical machine owners:
 
 The active dependency-aware sprint and scene contracts remain product/safety authority. This protocol owns **continuation mechanics**, not product judgment.
 
+## Closed judgment authority
+
+Before executing this protocol, read `harness/contracts/dependency-aware-judgment-closure.v1.json`. It closes the current integration order, lane ownership, module boundaries, provider PR policy, and PR #29 strategy. The receiver verifies and executes those decisions; it does not reopen them.
+
 ## Operating loop
 
 Every handoff runs the same loop:
@@ -195,7 +199,7 @@ Before J6 visual mutation:
 - refresh PR #29 + main
 - recover current Memory Atlas/Decision Chamber lineage
 - load P94 protected behavior ledger
-- settle the integration/rebase/collision strategy
+- load and execute the fixed selective-lineage strategy in `harness/contracts/dependency-aware-judgment-closure.v1.json`; do not choose a different merge/rebase strategy
 
 No backend lane gets to casually rewrite the scenery.
 
@@ -245,7 +249,7 @@ J3 repo attribution -----------+           |
                                            v
                                   J5 deletion integration
                                            |
-                              PR #29 refresh/reconcile
+                       J4 integrated -> fixed PR #29 selective lineage port
                                            |
                                            v
                                   J6 scripted scenes
