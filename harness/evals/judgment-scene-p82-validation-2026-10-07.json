@@ -4,15 +4,15 @@
   "branch": "plan/application-repo-aware-judgment-20261007",
   "result": "PASS",
   "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT_AND_J0_SOURCE",
-  "proof_ceiling": "Proves provider-read-back scene/contract consistency plus J0 source/test shape. Does not prove local pytest, browser behavior, current visual appearance, workstation runtime, or merge readiness.",
+  "proof_ceiling": "Provider-read-back current scene/storage/regression/source shape only; local pytest, browser behavior, current visual appearance, workstation runtime, and merge readiness remain unproven.",
   "checked_artifacts": {
     "workflow": {
       "path": "harness/contracts/judgment-scene-workflow.v1.json",
-      "blob_sha": "a32b24d56ff83bc17e8205af3c71e8108c0eeeff"
+      "blob_sha": "45448e75101762699da1af6ba23e92b0c8604e53"
     },
     "regression": {
       "path": "harness/evals/judgment-scene-regression.v1.json",
-      "blob_sha": "8a0b367125c9eefd4e78a8880fef2a58ef134079"
+      "blob_sha": "bc93a775c40ec85317be87e28fbd26d4ce16c537"
     },
     "action": {
       "path": "harness/contracts/action-scene-impact.v1.json",
@@ -20,7 +20,7 @@
     },
     "storage": {
       "path": "harness/contracts/storage-dependency-judgment.v1.json",
-      "blob_sha": "401efae4750ef74e12aea415b57433ec59ce4d72"
+      "blob_sha": "1bf03166c5ea86613f1e1fd6d9ea4f2c77002611"
     },
     "plan": {
       "path": "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.plan.json",
@@ -28,7 +28,7 @@
     },
     "regenerable": {
       "path": "src/filesteward/deletion/regenerable.py",
-      "blob_sha": "1d4e76e906e9545f08db997770ccf2cf9bd048f2"
+      "blob_sha": "7527fe8e052c17810cdb1c67cc40ca0c8cf51cc6"
     },
     "regenerable_test": {
       "path": "tests/test_regenerable_cache_roots.py",
@@ -113,7 +113,7 @@
     },
     {
       "id": "P82-16",
-      "name": "P94 ledger contains 15 protected behaviors, 10 negative families, 5 positive controls",
+      "name": "P94 ledger contains 18 protected behaviors, 15 negative families, 10 positive controls",
       "result": "PASS"
     },
     {
