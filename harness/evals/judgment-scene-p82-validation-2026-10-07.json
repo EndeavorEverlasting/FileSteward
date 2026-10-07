@@ -3,8 +3,8 @@
   "validation_date": "2026-10-07",
   "branch": "plan/application-repo-aware-judgment-20261007",
   "result": "PASS",
-  "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT",
-  "proof_ceiling": "Does not prove local Python tests, browser behavior, current visual appearance, workstation runtime, or PR merge readiness.",
+  "proof_level": "REMOTE_PROVIDER_STATIC_CROSS_CONTRACT_AND_J0_SOURCE",
+  "proof_ceiling": "Proves provider-read-back scene/contract consistency plus J0 source/test shape. Does not prove local pytest, browser behavior, current visual appearance, workstation runtime, or merge readiness.",
   "checked_artifacts": {
     "workflow": {
       "path": "harness/contracts/judgment-scene-workflow.v1.json",
@@ -20,11 +20,19 @@
     },
     "storage": {
       "path": "harness/contracts/storage-dependency-judgment.v1.json",
-      "blob_sha": "374ef1ac311bf61d8efb1f9e882a06fe3a10fcf7"
+      "blob_sha": "401efae4750ef74e12aea415b57433ec59ce4d72"
     },
     "plan": {
       "path": "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.plan.json",
-      "blob_sha": "b39daf69980a36084d8dd185b17acfac782c5e1f"
+      "blob_sha": "828557ab72aa78972972bc4b8f4c948a39e2c33e"
+    },
+    "regenerable": {
+      "path": "src/filesteward/deletion/regenerable.py",
+      "blob_sha": "1d4e76e906e9545f08db997770ccf2cf9bd048f2"
+    },
+    "regenerable_test": {
+      "path": "tests/test_regenerable_cache_roots.py",
+      "blob_sha": "bbbb20d12162b84d7e531fde6530aa4e71657787"
     }
   },
   "checks": [
@@ -35,72 +43,92 @@
     },
     {
       "id": "P82-02",
-      "name": "all transition targets declared",
+      "name": "all scene transition targets declared",
       "result": "PASS"
     },
     {
       "id": "P82-03",
-      "name": "AUTHORIZATION_GATE incoming transitions only from VALUE_DECISION",
+      "name": "Package Cache runtime admission removed from regenerable allowlist",
       "result": "PASS"
     },
     {
       "id": "P82-04",
-      "name": "RECLAIM_EXECUTION incoming transitions only from AUTHORIZATION_GATE",
+      "name": "Package Cache retained negative regression refuses generic execute admission and size+mtime seal",
       "result": "PASS"
     },
     {
       "id": "P82-05",
-      "name": "ATTRIBUTION/CONSEQUENCE/RECOVERABILITY precede VALUE_DECISION",
+      "name": "per-item dependency freshness is fail-closed immediately before mutation",
       "result": "PASS"
     },
     {
       "id": "P82-06",
-      "name": "MAP->FOCUS->GATE->RESOLVE->APPROVAL->STAGED tutorial preserved",
+      "name": "installer repair requires an existing covering operator gate or a new bounded gate",
       "result": "PASS"
     },
     {
       "id": "P82-07",
-      "name": "action/storage/plan bind same workflow ref",
+      "name": "handoff requires per-item dependency freshness rather than target identity alone",
       "result": "PASS"
     },
     {
       "id": "P82-08",
-      "name": "action/storage/plan bind same regression-ledger ref",
+      "name": "J6 depends_on contains lane IDs only",
       "result": "PASS"
     },
     {
       "id": "P82-09",
-      "name": "retained controls present: 15 protected / 10 negative / 5 positive",
+      "name": "PR #29 reconciliation represented as typed external prerequisite",
       "result": "PASS"
     },
     {
       "id": "P82-10",
-      "name": "missing judgment binds BLOCKED_JUDGMENT_GAP across contract/AGENTS/handoff",
+      "name": "AUTHORIZATION_GATE incoming transitions only from VALUE_DECISION",
       "result": "PASS"
     },
     {
       "id": "P82-11",
-      "name": "technical safety is machine-resolved before human review",
+      "name": "RECLAIM_EXECUTION incoming transitions only from AUTHORIZATION_GATE",
       "result": "PASS"
     },
     {
       "id": "P82-12",
-      "name": "J6 is script-owned and regression-ledger-owned",
+      "name": "technical resolution scenes precede operator value judgment",
       "result": "PASS"
     },
     {
       "id": "P82-13",
-      "name": "human-readable plan persists script/regression/upstream provenance",
+      "name": "MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED tutorial preserved",
       "result": "PASS"
     },
     {
       "id": "P82-14",
-      "name": "live/browser proof remains explicitly unclaimed",
+      "name": "action/storage/plan bind same judgment workflow",
       "result": "PASS"
     },
     {
       "id": "P82-15",
-      "name": "open PR #29 collision remains explicit before J6",
+      "name": "action/storage/plan bind same regression ledger",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-16",
+      "name": "P94 ledger contains 15 protected behaviors, 10 negative families, 5 positive controls",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-17",
+      "name": "missing scene judgment binds BLOCKED_JUDGMENT_GAP across contract/AGENTS/handoff",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-18",
+      "name": "technical safety remains machine-resolved before HUMAN_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "id": "P82-19",
+      "name": "live UX proof remains separate and explicitly unclaimed",
       "result": "PASS"
     }
   ],
@@ -124,10 +152,11 @@
     }
   },
   "next_required_proof": [
-    "local focused contract/regression tests",
+    "local focused deletion regression tests including tests/test_regenerable_cache_roots.py",
+    "full repository test suite on exact implementation head",
     "implementation of scripted scenes against refreshed PR #29 lineage",
     "bounded browser acceptance desktop+narrow+reduced-motion+forced-colors",
-    "supported pointer/keyboard/touch semantic parity",
-    "full repository suite on exact implementation head"
+    "supported pointer/keyboard/touch semantic parity where product-declared",
+    "workstation runtime proof for incident/app attribution lanes"
   ]
 }
