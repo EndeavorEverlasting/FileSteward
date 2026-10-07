@@ -380,8 +380,8 @@
             "REVIEW_LATER"
           ],
           "installed_application_broken": [
-            "KEEP_AND_REPAIR_APPLICATION",
-            "REMOVE_VIA_SEMANTIC_UNINSTALL_RECOVERY",
+            "REPAIR_APPLICATION",
+            "UNINSTALL_APPLICATION",
             "REVIEW_LATER"
           ]
         },
@@ -394,7 +394,8 @@
         "keep": "VERIFY_RETURN",
         "review_later": "VERIFY_RETURN",
         "safe_reclaim_intent": "AUTHORIZATION_GATE",
-        "uninstall_intent": "AUTHORIZATION_GATE"
+        "uninstall_intent": "AUTHORIZATION_GATE",
+        "repair_intent": "AUTHORIZATION_GATE"
       },
       "success_evidence": [
         "operator choice concerns value/preference, not guessed technical safety"
