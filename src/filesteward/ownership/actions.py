@@ -8,6 +8,7 @@ import ntpath
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Callable
 
 from filesteward.models import CleanupDisposition
@@ -118,7 +119,7 @@ def plan_owner_actions(path: str, evidence: OwnershipEvidence) -> ActionPlan:
              os.path.join(os.environ.get("PROGRAMDATA", r"C:\ProgramData"), "Package Cache"))
     if any(path_intersects(ntpath.normpath(path), root) for root in roots):
         return result(CleanupDisposition.PROTECTED, (ActionKind.KEEP,), ("SERVICEABILITY_DEPENDENCY_PRESENT",))
-    if not ntpath.isabs(path) or ".." in path.replace("\\", "/").split("/"):
+    if not (PureWindowsPath(path).is_absolute() or PurePosixPath(path).is_absolute()) or ".." in path.replace("\\", "/").split("/"):
         return result(CleanupDisposition.UNKNOWN, (ActionKind.INVESTIGATE_ORPHAN,), ("PATH_NOT_CANONICAL",))
     protective = [e for e in edges if e.edge_type in _PROTECTIVE_EDGES
                   or e.lifecycle_hint in {"APP_ACTIVE_REQUIRED", "APP_BROKEN_REQUIRED", "REPO_ACTIVE"}]

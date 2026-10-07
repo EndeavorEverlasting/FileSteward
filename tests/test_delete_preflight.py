@@ -390,11 +390,12 @@ class TestFailClosed:
         item["path"] = str((scan_root / "link.txt").absolute())
         item["identity"]["path"] = item["path"]
         before_real = _snapshot(real)
+        item["ownership"] = ownership_binding(item["path"])
         manifest = _manifest([item], plan_sha=plan_sha)
 
         result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
         assert result.overall == "FAIL"
-        assert result.items[-1].reason_class == ReasonClass.REPARSE_OR_SYMLINK
+        assert next(verdict for verdict in result.items if verdict.item_id == item["item_id"]).reason_class == ReasonClass.REPARSE_OR_SYMLINK
         assert _snapshot(real) == before_real
 
     def test_reparse_detection_unit_with_stub(self, tmp_path: Path) -> None:
@@ -877,11 +878,12 @@ class TestSafetyRepairs:
         item = _item_from_file(target, item_id="item-anc", plan_sha=plan_sha)
         item["path"] = str(linked)
         item["identity"]["path"] = str(linked)
+        item["ownership"] = ownership_binding(item["path"])
         manifest = _manifest([item], plan_sha=plan_sha)
 
         result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
         assert result.overall == "FAIL"
-        assert result.items[-1].reason_class in {
+        assert next(verdict for verdict in result.items if verdict.item_id == item["item_id"]).reason_class in {
             ReasonClass.REPARSE_OR_SYMLINK,
             ReasonClass.PATH_ESCAPE,
         }
