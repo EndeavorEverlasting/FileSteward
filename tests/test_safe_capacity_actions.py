@@ -172,3 +172,47 @@ def test_noncanonical_paths_remain_ineligible(path):
     plan = plan_owner_actions(path, evidence(path=path))
     assert not plan.raw_delete_eligible
     assert "PATH_NOT_CANONICAL" in plan.reason_codes
+
+
+@pytest.mark.parametrize("supplied_total,supplied_free,expected_status", [
+    (None, None, "HEALTHY"), (1000, 50, "CRITICAL"),
+    (100, None, "UNKNOWN"), (None, 2000, "UNKNOWN"),
+])
+def test_capacity_post_scan_pair_and_explicit_measurements(tmp_path, monkeypatch,
+                                                          supplied_total, supplied_free, expected_status):
+    from types import SimpleNamespace
+    from filesteward.classify import CacheContract
+    from filesteward.run import CleanupRun
+    from filesteward.policy import paths
+    root = tmp_path / "fixture"
+    root.mkdir()
+    (root / "artifact").write_bytes(b"generated")
+    runtime = tmp_path / "runtime"
+    monkeypatch.setattr(paths, "runtime_root", lambda: runtime)
+    monkeypatch.setattr("filesteward.run.runtime_root", lambda: runtime)
+    observed = []
+    def usage(path):
+        observed.append(path)
+        # Scan-start free capacity is critical; post-scan free is healthy.
+        return SimpleNamespace(total=1000, free=50 if len(observed) == 1 and supplied_free is None else 300)
+    monkeypatch.setattr("filesteward.run.shutil.disk_usage", usage)
+    run = runtime / "runs" / "measurement"
+    CleanupRun(root, run, contracts=(CacheContract("fixture", str(root), "synthetic regeneration"),),
+               ownership_resolver=lambda p: evidence(path=p),
+               capacity_total_bytes=supplied_total, baseline_free_bytes=supplied_free).execute()
+    strategy = json.loads((run / "capacity-strategy.json").read_text())
+    assert strategy["status"] == expected_status
+    if expected_status == "HEALTHY":
+        assert strategy["free_bytes"] == 300
+        assert strategy["total_bytes"] == 1000
+        assert strategy["candidates"] == []
+        assert len(observed) == 2
+    elif expected_status == "UNKNOWN":
+        assert strategy["measurement_error"] == "CAPACITY_MEASUREMENT_INCONSISTENT"
+        assert strategy["candidates"] == []
+        assert (run / "inventory.csv").is_file()
+        assert (run / "run.json").is_file()
+    else:
+        assert strategy["total_bytes"] == supplied_total
+        assert strategy["free_bytes"] == supplied_free
+        assert observed == []

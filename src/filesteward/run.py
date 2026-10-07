@@ -190,12 +190,6 @@ class CleanupRun:
         run_dir.mkdir(parents=True, exist_ok=True)
 
         baseline = self._baseline_free_bytes
-        total_capacity = self._capacity_total_bytes
-        if total_capacity is None:
-            try:
-                total_capacity = int(shutil.disk_usage(root).total)
-            except OSError:
-                total_capacity = None
         if baseline is None:
             try:
                 baseline = int(shutil.disk_usage(root).free)
@@ -479,12 +473,31 @@ class CleanupRun:
                 capacity_candidates.append(CapacityCandidate(item_id, plan, action,
                     0 if row and row["projection_quality"] == "container-row" else row["projected_reclaim_bytes"] if row else logical_size,
                     "container-row" if row and row["projection_quality"] == "container-row" else row["reclaim_basis"] if row else "logical estimate"))
+        # Capacity prioritization uses one fresh paired snapshot after scanning.
+        # Explicit synthetic measurements remain caller-owned inputs.
+        total_capacity = self._capacity_total_bytes
+        capacity_free = self._baseline_free_bytes
+        measurement_error = None
+        if total_capacity is None or capacity_free is None:
+            try:
+                snapshot = shutil.disk_usage(root)
+                if total_capacity is None:
+                    total_capacity = int(snapshot.total)
+                if capacity_free is None:
+                    capacity_free = int(snapshot.free)
+            except OSError as exc:
+                measurement_error = "CAPACITY_MEASUREMENT_UNAVAILABLE:" + type(exc).__name__
         strategy_data = {"schema_version": "filesteward.capacity-strategy/v1", "status": "UNKNOWN",
                          "candidates": [], "projection_basis": "estimate",
-                         "total_bytes": total_capacity, "free_bytes": baseline}
-        if total_capacity is not None and baseline is not None:
-            strategy_data.update(asdict(plan_capacity_strategy(capacity_candidates,
-                                 total_bytes=total_capacity, free_bytes=baseline)))
+                         "total_bytes": total_capacity, "free_bytes": capacity_free}
+        if measurement_error is None and total_capacity is not None and capacity_free is not None:
+            try:
+                strategy_data.update(asdict(plan_capacity_strategy(capacity_candidates,
+                                     total_bytes=total_capacity, free_bytes=capacity_free)))
+            except ValueError:
+                measurement_error = "CAPACITY_MEASUREMENT_INCONSISTENT"
+        if measurement_error:
+            strategy_data["measurement_error"] = measurement_error
         (run_dir / "capacity-strategy.json").write_text(json.dumps(strategy_data, indent=2) + "\n", encoding="utf-8")
 
         artifacts.write_inventory(run_dir / "inventory.csv", inventory_rows)
