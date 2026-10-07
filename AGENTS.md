@@ -9,8 +9,9 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 3. `docs/agent/OPERATOR-DELETE-PATH.md` when the requested outcome includes real deletion or reclaim
 4. `docs/agent/OPERATOR-DECISION-UX-PATH.md` when modifying the public Decision Chamber, Atlas interaction flow, or deletion controls
 5. `harness/contracts/action-scene-impact.v1.json` when modifying cursor/action labels, scene/context transitions, or interaction projection
-6. The active plan under `plans/active/` for the requested sprint
-7. `README.md` safety, privacy, and MVP boundaries
+6. `harness/contracts/storage-dependency-judgment.v1.json` when classifying/deleting application-managed, installer/serviceability, repository, toolchain, or otherwise ownership-sensitive storage
+7. The active plan under `plans/active/` for the requested sprint
+8. `README.md` safety, privacy, and MVP boundaries
 
 If any required contract cannot be read, stop. Do not reconstruct it from memory.
 
