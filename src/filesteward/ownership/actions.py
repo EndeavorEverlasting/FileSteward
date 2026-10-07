@@ -62,7 +62,7 @@ class OwnershipEvidence:
 
     def fresh(self, now: float | None = None) -> bool:
         age = (time.time() if now is None else now) - self.observed_at_unix
-        return self.adapters_complete and 0 <= age <= 300
+        return self.adapters_complete is True and 0 <= age <= 300
 
 
 OwnershipResolver = Callable[[str], OwnershipEvidence]
@@ -154,7 +154,7 @@ def plan_owner_actions(path: str, evidence: OwnershipEvidence) -> ActionPlan:
                     and e.lifecycle_hint == "REGENERABLE_ARTIFACT" for e in edges)
     if not generated or not proof:
         return result(CleanupDisposition.HUMAN_REVIEW, (ActionKind.INVESTIGATE_ORPHAN,), ("REGENERATION_PROOF_MISSING",))
-    if not proof.raw_delete_allowed:
+    if proof.raw_delete_allowed is not True:
         return result(CleanupDisposition.HUMAN_REVIEW, (ActionKind.CLEAN_GENERATED_OUTPUT,), ("SEMANTIC_ACTION_REQUIRED",))
     return result(CleanupDisposition.RECLAIM_PROVEN, (ActionKind.RAW_DELETE_REGENERABLE_ARTIFACT,), ())
 

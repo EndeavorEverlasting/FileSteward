@@ -462,7 +462,7 @@ class TestFailClosed:
 
         result = run_preflight(manifest, scan_root=scan_root, cleanup_plan_path=plan)
         assert result.overall == "FAIL"
-        assert result.items[-1].reason_class == ReasonClass.REPARSE_OR_SYMLINK
+        assert any(v.reason_class == ReasonClass.REPARSE_OR_SYMLINK for v in result.items)
 
     def test_protection_hit(self, tmp_path: Path) -> None:
         scan_root = tmp_path / "scan"

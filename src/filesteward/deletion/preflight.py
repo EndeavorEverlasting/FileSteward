@@ -15,7 +15,7 @@ import os
 import shutil
 import stat
 from filesteward.ownership.actions import OwnershipResolver, unresolved_ownership
-from filesteward.deletion.ownership import revalidate_ownership
+from filesteward.deletion.ownership import revalidate_ownership, validate_source_membership
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence, Union
@@ -58,6 +58,10 @@ _WIN_MAX_PATH = 260
 
 
 class ReasonClass:
+    """Stable fail-closed reason classes for delete-preflight receipts."""
+    CAPACITY_ACTION_NOT_ADMITTED = "CAPACITY_ACTION_NOT_ADMITTED"
+    SOURCE_ACTION_INVALID = "SOURCE_ACTION_INVALID"
+    PROTECTIVE_DEPENDENCY_PRESENT = "PROTECTIVE_DEPENDENCY_PRESENT"
     OWNERSHIP_REVISION_DRIFT = "OWNERSHIP_REVISION_DRIFT"
     OWNERSHIP_UNKNOWN = "OWNERSHIP_UNKNOWN"
     OWNERSHIP_EVIDENCE_STALE = "OWNERSHIP_EVIDENCE_STALE"
@@ -66,7 +70,6 @@ class ReasonClass:
     REPOSITORY_UNIQUE_WORK_PRESENT = "REPOSITORY_UNIQUE_WORK_PRESENT"
     REGENERATION_PROOF_MISSING = "REGENERATION_PROOF_MISSING"
     SEMANTIC_ACTION_REQUIRED = "SEMANTIC_ACTION_REQUIRED"
-    """Stable fail-closed reason classes for delete-preflight receipts."""
 
     OK = "OK"
     SCHEMA_MISMATCH = "SCHEMA_MISMATCH"
@@ -1119,6 +1122,14 @@ def run_preflight(
                 verdict = replace(verdict, ownership=current_ownership)
         verdicts.append(verdict)
 
+    if items_raw and not source_errors and source_dir is not None:
+        try:
+            owner_source = json.loads((source_dir / "owner-action-plan.json").read_text(encoding="utf-8"))
+            capacity_source = json.loads((source_dir / "capacity-strategy.json").read_text(encoding="utf-8"))
+            source_errors.extend(_fail("", reason, detail) for reason, detail in
+                                 validate_source_membership(items_raw, owner_source, capacity_source))
+        except (OSError, ValueError, UnicodeError):
+            source_errors.append(_fail("", "SOURCE_ACTION_INVALID", "source action artifact cannot be decoded"))
     verdicts.extend(source_errors)
     any_fail = any(v.verdict == "FAIL" for v in verdicts)
     reclaim_total = 0
