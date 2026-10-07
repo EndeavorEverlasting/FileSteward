@@ -226,7 +226,10 @@
       "PR_OPEN",
       "MERGEABLE"
     ],
-    "rule": "A receiver consumes completed facts, recomputes only remaining work, launches dependency-ready lanes, and executes the exact next action without operator relaunch when authority permits."
+    "rule": "A receiver consumes completed facts, recomputes only remaining work, launches dependency-ready lanes, and executes the exact next action without operator relaunch when authority permits.",
+    "p82_validation_ref": "harness/evals/execution-handoff-p82-validation-2026-10-07.json",
+    "p82_validation_state": "PASS_27_OF_27_REMOTE_PROTOCOL_FALSIFICATION",
+    "proof_ceiling": "Protocol structure/falsification proven remotely; local validator, actual dispatch, local tests, live UX, workstation runtime, and merge readiness remain separate."
   },
   "next_review_gates": [
     {
