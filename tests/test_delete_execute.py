@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts, low_capacity
 
 import json
 import os
@@ -27,6 +27,7 @@ from filesteward.deletion.reclaim import ReclaimState, verify_reclaim
 
 
 def run_preflight(manifest, **kwargs):
+    kwargs.setdefault("capacity_reader", low_capacity)
     source = Path(kwargs["source_artifact_dir"]) if "source_artifact_dir" in kwargs else Path(manifest["items"][0]["path"]).parent.parent / "synthetic-owner-sources"
     bind_source_artifacts(manifest, source)
     kwargs.setdefault("source_artifact_dir", source)
@@ -35,6 +36,7 @@ def run_preflight(manifest, **kwargs):
 
 
 def execute_permanent_delete(run_dir, **kwargs):
+    kwargs.setdefault("capacity_reader", low_capacity)
     manifest = json.loads((Path(run_dir) / "delete-manifest.json").read_text(encoding="utf-8"))
     kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
     return _execute_permanent_delete(run_dir=run_dir, **kwargs)
@@ -213,8 +215,9 @@ class TestPermanentDeleteExecutor:
             ReclaimState.UNKNOWN,
         }
 
-    @pytest.mark.skipif(os.name == "nt", reason="unsupported native platform proof")
-    def test_unsupported_native_platform_refuses_approved_delete(self, tmp_path: Path) -> None:
+    def test_unsupported_native_platform_refuses_approved_delete(self, tmp_path: Path, monkeypatch) -> None:
+        from filesteward.deletion import native
+        monkeypatch.setattr(native, "SUPPORTED", False)
         scan = tmp_path / "scan"
         scan.mkdir()
         target = scan / "retained.bin"
@@ -225,7 +228,7 @@ class TestPermanentDeleteExecutor:
             run_dir=run_dir, manifest=run_dir / "delete-manifest.json", approval=approval,
             preflight=run_dir / "delete-preflight.approved.json", scan_root=scan,
         )
-        assert result.overall == "REFUSED"
+        assert result.overall == "FAILED"
         assert target.read_bytes() == payload
         assert all(item.status != "SUCCEEDED" for item in result.items)
         assert any(item.reason_class == "ATOMIC_DELETE_PROTOCOL_UNAVAILABLE" for item in result.items)
@@ -386,7 +389,7 @@ class TestPermanentDeleteExecutor:
 class TestExecuteSafetyRepairs:
     def test_identity_drift_skips_unlink(self, tmp_path: Path, monkeypatch: Any) -> None:
         from filesteward.deletion import execute as execute_mod
-        from filesteward.deletion.preflight import PreflightResult
+        from filesteward.deletion.preflight import PreflightResult, ItemVerdict
 
         scan = tmp_path / "scan"
         scan.mkdir()
@@ -396,10 +399,13 @@ class TestExecuteSafetyRepairs:
         run_dir, _, approval = _prepare_run(tmp_path, items, scan)
 
         # Fresh preflight forced PASS so execute reaches unlink-time revalidation.
+        approved_rows = json.loads((run_dir / "delete-preflight.approved.json").read_text())["items"]
+        forced_rows = [ItemVerdict(row["item_id"], "PASS", "OK", "forced fixture observation",
+                                  file_object_identity=row["file_object_identity"]) for row in approved_rows]
         monkeypatch.setattr(
             execute_mod,
             "run_preflight",
-            lambda *a, **k: PreflightResult(overall="PASS", mutated_filesystem=False),
+            lambda *a, **k: PreflightResult(overall="PASS", mutated_filesystem=False, items=forced_rows),
         )
         target.write_bytes(b"REPLACED!")
 

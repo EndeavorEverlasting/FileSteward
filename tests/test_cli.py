@@ -693,7 +693,7 @@ class TestDeleteLifecycleCli:
             },
             "items": [item],
         }
-        from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
+        from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts, low_capacity
         from filesteward import cli as cli_mod
         item["ownership"] = ownership_binding(item["path"])
         bind_source_artifacts(manifest, s1_run_dir)
@@ -703,9 +703,11 @@ class TestDeleteLifecycleCli:
             original_execute = cli_mod.execute_permanent_delete
             def synthetic_preflight(*args, **kwargs):
                 kwargs["ownership_resolver"] = resolver
+                kwargs["capacity_reader"] = low_capacity
                 return original_preflight(*args, **kwargs)
             def synthetic_execute(*args, **kwargs):
                 kwargs["ownership_resolver"] = resolver
+                kwargs["capacity_reader"] = low_capacity
                 return original_execute(*args, **kwargs)
             monkeypatch.setattr(cli_mod, "run_preflight", synthetic_preflight)
             monkeypatch.setattr(cli_mod, "execute_permanent_delete", synthetic_execute)

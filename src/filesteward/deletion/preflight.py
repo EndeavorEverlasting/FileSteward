@@ -16,6 +16,7 @@ import shutil
 import stat
 from filesteward.ownership.actions import OwnershipResolver, unresolved_ownership
 from filesteward.deletion.ownership import revalidate_ownership, validate_source_membership
+from filesteward.ownership.capacity import CapacityReader, read_capacity, capacity_stop_reason
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence, Union
@@ -100,6 +101,7 @@ class ItemVerdict:
     projected_reclaim_bytes: Optional[int] = None
     content_sha256: Optional[str] = None
     ownership: Optional[Mapping[str, Any]] = None
+    file_object_identity: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -112,6 +114,8 @@ class ItemVerdict:
             payload["content_sha256"] = self.content_sha256
         if self.ownership is not None:
             payload["ownership"] = dict(self.ownership)
+        if self.file_object_identity is not None:
+            payload["file_object_identity"] = self.file_object_identity
         return payload
 
 
@@ -159,6 +163,7 @@ def _pass(
     *,
     projected_reclaim_bytes: Optional[int] = None,
     content_sha256: Optional[str] = None,
+    file_object_identity: Optional[str] = None,
 ) -> ItemVerdict:
     return ItemVerdict(
         item_id=item_id,
@@ -167,6 +172,7 @@ def _pass(
         detail=detail,
         projected_reclaim_bytes=projected_reclaim_bytes,
         content_sha256=content_sha256,
+        file_object_identity=file_object_identity,
     )
 
 
@@ -850,6 +856,7 @@ def _check_item(
             item_id,
             "directory identity matches; child set exact",
             projected_reclaim_bytes=0,
+            file_object_identity=f"{st.st_dev}:{st.st_ino}",
         )
 
     # Proven exclusive reclaim for a single-link regular file.
@@ -890,6 +897,7 @@ def _check_item(
         item_id,
         projected_reclaim_bytes=projected,
         content_sha256=sealed_digest,
+        file_object_identity=f"{st.st_dev}:{st.st_ino}",
     )
 
 
@@ -902,6 +910,7 @@ def run_preflight(
     managed_paths: Iterable[PathLike] = (),
     ownership_resolver: OwnershipResolver = unresolved_ownership,
     source_artifact_dir: Optional[PathLike] = None,
+    capacity_reader: CapacityReader = read_capacity,
 ) -> PreflightResult:
     """Validate a delete-manifest against live, read-only filesystem state.
 
@@ -1126,11 +1135,20 @@ def run_preflight(
         try:
             owner_source = json.loads((source_dir / "owner-action-plan.json").read_text(encoding="utf-8"))
             capacity_source = json.loads((source_dir / "capacity-strategy.json").read_text(encoding="utf-8"))
+            discovery_rows = None
+            if expected_digest and plan_exists:
+                with plan_path.open(encoding="utf-8", newline="") as handle:
+                    discovery_rows = list(csv.DictReader(handle))
             source_errors.extend(_fail("", reason, detail) for reason, detail in
-                                 validate_source_membership(items_raw, owner_source, capacity_source))
+                                 validate_source_membership(items_raw, owner_source, capacity_source, discovery_rows))
         except (OSError, ValueError, UnicodeError):
             source_errors.append(_fail("", "SOURCE_ACTION_INVALID", "source action artifact cannot be decoded"))
     verdicts.extend(source_errors)
+    if items_raw and not any(v.verdict == "FAIL" for v in verdicts):
+        probe = root_path or Path(str(items_raw[0]["path"])).parent
+        reason, detail = capacity_stop_reason(probe, capacity_reader)
+        if reason:
+            verdicts.append(_fail("", reason, detail))
     any_fail = any(v.verdict == "FAIL" for v in verdicts)
     reclaim_total = 0
     reclaim_known = False

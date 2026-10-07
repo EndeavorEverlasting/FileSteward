@@ -49,7 +49,7 @@ def binding_from_action_record(record: Mapping[str, Any]) -> dict[str, Any]:
     return bind_ownership(plan, float(record["observed_at_unix"]))
 
 
-def validate_source_membership(items, owner_source, capacity_source) -> list[tuple[str, str]]:
+def validate_source_membership(items, owner_source, capacity_source, discovery_rows=None) -> list[tuple[str, str]]:
     """Direct preflight APIs must enforce the same source admission as the builder."""
     try:
         if owner_source.get("schema_version") != "filesteward.owner-action-plan/v1":
@@ -85,6 +85,13 @@ def validate_source_membership(items, owner_source, capacity_source) -> list[tup
             return [("CAPACITY_ACTION_NOT_ADMITTED", "source selection exceeds canonical legal ranking/stop rule")]
         for item in items:
             item_id = str(item["item_id"])
+            if discovery_rows is not None:
+                discovered = {str(row["item_id"]): row for row in discovery_rows}
+                if len(discovered) != len(discovery_rows):
+                    raise ValueError("duplicate discovery row")
+                row = discovered.get(item_id)
+                if row is None or normalize_path_key(row.get("path", "")) != normalize_path_key(item["path"]) or row.get("disposition") != "RECLAIM_PROVEN":
+                    return [("SOURCE_ACTION_INVALID", "manifest item absent or ineligible in hashed discovery plan")]
             if item_id not in selected:
                 return [("CAPACITY_ACTION_NOT_ADMITTED", "manifest item absent from ranked source actions")]
             source_binding = binding_from_action_record(owners[item_id])
@@ -111,9 +118,11 @@ def revalidate_ownership(item: Mapping[str, Any], resolver: OwnershipResolver) -
     try:
         stamp = float(expected["observed_at_unix"])
         age = time.time() - stamp
-        if not math.isfinite(stamp) or not 0 <= age <= 300 or expected.get("max_age_seconds") != 300:
-            return "OWNERSHIP_EVIDENCE_STALE", "manifest evidence freshness expired or invalid", None
+        if not math.isfinite(stamp) or age < 0 or expected.get("max_age_seconds") != 300:
+            return "OWNERSHIP_EVIDENCE_STALE", "manifest evidence timestamp invalid", None
         evidence = resolver(path)
+        if evidence.adapters_complete is True and not evidence.fresh():
+            return "OWNERSHIP_EVIDENCE_STALE", "newly resolved ownership evidence is stale", None
         plan = plan_owner_actions(path, evidence)
     except Exception as exc:
         return "OWNERSHIP_UNKNOWN", f"ownership resolver failed ({type(exc).__name__})", None

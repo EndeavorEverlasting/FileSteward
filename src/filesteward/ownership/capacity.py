@@ -1,6 +1,28 @@
 """Deterministic capacity prioritization, separate from mutation authority."""
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
+from typing import Callable
+
+CapacityReader = Callable[[Path], tuple[int, int]]
+
+
+def read_capacity(path: Path) -> tuple[int, int]:
+    usage = shutil.disk_usage(path)
+    return int(usage.total), int(usage.free)
+
+
+def capacity_stop_reason(path: Path, reader: CapacityReader) -> tuple[str, str]:
+    try:
+        total, free = reader(path)
+        strategy = plan_capacity_strategy((), total_bytes=total, free_bytes=free)
+    except Exception as exc:
+        return "CAPACITY_UNKNOWN", f"current capacity measurement unavailable ({type(exc).__name__})"
+    if strategy.status == "HEALTHY":
+        return "CAPACITY_HEALTHY", "current measured capacity reached the 20% healthy target"
+    return "", "current capacity remains below the healthy target"
+
 from dataclasses import dataclass
 from typing import Iterable
 

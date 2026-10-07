@@ -6,6 +6,34 @@ from filesteward.ownership.graph import OwnershipEdge, build_ownership_graph
 from filesteward.deletion.ownership import bind_ownership
 
 
+def low_capacity(path):
+    """Explicit synthetic measurement; production uses current disk usage."""
+    return 10000, 1000
+
+
+def bind_synthetic_discovery(manifest, path):
+    """Replace only the old fixture sentinel, never missing/custom/drift data."""
+    import csv
+    import hashlib
+    from pathlib import Path
+    if path is None:
+        return
+    path = Path(path)
+    sentinel = b"cleanup-plan-v1\n"
+    digest = hashlib.sha256(sentinel).hexdigest()
+    if not path.is_file() or path.read_bytes() != sentinel or manifest.get("source_cleanup_plan_sha256") != digest:
+        return
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["item_id", "path", "disposition"])
+        writer.writeheader()
+        writer.writerows({field: item.get(field, "") for field in writer.fieldnames} for item in manifest["items"])
+    current = hashlib.sha256(path.read_bytes()).hexdigest()
+    manifest["source_cleanup_plan_sha256"] = current
+    for item in manifest["items"]:
+        if item.get("source_cleanup_plan_sha256") == digest:
+            item["source_cleanup_plan_sha256"] = current
+
+
 def generated_evidence(path: str):
     owner = "synthetic-generator"
     graph = build_ownership_graph(extra_edges=(OwnershipEdge(
