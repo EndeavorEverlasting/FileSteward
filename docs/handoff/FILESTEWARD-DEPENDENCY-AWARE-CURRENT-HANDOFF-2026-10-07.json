@@ -16,7 +16,7 @@
     "harness/contracts/dependency-aware-judgment-closure.v1.json"
   ],
   "provider_base_sha_at_capture": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
-  "provider_head_sha_at_capture": "e30cd8c94f114ef8f4ffca37f4eab6f8558278c9",
+  "provider_head_sha_at_capture": "444a1de1ad578cb97b092a6e70183fd97e5402f4",
   "local_head_sha_at_capture_or_unknown": "UNKNOWN_NOT_OBSERVED",
   "completed_facts": [
     {
@@ -68,7 +68,7 @@
         "scripts/windows/diagnose-wispr-install.ps1",
         "docs/handoff/WISPR-FLOW-BROKEN-INSTALL-RECOVERY-2026-10-07.md"
       ],
-      "proof_state": "PROVIDER_VALIDATED_STATIC"
+      "proof_state": "PROVIDER_VALIDATED"
     },
     {
       "fact": "Architectural/product judgment for the current known graph is closed: integration order, exact J2/J3/J4/J5/J6 ownership, PR #29 selective-lineage strategy, provider PR policy, and remaining human boundary are repository-owned.",
