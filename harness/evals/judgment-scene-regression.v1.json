@@ -144,6 +144,25 @@
         "negative delete-eligibility fixture",
         "scene/action reachability test"
       ]
+    },
+    {
+      "id": "PB17",
+      "behavior": "FileSteward represents storage as potentially multi-owned. App, repo, worktree, toolchain, service/task, package, generated-output, and user-data relationships are resolved together; the most protective current edge wins.",
+      "proof": [
+        "cross-domain graph fixture",
+        "multi-owner precedence test",
+        "delete-eligibility negative fixture"
+      ]
+    },
+    {
+      "id": "PB18",
+      "behavior": "Repository lifecycle labels are evidence-backed and user-legible: ACTIVE, STABLE, LEGACY_CANDIDATE, and GENERATED_OUTPUT are distinct. Entire may enrich activity/change-impact evidence, but age, inactivity, or absence from Entire can never by itself create LEGACY_CANDIDATE or delete eligibility.",
+      "proof": [
+        "Entire-present activity fixture",
+        "Entire-absent negative fixture",
+        "repo lifecycle reducer test",
+        "browser classification readback"
+      ]
     }
   ],
   "defect_families": [
@@ -205,6 +224,21 @@
     {
       "id": "BROKEN_UNINSTALLER_TREATED_AS_ORPHAN",
       "negative_fixture": "Windows still reports an application installed, but its registered Update.exe/uninstaller is missing after prior cleanup; FileSteward treats the remaining/broken tree or registration as an orphan eligible for deletion instead of protected APP_INSTALLATION_BROKEN/serviceability recovery.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "SINGLE_DOMAIN_OWNERSHIP_LOSS",
+      "negative_fixture": "A directory is classified only as repo content or only as app content even though another current owner/dependency edge exists; a less-protective classification wins and exposes reclaim.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "ENTIRE_ABSENCE_MEANS_LEGACY",
+      "negative_fixture": "Repo/file has no current Entire session/graph evidence and is marked legacy or reclaimable without clean/recoverable/no-unique-work/no-current-dependency proof.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "AGE_OR_INACTIVITY_MEANS_LEGACY",
+      "negative_fixture": "Repo/file is labeled legacy from old timestamps or no recent commit despite unresolved worktree, remote, unique-work, dependency, or reproducibility state.",
       "expected": "FAIL"
     }
   ],
@@ -275,6 +309,34 @@
         "CONSEQUENCE_RESOLVE",
         "VALUE_DECISION",
         "AUTHORIZATION_GATE"
+      ]
+    },
+    {
+      "id": "PC08",
+      "case": "A path belongs to a clean repo but is also referenced by an installed application's runtime/toolchain path. The ownership graph shows both relationships and the application/shared dependency protection overrides repo-removal eligibility.",
+      "expected_trace": [
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "VALUE_DECISION"
+      ]
+    },
+    {
+      "id": "PC09",
+      "case": "Entire Graph shows current working-tree relationship/change-impact evidence in a repo with an active worktree. FileSteward labels it Part of active repo and preserves it without requiring the user to interpret Entire output.",
+      "expected_trace": [
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "VALUE_DECISION"
+      ]
+    },
+    {
+      "id": "PC10",
+      "case": "A repo is clean, remote-backed/recoverable, has no attached/current worktree, no unique local work, no current cross-domain dependency, and no current Entire activity evidence when Entire is available. FileSteward may label Legacy repo candidate but still leaves removal as an operator value decision.",
+      "expected_trace": [
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "RECOVERABILITY_RESOLVE",
+        "VALUE_DECISION"
       ]
     }
   ],
