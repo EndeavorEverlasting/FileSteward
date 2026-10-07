@@ -26,6 +26,19 @@ function Get-ExePathFromCommand {
     return $null
 }
 
+function Get-OptionalProp {
+    param(
+        [Parameter(Mandatory = $true)][object]$Object,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    $prop = $Object.PSObject.Properties[$Name]
+    if ($null -eq $prop) {
+        return ""
+    }
+    return [string]$prop.Value
+}
+
 function Get-WisprUninstallEntries {
     $locations = @(
         @{ Hive = "HKCU"; Path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall" },
@@ -46,15 +59,15 @@ function Get-WisprUninstallEntries {
                 continue
             }
 
-            $displayName = [string]$item.DisplayName
+            $displayName = Get-OptionalProp -Object $item -Name "DisplayName"
             if ($displayName -notmatch '(?i)wispr\s*flow') {
                 continue
             }
 
             $commands = [ordered]@{
-                UninstallString      = [string]$item.UninstallString
-                QuietUninstallString = [string]$item.QuietUninstallString
-                ModifyPath           = [string]$item.ModifyPath
+                UninstallString      = (Get-OptionalProp -Object $item -Name "UninstallString")
+                QuietUninstallString = (Get-OptionalProp -Object $item -Name "QuietUninstallString")
+                ModifyPath           = (Get-OptionalProp -Object $item -Name "ModifyPath")
             }
 
             $commandChecks = @()
@@ -68,14 +81,15 @@ function Get-WisprUninstallEntries {
                 }
             }
 
+            $installLocation = Get-OptionalProp -Object $item -Name "InstallLocation"
             $result += [ordered]@{
                 hive             = $location.Hive
                 registry_path    = $key.Name
                 display_name     = $displayName
-                display_version  = [string]$item.DisplayVersion
-                publisher        = [string]$item.Publisher
-                install_location = [Environment]::ExpandEnvironmentVariables([string]$item.InstallLocation)
-                display_icon     = [string]$item.DisplayIcon
+                display_version  = (Get-OptionalProp -Object $item -Name "DisplayVersion")
+                publisher        = (Get-OptionalProp -Object $item -Name "Publisher")
+                install_location = [Environment]::ExpandEnvironmentVariables($installLocation)
+                display_icon     = (Get-OptionalProp -Object $item -Name "DisplayIcon")
                 command_checks   = $commandChecks
             }
         }
@@ -235,7 +249,12 @@ $report = [ordered]@{
 }
 
 $reportPath = Join-Path $OutputRoot "diagnostic.json"
-$report | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $reportPath -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText(
+    $reportPath,
+    ($report | ConvertTo-Json -Depth 12),
+    $utf8NoBom
+)
 
 Write-Host ""
 Write-Host "Wispr Flow recovery probe complete."
