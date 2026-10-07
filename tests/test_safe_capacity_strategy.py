@@ -91,3 +91,18 @@ def test_invalid_measurements_fail_closed(total, free):
 
 def test_fractional_byte_target_rounds_up():
     assert plan_capacity_strategy([], total_bytes=11, free_bytes=2).target_free_bytes == 3
+
+
+def test_zero_byte_exact_container_can_follow_selected_children_without_double_counting():
+    parent = replace(candidate("parent", 0, path=r"C:\synthetic\tree"), reclaim_basis="container-row")
+    child = candidate("child", 50, path=r"C:\synthetic\tree\child")
+    result = plan_capacity_strategy([parent, child], total_bytes=1000, free_bytes=0)
+    assert result.candidates == (child, parent)
+    assert result.projected_free_bytes == 50
+
+
+def test_container_is_not_added_after_projected_target_is_met():
+    parent = replace(candidate("parent", 0, path=r"C:\synthetic\tree"), reclaim_basis="container-row")
+    child = candidate("child", 50, path=r"C:\synthetic\tree\child")
+    result = plan_capacity_strategy([parent, child], total_bytes=1000, free_bytes=150)
+    assert result.candidates == (child,)

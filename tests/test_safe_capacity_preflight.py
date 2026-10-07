@@ -297,3 +297,22 @@ def test_direct_preflight_cannot_bypass_source_admission(tmp_path, tamper):
     assert result.overall == "FAIL"
     assert any(i.reason_class in {"CAPACITY_ACTION_NOT_ADMITTED", "OWNERSHIP_REVISION_DRIFT"} for i in result.items)
     assert target.exists()
+
+
+def test_direct_preflight_recomputes_ranked_subset_and_stops_at_target(tmp_path):
+    import hashlib
+    targets = [tmp_path / name for name in ("a", "b")]
+    for target in targets:
+        target.write_bytes(b"x" * 60)
+    items = [_file_item(p, item_id=p.name) for p in targets]
+    run_dir, manifest, approval = _prepare_run(tmp_path, items, tmp_path)
+    source_path = run_dir / "capacity-strategy.json"
+    source = json.loads(source_path.read_text())
+    source.update(total_bytes=1000, free_bytes=150, target_free_bytes=200, status="LOW")
+    source_path.write_text(json.dumps(source))
+    manifest["source_capacity_strategy_sha256"] = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    result = run_preflight(manifest, scan_root=tmp_path, source_artifact_dir=run_dir,
+                           ownership_resolver=resolver_for(items))
+    assert result.overall == "FAIL"
+    assert any(i.reason_class == "CAPACITY_ACTION_NOT_ADMITTED" for i in result.items)
+    assert all(p.exists() for p in targets)

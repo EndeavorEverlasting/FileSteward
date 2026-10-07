@@ -9,7 +9,7 @@ from filesteward.ownership.actions import (
     ActionKind, ActionPlan, OwnershipResolver, plan_owner_actions,
 )
 from filesteward.ownership._windows_paths import normalize_path_key
-from filesteward.ownership.capacity import plan_capacity_strategy
+from filesteward.ownership.capacity import CapacityCandidate, plan_capacity_strategy
 
 
 def bind_ownership(plan: ActionPlan, observed_at_unix: float) -> dict[str, Any]:
@@ -69,6 +69,20 @@ def validate_source_membership(items, owner_source, capacity_source) -> list[tup
         owners = {str(row["item_id"]): row for row in rows}
         if len(owners) != len(rows):
             raise ValueError("duplicate source owner row")
+        candidates = []
+        for candidate in capacity_source["candidates"]:
+            owner_plan = action_plan_from_record(owners[str(candidate["candidate_id"])])
+            if action_plan_from_record(candidate["plan"]) != owner_plan:
+                return [("OWNERSHIP_REVISION_DRIFT", "capacity candidate ownership differs from source owner")]
+            candidates.append(CapacityCandidate(str(candidate["candidate_id"]), owner_plan,
+                ActionKind(candidate["action"]), candidate["projected_reclaim_bytes"], candidate["reclaim_basis"],
+                candidate.get("friction", 0), candidate.get("reclaim_group_id", "")))
+        ranked = plan_capacity_strategy(candidates, total_bytes=capacity_source["total_bytes"],
+                                       free_bytes=capacity_source["free_bytes"])
+        canonical_raw = {c.candidate_id for c in ranked.candidates
+                         if c.action is ActionKind.RAW_DELETE_REGENERABLE_ARTIFACT}
+        if selected != canonical_raw:
+            return [("CAPACITY_ACTION_NOT_ADMITTED", "source selection exceeds canonical legal ranking/stop rule")]
         for item in items:
             item_id = str(item["item_id"])
             if item_id not in selected:

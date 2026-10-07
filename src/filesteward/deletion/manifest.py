@@ -374,7 +374,9 @@ def build_delete_manifest(run_dir: Path) -> dict[str, Any]:
                 raise ValueError("OWNERSHIP_UNKNOWN: discovery row lacks ownership")
             plan = action_plan_from_record(record)
             capacity_candidates.append(CapacityCandidate(row["item_id"], plan,
-                ActionKind.RAW_DELETE_REGENERABLE_ARTIFACT, _opt_int(row["projected_reclaim_bytes"]), row["reclaim_basis"]))
+                ActionKind.RAW_DELETE_REGENERABLE_ARTIFACT,
+                0 if row["projection_quality"] == "container-row" else _opt_int(row["projected_reclaim_bytes"]),
+                "container-row" if row["projection_quality"] == "container-row" else row["reclaim_basis"]))
         if capacity.get("status") != "UNKNOWN":
             canonical = plan_capacity_strategy(capacity_candidates, total_bytes=capacity.get("total_bytes"),
                                                free_bytes=capacity.get("free_bytes"))

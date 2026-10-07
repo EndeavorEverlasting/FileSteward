@@ -477,8 +477,8 @@ class CleanupRun:
                     continue
                 row = projected_by_id.get(item_id)
                 capacity_candidates.append(CapacityCandidate(item_id, plan, action,
-                    row["projected_reclaim_bytes"] if row else logical_size,
-                    row["reclaim_basis"] if row else "logical estimate"))
+                    0 if row and row["projection_quality"] == "container-row" else row["projected_reclaim_bytes"] if row else logical_size,
+                    "container-row" if row and row["projection_quality"] == "container-row" else row["reclaim_basis"] if row else "logical estimate"))
         strategy_data = {"schema_version": "filesteward.capacity-strategy/v1", "status": "UNKNOWN",
                          "candidates": [], "projection_basis": "estimate",
                          "total_bytes": total_capacity, "free_bytes": baseline}

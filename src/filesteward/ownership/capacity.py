@@ -62,6 +62,10 @@ def _projection(candidate: CapacityCandidate) -> int:
     return amount
 
 
+def _container(candidate: CapacityCandidate) -> bool:
+    return candidate.projected_reclaim_bytes == 0 and candidate.reclaim_basis == "container-row"
+
+
 def plan_capacity_strategy(
     candidates: Iterable[CapacityCandidate], *, total_bytes: int, free_bytes: int,
 ) -> CapacityStrategy:
@@ -92,7 +96,8 @@ def plan_capacity_strategy(
             break
         if (candidate.candidate_id in ids
                 or (candidate.reclaim_group_id and candidate.reclaim_group_id in groups)
-                or any(path_intersects(candidate.plan.path, c.plan.path) for c in selected)):
+                or any(path_intersects(candidate.plan.path, c.plan.path)
+                       and not _container(candidate) and not _container(c) for c in selected)):
             continue
         selected.append(candidate)
         ids.add(candidate.candidate_id)
