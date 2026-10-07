@@ -29,6 +29,7 @@
   "consequence_classes": [
     "APP_RUNTIME_DEPENDENCY",
     "APP_SERVICEABILITY_DEPENDENCY",
+    "APP_INSTALLATION_BROKEN",
     "APP_CACHE_REGENERABLE",
     "APP_CACHE_UNKNOWN",
     "SERVICE_DEPENDENCY",
@@ -48,7 +49,9 @@
       "service dependency",
       "scheduled task dependency",
       "dirty/unpushed/unique repository evidence",
-      "toolchain dependency"
+      "toolchain dependency",
+      "registered installed application whose install/uninstall/repair/update target intersects the candidate tree",
+      "broken or missing registered uninstaller/repair/update executable whose expected path intersects the candidate tree"
     ],
     "to_human_review": [
       "unknown ownership",
@@ -84,7 +87,26 @@
   "application_rules": {
     "preferred_action": "semantic owner action such as clean-cache/uninstall/repair before raw file deletion",
     "forbidden_inventory_probe": "Win32_Product",
-    "package_cache_generic_delete": false
+    "package_cache_generic_delete": false,
+    "path_location_is_never_disposition": true,
+    "local_appdata_whole_app_directory_generic_delete": false,
+    "installed_application_intersection_rule": "If uninstall/install/modify/repair/update metadata, service/task/shortcut/runtime evidence, or executable metadata binds an installed application to the candidate tree, raw file deletion is forbidden. Route to semantic application action.",
+    "broken_registration_rule": "If Windows reports the application installed but its registered uninstall/repair/update executable is missing, classify APP_INSTALLATION_BROKEN + APP_SERVICEABILITY_DEPENDENCY, protect the tree from raw deletion, and route to vendor/installer repair or semantic uninstall recovery.",
+    "required_windows_attribution_evidence": [
+      "HKLM/HKCU uninstall entries in both registry views",
+      "InstallLocation when present",
+      "UninstallString/QuietUninstallString/ModifyPath/repair/update executable paths when present",
+      "running executable/module evidence when safely observable",
+      "service and scheduled-task references",
+      "shortcut targets as corroboration",
+      "file product/company/signature metadata as corroboration",
+      "AppX/MSIX/package-manager evidence when applicable"
+    ],
+    "semantic_actions_before_raw_delete": [
+      "CLEAN_CACHE only for adapter-proven regenerable cache boundaries",
+      "REPAIR_APPLICATION for broken installed applications the operator wants to keep",
+      "UNINSTALL_APPLICATION through registered/vendor semantics when the operator wants removal"
+    ]
   },
   "destructive_execution": {
     "require_current_dependency_evidence": true,
