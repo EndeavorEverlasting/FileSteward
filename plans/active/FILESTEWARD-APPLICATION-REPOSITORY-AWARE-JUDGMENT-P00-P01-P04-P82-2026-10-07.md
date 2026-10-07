@@ -635,7 +635,7 @@ The J6 owner therefore:
 - keeps current `pyproject.toml` as baseline and recomputes the product version through the repository version gate;
 - adapts the ported UX to current P94/P110 + ownership/judgment contracts rather than weakening those contracts.
 
-No local agent is authorized to choose a different merge/rebase architecture.
+The only authorized J6 integration architecture is the selective-lineage procedure above.
 
 ### Exact lane ownership
 
