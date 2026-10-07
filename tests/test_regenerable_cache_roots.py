@@ -11,7 +11,7 @@ import pytest
 
 from filesteward import cli as cli_mod
 from filesteward.deletion.preflight import run_preflight as _run_preflight
-from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts, low_capacity, bind_synthetic_discovery
 from filesteward.deletion.regenerable import (
     allows_size_mtime_identity_seal,
     is_under_regenerable_cache_allowlist,
@@ -21,6 +21,8 @@ from filesteward.policy.paths import normalize_declared_path
 
 
 def run_preflight(manifest, **kwargs):
+    kwargs.setdefault("capacity_reader", low_capacity)
+    bind_synthetic_discovery(manifest, kwargs.get("cleanup_plan_path"))
     source = Path(kwargs["cleanup_plan_path"]).parent
     bind_source_artifacts(manifest, source)
     kwargs["source_artifact_dir"] = source

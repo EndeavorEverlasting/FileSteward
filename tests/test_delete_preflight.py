@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts, low_capacity, bind_synthetic_discovery
 
 import hashlib
 import json
@@ -30,6 +30,8 @@ from filesteward.protect import ProtectedRoot
 
 
 def run_preflight(manifest, **kwargs):
+    kwargs.setdefault("capacity_reader", low_capacity)
+    bind_synthetic_discovery(manifest, kwargs.get("cleanup_plan_path"))
     if kwargs.get("cleanup_plan_path") is not None:
         source = Path(kwargs["cleanup_plan_path"]).parent
     elif manifest["items"]:
@@ -1037,7 +1039,7 @@ class TestSafetyRepairs:
             managed_paths=managed,
         )
         assert hit_result.overall == "FAIL"
-        assert hit_result.items[-1].reason_class == ReasonClass.PROTECTION_HIT
+        assert next(verdict for verdict in hit_result.items if verdict.item_id == hit_item["item_id"]).reason_class == ReasonClass.PROTECTION_HIT
 
     def test_empty_digest_with_existing_plan_fails(self, tmp_path: Path) -> None:
         scan_root = tmp_path / "scan"
