@@ -15,7 +15,7 @@
   ],
   "provider_base_sha_at_capture": "93c2254c271bcda95323285d52627f34c280718a",
   "provider_head_sha_at_capture": "93c2254c271bcda95323285d52627f34c280718a",
-  "local_head_sha_at_capture_or_unknown": "530fb64791f85cb1b173a485fc22ab4749bbe744",
+  "local_head_sha_at_capture_or_unknown": "3caac64aac4f71829d8ea8072e17d604bda821b5",
   "completed_facts": [
     {
       "fact": "J0/J2/J3/J4 retained from provider floor; not reimplemented.",
@@ -43,10 +43,10 @@
       "proof_state": "LOCALLY_VALIDATED"
     },
     {
-      "fact": "Exact behavioral candidate full suite: 522 passed, 7 Windows privilege skips.",
+      "fact": "Exact behavioral candidate full suite: 546 passed, 7 Windows privilege skips.",
       "evidence": [
-        "var/proof/safe-capacity/full-final.txt",
-        "530fb64791f85cb1b173a485fc22ab4749bbe744"
+        "var/proof/safe-capacity/provider-repairs-full-final.txt",
+        "3caac64aac4f71829d8ea8072e17d604bda821b5"
       ],
       "proof_state": "LOCALLY_VALIDATED"
     },
@@ -57,6 +57,14 @@
         "head@c093f2cb69d69be153fcf983b6ad785636825b7e"
       ],
       "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "All seven initial PR40 review findings repaired; native object/capacity/source membership negatives and positive controls passed.",
+      "evidence": [
+        "harness/evals/safe-capacity-k3-k5-proof-2026-10-07.json",
+        "3caac64aac4f71829d8ea8072e17d604bda821b5"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
     }
   ],
   "remaining_work": [
@@ -104,7 +112,8 @@
     "src/filesteward/run.py",
     "tests",
     "harness/evals/safe-capacity proof receipts",
-    "docs/handoff current packet"
+    "docs/handoff current packet",
+    "docs/agent/OPERATOR-DELETE-PATH.md native/capacity protocol update"
   ],
   "forbidden_surfaces": [
     "raw application/serviceability/repository/unknown deletion",
@@ -121,7 +130,8 @@
   "external_prerequisites": [
     "Explicit bounded workstation observation/mutation scope before live proof",
     "Production ownership adapter completeness",
-    "PR29 selective reconciliation before K6"
+    "PR29 selective reconciliation before K6",
+    "Windows native object-bound adapter required for permanent mutation; unsupported platforms refuse."
   ],
   "proof_receipts": [
     "harness/evals/safe-capacity-k1-k2-proof-2026-10-07.json",
