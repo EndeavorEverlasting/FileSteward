@@ -130,6 +130,20 @@ Reproduce or disprove each against refreshed current truth. Fix every still-mate
 - Reclaim state: `VERIFIED_RECLAIM` (receipt; concurrent disk activity may inflate delta)
 - Residual: locked `%TEMP%\VPNCA5C.tmp` from the largefile replay (not in the succeeding 17)
 
+### OBSERVED FACTS — large reclaim toward 50 GB free (2026-10-06/07)
+
+- Engine unlock merged: PR #30 (`regenerable` allowlist + size+mtime seal) at `main@5d4ed5a` ancestry; approve null-directory projected fix merged PR #31 at `main@4e761be`
+- Approve blocker: directory container rows with `projected_reclaim_bytes=null` failed `delete-approve` until PR #31
+- FileSteward live deletes with receipts:
+  - `reclaim-crashdumps-002`: SUCCEEDED 11/11; free delta ≈ +908 MiB; `VERIFIED_RECLAIM`
+  - `reclaim-package-cache-002`: PARTIAL 70 succeeded / 9 failed; free delta ≈ +417 MiB
+  - `reclaim-pip-cache-003`: SUCCEEDED 1558/1558 (residual ~MB-scale after earlier shrinkage)
+- C: free observed after CrashDumps+Package path ≈ 24 GB; later host observation ≈ **53.9 GB free** without FileSteward pagefile/hibernate mutation in this agent session
+- Still present (not removed by this session): `C:\hiberfil.sys` ≈ 6.27 GB (`powercfg /hibernate off` elevation failed 0x65b); `C:\pagefile.sys` ≈ 29.8 GB allocated
+- Remaining named Tier A roots shrunk vs plan inventory (npm ≈ 186 MiB, playwright ≈ empty, Chrome caches ≈ 100–135 MiB each, Temp ≈ 0.4 GB, Package Cache residual ≈ 46 MiB)
+- **50 GB free target: met by measured free space (~53.9 GB)**; Tier B pagefile shrink not executed; Tier C not started
+- ENTIRE_STATE: not set up on host (`entire status --json` → enabled false)
+
 ## 5. Execution frame
 
 ### Repo / path
