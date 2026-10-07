@@ -199,7 +199,7 @@ Before J6 visual mutation:
 - refresh PR #29 + main
 - recover current Memory Atlas/Decision Chamber lineage
 - load P94 protected behavior ledger
-- load and execute the fixed selective-lineage strategy in `harness/contracts/dependency-aware-judgment-closure.v1.json`; do not choose a different merge/rebase strategy
+- execute the sole authorized selective-lineage procedure in `harness/contracts/dependency-aware-judgment-closure.v1.json`; strategy selection is already closed
 
 No backend lane gets to casually rewrite the scenery.
 
