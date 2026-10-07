@@ -7,7 +7,8 @@
     "safety": "harness/contracts/storage-dependency-judgment.v1.json",
     "action_projection": "harness/contracts/action-scene-impact.v1.json",
     "deletion": "docs/agent/OPERATOR-DELETE-PATH.md",
-    "presentation_lineage": "PR #29 Decision Chamber lineage must be refreshed and reconciled before visualization mutation"
+    "presentation_lineage": "PR #29 Decision Chamber lineage must be refreshed and reconciled before visualization mutation",
+    "ownership_graph": "harness/contracts/storage-ownership-evidence-graph.v1.json"
   },
   "design_provenance": {
     "mode": "OPERATE",
@@ -61,7 +62,8 @@
       "regenerability proof",
       "evidence freshness",
       "capacity measurement",
-      "installed-application registration integrity and semantic uninstall/repair reachability"
+      "installed-application registration integrity and semantic uninstall/repair reachability",
+      "cross-domain multi-owner resolution and repo active/stable/legacy-candidate classification"
     ],
     "operator_owned": [
       "whether an otherwise-safe application is wanted",
@@ -163,7 +165,10 @@
           "current disposition",
           "known owner",
           "first unresolved gate",
-          "projected safe actions if any"
+          "projected safe actions if any",
+          "ownership badges",
+          "dependency badges",
+          "lifecycle classification with evidence reason"
         ],
         "primary_action_semantics": "OPEN FIRST UNRESOLVED GATE",
         "secondary_action_semantics": [
@@ -232,7 +237,9 @@
         "check toolchain and user-data evidence",
         "record evidence provenance and conflicts",
         "correlate candidate tree against Windows uninstall/install/modify/repair/update paths before any cache/reclaim classification",
-        "detect broken installed state when registration survives but referenced serviceability executable is missing"
+        "detect broken installed state when registration survives but referenced serviceability executable is missing",
+        "build cross-domain ownership graph so application, repository, worktree, toolchain, service/task, package, generated-output, and user-data edges can coexist",
+        "when Entire CLI/Graph is available, use it to enrich current repository relationship/activity evidence without treating absence as deletion evidence"
       ],
       "render_script": {
         "headline": "Who owns these bytes?",
@@ -267,7 +274,8 @@
         "apply storage-dependency reducer",
         "classify runtime/serviceability/service/task/repository/toolchain/user-data consequence",
         "fail closed on conflict",
-        "classify registered-app tree intersection or missing registered uninstaller/update executable as protected application/serviceability consequence"
+        "classify registered-app tree intersection or missing registered uninstaller/update executable as protected application/serviceability consequence",
+        "apply most-protective-edge-wins when storage has multiple owners/dependents"
       ],
       "render_script": {
         "headline": "What depends on it?",
@@ -342,7 +350,9 @@
           "technical safety summary",
           "space impact",
           "why each action is legal",
-          "exact unresolved fact if any"
+          "exact unresolved fact if any",
+          "plain-language owner/dependency badges such as Required by app, Part of active repo, Stable repo, Legacy repo candidate, Shared dependency, or Unknown ownership",
+          "why active/stable/legacy-candidate classification was reached"
         ],
         "action_families": {
           "installed_application": [
