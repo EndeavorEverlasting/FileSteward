@@ -1,0 +1,191 @@
+{
+  "schema_version": "filesteward.execution-handoff-review-gates/v1",
+  "owner": "P82/P04 execution review gate map",
+  "purpose": "Define which evidence is required to advance each FileSteward execution transition and where failures route for repair.",
+  "gates": [
+    {
+      "id": "RG0_CURRENT_TRUTH",
+      "before": "PARTITION",
+      "required": [
+        "provider main/head refreshed",
+        "local Git status/head known when local runtime exists",
+        "canonical contract revisions read",
+        "open PR/review state refreshed"
+      ],
+      "reject_if": [
+        "handoff relies on historical SHA as current truth",
+        "required canonical artifact unreadable"
+      ],
+      "repair_owner": "execution coordinator",
+      "next_on_pass": "PARTITION"
+    },
+    {
+      "id": "RG1_OWNERSHIP_COLLISION",
+      "before": "DISPATCH",
+      "required": [
+        "one mutation owner per shared file/surface",
+        "dependencies typed",
+        "external prerequisites separate from lane IDs",
+        "parallel lanes have disjoint mutation ownership"
+      ],
+      "reject_if": [
+        "two lanes can write the same shared owner concurrently",
+        "dependency encoded as prose masquerading as lane ID"
+      ],
+      "repair_owner": "P04 convergence owner",
+      "next_on_pass": "DISPATCH"
+    },
+    {
+      "id": "RG2_LANE_SCOPE",
+      "before": "EXECUTE",
+      "required": [
+        "owned surfaces named",
+        "forbidden surfaces named",
+        "acceptance condition named",
+        "proof ceiling named"
+      ],
+      "reject_if": [
+        "agent must invent product judgment to proceed",
+        "lane can silently broaden mutation scope"
+      ],
+      "repair_owner": "canonical plan owner",
+      "next_on_pass": "EXECUTE"
+    },
+    {
+      "id": "RG3_FOCUSED_PROOF",
+      "before": "REVIEW",
+      "required": [
+        "changed contract/source parses",
+        "focused tests or exact unavailable status",
+        "negative regression covering repaired defect",
+        "positive control preserves legal behavior"
+      ],
+      "reject_if": [
+        "test/oracle weakened to fit implementation",
+        "claimed proof exceeds executed proof"
+      ],
+      "repair_owner": "lane owner",
+      "next_on_pass": "REVIEW"
+    },
+    {
+      "id": "RG4_CROSS_LANE_CONTRACT",
+      "before": "CONVERGE",
+      "required": [
+        "downstream contract references resolve",
+        "changed evidence revisions propagate",
+        "no stale proof is treated as current"
+      ],
+      "reject_if": [
+        "consumer proof predates changed producer contract",
+        "missing transition/owner reference"
+      ],
+      "repair_owner": "convergence owner",
+      "next_on_pass": "CONVERGE"
+    },
+    {
+      "id": "RG5_PROVIDER_REVIEW",
+      "before": "MERGE_CANDIDATE",
+      "required": [
+        "exact PR head refreshed",
+        "all material review findings repaired or disproven on exact head",
+        "zero unresolved material review threads"
+      ],
+      "reject_if": [
+        "passing tests used to override unresolved material review",
+        "review assessed stale head after material changes"
+      ],
+      "repair_owner": "PR owner",
+      "next_on_pass": "RG6_LOCAL_FULL_PROOF"
+    },
+    {
+      "id": "RG6_LOCAL_FULL_PROOF",
+      "before": "MERGE",
+      "required": [
+        "repository-required local suite/validators pass on exact candidate head",
+        "git diff hygiene passes",
+        "proof receipt binds exact head"
+      ],
+      "reject_if": [
+        "no local suite was run but merge readiness is claimed",
+        "green provider status substitutes for repository-owned proof"
+      ],
+      "repair_owner": "local execution owner",
+      "next_on_pass": "MERGE_OR_NEXT_REQUIRED_GATE"
+    },
+    {
+      "id": "RG7_PR29_VISUAL_LINEAGE",
+      "before": "J6_VISUAL_MUTATION",
+      "required": [
+        "PR #29 and main refreshed",
+        "incumbent Memory Atlas behavior/visual lineage recovered",
+        "collision/rebase/integration strategy explicit",
+        "P94 protected behavior ledger loaded"
+      ],
+      "reject_if": [
+        "backend lane rewrites visualization",
+        "new generic dashboard replaces incumbent world",
+        "stale PR #29 snapshot used"
+      ],
+      "repair_owner": "J6 reconciled visualization owner",
+      "next_on_pass": "J6_EXECUTE"
+    },
+    {
+      "id": "RG8_LIVE_UX_ACCEPTANCE",
+      "before": "J6_PROVEN",
+      "required": [
+        "desktop browser proof",
+        "narrow viewport proof",
+        "reduced-motion proof",
+        "forced-colors proof",
+        "pointer/keyboard parity",
+        "touch/phone proof when product-declared"
+      ],
+      "reject_if": [
+        "static strings or HTML inspection presented as live proof",
+        "orthogonal state lost",
+        "dead click",
+        "EXPLORE fallback regression"
+      ],
+      "repair_owner": "J6 owner",
+      "next_on_pass": "J7"
+    },
+    {
+      "id": "RG9_LIVE_MUTATION_AUTHORITY",
+      "before": "WORKSTATION_MUTATION",
+      "required": [
+        "exact semantic action in operator gate",
+        "fresh dependency evidence",
+        "exact target/manifest",
+        "current authorization"
+      ],
+      "reject_if": [
+        "repair/delete action exceeds gate",
+        "technical uncertainty promoted by urgency"
+      ],
+      "repair_owner": "operator gate + action owner",
+      "next_on_pass": "MUTATE"
+    },
+    {
+      "id": "RG10_POST_ACTION_VERIFY",
+      "before": "SPRINT_TERMINAL",
+      "required": [
+        "action receipt",
+        "measured capacity impact when applicable",
+        "action-specific health verification",
+        "incident route invoked on regression"
+      ],
+      "reject_if": [
+        "bytes claimed without measurement",
+        "broken app ignored after reclaim",
+        "receipt scope differs from authorization"
+      ],
+      "repair_owner": "verification/incident owner",
+      "next_on_pass": "CONTINUE_OR_TERMINAL"
+    }
+  ],
+  "failure_semantics": {
+    "rule": "A gate failure invalidates the attempted transition, not the scheduler or unrelated work.",
+    "retry": "Repair the named invariant, refresh candidate identity, rerun the failed gate and any downstream gate whose inputs changed.",
+    "no_ceremony": "A passing gate is permission to continue under existing authority; do not stop merely to announce the pass."
+  }
+}
