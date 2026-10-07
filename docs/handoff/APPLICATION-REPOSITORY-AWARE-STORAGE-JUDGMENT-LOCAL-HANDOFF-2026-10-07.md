@@ -176,7 +176,7 @@ Do not replace the existing exact-manifest -> approval -> executor -> receipt ar
 
 Do not start by independently rewriting the visualization lineage.
 
-Refresh PR #29 and main first. Reconcile according to the canonical Decision-to-Deletion seam, then implement **the existing script** rather than designing another one.
+After J4 is integrated, refresh PR #29 and main for evidence, create `integration/j6-pr29-lineage-20261007` from refreshed main, and execute the selective-lineage allowlist/exclusion/shared-file procedure in `harness/contracts/dependency-aware-judgment-closure.v1.json`. **Do not merge PR #29 wholesale and do not design another integration strategy.** Then implement the existing script.
 
 Required implementation owners:
 - `harness/contracts/judgment-scene-workflow.v1.json` — scene order, entry/exit rules, automatic technical resolution, legal operator choices, copy semantics, continuation;
