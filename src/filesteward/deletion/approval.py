@@ -121,6 +121,29 @@ def _items_by_id(manifest: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     return out
 
 
+def _resolve_projected_reclaim(item: Mapping[str, Any], *, item_id: str) -> int:
+    """Return bindable projected reclaim for an approved item.
+
+    Directory container rows often omit projected reclaim (bytes live on
+    child FILE rows). Treat DIRECTORY null as 0. For FILE rows, fall back to
+    allocated then logical size when the plan left projected empty.
+    """
+
+    projected = item.get("projected_reclaim_bytes")
+    if projected is not None:
+        return int(projected)
+    item_type = str(item.get("item_type") or "").upper()
+    if item_type == "DIRECTORY":
+        return 0
+    for key in ("allocated_size_bytes", "logical_size_bytes"):
+        value = item.get(key)
+        if value is not None:
+            return int(value)
+    raise ValueError(
+        f"item {item_id}: projected_reclaim_bytes missing; cannot bind approval"
+    )
+
+
 def _projected_for_ids(
     manifest: Mapping[str, Any],
     approved_item_ids: Sequence[str],
@@ -129,12 +152,7 @@ def _projected_for_ids(
     total = 0
     for item_id in approved_item_ids:
         item = by_id[item_id]
-        projected = item.get("projected_reclaim_bytes")
-        if projected is None:
-            raise ValueError(
-                f"item {item_id}: projected_reclaim_bytes missing; cannot bind approval"
-            )
-        total += int(projected)
+        total += _resolve_projected_reclaim(item, item_id=item_id)
     return total
 
 
@@ -442,14 +460,12 @@ def validate_delete_approval(
             errors.append(
                 f"item {item_id}: disposition must be RECLAIM_PROVEN, got {disposition!r}"
             )
-        projected = item.get("projected_reclaim_bytes")
-        if projected is None:
-            errors.append(f"item {item_id}: projected_reclaim_bytes missing")
-        else:
-            try:
-                projected_sum += int(projected)
-            except (TypeError, ValueError):
-                errors.append(f"item {item_id}: projected_reclaim_bytes not int-like")
+        try:
+            projected_sum += _resolve_projected_reclaim(item, item_id=item_id)
+        except ValueError as exc:
+            errors.append(str(exc))
+        except TypeError:
+            errors.append(f"item {item_id}: projected_reclaim_bytes not int-like")
 
     declared_projected = record.get("projected_reclaim_bytes")
     if not isinstance(declared_projected, int) or declared_projected < 0:

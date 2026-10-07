@@ -197,6 +197,15 @@ def _bind_item(
     logical = _opt_int(plan_row.get("logical_size_bytes", ""))
     allocated = _opt_int(plan_row.get("allocated_size_bytes", ""))
     projected = _opt_int(plan_row.get("projected_reclaim_bytes", ""))
+    # Directory containers often omit projected reclaim (bytes are on files).
+    # Bind 0 so approval can include empty-dir rows without failing closed.
+    if projected is None:
+        if entry_type == "DIRECTORY":
+            projected = 0
+        elif allocated is not None:
+            projected = allocated
+        elif logical is not None:
+            projected = logical
     link_count = _opt_int(inventory_row.get("link_count", ""))
     modified_at = inventory_row.get("modified_at", "") or None
     projection_quality = plan_row.get("projection_quality", "") or "unknown"
