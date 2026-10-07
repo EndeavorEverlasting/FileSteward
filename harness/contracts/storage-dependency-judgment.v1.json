@@ -104,7 +104,7 @@
     "path_location_is_never_disposition": true,
     "local_appdata_whole_app_directory_generic_delete": false,
     "installed_application_intersection_rule": "If uninstall/install/modify/repair/update metadata, service/task/shortcut/runtime evidence, or executable metadata binds an installed application to the candidate tree, raw file deletion is forbidden. Route to semantic application action.",
-    "broken_registration_rule": "If Windows reports the application installed but its registered uninstall/repair/update executable is missing, classify APP_INSTALLATION_BROKEN + APP_SERVICEABILITY_DEPENDENCY, protect the tree from raw deletion, and route to vendor/installer repair or semantic uninstall recovery.",
+    "broken_registration_rule": "If Windows reports the application installed but its registered uninstall/repair/update executable is missing, classify APP_INSTALLATION_BROKEN + APP_SERVICEABILITY_DEPENDENCY, protect the tree from raw deletion, and route only to REPAIR_APPLICATION or UNINSTALL_APPLICATION.",
     "required_windows_attribution_evidence": [
       "HKLM/HKCU uninstall entries in both registry views",
       "InstallLocation when present",
@@ -119,7 +119,12 @@
       "CLEAN_CACHE only for adapter-proven regenerable cache boundaries",
       "REPAIR_APPLICATION for broken installed applications the operator wants to keep",
       "UNINSTALL_APPLICATION through registered/vendor semantics when the operator wants removal"
-    ]
+    ],
+    "canonical_semantic_actions": {
+      "CLEAN_CACHE": "Clean only an adapter-proven regenerable application cache boundary.",
+      "REPAIR_APPLICATION": "Use vendor/installer semantic repair or reinstall while preserving user data and serviceability evidence.",
+      "UNINSTALL_APPLICATION": "Use registered/vendor semantic uninstall. If uninstall serviceability is broken, restore/repair the uninstall path first; never substitute raw file deletion."
+    }
   },
   "destructive_execution": {
     "require_current_dependency_evidence": true,
