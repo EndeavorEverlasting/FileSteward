@@ -1,0 +1,124 @@
+{
+  "schema_version": "filesteward.plan/v1",
+  "sprint_id": "FILESTEWARD-SAFE-CAPACITY-20261007",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "execution_floor": "81cc58c51b55c249710b1438b11a956fea8efe12",
+  "branch": "plan/safe-capacity-p04-p82-20261007",
+  "outcome": "Recover meaningful disk capacity without breaking installed applications, repositories, or serviceability.",
+  "prior_completed": {
+    "J0": "merged",
+    "J2": "merged",
+    "J3": "merged",
+    "J4": "merged",
+    "J1": "workstation-local evidence still required",
+    "J5": "not complete",
+    "J6": "blocked on refreshed PR #29 reconciliation",
+    "J7": "not complete"
+  },
+  "invariants": [
+    "capacity urgency never weakens evidence or authorization",
+    "raw deletion is last-resort and requires owner-specific regeneration proof",
+    "unknown ownership fails away from deletion",
+    "most-protective ownership edge wins",
+    "registered application install/serviceability paths never enter raw-delete lane",
+    "Windows Installer and ProgramData Package Cache are not generic raw-delete seams",
+    "Entire absence never means legacy or disposable",
+    "stop deletion pressure when healthy capacity target is reached"
+  ],
+  "capacity_policy": {
+    "healthy_free_ratio": 0.2,
+    "critical_free_ratio": 0.1
+  },
+  "lanes": [
+    {
+      "id": "K1",
+      "name": "safe-candidate-gate",
+      "depends_on": [
+        "J4"
+      ],
+      "parallel_group": "A",
+      "terminal_gate": "ownership-aware plan admission"
+    },
+    {
+      "id": "K2",
+      "name": "semantic-action-planner",
+      "depends_on": [
+        "J4"
+      ],
+      "parallel_group": "A",
+      "terminal_gate": "owner-correct action vocabulary and tests"
+    },
+    {
+      "id": "K3",
+      "name": "dependency-bound-preflight",
+      "depends_on": [
+        "K1",
+        "K2"
+      ],
+      "parallel_group": "B",
+      "terminal_gate": "fresh ownership/consequence revalidation blocks drift"
+    },
+    {
+      "id": "K4",
+      "name": "receipt-postcondition",
+      "depends_on": [
+        "K3"
+      ],
+      "parallel_group": "B",
+      "terminal_gate": "action/owner/proof/capacity receipt"
+    },
+    {
+      "id": "K5",
+      "name": "capacity-strategy",
+      "depends_on": [
+        "K1",
+        "K2"
+      ],
+      "parallel_group": "B",
+      "terminal_gate": "rank legal actions; stop at healthy capacity"
+    },
+    {
+      "id": "K6",
+      "name": "decision-scenes",
+      "depends_on": [
+        "J4",
+        "K2"
+      ],
+      "external_prerequisite": "PR #29 refreshed/reconciled",
+      "parallel_group": "C",
+      "terminal_gate": "attribution/consequence/action shown without second state machine"
+    },
+    {
+      "id": "K7",
+      "name": "p82-falsification-live-proof",
+      "depends_on": [
+        "K1",
+        "K2",
+        "K3",
+        "K4",
+        "K5"
+      ],
+      "parallel_group": "D",
+      "terminal_gate": "zero protected false positives + bounded owner-safe live canary"
+    }
+  ],
+  "forbidden_scope": [
+    "generic recursive deletion",
+    "visualization rewrite before PR #29 reconciliation",
+    "Win32_Product inventory",
+    "automatic whole-repository deletion",
+    "raw deletion of registered application roots",
+    "raw deletion of Windows Installer cache",
+    "raw deletion of ProgramData Package Cache",
+    "AI confidence promotion over hard safety gates"
+  ],
+  "acceptance_metrics": {
+    "protected_false_positive_raw_delete": 0,
+    "raw_delete_without_regeneration_proof": 0,
+    "stale_ownership_preflight_acceptance": 0,
+    "unknown_promoted_to_reclaim": 0,
+    "repo_unique_work_promoted_to_reclaim": 0,
+    "missing_receipt_owner_action_revision": 0,
+    "deletion_pressure_after_healthy_target": 0
+  }
+}
