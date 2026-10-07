@@ -1,0 +1,123 @@
+{
+  "schema_version": "filesteward.execution-handoff-loop/v1",
+  "owner": "FileSteward P04 execution/convergence loop",
+  "purpose": "Make every local-agent handoff executable from durable state, keep independent work moving, and prevent review or proof gates from collapsing into planning or ceremonial stops.",
+  "canonical_inputs": [
+    "AGENTS.md",
+    "active sprint plan",
+    "judgment-scene workflow",
+    "storage-dependency judgment",
+    "retained regression ledger",
+    "current provider truth",
+    "current local Git/runtime truth"
+  ],
+  "loop": [
+    {
+      "phase": "RECOVER",
+      "action": "Refresh current main/PR/provider/local state and read canonical contracts. Historical handoff SHAs are evidence floors, never present truth.",
+      "exit_when": "exact current floor/head, contracts, reviews, runtime/tool availability, and private evidence posture are known",
+      "fail_route": "repair discovery/context gap or record exact BLOCKED_JUDGMENT_GAP; do not guess"
+    },
+    {
+      "phase": "PARTITION",
+      "action": "Recompute remaining work from completed facts, assign dependencies, one mutation owner per shared surface, forbidden surfaces, proof ceiling, and safe parallel groups.",
+      "exit_when": "every material remaining work unit has one owner and dependencies are typed",
+      "fail_route": "convergence owner resolves overlap before dispatch"
+    },
+    {
+      "phase": "DISPATCH",
+      "action": "Launch every dependency-ready independent lane through available local/agent execution adapters. Human paste is fallback only when no safe adapter exists.",
+      "exit_when": "all ready lanes are running, completed, or have an evidenced autonomy gap",
+      "fail_route": "continue independent lanes; record AUTONOMY_GAP for unavailable adapter"
+    },
+    {
+      "phase": "EXECUTE",
+      "action": "Implement bounded owned work. A local agent consumes canonical judgment and scene scripts; it does not re-plan product policy.",
+      "exit_when": "owned implementation reaches its lane acceptance condition or a genuine external/judgment blocker",
+      "fail_route": "repair within owned scope; missing product judgment becomes BLOCKED_JUDGMENT_GAP"
+    },
+    {
+      "phase": "PROVE",
+      "action": "Run the narrowest relevant checks first, then repository-wide checks required by the changed surface. Preserve exact failure evidence.",
+      "exit_when": "lane proof is green at its honest proof ceiling or an exact failing invariant is known",
+      "fail_route": "return to EXECUTE with failing evidence; never edit the oracle merely to get green"
+    },
+    {
+      "phase": "REVIEW",
+      "action": "Apply the typed review gates in harness/evals/execution-handoff-review-gates.v1.json. Refresh provider comments/threads against the exact candidate head.",
+      "exit_when": "all gates required for the next transition pass, or each failure has a named repair owner/route",
+      "fail_route": "route directly to repair owner; review is not a ceremonial stop"
+    },
+    {
+      "phase": "CONVERGE",
+      "action": "Integrate compatible completed lanes in dependency order, refresh affected downstream assumptions, and re-run invalidated proof.",
+      "exit_when": "current candidate contains the intended completed facts with no stale downstream proof",
+      "fail_route": "repartition only the invalidated remainder; preserve unaffected completed proof"
+    },
+    {
+      "phase": "CONTINUE",
+      "action": "Advance to the next dependency-ready lane or live verification step without asking the operator to relaunch already-authorized work.",
+      "exit_when": "whole sprint terminal outcome is verified, or only a genuine user/external blocker remains",
+      "fail_route": "emit one exact blocker plus executable next transition; never return a plan as completion"
+    }
+  ],
+  "handoff_packet": {
+    "required_fields": [
+      "protocol_version",
+      "sprint_id",
+      "lane_id",
+      "role",
+      "canonical_plan_ref",
+      "contract_refs",
+      "provider_base_sha",
+      "provider_head_sha",
+      "local_head_sha_or_unknown",
+      "completed_facts",
+      "remaining_work",
+      "owned_mutation_surfaces",
+      "forbidden_surfaces",
+      "dependencies",
+      "external_prerequisites",
+      "proof_receipts",
+      "proof_ceiling",
+      "unresolved_review_threads",
+      "private_evidence_refs",
+      "blocked_judgment_gap",
+      "autonomy_gap",
+      "exact_next_action",
+      "return_contract"
+    ],
+    "invariants": [
+      "completed_facts_are_inputs_to_remaining_work_not_tasks_to_repeat",
+      "provider_head_is_refreshed_before_mutation",
+      "proof_receipts_name_exact_candidate_identity",
+      "shared_surface_has_one_mutation_owner",
+      "private_evidence_refs_are_pointers_not_committed_private_content",
+      "exact_next_action_is_executable_not_advisory",
+      "receiver_continues_without_operator_relaunch_when_authority_and_dependencies_are_satisfied"
+    ]
+  },
+  "continuation_rules": {
+    "gate_pass": "advance automatically to the next typed transition",
+    "gate_fail": "route to named repair owner and re-enter at the earliest invalidated phase",
+    "lane_blocked": "do not block dependency-independent lanes",
+    "local_tests_unavailable": "keep local proof UNPROVEN; continue only work whose next gate does not require that proof",
+    "provider_review_present": "validate against exact head; repair or disprove before merge",
+    "plan_or_contract_changed": "invalidate only proofs whose inputs changed",
+    "user_authority_already_granted": "do not re-ask at internal seams",
+    "destructive_or_repair_action_not_covered": "obtain the specific missing operator gate before mutation"
+  },
+  "forbidden_end_states": [
+    "PLAN_READY",
+    "HANDOFF_WRITTEN",
+    "PR_OPEN",
+    "MERGEABLE",
+    "TESTS_GREEN_BUT_REQUIRED_REVIEW_UNRESOLVED",
+    "WAITING_FOR_OPERATOR_TO_PASTE_NEXT_LANE_WHEN_AUTOMATION_EXISTS"
+  ],
+  "terminal_states": [
+    "SPRINT_OUTCOME_VERIFIED",
+    "GENUINE_EXTERNAL_BLOCKER_WITH_EXECUTABLE_RESUME",
+    "BLOCKED_JUDGMENT_GAP_WITH_CANONICAL_OWNER"
+  ]
+}
