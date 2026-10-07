@@ -82,7 +82,20 @@
       "worktree",
       "remote",
       "push_or_reproducibility_state_when_available"
-    ]
+    ],
+    "entire_evidence": {
+      "role": "context accelerator and repo relationship/activity evidence; not deletion authority",
+      "required_discovery": [
+        "entire status --json",
+        "entire agent-help --json"
+      ],
+      "graph_when_available": [
+        "use working-tree graph queries for current code relationships/change impact",
+        "use --head comparison when committed baseline matters",
+        "treat Entire session/checkpoint evidence as activity context only"
+      ],
+      "legacy_rule": "No repo/file is legacy from age, inactivity, or Entire absence alone. REPO_LEGACY_CANDIDATE requires clean/recoverable/no-active-worktree/no-current-dependency/no-unique-work evidence across canonical adapters."
+    }
   },
   "application_rules": {
     "preferred_action": "semantic owner action such as clean-cache/uninstall/repair before raw file deletion",
@@ -156,12 +169,14 @@
       "safe_probes_attempted",
       "why_fact_changes_safety_or_recoverability",
       "legal_operator_choices_only"
-    ]
+    ],
+    "ownership_graph_ref": "harness/contracts/storage-ownership-evidence-graph.v1.json"
   },
   "operator_judgment_boundary": {
     "technical_safety": "MACHINE_RESOLVE",
     "value_preference": "OPERATOR_DECIDE",
     "destructive_authorization": "OPERATOR_AUTHORIZE",
-    "rule": "Do not ask the operator to guess ownership, serviceability, regenerability, repository uniqueness, or other safely measurable technical facts."
-  }
+    "rule": "Do not ask the operator to guess ownership, serviceability, regenerability, repository uniqueness, or other safely measurable technical facts. FileSteward must collapse app/repo/toolchain/shared dependency evidence into a clear classification before presenting choices."
+  },
+  "ownership_graph_ref": "harness/contracts/storage-ownership-evidence-graph.v1.json"
 }
