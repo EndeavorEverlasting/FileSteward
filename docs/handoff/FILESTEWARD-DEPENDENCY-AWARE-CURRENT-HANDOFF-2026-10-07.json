@@ -171,9 +171,12 @@
   "autonomy_gap": "NONE",
   "exact_next_action": {
     "phase": "RECOVER",
-    "action": "Refresh provider/local truth and Entire capability first. Then execute Wave 1 without another planning pass: (1) J0 run focused Package Cache tests and full repository suite on the exact PR #33 foundation head; (2) J1 run the read-only Wispr diagnostic and classify evidence before any repair; (3) dispatch J2 in feature/windows-app-attribution-20261007; (4) dispatch J3 in feature/repository-attribution-20261007. Keep the four ownership surfaces disjoint. If J0 passes RG3/RG5/RG6, merge PR #33, rebase J2/J3 onto refreshed main, rerun invalidated proof, and continue the closed graph.",
+    "action": "Read docs/handoff/FILESTEWARD-SAFE-CAPACITY-CURRENT-HANDOFF-2026-10-07.json and plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.md; execute the K1-K7 successor graph from refreshed provider/local truth. Do not repeat J2/J3/J4.",
     "owner": "local execution coordinator",
     "can_execute_without_operator": true
   },
-  "return_contract": "Return a successor filesteward.execution-handoff-packet/v1 plus the completed FILESTEWARD-EXECUTION-REVIEW-CHECKLIST-2026-10-07.md state, exact heads, changed files, tests/validators actually run, failed-and-repaired evidence, provider review state, proof ceiling, and one exact next transition. Do not propose alternate architecture unless a genuinely new fact contradicts the judgment-closure contract."
+  "return_contract": "Return a successor filesteward.execution-handoff-packet/v1 plus the completed FILESTEWARD-EXECUTION-REVIEW-CHECKLIST-2026-10-07.md state, exact heads, changed files, tests/validators actually run, failed-and-repaired evidence, provider review state, proof ceiling, and one exact next transition. Do not propose alternate architecture unless a genuinely new fact contradicts the judgment-closure contract.",
+  "status": "SUPERSEDED_FOR_EXECUTION",
+  "superseded_by": "docs/handoff/FILESTEWARD-SAFE-CAPACITY-CURRENT-HANDOFF-2026-10-07.json",
+  "superseded_reason": "J0/J2/J3/J4 are merged on main; this packet's Wave 1 exact_next_action is stale."
 }
