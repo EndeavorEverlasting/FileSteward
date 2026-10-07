@@ -37,7 +37,7 @@ A passing gate means continue under existing authority. Do not stop merely to re
 A receiving agent MUST:
 
 1. Read `AGENTS.md`, the packet's canonical plan, and every packet contract reference.
-2. Refresh provider truth and local Git/runtime truth. Treat packet SHAs as evidence floors until refreshed.
+2. Refresh provider truth and local Git/runtime truth. Treat `*_at_capture` SHAs as evidence floors until refreshed. A tracked packet cannot self-contain its own final commit SHA; RG0 therefore always refreshes current truth before mutation.
 3. Validate that completed facts are still compatible with current truth.
 4. Recompute only the **remaining** dependency graph. Completed facts are inputs, not tasks to repeat.
 5. Start every dependency-ready lane that has a safe execution adapter and non-conflicting mutation ownership.
@@ -50,6 +50,13 @@ A receiving agent MUST:
 A response that only restates the plan, says “ready,” opens a PR, or asks the operator to paste the next lane is **not a valid handoff completion** when execution can continue.
 
 ## Packet semantics
+
+### Captured head semantics
+
+The packet fields `provider_base_sha_at_capture`, `provider_head_sha_at_capture`, and `local_head_sha_at_capture_or_unknown` describe what the sender observed **before the packet itself was persisted**. They are continuity evidence, not immutable current truth.
+
+RG0 requires the receiver to refresh current provider/local heads before mutation. This removes the self-reference trap where committing a tracked handoff would instantly make a field named “current head” false.
+
 
 Every handoff packet conforms to `filesteward.execution-handoff-packet/v1`.
 
