@@ -58,9 +58,14 @@ Permanent-delete execute admits these contract-backed regenerable roots (realpat
    - `%LOCALAPPDATA%\CrashDumps`
    - `%LOCALAPPDATA%\pip\Cache`
    - Chrome `Default\Cache` and `Default\Code Cache` only (not the whole profile)
-   - `%PROGRAMDATA%\Package Cache`
 
 For those seams, preflight may seal identity with size+mtime only (skip full-file SHA-256) so large cache trees remain terminal; execute still uses open→fstat→unlink TOCTOU, and hashes when a content digest is present.
+
+### Incident lock — application serviceability caches
+
+`%PROGRAMDATA%\Package Cache` is **not** a generic regenerable seam. FileSteward must refuse automatic permanent deletion of that root until the dependency-aware storage judgment contract is implemented and a per-entry adapter proves an orphan/serviceability-safe disposition. Cache-like naming, age, or size does not establish regenerability.
+
+The governing contract is `harness/contracts/storage-dependency-judgment.v1.json`, and the active implementation plan is `plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.md`.
 
 Do not widen from these seams into semantically ambiguous personal files, whole browser profiles, OneDrive, or other home trees merely to increase deletion volume.
 
