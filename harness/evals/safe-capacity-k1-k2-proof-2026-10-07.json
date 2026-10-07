@@ -1,0 +1,27 @@
+{
+  "schema_version": "filesteward.safe-capacity-proof/v1",
+  "candidate_head": "f001af3914317e3d0f3bf77ed7c94a9d38fb1417",
+  "provider_floor": "c66fe8b50c5fb3d12449a9a9e62d81e109982cda",
+  "lanes": ["K1", "K2"],
+  "python_version": "3.12.8",
+  "focused": {"command": "PYTHONPATH=src python -m pytest -q tests/test_safe_capacity_actions.py", "passed": 35},
+  "full": {"command": "PYTHONPATH=src python -m pytest -q -rs", "passed": 446, "skipped": 8, "failed": 0},
+  "skip_reasons": {"windows_symlink_privilege": 7, "console_entrypoint_not_installed": 1},
+  "failure_retries": [
+    {"gate": "artifact/CLI focused", "failed": 12, "repair": "Supply affirmative exact synthetic ownership to artifact positives; contract-only CLI remains fail-closed."},
+    {"gate": "ownership run integration", "failed": 1, "repair": "Project protective ownership through the existing ProtectionIndex before gates; retain exclusion relationship grammar."}
+  ],
+  "artifact_refs": ["var/proof/safe-capacity/k1-k2-full.txt", "owner-action-plan.json emitted per run"],
+  "proof_inputs": [
+    "src/filesteward/ownership/actions.py@f3660e8df99ba404ef7d230aa010ead2b7889e9e",
+    "src/filesteward/run.py@f3660e8df99ba404ef7d230aa010ead2b7889e9e",
+    "tests/test_safe_capacity_actions.py@f3660e8df99ba404ef7d230aa010ead2b7889e9e",
+    "tests/test_artifacts.py@f001af3914317e3d0f3bf77ed7c94a9d38fb1417",
+    "tests/test_cli.py@f001af3914317e3d0f3bf77ed7c94a9d38fb1417",
+    "harness/contracts/storage-dependency-judgment.v1.json@c66fe8b50c5fb3d12449a9a9e62d81e109982cda",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json@c66fe8b50c5fb3d12449a9a9e62d81e109982cda",
+    "harness/evals/storage-reclamation-p82-corpus.v1.json@c66fe8b50c5fb3d12449a9a9e62d81e109982cda"
+  ],
+  "proof_ceiling": "Synthetic ownership/admission and repository regression. No live attribution, cleanup, reclaimed bytes, deployment, or website alignment claimed.",
+  "runtime_boundary": "No production adapter completeness proof is available by default; unresolved resolver intentionally prevents raw-delete admission."
+}
