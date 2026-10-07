@@ -9,7 +9,7 @@
   },
   "protected_generic_roots": [
     {
-      "root": "%PROGRAMDATA%\\\\Package Cache",
+      "root": "%PROGRAMDATA%\\Package Cache",
       "reason": "installer/serviceability dependency risk",
       "automatic_delete": false,
       "future_orphan_handling": "per-entry evidence may reach HUMAN_REVIEW only until an explicit orphan/serviceability contract is proven"
