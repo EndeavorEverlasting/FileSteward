@@ -380,6 +380,64 @@ class TestNegativeFixtures:
         assert record["action"] == DELETE_ACTION
         assert validate_delete_approval(record, m_path, p_path) == ()
 
+    def test_directory_null_projected_binds_as_zero(self, tmp_path: Path) -> None:
+        """Directory container rows with null projected reclaim must not block approve."""
+
+        scan = tmp_path / "scan"
+        scan.mkdir()
+        target = scan / "f.bin"
+        target.write_bytes(b"bytes")
+        empty_dir = scan / "empty-dir"
+        empty_dir.mkdir()
+        file_item = _file_item(target, item_id="item-file", projected=5)
+        dir_item = {
+            "item_id": "item-dir",
+            "path": str(empty_dir.resolve()),
+            "item_type": "DIRECTORY",
+            "disposition": "RECLAIM_PROVEN",
+            "evidence": "synthetic",
+            "contract_source": "test",
+            "logical_size_bytes": 0,
+            "allocated_size_bytes": 0,
+            "projected_reclaim_bytes": None,
+            "reclaim_basis": "container",
+            "projection_quality": "container-row",
+            "protection_check": "UNRELATED",
+            "is_managed": False,
+            "is_cloud_placeholder": False,
+            "is_symlink": False,
+            "is_reparse_point": False,
+            "link_count": 1,
+            "modified_at": 0.0,
+            "source_run_id": "run-d3",
+            "source_cleanup_plan_sha256": "a" * 64,
+            "identity": {
+                "path": str(empty_dir.resolve()),
+                "item_type": "DIRECTORY",
+                "logical_size_bytes": 0,
+                "allocated_size_bytes": 0,
+                "modified_at": 0.0,
+                "link_count": 1,
+            },
+            "intended_action": "QUARANTINE",
+            "reversibility": "REVERSIBLE_QUARANTINE",
+        }
+        # Build from file-only first so helper totals stay numeric, then attach
+        # the null-projected directory row for the approve path under test.
+        manifest = _manifest([file_item])
+        manifest["items"].append(dir_item)
+        manifest["item_count"] = 2
+        preflight = _pass_preflight(["item-file", "item-dir"])
+        m_path, p_path = _write_pair(tmp_path, manifest, preflight)
+        record = build_delete_approval(
+            manifest=m_path,
+            preflight=p_path,
+            approved_item_ids=["item-file", "item-dir"],
+            irreversible_confirmation="token",
+        )
+        assert record["projected_reclaim_bytes"] == 5
+        assert validate_delete_approval(record, m_path, p_path) == ()
+
 
 class TestPreflightIdentityDigest:
     def test_path_vs_mapping_digest(self, tmp_path: Path) -> None:
