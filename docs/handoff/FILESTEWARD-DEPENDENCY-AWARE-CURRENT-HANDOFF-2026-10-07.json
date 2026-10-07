@@ -6,6 +6,7 @@
   "canonical_plan_ref": "plans/active/FILESTEWARD-APPLICATION-REPOSITORY-AWARE-JUDGMENT-P00-P01-P04-P82-2026-10-07.plan.json",
   "contract_refs": [
     "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json",
     "harness/contracts/judgment-scene-workflow.v1.json",
     "harness/evals/judgment-scene-regression.v1.json",
     "harness/contracts/action-scene-impact.v1.json",
@@ -49,6 +50,16 @@
         "docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md"
       ],
       "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Cross-domain ownership graph now distinguishes application, repository/worktree, toolchain/service/task/package, generated-output, shared-dependency, and user-data relationships. Entire enriches repo activity/change-impact evidence but cannot independently mark content legacy or disposable.",
+      "evidence": [
+        "harness/contracts/storage-ownership-evidence-graph.v1.json",
+        "harness/contracts/storage-dependency-judgment.v1.json",
+        "harness/contracts/judgment-scene-workflow.v1.json",
+        "harness/evals/judgment-scene-regression.v1.json"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
     }
   ],
   "remaining_work": [
@@ -68,22 +79,22 @@
       "work_id": "J2_APP_ATTRIBUTION",
       "action": "Implement read-only Windows application attribution adapters and focused synthetic tests.",
       "depends_on": [],
-      "acceptance": "Representative installed-app ownership and consequence evidence is normalized without Win32_Product."
+      "acceptance": "Installed-app/runtime/serviceability ownership is normalized and contributes edges into the cross-domain ownership graph without Win32_Product; user-facing classification can explain Required by app / Broken app dependency."
     },
     {
       "work_id": "J3_REPO_ATTRIBUTION",
-      "action": "Implement repository/project attribution by enriching ProtectionIndex evidence without weakening deletion protection.",
+      "action": "Implement repository/project attribution by enriching ProtectionIndex with Git + Entire-when-available evidence for worktree/current-change relationships, while treating Entire as context accelerator rather than deletion authority.",
       "depends_on": [],
-      "acceptance": "Dirty/unique work is distinguished from reproducible clone/generated output with focused tests."
+      "acceptance": "Repo lifecycle reducer distinguishes ACTIVE / STABLE / LEGACY_CANDIDATE / GENERATED_OUTPUT; age or Entire absence alone never produces legacy/reclaim; dirty/unique work remains protected."
     },
     {
       "work_id": "J4_DEPENDENCY_REDUCER",
-      "action": "Converge J2 and J3 into normalized dependency/consequence reduction and explainability.",
+      "action": "Converge app and repo evidence into the canonical cross-domain ownership graph, preserve simultaneous owners, and apply most-protective-edge-wins before producing user-facing lifecycle/dependency badges.",
       "depends_on": [
         "J2_APP_ATTRIBUTION",
         "J3_REPO_ATTRIBUTION"
       ],
-      "acceptance": "Unknown/protected states fail away from automatic reclaim and legal action reasons are explainable."
+      "acceptance": "Unknown/conflicting/shared dependency fails away from automatic reclaim; UI can explain what owns the bytes, what depends on them, and why the lifecycle label was reached."
     },
     {
       "work_id": "J5_DELETION_INTEGRATION",
@@ -100,7 +111,7 @@
       "depends_on": [
         "J4_DEPENDENCY_REDUCER"
       ],
-      "acceptance": "RG7 and RG8 pass; classifications persist into filterable views and composed state is retained."
+      "acceptance": "RG7 and RG8 pass; scenes surface plain-language owner/dependency badges (Required by app, Part of active repo, Stable repo, Legacy repo candidate, Shared dependency, Unknown ownership) with evidence-backed reasons and persisted classifications."
     },
     {
       "work_id": "J7_P82_FINAL",
@@ -131,7 +142,7 @@
   "proof_receipts": [
     "harness/evals/judgment-scene-p82-validation-2026-10-07.json"
   ],
-  "proof_ceiling": "Remote provider source/contracts are encoded and statically read back. Local pytest/full suite, browser/live UX, workstation incident attribution, merge readiness, and subsequent lane implementation remain unproven.",
+  "proof_ceiling": "Remote provider contracts now include cross-domain app/repo ownership and Entire-assisted repo lifecycle judgment, with static read-back validation. Local implementation, Entire CLI execution, pytest/full suite, live browser UX, workstation attribution, merge readiness, and runtime deletion proof remain unproven.",
   "unresolved_review_threads": [],
   "private_evidence_refs": [
     "var/runs/** — local ignored evidence pointer only; do not copy contents into tracked packet"
@@ -140,7 +151,7 @@
   "autonomy_gap": "NONE",
   "exact_next_action": {
     "phase": "RECOVER",
-    "action": "In the canonical local checkout, fetch/prune provider truth, inspect local status/head and Entire capabilities, then consume this packet and immediately execute J0_LOCAL_PROOF while dispatching dependency-independent J1/J2/J3 through non-conflicting local worktrees/agents when available.",
+    "action": "Refresh local/provider truth and Entire capabilities. Then implement J2 and J3 adapters against storage-ownership-evidence-graph.v1.json in independent lanes where safe; J3 must use Git as canonical repo truth and Entire Graph/status as additional current relationship/activity evidence when locally available. Converge both into J4 most-protective-edge reducer before any J5 deletion eligibility work.",
     "owner": "local execution coordinator",
     "can_execute_without_operator": true
   },
