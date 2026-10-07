@@ -60,7 +60,8 @@
       "repository uniqueness/reproducibility",
       "regenerability proof",
       "evidence freshness",
-      "capacity measurement"
+      "capacity measurement",
+      "installed-application registration integrity and semantic uninstall/repair reachability"
     ],
     "operator_owned": [
       "whether an otherwise-safe application is wanted",
@@ -229,7 +230,9 @@
         "check service and scheduled-task references",
         "check repository/worktree protection and ownership",
         "check toolchain and user-data evidence",
-        "record evidence provenance and conflicts"
+        "record evidence provenance and conflicts",
+        "correlate candidate tree against Windows uninstall/install/modify/repair/update paths before any cache/reclaim classification",
+        "detect broken installed state when registration survives but referenced serviceability executable is missing"
       ],
       "render_script": {
         "headline": "Who owns these bytes?",
@@ -263,7 +266,8 @@
       "automatic_work": [
         "apply storage-dependency reducer",
         "classify runtime/serviceability/service/task/repository/toolchain/user-data consequence",
-        "fail closed on conflict"
+        "fail closed on conflict",
+        "classify registered-app tree intersection or missing registered uninstaller/update executable as protected application/serviceability consequence"
       ],
       "render_script": {
         "headline": "What depends on it?",
@@ -297,7 +301,8 @@
         "prove deterministic application cache regeneration when claimed",
         "prove repository remote/reproducibility and unique-work state",
         "prove generated/build artifact source boundary",
-        "record unavailable network/provider as uncertainty rather than safety"
+        "record unavailable network/provider as uncertainty rather than safety",
+        "never treat reinstall availability alone as permission for raw deletion of an installed application's live tree; semantic repair/uninstall remains the action boundary"
       ],
       "render_script": {
         "headline": "Can FileSteward get this back?",
@@ -362,6 +367,11 @@
           ],
           "protected_or_unknown": [
             "KEEP",
+            "REVIEW_LATER"
+          ],
+          "installed_application_broken": [
+            "KEEP_AND_REPAIR_APPLICATION",
+            "REMOVE_VIA_SEMANTIC_UNINSTALL_RECOVERY",
             "REVIEW_LATER"
           ]
         },
