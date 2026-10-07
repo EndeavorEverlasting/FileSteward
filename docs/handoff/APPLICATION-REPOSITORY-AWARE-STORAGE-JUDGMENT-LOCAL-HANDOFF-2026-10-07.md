@@ -32,6 +32,10 @@ Historical SHAs are evidence floors only. Refresh before mutation.
 9. `harness/evals/judgment-scene-regression.v1.json`
 10. `plans/active/DECISION-TO-DELETION-UX-P04-2026-10-06.md`
 11. `docs/agent/DECISION-TO-DELETION-UX-INTEGRATION-SEAM.md`
+12. `docs/handoff/FILESTEWARD-EXECUTION-HANDOFF-PROTOCOL-2026-10-07.md`
+13. `harness/contracts/execution-handoff-loop.v1.json`
+14. `harness/contracts/execution-handoff-packet.schema.v1.json`
+15. `harness/evals/execution-handoff-review-gates.v1.json`
 
 If handoff prose conflicts with those artifacts, the canonical artifact wins.
 
@@ -65,6 +69,16 @@ Local agents are **implementation executors, not scene authors**.
 - Never weaken/delete an accepted test, fixture, or protected behavior merely to fit a candidate.
 
 The workflow intentionally allows read-only technical RESOLVE scenes to auto-advance when the result is deterministic and remains inspectable in the action/evidence trace. That is how judgment friction is removed without transferring safety judgment to an agent or to the operator.
+
+## Operating / handoff loop
+
+Do not treat this handoff as permission to plan again. Consume it through the canonical loop:
+
+`RECOVER -> PARTITION -> DISPATCH -> EXECUTE -> PROVE -> REVIEW -> CONVERGE -> CONTINUE`.
+
+Before handing to another agent/runtime, emit a packet conforming to `filesteward.execution-handoff-packet/v1`. If the same agent can execute the packet's next transition, **execute it rather than stopping at the packet**.
+
+Review gates are transition gates, not meeting points. Failures route to the named repair owner and then rerun the invalidated gate. Independent lanes continue.
 
 ## Execution graph
 
