@@ -100,7 +100,8 @@ The workflow intentionally allows read-only technical RESOLVE scenes to auto-adv
 - establish Wispr install/runtime/repair metadata;
 - attempt safe diagnostic launch/readback;
 - correlate deleted evidence with Wispr runtime/serviceability/dependency metadata;
-- use normal vendor/installer repair semantics if repair is needed and available;
+- if repair is needed, first check whether the existing operator gate explicitly covers that repair; because repair mutates C: and can change incident evidence, obtain an explicit bounded gate before invoking vendor/installer repair when it is not already covered;
+- after authorization, use normal vendor/installer repair semantics and preserve pre-repair evidence/readback;
 - record one state only: `CAUSAL_LINK_PROVEN`, `CAUSAL_LINK_DISPROVEN`, or `CORRELATED_UNRESOLVED`.
 
 Do not claim causality from timing alone.
@@ -152,6 +153,8 @@ Required rule: missing ownership evidence, app/serviceability dependency, or dir
 Bind current dependency-evidence revision into delete manifest/preflight/receipt as required by the canonical contract.
 
 Preflight must fail closed when proof-relevant ownership/dependency state drifted.
+
+The destructive executor must also re-evaluate proof-relevant dependency/ownership state immediately before **each** deletion/unlink, not merely once at preflight. If the current evidence revision/digest differs from the approved/preflight revision or newly protects the target, fail closed before mutation. Bind the immediately checked dependency-evidence revision/digest to that item's deletion receipt; target identity revalidation alone is not dependency freshness.
 
 Do not replace the existing exact-manifest -> approval -> executor -> receipt architecture.
 
