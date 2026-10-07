@@ -1,0 +1,150 @@
+{
+  "schema_version": "filesteward.dependency-aware-judgment-plan/v1",
+  "plan_id": "FILESTEWARD-DEPENDENCY-AWARE-JUDGMENT-20261007",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "planning_floor": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+  "prompts": [
+    "P00",
+    "P01",
+    "P04",
+    "P82"
+  ],
+  "capacity_policy": {
+    "target_free_ratio": 0.2,
+    "critical_free_ratio": 0.1,
+    "authority": "PRIORITIZATION_ONLY_NOT_DELETION_AUTHORITY"
+  },
+  "incident": {
+    "observed": "Wispr Flow stopped working after the 2026-10-06/07 reclaim work",
+    "causal_state": "UNPROVEN",
+    "allowed_terminal_states": [
+      "CAUSAL_LINK_PROVEN",
+      "CAUSAL_LINK_DISPROVEN",
+      "CORRELATED_UNRESOLVED"
+    ],
+    "private_evidence_location": "var/runs/**"
+  },
+  "emergency_containment": {
+    "programdata_package_cache": "PROTECTED_GENERIC_ROOT",
+    "rule": "Cache-looking path is not regenerability proof; generic ProgramData Package Cache permanent-delete admission must be removed before broader cleanup."
+  },
+  "invariants": [
+    "absence_of_ownership_evidence_is_not_disposability_evidence",
+    "application_runtime_or_serviceability_dependency_cannot_be_RECLAIM_PROVEN",
+    "repository_dirty_unpushed_or_unique_evidence_is_protected",
+    "git_protection_index_remains_authoritative_for_repo_deletion_safety",
+    "entire_context_tools_are_advisory_not_mutation_authority",
+    "scene_actions_must_deliver_named_impact_and_continuation",
+    "capacity_target_prioritizes_work_but_never_weakens_evidence_or_authorization"
+  ],
+  "lanes": [
+    {
+      "id": "J0",
+      "title": "Emergency containment",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "src/filesteward/deletion/regenerable.py",
+        "tests/test_regenerable_cache_roots.py",
+        "docs/agent/LOCAL-AGENT-PROTECTIONS.md",
+        "docs/agent/OPERATOR-DELETE-PATH.md"
+      ],
+      "gate": "generic ProgramData Package Cache deletion impossible"
+    },
+    {
+      "id": "J1",
+      "title": "Wispr incident evidence",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "ignored var/runs evidence",
+        "read-only workstation application evidence"
+      ],
+      "gate": "causal state proven/disproven/unresolved without private commit"
+    },
+    {
+      "id": "J2",
+      "title": "Windows application attribution adapters",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "new app-evidence modules",
+        "focused tests"
+      ],
+      "gate": "installed app ownership/consequence explainable"
+    },
+    {
+      "id": "J3",
+      "title": "Repository/project attribution adapters",
+      "depends_on": [],
+      "parallel_group": "WAVE_1",
+      "owned": [
+        "new repo-evidence modules",
+        "focused tests"
+      ],
+      "gate": "dirty/reproducible/generated distinctions proven"
+    },
+    {
+      "id": "J4",
+      "title": "Dependency graph and disposition reducer",
+      "depends_on": [
+        "J2",
+        "J3"
+      ],
+      "gate": "normalized consequence evidence drives disposition"
+    },
+    {
+      "id": "J5",
+      "title": "Deletion integration",
+      "depends_on": [
+        "J0",
+        "J4"
+      ],
+      "gate": "preflight blocks stale/unsafe dependency state"
+    },
+    {
+      "id": "J6",
+      "title": "Scenes and filtered decision views",
+      "depends_on": [
+        "J4",
+        "refreshed PR29/main UX truth"
+      ],
+      "gate": "attribution and consequence are actionable scene impacts"
+    },
+    {
+      "id": "J7",
+      "title": "P82 falsification and live proof",
+      "depends_on": [
+        "J0",
+        "J4",
+        "J5"
+      ],
+      "gate": "zero protected/serviceability false-positive deletion eligibility"
+    }
+  ],
+  "entire_policy": {
+    "orientation": [
+      "entire status --json",
+      "entire agent-help --json"
+    ],
+    "context_sources": [
+      "checkpoints",
+      "sessions",
+      "search",
+      "Brain when installed",
+      "Graph when installed"
+    ],
+    "mini": "DISCOVER_RUNTIME_CAPABILITY_DO_NOT_FABRICATE",
+    "authority": "CONTEXT_ONLY_CURRENT_SOURCE_RUNTIME_GIT_PROVIDER_TESTS_WIN"
+  },
+  "ui_collision": {
+    "current_pr": 29,
+    "rule": "Do not independently rewrite src/filesteward/visualization/** from backend lanes; reconcile refreshed PR29/main before J6."
+  },
+  "first_successor": [
+    "J0",
+    "J1",
+    "J2",
+    "J3"
+  ]
+}
