@@ -81,7 +81,12 @@
     "supporting_exploration_or_orientation_scene_preserves_visible_path_to_decision_classification_or_reclaim",
     "classification_and_decision_results_feed_canonical_filterable_views",
     "renderers_do_not_invent_action_semantics",
-    "projection_never_promotes_evidence_or_grants_authority"
+    "projection_never_promotes_evidence_or_grants_authority",
+    "judgment_bearing_actions_resolve_through_canonical_judgment_scene_workflow",
+    "technical_safety_facts_are_not_delegated_to_operator_choice_before_safe_adapter_exhaustion",
+    "existing_MAP_FOCUS_GATE_RESOLVE_APPROVAL_STAGED_tutorial_is_preserved",
+    "accepted_visual_world_and_composed_state_are_preserved_without_explicit_redesign_authority",
+    "scene_script_changes_require_regression_ledger_update_negative_fixture_positive_control_and_live_acceptance"
   ],
   "scene_contract": {
     "required_fields": [
@@ -100,7 +105,8 @@
     "unregistered_target_action": "do_not_render_operable_custom_action_cursor",
     "stale_projection": "hide_or_recompute_before_next_action",
     "ambiguous_destination": "block_action_projection_and_fail_validation",
-    "missing_impact": "block_action_projection_and_fail_validation"
+    "missing_impact": "block_action_projection_and_fail_validation",
+    "missing_judgment_scene_mapping": "block_action_projection_and_emit_BLOCKED_JUDGMENT_GAP"
   },
   "proof_requirements": [
     "static_contract_validator",
@@ -110,6 +116,16 @@
     "scene_change_stale_cue_test",
     "label_to_effect_browser_test",
     "classification_filter_readback_test",
-    "cross_mode_browser_scene_impact_trace"
-  ]
+    "cross_mode_browser_scene_impact_trace",
+    "judgment_scene_workflow_static_validation",
+    "protected_behavior_negative_fixture_plus_positive_control",
+    "composed_search_filter_selection_state_browser_test",
+    "bounded_live_desktop_narrow_reduced_motion_forced_colors_acceptance"
+  ],
+  "scene_script_binding": {
+    "workflow_ref": "harness/contracts/judgment-scene-workflow.v1.json",
+    "regression_ledger_ref": "harness/evals/judgment-scene-regression.v1.json",
+    "rule": "Judgment-bearing scenes and actions must resolve through the canonical workflow; renderers and local agents may not invent missing semantics.",
+    "missing_mapping": "BLOCKED_JUDGMENT_GAP"
+  }
 }
