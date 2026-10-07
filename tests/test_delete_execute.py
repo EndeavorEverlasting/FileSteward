@@ -172,6 +172,7 @@ def _prepare_run(
 
 
 class TestPermanentDeleteExecutor:
+    @pytest.mark.skipif(os.name != "nt", reason="Windows handle-bound destructive proof")
     def test_deletes_files_and_empty_dir_bytes_gone(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
         nested = scan / "cache"
@@ -211,6 +212,23 @@ class TestPermanentDeleteExecutor:
             ReclaimState.NO_RECLAIM,
             ReclaimState.UNKNOWN,
         }
+
+    @pytest.mark.skipif(os.name == "nt", reason="unsupported native platform proof")
+    def test_unsupported_native_platform_refuses_approved_delete(self, tmp_path: Path) -> None:
+        scan = tmp_path / "scan"
+        scan.mkdir()
+        target = scan / "retained.bin"
+        payload = b"unsupported-platform-must-retain"
+        target.write_bytes(payload)
+        run_dir, _, approval = _prepare_run(tmp_path, [_file_item(target, item_id="unsupported")], scan)
+        result = execute_permanent_delete(
+            run_dir=run_dir, manifest=run_dir / "delete-manifest.json", approval=approval,
+            preflight=run_dir / "delete-preflight.approved.json", scan_root=scan,
+        )
+        assert result.overall == "REFUSED"
+        assert target.read_bytes() == payload
+        assert all(item.status != "SUCCEEDED" for item in result.items)
+        assert any(item.reason_class == "ATOMIC_DELETE_PROTOCOL_UNAVAILABLE" for item in result.items)
 
     def test_refuses_without_valid_approval(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
@@ -286,6 +304,7 @@ class TestPermanentDeleteExecutor:
         assert outside.exists()
         assert any("PASS" in e for e in result.approval_errors)
 
+    @pytest.mark.skipif(os.name != "nt", reason="Windows handle-bound destructive proof")
     def test_interruption_skips_prior_succeeded(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
         scan.mkdir()
@@ -317,6 +336,7 @@ class TestPermanentDeleteExecutor:
         assert all(i.status == "SKIPPED" for i in second.items)
         assert (run_dir / DELETE_RECEIPT_FILENAME).is_file()
 
+    @pytest.mark.skipif(os.name != "nt", reason="Windows handle-bound destructive proof")
     def test_does_not_enlarge_approved_set(self, tmp_path: Path) -> None:
         scan = tmp_path / "scan"
         scan.mkdir()

@@ -11,6 +11,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -614,7 +615,11 @@ class TestDeleteLifecycleCli:
         )
         assert code == EXIT_INVALID
 
-    @pytest.mark.parametrize("synthetic_adapter", [False, True], ids=["default-fails-closed", "explicit-synthetic-adapter"])
+    @pytest.mark.parametrize("synthetic_adapter", [
+        pytest.param(False, id="default-fails-closed"),
+        pytest.param(True, id="explicit-synthetic-adapter", marks=pytest.mark.skipif(
+            os.name != "nt", reason="Windows handle-bound destructive proof")),
+    ])
     def test_preflight_approve_execute_temp_fixture(
         self, s1_run_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch, synthetic_adapter: bool,
