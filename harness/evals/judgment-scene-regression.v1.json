@@ -135,6 +135,15 @@
         "diff review",
         "negative mutation fixture"
       ]
+    },
+    {
+      "id": "PB16",
+      "behavior": "A whole LocalAppData application directory cannot become reclaimable from path/age/size/cache heuristics when Windows installation or serviceability metadata intersects that tree; the UI must resolve app ownership first and offer semantic repair/uninstall choices rather than raw delete.",
+      "proof": [
+        "synthetic Windows uninstall-registry fixture",
+        "negative delete-eligibility fixture",
+        "scene/action reachability test"
+      ]
     }
   ],
   "defect_families": [
@@ -187,6 +196,16 @@
       "id": "SAFETY_GATE_SKIPPED",
       "negative_fixture": "Value decision or authorization appears before current attribution/consequence/recoverability gates are satisfied.",
       "expected": "FAIL"
+    },
+    {
+      "id": "APPDATA_INSTALLED_APP_TREE_MISCLASSIFIED",
+      "negative_fixture": "Candidate is %LOCALAPPDATA%\\\\VendorApp and Windows uninstall metadata references an updater/uninstaller inside that tree, but FileSteward offers raw reclaim/delete because the directory is under AppData or appears inactive.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "BROKEN_UNINSTALLER_TREATED_AS_ORPHAN",
+      "negative_fixture": "Windows still reports an application installed, but its registered Update.exe/uninstaller is missing after prior cleanup; FileSteward treats the remaining/broken tree or registration as an orphan eligible for deletion instead of protected APP_INSTALLATION_BROKEN/serviceability recovery.",
+      "expected": "FAIL"
     }
   ],
   "positive_controls": [
@@ -237,6 +256,25 @@
         "RECLAIM_EXECUTION",
         "INCIDENT_RECOVERY",
         "VERIFY_RETURN"
+      ]
+    },
+    {
+      "id": "PC06",
+      "case": "Windows reports an installed per-user app whose uninstall/update executable lives under its LocalAppData tree. FileSteward binds the directory to the app, protects raw deletion, and asks only whether the user wants to keep/repair the app or remove it through semantic uninstall recovery.",
+      "expected_trace": [
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "VALUE_DECISION"
+      ]
+    },
+    {
+      "id": "PC07",
+      "case": "The registered updater/uninstaller path is missing while the app remains installed in Windows. FileSteward classifies APP_INSTALLATION_BROKEN, preserves the tree/registration from raw deletion, and routes to repair/reinstall or semantic uninstall recovery.",
+      "expected_trace": [
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "VALUE_DECISION",
+        "AUTHORIZATION_GATE"
       ]
     }
   ],
