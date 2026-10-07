@@ -13,9 +13,9 @@
     "harness/contracts/execution-handoff-packet.schema.v1.json",
     "harness/evals/execution-handoff-review-gates.v1.json"
   ],
-  "provider_base_sha": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
-  "provider_head_sha": "f2ee67e7a95dabc24fe824a3168fefc279ac9448",
-  "local_head_sha_or_unknown": "UNKNOWN_NOT_OBSERVED",
+  "provider_base_sha_at_capture": "610f4fe624bfdf7c9577bcbc28ac2bea394c81f5",
+  "provider_head_sha_at_capture": "f2ee67e7a95dabc24fe824a3168fefc279ac9448",
+  "local_head_sha_at_capture_or_unknown": "UNKNOWN_NOT_OBSERVED",
   "completed_facts": [
     {
       "fact": "Generic ProgramData Package Cache admission has been removed from the regenerable runtime allowlist on the remote branch.",
