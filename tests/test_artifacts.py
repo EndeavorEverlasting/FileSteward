@@ -13,6 +13,7 @@ import csv
 import json
 import os
 import shutil
+import time
 import uuid
 from pathlib import Path
 from typing import Any, Iterator, Optional
@@ -35,10 +36,30 @@ from filesteward.policy.paths import (
     runtime_root,
 )
 from filesteward.run import CleanupRun
+from filesteward.ownership.actions import OwnershipEvidence, RegenerationProof, unresolved_ownership
+from filesteward.ownership.graph import OwnershipEdge, build_ownership_graph
 import filesteward.inventory.scan as scan_module
 
 _CACHE_CONTRACT_ID = "synthetic.cache"
 _ZONE_CONTRACT_ID = "synthetic.zone"
+
+
+def _generated_ownership(*boundaries: Path):
+    """Affirm exact synthetic generated artifacts, never arbitrary candidates."""
+    paths = {str(p) for boundary in boundaries for p in (boundary, *boundary.rglob("*"))}
+    def resolve(path: str):
+        if path not in paths:
+            return unresolved_ownership(path)
+        owner = "synthetic-generator"
+        graph = build_ownership_graph(extra_edges=(OwnershipEdge(
+            edge_type="GENERATED_FROM", storage_path=path,
+            owner_kind="GENERATED_OUTPUT", owner_id=owner,
+            owner_display_name="Synthetic generator", evidence_source="fixture-recipe",
+            confidence="strong", lifecycle_hint="REGENERABLE_ARTIFACT",
+        ),))
+        proof = RegenerationProof(path, owner, "Recreate fixture bytes from test source", "a" * 64, raw_delete_allowed=True)
+        return OwnershipEvidence(graph, adapters_complete=True, observed_at_unix=time.time(), proofs=(proof,))
+    return resolve
 
 
 @pytest.fixture
@@ -91,6 +112,7 @@ def produced_run(tmp_path: Path, artifact_run_dir: Path):
         root,
         artifact_run_dir,
         contracts=contracts,
+        ownership_resolver=_generated_ownership(root / "cache", root / "zone"),
         protected_roots=(root / "proj" / "repo",),
         baseline_free_bytes=0,
         target_free_bytes=1,
@@ -419,6 +441,7 @@ def _tiny_run(
         root,
         run_path,
         contracts=(contract,),
+        ownership_resolver=_generated_ownership(root / "cache"),
         baseline_free_bytes=baseline,
         target_free_bytes=target,
     ).execute()
@@ -912,6 +935,7 @@ class TestS13ManagedExclusion:
             root,
             artifact_run_dir,
             contracts=(contract,),
+            ownership_resolver=_generated_ownership(root / "cache"),
             managed_paths=(str(root / "sys"),),
             baseline_free_bytes=0,
             target_free_bytes=1,

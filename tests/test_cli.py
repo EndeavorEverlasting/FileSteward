@@ -171,7 +171,7 @@ class TestS1CliEndToEnd:
         before = snapshot(root)
 
         baseline = 1_000_000
-        target = 1_001_500  # gap 1500: covered only after plan row 2
+        target = 1_001_500  # gap 1500: no reclaim without ownership evidence
         code = main(
             [
                 "scan",
@@ -202,11 +202,7 @@ class TestS1CliEndToEnd:
             assert (s1_run_dir / name).is_file(), name
 
         plan = read_rows(s1_run_dir / "cleanup-plan.csv")
-        assert plan
-        assert all(row["disposition"] == "RECLAIM_PROVEN" for row in plan)
-        plan_paths = {row["path"] for row in plan}
-        assert str(root / "cache" / "pip" / "http" / "body.whl") in plan_paths
-        assert str(root / "misc" / "notes.txt") not in plan_paths
+        assert plan == [], "a CLI path contract does not prove ownership"
 
         review = read_rows(s1_run_dir / "human-review.csv")
         review_paths = {row["path"] for row in review}
@@ -239,21 +235,21 @@ class TestS1CliEndToEnd:
         assert len(inventory) == 13
         assert len({row["item_id"] for row in inventory}) == 13
 
-        # Honest stop math: baseline + cumulative >= target reached on row 2.
+        # Missing ownership cannot create projected capacity or a stop row.
         metadata = json.loads(
             (s1_run_dir / "run.json").read_text(encoding="utf-8")
         )
         assert metadata["authorization_state"] == "UNAPPROVED"
         assert metadata["baseline_free_bytes"] == baseline
         assert metadata["target_free_bytes"] == target
-        assert metadata["stop_row"] == 2
-        cumulative = metadata["cumulative_projected_reclaim_bytes"]
-        assert baseline + cumulative >= target
-        assert (
-            baseline
-            + int(plan[0]["cumulative_projected_reclaim_bytes"])
-            < target
-        )
+        assert metadata["stop_row"] is None
+        assert metadata["cumulative_projected_reclaim_bytes"] == 0
+        ownership_rows = {row["path"]: row for row in review}
+        cache_row = ownership_rows[str(root / "cache" / "pip" / "http" / "body.whl")]
+        assert cache_row["disposition"] == "UNKNOWN"
+        action_packet = json.loads((s1_run_dir / "owner-action-plan.json").read_text(encoding="utf-8"))
+        action_rows = {row["path"]: row for row in action_packet["items"]}
+        assert "OWNERSHIP_INCOMPLETE_OR_STALE" in action_rows[cache_row["path"]]["reason_codes"]
 
         summary = (s1_run_dir / "cleanup-summary.md").read_text(
             encoding="utf-8"
@@ -292,7 +288,7 @@ class TestS1CliEndToEnd:
         plan = read_rows(s1_run_dir / "cleanup-plan.csv")
         plan_paths = {row["path"] for row in plan}
         assert str(root / "sys" / "app.db") not in plan_paths
-        assert str(root / "cache" / "hit.bin") in plan_paths
+        assert not plan_paths, "--contract alone must fail ownership admission"
 
     def test_scan_reports_counts_and_unapproved_statement(
         self, tmp_path: Path, s1_run_dir: Path, capsys
