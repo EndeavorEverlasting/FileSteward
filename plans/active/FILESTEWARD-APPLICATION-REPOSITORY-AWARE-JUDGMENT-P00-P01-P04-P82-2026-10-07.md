@@ -493,6 +493,8 @@ Remote coordination validation must prove before handoff:
 
 That proves **remote static design/harness consistency only**. Local tests, browser acceptance, and the visual state of the current application remain separate proof gates.
 
+**P82 remote result (2026-10-07): PASS — 15/15 static cross-contract checks.** Receipt: `harness/evals/judgment-scene-p82-validation-2026-10-07.json`. The pass proves transition closure, mutation ordering, cross-contract references, tutorial retention, regression-control presence, and explicit PR #29 collision handling. It does not prove local/browser runtime behavior.
+
 ### Additional acceptance gates
 
 - **A11:** scripted scene graph has no missing transition targets.
