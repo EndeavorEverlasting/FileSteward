@@ -159,7 +159,8 @@
   ],
   "proof_receipts": [
     "harness/evals/judgment-scene-p82-validation-2026-10-07.json",
-    "harness/evals/execution-handoff-p82-validation-2026-10-07.json"
+    "harness/evals/execution-handoff-p82-validation-2026-10-07.json",
+    "harness/evals/judgment-closure-p82-validation-2026-10-07.json"
   ],
   "proof_ceiling": "Remote provider contracts now close the current architectural/product judgment, define exact Wave 1 ownership and PR #29 selective-port strategy, and have prior static P82 protocol validation. Local implementation, local pytest/full suite, actual parallel dispatch, live browser UX, workstation attribution/repair, merge readiness, and runtime deletion proof remain unproven.",
   "unresolved_review_threads": [],
