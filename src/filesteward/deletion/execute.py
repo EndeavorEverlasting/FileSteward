@@ -15,7 +15,9 @@ import stat
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Mapping, Optional, Sequence, Union
+from filesteward.ownership.actions import OwnershipResolver, unresolved_ownership
+from filesteward.deletion.ownership import revalidate_ownership
 
 from filesteward.deletion.approval import (
     DELETE_ACTION,
@@ -61,14 +63,16 @@ class ItemExecutionResult:
     status: str  # SUCCEEDED | FAILED | SKIPPED | PENDING
     reason_class: str
     detail: str
+    ownership: Optional[Mapping[str, Any]] = None
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "item_id": self.item_id,
             "path": self.path,
             "status": self.status,
             "reason_class": self.reason_class,
             "detail": self.detail,
+            "ownership": None if self.ownership is None else dict(self.ownership),
         }
 
 
@@ -212,7 +216,40 @@ class IdentityDriftError(OSError):
     """Raised when open-fd identity validation fails before unlink."""
 
 
-def _delete_file(path: Path, item: Mapping[str, Any]) -> None:
+class OwnershipDriftError(OSError):
+    def __init__(self, reason: str, detail: str):
+        super().__init__(detail)
+        self.reason = reason
+
+
+def _post_dependency_identity(path: Path, item: Mapping[str, Any], initial: os.stat_result,
+                              content_digest: Optional[str] = None) -> None:
+    """The ownership probe may take time; never unlink its stale target identity."""
+    fresh = os.lstat(os.fspath(path))
+    if windows.is_reparse_point(fresh) or path.is_symlink():
+        raise IdentityDriftError("target became reparse/symlink during ownership resolution")
+    if (fresh.st_dev, fresh.st_ino) != (initial.st_dev, initial.st_ino):
+        raise IdentityDriftError("target object replaced during ownership resolution")
+    if stat.S_ISREG(fresh.st_mode):
+        observed = None
+        if content_digest:
+            flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+            fd = os.open(os.fspath(path), flags)
+            try:
+                opened = os.fstat(fd)
+                if (opened.st_dev, opened.st_ino) != (initial.st_dev, initial.st_ino) or windows.is_reparse_point(opened):
+                    raise IdentityDriftError("target replaced at final identity probe")
+                observed = _sha256_fd(fd)
+            finally:
+                os.close(fd)
+        drift = identity_drift_against_lstat(item, path, fresh, observed_content_sha256=observed)
+        if drift:
+            raise IdentityDriftError(drift)
+        if content_digest and observed != content_digest:
+            raise IdentityDriftError("content changed during ownership resolution")
+
+
+def _delete_file(path: Path, item: Mapping[str, Any], *, dependency_check: Callable[[], None] | None = None) -> None:
     """Validate identity on an open fd, then unlink that same path object.
 
     POSIX: ``os.unlink`` while the fd remains open so a replacement at the
@@ -268,15 +305,21 @@ def _delete_file(path: Path, item: Mapping[str, Any]) -> None:
                     f"observed {observed_hash.lower()}"
                 )
         if not unlink_after_close:
+            if dependency_check is not None:
+                dependency_check()
+                _post_dependency_identity(path, item, st, observed_hash)
             os.unlink(os.fspath(path))
             return
     finally:
         os.close(fd)
     if unlink_after_close:
+        if dependency_check is not None:
+            dependency_check()
+            _post_dependency_identity(path, item, st, observed_hash)
         os.unlink(os.fspath(path))
 
 
-def _delete_directory_if_empty(path: Path) -> None:
+def _delete_directory_if_empty(path: Path, *, dependency_check: Callable[[], None] | None = None) -> None:
     st = os.lstat(os.fspath(path))
     if windows.is_reparse_point(st) or path.is_symlink():
         raise OSError("refuse rmdir of reparse/symlink")
@@ -286,6 +329,14 @@ def _delete_directory_if_empty(path: Path) -> None:
         leftovers = [entry.name for entry in entries]
     if leftovers:
         raise OSError(f"directory not empty: {leftovers[:5]}")
+    if dependency_check is not None:
+        dependency_check()
+        fresh = os.lstat(os.fspath(path))
+        if (fresh.st_dev, fresh.st_ino) != (st.st_dev, st.st_ino) or windows.is_reparse_point(fresh) or path.is_symlink():
+            raise IdentityDriftError("directory replaced during ownership resolution")
+        with os.scandir(os.fspath(path)) as entries:
+            if next(entries, None) is not None:
+                raise IdentityDriftError("directory gained children during ownership resolution")
     os.rmdir(os.fspath(path))
 
 
@@ -364,6 +415,7 @@ def execute_permanent_delete(
     approval: Mapping[str, Any] | PathLike | DeleteApprovalRecord,
     preflight: Mapping[str, Any] | PathLike | None = None,
     scan_root: Path,
+    ownership_resolver: OwnershipResolver = unresolved_ownership,
 ) -> ExecutionResult:
     """Validate approval + fresh PASS preflight, then permanently delete approved paths.
 
@@ -514,6 +566,7 @@ def execute_permanent_delete(
             cleanup_plan_path=cleanup_plan,
             protection_roots=protection_roots,
             managed_paths=managed_paths,
+            ownership_resolver=ownership_resolver,
         )
     else:
         # Nothing left to mutate; synthesize PASS without observing missing paths.
@@ -637,14 +690,24 @@ def execute_permanent_delete(
             continue
 
         try:
+            immediate_ownership = None
+            def dependency_check():
+                nonlocal immediate_ownership
+                reason, detail, current = revalidate_ownership(item, ownership_resolver)
+                if reason:
+                    raise OwnershipDriftError(reason, detail)
+                immediate_ownership = current
+                escape = reparse_or_path_escape(path, scan)
+                if escape is not None:
+                    raise OwnershipDriftError(*escape)
             if item_type != "DIRECTORY":
                 # open→fstat/hash validate→unlink (same inode/name object).
-                _delete_file(path, item)
+                _delete_file(path, item, dependency_check=dependency_check)
             else:
                 st = os.lstat(os.fspath(path))
                 if windows.is_reparse_point(st) or path.is_symlink():
                     raise OSError("reparse detected at unlink time")
-                _delete_directory_if_empty(path)
+                _delete_directory_if_empty(path, dependency_check=dependency_check)
             items_out.append(
                 ItemExecutionResult(
                     item_id=item_id,
@@ -652,8 +715,11 @@ def execute_permanent_delete(
                     status="SUCCEEDED",
                     reason_class="OK",
                     detail="permanently deleted",
+                    ownership=immediate_ownership,
                 )
             )
+        except OwnershipDriftError as exc:
+            items_out.append(ItemExecutionResult(item_id, str(path), "FAILED", exc.reason, str(exc)))
         except FileNotFoundError:
             items_out.append(
                 ItemExecutionResult(

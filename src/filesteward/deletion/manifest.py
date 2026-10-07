@@ -26,6 +26,9 @@ from filesteward.models import (
     ScanCompleteness,
 )
 from filesteward.policy.paths import prove_run_dir_under_runtime
+from filesteward.deletion.ownership import binding_from_action_record, action_plan_from_record
+from filesteward.ownership.actions import ActionKind
+from filesteward.ownership.capacity import CapacityCandidate, plan_capacity_strategy
 
 __all__ = [
     "DELETE_MANIFEST_FILENAME",
@@ -327,6 +330,22 @@ def build_delete_manifest(run_dir: Path) -> dict[str, Any]:
 
     plan_sha = sha256_file(plan_path)
     plan_rows = _read_csv(plan_path)
+    discovered_plan_count = len(plan_rows)
+    discovered_rows = list(plan_rows)
+    capacity_path = target / "capacity-strategy.json"
+    if plan_rows:
+        if not capacity_path.is_file():
+            raise ValueError("CAPACITY_STRATEGY_MISSING: rank legal actions before binding deletion")
+        capacity = json.loads(capacity_path.read_text(encoding="utf-8"))
+        if capacity.get("schema_version") != "filesteward.capacity-strategy/v1":
+            raise ValueError("CAPACITY_STRATEGY_INVALID: unsupported schema")
+        if capacity.get("status") not in {"HEALTHY", "LOW", "CRITICAL", "UNKNOWN"}:
+            raise ValueError("CAPACITY_STRATEGY_INVALID: unsupported capacity state")
+        selected = {str(c["candidate_id"]) for c in capacity.get("candidates", [])
+                    if c.get("action") == "RAW_DELETE_REGENERABLE_ARTIFACT"}
+        if capacity.get("status") in {"HEALTHY", "UNKNOWN"}:
+            selected = set()
+        plan_rows = [row for row in plan_rows if row.get("item_id") in selected]
     inventory_rows = _read_csv(inventory_path)
     review_rows = _read_csv(review_path)
     exclusion_rows = _read_csv(exclusions_path)
@@ -336,6 +355,34 @@ def build_delete_manifest(run_dir: Path) -> dict[str, Any]:
         raise ValueError("inventory.csv contains duplicate or empty item_id values")
 
     items: list[dict[str, Any]] = []
+    ownership_path = target / "owner-action-plan.json"
+    ownership_rows = {}
+    if discovered_rows:
+        if not ownership_path.is_file():
+            raise ValueError("OWNERSHIP_UNKNOWN: owner-action-plan.json missing")
+        ownership_data = json.loads(ownership_path.read_text(encoding="utf-8"))
+        if ownership_data.get("schema_version") != "filesteward.owner-action-plan/v1":
+            raise ValueError("OWNERSHIP_UNKNOWN: owner-action schema mismatch")
+        for row in ownership_data.get("items", []):
+            if not isinstance(row, dict) or not row.get("item_id") or row["item_id"] in ownership_rows:
+                raise ValueError("OWNERSHIP_UNKNOWN: duplicate or malformed ownership row")
+            ownership_rows[row["item_id"]] = row
+        capacity_candidates = []
+        for row in discovered_rows:
+            record = ownership_rows.get(row["item_id"])
+            if record is None:
+                raise ValueError("OWNERSHIP_UNKNOWN: discovery row lacks ownership")
+            plan = action_plan_from_record(record)
+            capacity_candidates.append(CapacityCandidate(row["item_id"], plan,
+                ActionKind.RAW_DELETE_REGENERABLE_ARTIFACT, _opt_int(row["projected_reclaim_bytes"]), row["reclaim_basis"]))
+        if capacity.get("status") != "UNKNOWN":
+            canonical = plan_capacity_strategy(capacity_candidates, total_bytes=capacity.get("total_bytes"),
+                                               free_bytes=capacity.get("free_bytes"))
+            if capacity.get("status") != canonical.status or capacity.get("target_free_bytes") != canonical.target_free_bytes:
+                raise ValueError("CAPACITY_STRATEGY_INVALID: measurement/state mismatch")
+            canonical_ids = {c.candidate_id for c in canonical.candidates}
+            if selected != canonical_ids:
+                raise ValueError("CAPACITY_STRATEGY_INVALID: ranked raw-delete set changed")
     for plan_row in plan_rows:
         item_id = plan_row.get("item_id", "")
         if not item_id:
@@ -354,6 +401,10 @@ def build_delete_manifest(run_dir: Path) -> dict[str, Any]:
                 managed_paths=managed_paths,
             )
         )
+        action_row = ownership_rows.get(item_id)
+        if action_row is None or action_row.get("path") != items[-1]["path"]:
+            raise ValueError(f"OWNERSHIP_UNKNOWN: missing exact ownership for {item_id}")
+        items[-1]["ownership"] = binding_from_action_record(action_row)
 
     logical_values = [item["logical_size_bytes"] for item in items]
     allocated_values = [item["allocated_size_bytes"] for item in items]
@@ -364,6 +415,9 @@ def build_delete_manifest(run_dir: Path) -> dict[str, Any]:
         "schema_version": DELETE_MANIFEST_SCHEMA,
         "run_id": run_id,
         "source_cleanup_plan_sha256": plan_sha,
+        "source_owner_action_plan_sha256": sha256_file(ownership_path) if ownership_path.is_file() else "",
+        "source_capacity_strategy_sha256": sha256_file(capacity_path) if capacity_path.is_file() else "",
+        "capacity_deferred_item_count": discovered_plan_count - len(items),
         "authorization_state": AuthorizationState.UNAPPROVED.value,
         "intended_action": INTENDED_ACTION,
         "item_count": len(items),

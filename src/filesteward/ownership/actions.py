@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import ntpath
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
@@ -115,8 +116,10 @@ def plan_owner_actions(path: str, evidence: OwnershipEvidence) -> ActionPlan:
 
     roots = (os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Installer"),
              os.path.join(os.environ.get("PROGRAMDATA", r"C:\ProgramData"), "Package Cache"))
-    if any(path_intersects(path, root) for root in roots):
+    if any(path_intersects(ntpath.normpath(path), root) for root in roots):
         return result(CleanupDisposition.PROTECTED, (ActionKind.KEEP,), ("SERVICEABILITY_DEPENDENCY_PRESENT",))
+    if not ntpath.isabs(path) or ".." in path.replace("\\", "/").split("/"):
+        return result(CleanupDisposition.UNKNOWN, (ActionKind.INVESTIGATE_ORPHAN,), ("PATH_NOT_CANONICAL",))
     protective = [e for e in edges if e.edge_type in _PROTECTIVE_EDGES
                   or e.lifecycle_hint in {"APP_ACTIVE_REQUIRED", "APP_BROKEN_REQUIRED", "REPO_ACTIVE"}]
     if protective or (judgment and judgment.disposition is CleanupDisposition.PROTECTED):

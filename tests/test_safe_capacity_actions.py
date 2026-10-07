@@ -109,6 +109,11 @@ def test_unrecognized_domain_edge_fails_closed_without_reducer_crash():
     assert not plan_owner_actions(PATH, evidence(kind="SERVICE", edge="SERVICE_REFERENCES", lifecycle="")).raw_delete_eligible
 
 
+@pytest.mark.parametrize("path", ["relative/cache", "C:/fixture/../unknown", "C:/fixture/../Windows/Installer/file"])
+def test_noncanonical_path_cannot_hide_protected_ownership(path):
+    assert not plan_owner_actions(path, evidence(path=path)).raw_delete_eligible
+
+
 def test_descendant_or_ancestor_dependency_blocks_whole_action():
     for anchor in ("C:/fixture", PATH + "/service.exe"):
         observed = evidence(extra=(OwnershipEdge("SERVICE_REFERENCES", anchor, "SERVICE", "svc", "Service", "services", "strong"),))
