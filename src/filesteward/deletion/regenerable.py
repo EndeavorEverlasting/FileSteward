@@ -16,6 +16,7 @@ from filesteward.policy.paths import is_lexically_within, normalize_declared_pat
 
 __all__ = [
     "allows_size_mtime_identity_seal",
+    "is_under_protected_package_cache",
     "is_under_regenerable_cache_allowlist",
     "regenerable_cache_allowlist_roots",
 ]
@@ -56,11 +57,24 @@ def regenerable_cache_allowlist_roots() -> list[Path]:
     return [normalize_declared_path(p) for p in roots]
 
 
+def _protected_package_cache_root() -> Path:
+    program_data = os.environ.get("PROGRAMDATA", r"C:\ProgramData").strip()
+    return normalize_declared_path(Path(program_data) / "Package Cache")
+
+
 def _realpath(path: Path) -> Path:
     try:
         return normalize_declared_path(Path(os.path.realpath(os.fspath(path))))
     except OSError:
         return normalize_declared_path(path)
+
+
+def is_under_protected_package_cache(path: Path) -> bool:
+    """True when path is the protected ProgramData Package Cache or below it."""
+
+    candidate = _realpath(path)
+    protected_root = _realpath(_protected_package_cache_root())
+    return candidate == protected_root or is_lexically_within(candidate, protected_root)
 
 
 def is_under_regenerable_cache_allowlist(
@@ -94,6 +108,8 @@ def allows_size_mtime_identity_seal(
 
     root = normalize_declared_path(scan_root)
     root_real = _realpath(root)
+    if is_under_protected_package_cache(root_real):
+        return False
     temp_root = normalize_declared_path(tempfile.gettempdir())
     temp_real = _realpath(temp_root)
     if root_real == temp_real or is_lexically_within(root_real, temp_real):
