@@ -12,8 +12,10 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 6. `harness/contracts/judgment-scene-workflow.v1.json` when modifying any judgment-bearing scene, gate, transition, or operator choice
 7. `harness/evals/judgment-scene-regression.v1.json` when modifying the Decision Chamber / Memory Atlas experience or its protected behavior
 8. `harness/contracts/storage-dependency-judgment.v1.json` when classifying/deleting application-managed, installer/serviceability, repository, toolchain, or otherwise ownership-sensitive storage
-9. The active plan under `plans/active/` for the requested sprint
-10. `README.md` safety, privacy, and MVP boundaries
+9. `harness/contracts/execution-handoff-loop.v1.json` and `harness/contracts/execution-handoff-packet.schema.v1.json` when receiving, dispatching, converging, or handing off execution
+10. `harness/evals/execution-handoff-review-gates.v1.json` before advancing review/merge/live-proof transitions
+11. The active plan under `plans/active/` for the requested sprint
+12. `README.md` safety, privacy, and MVP boundaries
 
 If any required contract cannot be read, stop. Do not reconstruct it from memory.
 
@@ -32,6 +34,17 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - A clear natural-language operator authorization for a bounded named run/scope/action is sufficient intent to create the required local approval artifact. Do not invent magic phrases, UI toggles, or repeated conversational approvals at each seam.
 - Once a bounded deletion outcome is authorized, repository repair, tests, commit, PR, merge, preflight PASS, and approval-artifact creation are intermediate states. Continue through live deletion and runtime proof in the same iteration unless a genuine unrepairable external/user-only blocker remains.
 - Real workstation scans, private paths, filenames, hashes, queues, manifests, approvals, and receipts belong in ignored runtime storage, never committed fixtures.
+
+## Execution handoff discipline
+
+A handoff is executable state, not a planning restart.
+
+- Follow `harness/contracts/execution-handoff-loop.v1.json`: RECOVER -> PARTITION -> DISPATCH -> EXECUTE -> PROVE -> REVIEW -> CONVERGE -> CONTINUE.
+- Produce/consume packets conforming to `harness/contracts/execution-handoff-packet.schema.v1.json`.
+- Review transitions use `harness/evals/execution-handoff-review-gates.v1.json`; a failed gate routes to repair and retry, not scheduler shutdown.
+- Completed facts are inputs to remaining work. Do not repeat them merely because a new agent took over.
+- If independent lanes are ready, launch them through available safe adapters; do not make the operator shuttle prompts when automation exists.
+- Passing a gate is permission to continue under existing authority. `PLAN_READY`, `HANDOFF_WRITTEN`, `PR_OPEN`, and `MERGEABLE` are non-terminal states.
 
 ## Sprint discipline
 
