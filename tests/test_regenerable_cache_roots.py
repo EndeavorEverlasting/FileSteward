@@ -10,13 +10,22 @@ from typing import Any
 import pytest
 
 from filesteward import cli as cli_mod
-from filesteward.deletion.preflight import run_preflight
+from filesteward.deletion.preflight import run_preflight as _run_preflight
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
 from filesteward.deletion.regenerable import (
     allows_size_mtime_identity_seal,
     is_under_regenerable_cache_allowlist,
     regenerable_cache_allowlist_roots,
 )
 from filesteward.policy.paths import normalize_declared_path
+
+
+def run_preflight(manifest, **kwargs):
+    source = Path(kwargs["cleanup_plan_path"]).parent
+    bind_source_artifacts(manifest, source)
+    kwargs["source_artifact_dir"] = source
+    kwargs["ownership_resolver"] = resolver_for(manifest["items"])
+    return _run_preflight(manifest, **kwargs)
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -77,6 +86,7 @@ def _item_from_file(
         "source_run_id": run_id,
         "source_cleanup_plan_sha256": plan_sha,
         "identity": identity,
+        "ownership": ownership_binding(identity["path"]),
         "intended_action": "QUARANTINE",
         "reversibility": "REVERSIBLE_QUARANTINE",
     }

@@ -614,8 +614,10 @@ class TestDeleteLifecycleCli:
         )
         assert code == EXIT_INVALID
 
+    @pytest.mark.parametrize("synthetic_adapter", [False, True], ids=["default-fails-closed", "explicit-synthetic-adapter"])
     def test_preflight_approve_execute_temp_fixture(
-        self, s1_run_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+        self, s1_run_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch, synthetic_adapter: bool,
     ) -> None:
         """End-to-end CLI on synthetic temp only — proves bytes gone."""
 
@@ -686,6 +688,22 @@ class TestDeleteLifecycleCli:
             },
             "items": [item],
         }
+        from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
+        from filesteward import cli as cli_mod
+        item["ownership"] = ownership_binding(item["path"])
+        bind_source_artifacts(manifest, s1_run_dir)
+        if synthetic_adapter:
+            resolver = resolver_for([item])
+            original_preflight = cli_mod.run_preflight
+            original_execute = cli_mod.execute_permanent_delete
+            def synthetic_preflight(*args, **kwargs):
+                kwargs["ownership_resolver"] = resolver
+                return original_preflight(*args, **kwargs)
+            def synthetic_execute(*args, **kwargs):
+                kwargs["ownership_resolver"] = resolver
+                return original_execute(*args, **kwargs)
+            monkeypatch.setattr(cli_mod, "run_preflight", synthetic_preflight)
+            monkeypatch.setattr(cli_mod, "execute_permanent_delete", synthetic_execute)
         (s1_run_dir / "delete-manifest.json").write_text(
             json.dumps(manifest, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
@@ -699,6 +717,14 @@ class TestDeleteLifecycleCli:
                 str(scan),
             ]
         )
+        if not synthetic_adapter:
+            assert code == EXIT_INVALID
+            assert target.read_bytes() == payload
+            receipt = json.loads((s1_run_dir / "delete-preflight.json").read_text(encoding="utf-8"))
+            assert any(row["reason_class"] == "OWNERSHIP_UNKNOWN" for row in receipt["items"])
+            assert not (s1_run_dir / "delete-approval.json").exists()
+            assert not (s1_run_dir / "delete-execution-receipt.json").exists()
+            return
         assert code == EXIT_OK, capsys.readouterr()
         assert (s1_run_dir / "delete-preflight.json").is_file()
 
