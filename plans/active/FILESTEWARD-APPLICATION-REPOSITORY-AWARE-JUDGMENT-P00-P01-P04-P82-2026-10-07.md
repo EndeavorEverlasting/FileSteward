@@ -493,7 +493,7 @@ Remote coordination validation must prove before handoff:
 
 That proves **remote static design/harness consistency only**. Local tests, browser acceptance, and the visual state of the current application remain separate proof gates.
 
-**P82 remote result (2026-10-07): PASS — 15/15 static cross-contract checks.** Receipt: `harness/evals/judgment-scene-p82-validation-2026-10-07.json`. The pass proves transition closure, mutation ordering, cross-contract references, tutorial retention, regression-control presence, and explicit PR #29 collision handling. It does not prove local/browser runtime behavior.
+**P82 remote result (2026-10-07): PASS — 19/19 provider-read-back checks after review-driven J0 repair.** Receipt: `harness/evals/judgment-scene-p82-validation-2026-10-07.json`. This proves the static scene/contract graph plus the source/test shape that removes generic Package Cache admission. It does **not** prove local pytest, browser, or workstation runtime behavior.
 
 ### Additional acceptance gates
 
@@ -503,3 +503,10 @@ That proves **remote static design/harness consistency only**. Local tests, brow
 - **A14:** P94 negative fixtures fail broken candidates and positive controls pass legitimate flows.
 - **A15:** desktop + narrow + reduced-motion + forced-colors live acceptance passes, plus supported input modes.
 - **A16:** local agents emit BLOCKED_JUDGMENT_GAP instead of inventing scene semantics.
+
+
+### Review-driven J0 containment repair
+
+Provider review found that the first pass documented the Package Cache incident lock while runtime source still admitted that root. The branch now removes that generic runtime admission and inverts the focused regression so Package Cache must be refused. The handoff also requires a covering operator gate before installer repair, requires dependency evidence to be refreshed immediately before each removal, and records PR #29 reconciliation as an external J6 prerequisite rather than a lane ID.
+
+This raises J0 to **implemented on the remote branch + provider-read-back statically validated**. Local focused and full test execution remain unproven.
