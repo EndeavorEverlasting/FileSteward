@@ -291,6 +291,8 @@
     "state": "CLOSED_FOR_CURRENT_KNOWN_GRAPH",
     "contract_ref": "harness/contracts/dependency-aware-judgment-closure.v1.json",
     "blocked_judgment_gap": "NONE",
-    "rule": "Cursor executes the closed integration order, lane ownership, module boundaries, PR29 selective-port policy, and provider PR policy. It does not choose an alternate architecture."
+    "rule": "Cursor executes the closed integration order, lane ownership, module boundaries, PR29 selective-port policy, and provider PR policy. It does not choose an alternate architecture.",
+    "p82_validation_ref": "harness/evals/judgment-closure-p82-validation-2026-10-07.json",
+    "p82_validation_state": "PASS_20_OF_20_REMOTE_JUDGMENT_CLOSURE"
   }
 }
