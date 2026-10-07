@@ -1,0 +1,120 @@
+{
+  "schema_version": "filesteward.storage-dependency-judgment/v1",
+  "owner": "FileSteward dependency-aware cleanup judgment",
+  "purpose": "Prevent cache/path heuristics from breaking installed applications or repositories while preserving low-friction storage decisions.",
+  "capacity_policy": {
+    "target_free_ratio": 0.2,
+    "critical_free_ratio": 0.1,
+    "authority": "priority_only"
+  },
+  "protected_generic_roots": [
+    {
+      "root": "%PROGRAMDATA%\\\\Package Cache",
+      "reason": "installer/serviceability dependency risk",
+      "automatic_delete": false,
+      "future_orphan_handling": "per-entry evidence may reach HUMAN_REVIEW only until an explicit orphan/serviceability contract is proven"
+    }
+  ],
+  "evidence_domains": [
+    "application_installation",
+    "application_runtime",
+    "application_serviceability",
+    "service",
+    "scheduled_task",
+    "package_manager",
+    "repository",
+    "toolchain",
+    "user_data"
+  ],
+  "consequence_classes": [
+    "APP_RUNTIME_DEPENDENCY",
+    "APP_SERVICEABILITY_DEPENDENCY",
+    "APP_CACHE_REGENERABLE",
+    "APP_CACHE_UNKNOWN",
+    "SERVICE_DEPENDENCY",
+    "SCHEDULED_TASK_DEPENDENCY",
+    "REPOSITORY_TRACKED",
+    "REPOSITORY_DIRTY_OR_UNPUSHED",
+    "REPOSITORY_REPRODUCIBLE_CLONE",
+    "TOOLCHAIN_DEPENDENCY",
+    "USER_DATA",
+    "ORPHAN_CANDIDATE",
+    "UNKNOWN_OWNERSHIP"
+  ],
+  "promotion_rules": {
+    "to_protected": [
+      "app runtime dependency",
+      "app serviceability dependency",
+      "service dependency",
+      "scheduled task dependency",
+      "dirty/unpushed/unique repository evidence",
+      "toolchain dependency"
+    ],
+    "to_human_review": [
+      "unknown ownership",
+      "ambiguous orphan candidate",
+      "clean reproducible clone whose removal still requires operator disposition"
+    ],
+    "to_reclaim_proven": [
+      "explicit adapter-backed regenerable cache with deterministic regeneration evidence",
+      "repository-generated/build artifact whose generating source and boundary are proven"
+    ],
+    "forbidden": [
+      "age_only",
+      "size_only",
+      "path_name_only",
+      "cache_name_only",
+      "missing_ownership_evidence",
+      "AI_confidence_only"
+    ]
+  },
+  "repository_rules": {
+    "git_discovery_owner": "ProtectionIndex.from_git_discovery",
+    "classification_may_enrich_but_not_weaken_protection": true,
+    "required_evidence": [
+      "dirty",
+      "staged",
+      "untracked",
+      "branch",
+      "worktree",
+      "remote",
+      "push_or_reproducibility_state_when_available"
+    ]
+  },
+  "application_rules": {
+    "preferred_action": "semantic owner action such as clean-cache/uninstall/repair before raw file deletion",
+    "forbidden_inventory_probe": "Win32_Product",
+    "package_cache_generic_delete": false
+  },
+  "destructive_execution": {
+    "require_current_dependency_evidence": true,
+    "stale_evidence": "FAIL_CLOSED",
+    "receipt_must_bind_dependency_revision": true
+  },
+  "entire": {
+    "role": "context_accelerator_not_authority",
+    "orientation": [
+      "entire status --json",
+      "entire agent-help --json"
+    ],
+    "optional": [
+      "Entire Brain",
+      "Entire Graph",
+      "runtime-discovered plugins"
+    ],
+    "unverified_named_capability": "Mini must be discovered locally before use"
+  },
+  "scene_projection": {
+    "through_line": [
+      "CAPACITY",
+      "ATTRIBUTION",
+      "EVIDENCE",
+      "DECIDE",
+      "AUTHORIZE",
+      "RECLAIM",
+      "VERIFY"
+    ],
+    "must_feed_filterable_views": true,
+    "no_dead_clicks": true
+  }
+}
