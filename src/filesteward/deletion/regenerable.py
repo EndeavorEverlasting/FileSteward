@@ -30,7 +30,6 @@ def regenerable_cache_allowlist_roots() -> list[Path]:
     """
 
     local = os.environ.get("LOCALAPPDATA", "").strip()
-    program_data = os.environ.get("PROGRAMDATA", r"C:\ProgramData").strip()
     roots: list[Path] = []
     if local:
         local_root = Path(local)
