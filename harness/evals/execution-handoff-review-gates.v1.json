@@ -116,17 +116,21 @@
       "id": "RG7_PR29_VISUAL_LINEAGE",
       "before": "J6_VISUAL_MUTATION",
       "required": [
-        "PR #29 and main refreshed",
-        "incumbent Memory Atlas behavior/visual lineage recovered",
-        "collision/rebase/integration strategy explicit",
+        "J4 integrated into refreshed main",
+        "PR #29 and main refreshed for evidence",
+        "harness/contracts/dependency-aware-judgment-closure.v1.json loaded",
+        "dedicated integration/j6-pr29-lineage-20261007 branch created from refreshed main",
+        "PR #29 selective-port allowlist/exclusions/shared-file policies applied exactly",
         "P94 protected behavior ledger loaded"
       ],
       "reject_if": [
+        "whole PR #29 branch merged as the convergence strategy",
         "backend lane rewrites visualization",
         "new generic dashboard replaces incumbent world",
-        "stale PR #29 snapshot used"
+        "stale PR #29 snapshot used as present truth",
+        "PR #29 safety/deletion/governance files override current main authority"
       ],
-      "repair_owner": "J6 reconciled visualization owner",
+      "repair_owner": "J6 execution owner following the closed judgment contract",
       "next_on_pass": "J6_EXECUTE"
     },
     {
