@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import os
 import shutil
+import json
+from dataclasses import asdict
 from dataclasses import dataclass
 from pathlib import Path, PureWindowsPath
 from typing import Any, Mapping, Optional, Sequence
@@ -43,6 +45,9 @@ from filesteward.policy.paths import (
     runtime_root,
 )
 from filesteward.protect import ProtectedRoot, ProtectionIndex, ProtectionRelation
+from filesteward.ownership.actions import (
+    OwnershipResolver, unresolved_ownership, plan_owner_actions, admit_cleanup_disposition,
+)
 
 __all__ = ["CleanupRun", "RunResult"]
 
@@ -64,6 +69,7 @@ _ARTIFACT_FILENAMES = (
     "protected-exclusions.csv",
     "cleanup-summary.md",
     "run.json",
+    "owner-action-plan.json",
 )
 
 
@@ -96,6 +102,7 @@ class CleanupRun:
         target_free_bytes: Optional[int] = None,
         baseline_free_bytes: Optional[int] = None,
         scan_deps: Optional[ScanDeps] = None,
+        ownership_resolver: OwnershipResolver = unresolved_ownership,
     ) -> None:
         for name, value in (
             ("target_free_bytes", target_free_bytes),
@@ -120,6 +127,7 @@ class CleanupRun:
         self._target_free_bytes = target_free_bytes
         self._baseline_free_bytes = baseline_free_bytes
         self._scan_deps = scan_deps
+        self._ownership_resolver = ownership_resolver
 
     def execute(self) -> RunResult:
         root = normalize_declared_path(self._root)
@@ -207,6 +215,7 @@ class CleanupRun:
         unknown_count = 0
         unknown_bytes = 0
         inventory_items = 0
+        action_rows = []
 
         exclude_roots = (str(runtime),) if exclude_runtime else ()
         scan_stream = iter_inventory(
@@ -218,6 +227,11 @@ class CleanupRun:
             )
 
         for item in scan_stream:
+            ownership = self._ownership_resolver(item.path)
+            action_plan = plan_owner_actions(item.path, ownership)
+            if action_plan.disposition is CleanupDisposition.PROTECTED:
+                index = ProtectionIndex((*index.roots, ProtectedRoot(
+                    item.path, "ownership:" + ",".join(action_plan.reason_codes))))
             relation = index.relation(item.path)
             kids = children.get(item.path, ())
             gates = evaluate_gates(
@@ -233,6 +247,11 @@ class CleanupRun:
             reviewed = challenge.review(item, gates, provisional)
             disposition = reviewed.final_disposition
             basis_parts = [provisional.basis, *reviewed.challenge_notes]
+            disposition = admit_cleanup_disposition(disposition, action_plan)
+            basis_parts.extend(action_plan.reason_codes)
+            action_rows.append({"item_id": item.item_id, **asdict(action_plan),
+                                "observed_at_unix": ownership.observed_at_unix,
+                                "adapters_complete": ownership.adapters_complete})
 
             if item.entry_type is EntryType.DIRECTORY and kids:
                 composed, composed_basis = resolve_directory_disposition(
@@ -436,6 +455,9 @@ class CleanupRun:
         )
 
         artifacts.write_inventory(run_dir / "inventory.csv", inventory_rows)
+        (run_dir / "owner-action-plan.json").write_text(
+            json.dumps({"schema_version": "filesteward.owner-action-plan/v1", "items": action_rows},
+                       indent=2) + "\n", encoding="utf-8")
         artifacts.write_cleanup_plan(run_dir / "cleanup-plan.csv", plan_rows)
         artifacts.write_human_review(run_dir / "human-review.csv", review_rows)
         artifacts.write_protected_exclusions(
