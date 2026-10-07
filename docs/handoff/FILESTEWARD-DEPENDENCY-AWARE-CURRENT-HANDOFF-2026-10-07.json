@@ -60,6 +60,14 @@
         "harness/evals/judgment-scene-regression.v1.json"
       ],
       "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "A read-only Wispr broken-install diagnostic and evidence-first recovery runbook are now tracked. The probe captures uninstall metadata, missing serviceability executables, Wispr process paths, documented install/data path presence, and Squirrel log tails into ignored var/runs without deleting files, mutating registry, or terminating processes.",
+      "evidence": [
+        "scripts/windows/diagnose-wispr-install.ps1",
+        "docs/handoff/WISPR-FLOW-BROKEN-INSTALL-RECOVERY-2026-10-07.md"
+      ],
+      "proof_state": "PROVIDER_VALIDATED_STATIC"
     }
   ],
   "remaining_work": [
@@ -71,9 +79,9 @@
     },
     {
       "work_id": "J1_WISPR_INCIDENT",
-      "action": "Recover ignored reclaim receipts and read-only Wispr installation/runtime/serviceability evidence; establish PROVEN, DISPROVEN, or CORRELATED_UNRESOLVED causal state.",
+      "action": "Run scripts/windows/diagnose-wispr-install.ps1 first. Classify the actual Squirrel failure from ignored var/runs evidence before any repair mutation. Only then perform the smallest semantic repair required, preserving Wispr user data and pre-repair evidence.",
       "depends_on": [],
-      "acceptance": "Causal state is evidence-backed; private evidence remains uncommitted; any repair mutation has a covering operator gate."
+      "acceptance": "Diagnostic.json + setup-log evidence exist; failure class is evidence-backed; no blind reinstall loop or raw registry/app-data deletion occurs; repair is followed by launch + registration consistency verification."
     },
     {
       "work_id": "J2_APP_ATTRIBUTION",
@@ -151,7 +159,7 @@
   "autonomy_gap": "NONE",
   "exact_next_action": {
     "phase": "RECOVER",
-    "action": "Refresh local/provider truth and Entire capabilities. Then implement J2 and J3 adapters against storage-ownership-evidence-graph.v1.json in independent lanes where safe; J3 must use Git as canonical repo truth and Entire Graph/status as additional current relationship/activity evidence when locally available. Converge both into J4 most-protective-edge reducer before any J5 deletion eligibility work.",
+    "action": "After refreshing local/provider truth, run the read-only Wispr diagnostic probe before any workstation repair. Inspect diagnostic.json and copied Squirrel log tail; classify lock/access/stale-registration/package/unknown. Execute only the smallest semantic repair supported by that evidence, then verify launch and installed-app consistency. J2/J3 ownership lanes may proceed independently.",
     "owner": "local execution coordinator",
     "can_execute_without_operator": true
   },
