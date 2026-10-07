@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from safe_capacity_fixtures import ownership_binding, resolver_for
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
 
 import json
 import os
@@ -27,6 +27,9 @@ from filesteward.deletion.reclaim import ReclaimState, verify_reclaim
 
 
 def run_preflight(manifest, **kwargs):
+    source = Path(kwargs["source_artifact_dir"]) if "source_artifact_dir" in kwargs else Path(manifest["items"][0]["path"]).parent.parent / "synthetic-owner-sources"
+    bind_source_artifacts(manifest, source)
+    kwargs.setdefault("source_artifact_dir", source)
     kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
     return _run_preflight(manifest, **kwargs)
 
@@ -147,10 +150,11 @@ def _prepare_run(
     run_dir = tmp_path / "run"
     run_dir.mkdir()
     manifest = _manifest(items)
+    bind_source_artifacts(manifest, run_dir)
     m_path = run_dir / "delete-manifest.json"
     m_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    pf = run_preflight(manifest, scan_root=scan_root)
+    pf = run_preflight(manifest, scan_root=scan_root, source_artifact_dir=run_dir)
     assert pf.overall == "PASS", [i.to_dict() for i in pf.items]
     pf_path = run_dir / "delete-preflight.json"
     write_preflight_receipt(pf_path, pf)
@@ -240,6 +244,7 @@ class TestPermanentDeleteExecutor:
         run_dir = tmp_path / "run"
         run_dir.mkdir()
         manifest = _manifest(items)
+        bind_source_artifacts(manifest, run_dir)
         m_path = run_dir / "delete-manifest.json"
         m_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         # Build a synthetic PASS preflight for approval binding only (execute will
@@ -327,9 +332,10 @@ class TestPermanentDeleteExecutor:
         run_dir = tmp_path / "run"
         run_dir.mkdir()
         manifest = _manifest(items)
+        bind_source_artifacts(manifest, run_dir)
         m_path = run_dir / "delete-manifest.json"
         m_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        pf = run_preflight(manifest, scan_root=scan)
+        pf = run_preflight(manifest, scan_root=scan, source_artifact_dir=run_dir)
         assert pf.overall == "PASS"
         write_preflight_receipt(run_dir / "delete-preflight.json", pf)
         (run_dir / "delete-preflight.approved.json").write_bytes(
@@ -443,6 +449,7 @@ class TestExecuteSafetyRepairs:
         run_dir = tmp_path / "run"
         run_dir.mkdir()
         manifest = _manifest(items)
+        bind_source_artifacts(manifest, run_dir)
         m_path = run_dir / "delete-manifest.json"
         m_path.write_text(
             json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"

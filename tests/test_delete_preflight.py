@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from safe_capacity_fixtures import ownership_binding, resolver_for
+from safe_capacity_fixtures import ownership_binding, resolver_for, bind_source_artifacts
 
 import hashlib
 import json
@@ -30,6 +30,15 @@ from filesteward.protect import ProtectedRoot
 
 
 def run_preflight(manifest, **kwargs):
+    if kwargs.get("cleanup_plan_path") is not None:
+        source = Path(kwargs["cleanup_plan_path"]).parent
+    elif manifest["items"]:
+        source = Path(manifest["items"][0]["path"]).parent.parent / "synthetic-owner-sources"
+    else:
+        source = None
+    if source is not None:
+        bind_source_artifacts(manifest, source)
+        kwargs.setdefault("source_artifact_dir", source)
     kwargs.setdefault("ownership_resolver", resolver_for(manifest["items"]))
     return _run_preflight(manifest, **kwargs)
 
