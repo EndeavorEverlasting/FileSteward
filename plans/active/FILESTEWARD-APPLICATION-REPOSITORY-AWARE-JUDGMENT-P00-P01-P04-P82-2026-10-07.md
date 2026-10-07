@@ -379,3 +379,125 @@ J0 must make the current unsafe generic Package Cache admission impossible befor
 J1 must preserve the Wispr incident evidence and determine what actually broke without inventing causality.
 
 J2/J3 build the attribution substrate in parallel so FileSteward can make future deletion judgment frictionless because it knows what a file *belongs to*, not because it has become more aggressive about deletion.
+
+
+## 15. Judgment boundary — make technical judgment deterministic
+
+The product should remove judgment friction by eliminating questions the machine can safely answer.
+
+**Machine-owned technical judgment:** attribution, runtime/serviceability consequence, repo uniqueness/reproducibility, regenerability, evidence freshness, and capacity measurement.
+
+**Operator-owned judgment:** whether an otherwise-safe application/repository is wanted locally, archive/keep preference, and exact authorization for a mutating semantic action.
+
+**Local-agent boundary:** implement the canonical decision system. Do not invent product judgment.
+
+Unknown ownership no longer jumps directly to a vague HUMAN_REVIEW stop. It routes first to the deterministic attribution/consequence/recoverability workflow. HUMAN_REVIEW is legal only after safe adapters are exhausted and must carry the exact unresolved fact, probes attempted, why the fact matters, and only safe choices.
+
+Canonical machine script:
+
+- `harness/contracts/judgment-scene-workflow.v1.json`
+- retained regression ledger: `harness/evals/judgment-scene-regression.v1.json`
+
+Missing scene judgment is `BLOCKED_JUDGMENT_GAP`, not an invitation for Cursor/OpenCode to create a new modal, dashboard, action, or policy.
+
+## 16. Deterministic scene script
+
+Preserve the existing immersive tutorial:
+
+```text
+MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED
+```
+
+Dependency-aware judgment extends **RESOLVE** rather than replacing this journey:
+
+```text
+ATLAS_HOME (MAP)
+  -> TARGET_FOCUS (FOCUS)
+  -> EVIDENCE_GATE (GATE)
+  -> ATTRIBUTION_RESOLVE
+  -> CONSEQUENCE_RESOLVE
+  -> RECOVERABILITY_RESOLVE
+  -> VALUE_DECISION
+  -> AUTHORIZATION_GATE (APPROVAL)
+  -> RECLAIM_EXECUTION (STAGED/execute)
+  -> VERIFY_RETURN
+  -> next target or ATLAS_HOME
+
+post-action regression
+  -> INCIDENT_RECOVERY
+  -> VERIFY_RETURN
+```
+
+### Scene behavior by construction
+
+| Scene | System does | Operator does | Exit condition |
+|---|---|---|---|
+| ATLAS_HOME | measures capacity, ranks evidence-bearing candidates, preserves filters | focuses a target | canonical selection changes |
+| TARGET_FOCUS | loads known facts and identifies first unresolved gate | opens/continues gate | exact gate known |
+| EVIDENCE_GATE | routes missing fact and starts safe probe when possible | acts only if a probe genuinely needs an explicit trigger | typed resolver chosen |
+| ATTRIBUTION_RESOLVE | checks app/service/task/repo/toolchain/user-data ownership | nothing unless all safe adapters exhaust | owner or exact unknown recorded |
+| CONSEQUENCE_RESOLVE | deterministically classifies what depends on bytes | nothing | consequence/disposition floor known |
+| RECOVERABILITY_RESOLVE | proves regeneration/reproduction/reacquisition | nothing | recovery proof or exact uncertainty known |
+| VALUE_DECISION | derives only legal semantic actions | chooses keep/remove-app/clean-cache/remove-clone/review-later as applicable | value intent recorded |
+| AUTHORIZATION_GATE | refreshes evidence and binds exact target/action | authorizes or backs out | exact current approval exists |
+| RECLAIM_EXECUTION | invokes semantic owner action and receipts scope | observes | execution receipt |
+| VERIFY_RETURN | measures bytes + health and refreshes queues | continues or returns Home | impact read back |
+| INCIDENT_RECOVERY | freezes same-family eligibility, preserves evidence, diagnoses/repairs | only supplies unavoidable external input | causal state + recovery state recorded |
+
+Read-only technical RESOLVE scenes may auto-advance when deterministic, provided their evidence remains inspectable. The system must never auto-select value preference or grant mutation authority.
+
+## 17. P94 regression hardening — immersive scenery is protected behavior
+
+The failure mode is now treated as a retained regression family: local agents repeatedly compress intentional immersive UX into generic implementation surfaces while preserving enough strings/tests to appear complete.
+
+P94 therefore protects at least these behaviors:
+
+1. the decision tree is the tutorial; no second tour;
+2. EXPLORE is reserved for genuine exploration;
+3. Home uses the canonical Atlas Home authority; no second router;
+4. search/filter/selection are orthogonal state and survive unrelated scene transitions;
+5. blocked/protected states never look reclaimable;
+6. the accepted Memory Atlas material/interaction world is preserved during refinement;
+7. contextual pointer treatment remains scoped and accessibility-aware;
+8. pointer/keyboard/touch use one semantic action model; no second mobile state machine;
+9. every operable action produces transition + impact + feedback + continuation;
+10. technical safety is resolved before asking the operator;
+11. decisions persist into filterable views/queues;
+12. static proof cannot close a live UX claim;
+13. tests/fixtures/oracles may not be weakened to fit a broken candidate.
+
+The machine-readable negative fixtures and positive controls live in `harness/evals/judgment-scene-regression.v1.json`. Any scene/interaction change must update that ledger and retain a negative fixture plus positive control.
+
+## 18. Product-design upstream used, without outsourcing authority
+
+This design pass checked current upstream product-design guidance and adopted only mechanics compatible with FileSteward's existing world:
+
+- **Paul Bakaus / Impeccable** — `skill/SKILL.src.md` blob `c413ae26e832b36d54603353f1c7a0ae04784eea`; `skill/reference/operate.md` blob `5e4666de08f63f55c832c7bb2511cc9ad8068744`. FileSteward is an **Operate** surface: task completion, scanability, consistency, real usage scenes, stateful motion, and preservation during refinement outrank decorative novelty.
+- **Anthropic / Claude frontend-design** — `plugins/frontend-design/skills/frontend-design/SKILL.md` blob `a5333457c414d20d625f307df945842c0952ecc3`. Adopted: structure must encode information, action copy must name the actual effect, and visual identity should be specific to the product rather than a generic template.
+- **Local Prompt Kit remains authority:** P106 owns interaction architecture, P108 bounded polish, P110 cross-viewport/live acceptance, and P94 retained regression behavior.
+
+Upstream resources are prior art, not a license for a local agent to redesign the product.
+
+## 19. P82 validation for this hardening pass
+
+Remote coordination validation must prove before handoff:
+
+- both new JSON artifacts parse from provider readback;
+- every transition target names a declared scene;
+- no scene with a mutating action bypasses VALUE_DECISION + AUTHORIZATION_GATE;
+- technical resolution precedes operator value judgment;
+- the protected tutorial remains MAP/FOCUS/GATE/RESOLVE/APPROVAL/STAGED;
+- the action-scene and storage-dependency contracts point to the same canonical scene script + regression ledger;
+- P94 ledger contains both negative fixtures and positive controls;
+- PR #29 is treated as a collision/preservation owner, not silently overwritten.
+
+That proves **remote static design/harness consistency only**. Local tests, browser acceptance, and the visual state of the current application remain separate proof gates.
+
+### Additional acceptance gates
+
+- **A11:** scripted scene graph has no missing transition targets.
+- **A12:** technical safety cannot be delegated to the operator before safe adapter exhaustion.
+- **A13:** existing MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED tutorial remains intact.
+- **A14:** P94 negative fixtures fail broken candidates and positive controls pass legitimate flows.
+- **A15:** desktop + narrow + reduced-motion + forced-colors live acceptance passes, plus supported input modes.
+- **A16:** local agents emit BLOCKED_JUDGMENT_GAP instead of inventing scene semantics.
