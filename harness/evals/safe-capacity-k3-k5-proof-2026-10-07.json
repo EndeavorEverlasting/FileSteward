@@ -1,0 +1,172 @@
+{
+  "schema_version": "filesteward.safe-capacity-proof/v1",
+  "candidate_head": "530fb64791f85cb1b173a485fc22ab4749bbe744",
+  "integration_base": "93c2254c271bcda95323285d52627f34c280718a",
+  "provider_floor": "c66fe8b50c5fb3d12449a9a9e62d81e109982cda",
+  "lanes": [
+    "K3",
+    "K5"
+  ],
+  "dependency": {
+    "K1_K2_PR": 39,
+    "merge_sha": "93c2254c271bcda95323285d52627f34c280718a"
+  },
+  "python_version": "3.12.8",
+  "environment": "Isolated editable venv in ignored var/proof/safe-capacity/env; no production install.",
+  "focused": {
+    "command": "python -m pytest -q -rs tests/test_safe_capacity_actions.py tests/test_safe_capacity_preflight.py tests/test_safe_capacity_strategy.py tests/test_delete_manifest.py tests/test_delete_preflight.py tests/test_delete_execute.py tests/test_cli.py tests/test_regenerable_delete.py",
+    "passed": 200,
+    "skipped": 5,
+    "failed": 0,
+    "log": "var/proof/safe-capacity/focused-final.txt"
+  },
+  "full": {
+    "command": "python -m pytest -q -rs",
+    "passed": 522,
+    "skipped": 7,
+    "failed": 0,
+    "log": "var/proof/safe-capacity/full-final.txt"
+  },
+  "skip_reason": "Seven native symlink fixtures denied by Windows privilege WinError 1314; existing native junction and simulated reparse checks passed.",
+  "p82": {
+    "case_count": 28,
+    "oracle": "test_safe_capacity_actions.py ownership cases + test_safe_capacity_preflight.py filesystem/race cases; exact corpus ID union asserted"
+  },
+  "failures_and_retries": [
+    {
+      "gate": "editable install without build isolation",
+      "repair": "Retry with declared isolated setuptools build dependencies; editable package installed successfully.",
+      "logs": [
+        "var/proof/safe-capacity/install.txt",
+        "var/proof/safe-capacity/install-retry.txt"
+      ]
+    },
+    {
+      "gate": "first combined full suite",
+      "result": "3 failed, 512 passed, 7 skipped",
+      "repair": "Replace implicit CLI/cache deletion authority with exact synthetic ownership/source evidence; retain default unresolved refusal.",
+      "log": "var/proof/safe-capacity/k3-k5-full.txt"
+    },
+    {
+      "gate": "focused review retry",
+      "result": "1 failed, 157 passed, 4 skipped",
+      "repair": "Native junction negative now checks the exact REPARSE_OR_SYMLINK verdict among items; source mismatch remains fail-closed.",
+      "log": "var/proof/safe-capacity/k3-k5-focused-review-retry.txt"
+    },
+    {
+      "gate": "full fixture retry",
+      "result": "519 passed, 7 skipped at 43bdbd7dd32b9d26eb68fbc1083fb681b0856036",
+      "repair": "Subsequent independent review found source ranking bypass; repaired and reran focused/full gates on candidate_head.",
+      "log": "var/proof/safe-capacity/k3-k5-full-retry.txt"
+    }
+  ],
+  "review_repairs": [
+    "Bind source owner-action and capacity digests and verify source membership in direct preflight.",
+    "Recompute canonical owner-correct capacity ranking; reject healthy/unranked/over-target direct source plans.",
+    "Recheck filesystem identity/content after the final ownership callback before unlink/rmdir.",
+    "Require finite fresh timestamps and exact binding identity; retain zero-byte container cleanup only while capacity gap remains."
+  ],
+  "proof_ceiling": "Synthetic ownership/action/delete safety, exact temporary-fixture deletion receipts, installed CLI lifecycle, and repository regression only. No live workstation attribution, destructive canary, measured reclaimed bytes, app health postconditions, deployment, or website alignment.",
+  "runtime_boundary": "Default ownership resolver is unresolved and fails closed. Production adapter completeness and operational collection remain unproven. K4 complete receipt/postcondition protocol remains successor work.",
+  "pr29": {
+    "state": "OPEN",
+    "mergeable": "CONFLICTING",
+    "head": "c093f2cb69d69be153fcf983b6ad785636825b7e",
+    "reconciled": false
+  },
+  "proof_input_sha256": {
+    "harness/contracts/action-scene-impact.v1.json": "f000d7d5a9aa3959d404e8df150a94aca349cc1054520df9dc43c8d346997961",
+    "harness/contracts/dependency-aware-judgment-closure.v1.json": "dff27ff360376abf78347bd1f87fb39c982451858ab553e39e6d10059bde9f2f",
+    "harness/contracts/execution-handoff-loop.v1.json": "5d49dc69ff2e90226ac4e0a70a22c209f009f4efb26d00d98eb03f4a74e47534",
+    "harness/contracts/execution-handoff-packet.schema.v1.json": "b84db3bba7d3f6d434da1a01a04e6986ae819ab3ada5d61dc0df64dd9a086778",
+    "harness/contracts/judgment-scene-workflow.v1.json": "712c84fedeb3382dfd31f9471bd9eb49e84e4b220eb090dbff92f3664068b52b",
+    "harness/contracts/storage-dependency-judgment.v1.json": "2166553dddc5cbac94ddb76c71436471fd7dc9e7ed79a897ade8073fb775aa6c",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json": "5b765c0f83ecf112a97a23523fa0eb889c0b2dc8333046dcfc121ec70a611cd8",
+    "harness/evals/storage-reclamation-p82-corpus.v1.json": "d1553888e30e94febcb8701e09db74b2e6db28f56ae056a2fc1b0cdb10b4bc5f",
+    "pyproject.toml": "4b530e295ba734ee056c51cbe6b386e967d0ac7a2c8bb76b5a99d6af2c1d5a4d",
+    "src/filesteward/__init__.py": "46f1aebfc49adfd04e9bad136f760d183ebcd8fdd8b4a8fbd6397e0ac5d2f04f",
+    "src/filesteward/classify/__init__.py": "3afd3408dff0a728d725036ddb49be00b1c027678e63192fc3a02c3c64f18704",
+    "src/filesteward/classify/challenge.py": "9d1d6009bf4a91828579cee849ed787d7dd57c6d49bac61b27205fbfa7c77181",
+    "src/filesteward/classify/gates.py": "f3aa0c3a1ff0a9b5975dfe07ee8beb0d25b3ecaa159a1b7e6d5f20a6d4f14518",
+    "src/filesteward/classify/rules.py": "aadfe519aa2afb33c808256d667c3b4aa7fc9a8d41c3773b6481ddb2677b801e",
+    "src/filesteward/cli.py": "63c59f67cda8dd05f24d184d093871b1a909f59ecc382997b118787cbcb190c0",
+    "src/filesteward/deletion/__init__.py": "780a085f1fc6e7bb0d518a65c091f1b9ad4ed242c091556b806f8f9892ca38d7",
+    "src/filesteward/deletion/approval.py": "77888295775b0e235f5c1f55654578baba2bf9810320260e8d333f33e6090e26",
+    "src/filesteward/deletion/execute.py": "8fadd0c00420e8782c479404c4b648e633ddaf58cc3db4cdf334ed4269dee18b",
+    "src/filesteward/deletion/manifest.py": "60152d9051dda9a9941e920d7bd778bc924fd6b41583f40764f2d2d7549758bd",
+    "src/filesteward/deletion/ownership.py": "5cb5181ba3bd292ef907c4af9e301d939ca3b02b8f5abf3fadaeb3441cd52d6c",
+    "src/filesteward/deletion/preflight.py": "b536482cef336ae6d1977b77351da8877fedc8d1e455939172edc122a623e596",
+    "src/filesteward/deletion/receipt.py": "9f0f551a28600ff9004fd93a1967aec664a847f960f33be42088ce95ce706ef6",
+    "src/filesteward/deletion/reclaim.py": "e6d621dda6611f63aeab286426cf7e40fd839eabf29700f89c20a78a050bb87c",
+    "src/filesteward/deletion/regenerable.py": "1f08f114755dc423c4adacd450e81fe0dac735309fc88ed3c5e16332f270ef77",
+    "src/filesteward/deletion/surface.py": "6a09a36011bb5ee3fffc40b08221be21dcbd13e450da7369c60e38df42c2bd33",
+    "src/filesteward/inventory/__init__.py": "39fd1c6a12a76fff872a781b52fb8d65f706f5adb35724aaa126ea671428427f",
+    "src/filesteward/inventory/scan.py": "ea20bd532012a3b588ba493e54a25b1ca9ee84dc0421990de337640582ac1bf1",
+    "src/filesteward/inventory/windows.py": "efa7bc4e428973325247513380022212621c5edc95b61c8d476903e439ab19a0",
+    "src/filesteward/manifest/__init__.py": "e633da4fa4e45668dc1d23ce415be084352e00bd1f254ff2a55ff85c8b50ea8d",
+    "src/filesteward/manifest/artifacts.py": "2ed98a257e2f74ce7a77def6cc9401a6455d4da51ab3044c7dde8283065492f8",
+    "src/filesteward/manifest/triage.py": "a62fe94ea7945224e8363277477c8328692daa7e50791761c38c4dfe625f0ac9",
+    "src/filesteward/models.py": "151937fd5f65bf81789402aa64cb139b26a8b1f923d06ca61e5b30dd2982e7b4",
+    "src/filesteward/ownership/__init__.py": "6da5ba221cb209aca0915fb0ad03b7c2bbd1f3ca668107236cf2a60622b53ea6",
+    "src/filesteward/ownership/_git_probe.py": "86605c3d6102d141d0e0ba222c64154a9549beba8db932c12366bd8cf98d6f30",
+    "src/filesteward/ownership/_windows_paths.py": "cad2756a5404fb396c9867eed7df96e11c9bf366179fc5d5d42e53f55c941ceb",
+    "src/filesteward/ownership/actions.py": "824ef5c7fefe273e7e3aee42e92796496e17fcc635a71fd31e07a5a6069a523c",
+    "src/filesteward/ownership/capacity.py": "1bf7095e5ab8c45979883c50f2e5d09c8591057ee0d9bacfebb1ca22d2d756a1",
+    "src/filesteward/ownership/graph.py": "d5ece2956c54c2c9e58e589efaf3ecc02aed8baebb665ddfb614c1d08cc3c0a8",
+    "src/filesteward/ownership/reducer.py": "dac56851786a995621afe8f41c21a7e5a5d9b5d66febf4592880fc32778dcc20",
+    "src/filesteward/ownership/repository.py": "a153c6da93da9b753a723c9c7a50c17f63601b502f9b2a44aa9afd6a86f97a32",
+    "src/filesteward/ownership/windows_app.py": "fa54d6658c5dd08bcf9f27c46e0fe0b4f06502c5d4aa7d8b3ea8e1b94781b166",
+    "src/filesteward/policy/__init__.py": "522a1ab292b2a29d515ae54f2a639a24b1ac323937e13cec0b4c1c0e098624da",
+    "src/filesteward/policy/paths.py": "1083c3814fe522261a0a3d3fbb3701be6cc85d9f769b2360ddfc6dd586c94568",
+    "src/filesteward/protect/__init__.py": "b318d9381c2a06a8bb24858b9fc3a66feb72f066801b59c260e6749e4e4f912c",
+    "src/filesteward/protect/git.py": "ca63780a6b7191f6a28b00ffd1034eb32f7f01b55959a3971357973cc91175cd",
+    "src/filesteward/protect/index.py": "4935e96415290a7e78e1c9da17009ee308c9007d1f949afddbb927c9050bc04e",
+    "src/filesteward/run.py": "397faef86445b8c7ee55664b0b03ac8e3ab89855ea24142498b10f635ec48c46",
+    "src/filesteward/visualization/__init__.py": "71132b9f6b66d19ac4e173b057f7ef2f85118118a43ed489ef827df907c93936",
+    "src/filesteward/visualization/contracts.py": "fc06385f2809859531f2566ceba1c3c649242015d5d09b2a433df7ba43bf6866",
+    "src/filesteward/visualization/css.py": "072ae6a09a14a889ede6113749c5238f2fb996706a0d00236d6d78f71909ce70",
+    "src/filesteward/visualization/html.py": "f65f5a5e07b733a068984dd3baf015eaf87d05881dcecd95472a550f62e0a3c9",
+    "src/filesteward/visualization/literal.py": "0e40464f2ec63bea04f5a5d17cc6c136307bde42635a509e5def6fb3e9a1c0cc",
+    "src/filesteward/visualization/model.py": "e7fe27d6a190d2b28626b27da78efa9c1502f8eaf18117ceabf9ee7353ddb547",
+    "src/filesteward/visualization/report.py": "a462705d60e9b5925d02ecbab5811fa7d641ee3f24b6fbbe1daa5b52d1bd1677",
+    "src/filesteward/visualization/selection.py": "7e02d5b8d189b47aa62160b15edfc75063ecae6efeb1b1c17f7987d0b37ea57e",
+    "src/filesteward/visualization/shell.py": "0d06b80cf484e2b8911d718be046892b3271fa1d0c3ac6ca9c9851a11d6fc613",
+    "src/filesteward/visualization/tokens.py": "6773fe6391e357e78167b460acf9c9aa2ca1de5040d9b89f57ed53cc1f16ed80",
+    "src/filesteward/visualization/treemap.py": "27368af0284a59a9a520aa2c6883cb4ca17bfb51cea64647e8d9e8b36707d3cb",
+    "tests/safe_capacity_fixtures.py": "a1b4ebfdb85182a55990294f8f859fdc1dbb1016dc8e299018e02f207d335b6f",
+    "tests/test_artifacts.py": "e64f6aa17133379b8e34b4682276206a05907f10403f41f1ea4985dd9d57b528",
+    "tests/test_challenge.py": "d872d8a2931fd2a132b838326c7e24f574671735683a29a4ce17d1f7ae9f3148",
+    "tests/test_cli.py": "a78c32115dd439d09451a881c30cd599b5938e5955be9f81d981ce4aae4940ab",
+    "tests/test_delete_approval.py": "6db36d5c016560767554e50a476c78ee27bfa92ff9c07c4ad9b2329876d40831",
+    "tests/test_delete_execute.py": "fe8082b79eea2668c741884cefc125032ae8ace6279007fbcb44d6bd2251a838",
+    "tests/test_delete_manifest.py": "49c3690ec02bac68d5a97e3d790bbd05135d954205d48af071e87cbabb0bd2b6",
+    "tests/test_delete_preflight.py": "586470057f1263a2f3d462d49447b934ca6c2f0638265d741310983b92134dec",
+    "tests/test_delete_surface.py": "200d47f3395d53dbae9861330660aaaa78006b20ffddcf3539301fd8067bace0",
+    "tests/test_disposition.py": "715c8cf313528ed773485357ea29853d6942d7886491c4b54e8b20cd00b54075",
+    "tests/test_models.py": "e039d610caaa8425afc9f3d7fe2ad896a144f7866d276f37901d43d36619105d",
+    "tests/test_operator_delete_path_contract.py": "4e6417f526a7d545323e2cbf3a1bea5458ccd1fadf621e3da857eef91597cb2d",
+    "tests/test_ownership_graph.py": "7d297df1acf77fd1c659bcf91bdbd4f2cf70de8da24c521378bda55513f32b40",
+    "tests/test_ownership_reducer.py": "52f2af31c2cef7eb8a0e3b0ecd94c824f3d0c773bc76b6c55cbc54fd730780d7",
+    "tests/test_ownership_repository.py": "4f520eab2577f83464227db94e83c5780a792fa1cebab9b788d9d88add747f57",
+    "tests/test_ownership_windows_app.py": "52712ff231753b1d72d17844731d93fc2fbaf69de9429384e80a36acb207ca02",
+    "tests/test_paths.py": "96da226b5fafe8773edbc8fad2b5d90aba0e7475c3e9cbfdb0a3c682464e506f",
+    "tests/test_protection.py": "f0243c4786d6c2e7fa7c66901d31ce3b2bc64770eec19327185f694484e371c6",
+    "tests/test_regenerable_cache_roots.py": "6fb3c2478ed33de99c3cbf15879a3f0a05896c34412b877ac604b8739f39f770",
+    "tests/test_safe_capacity_actions.py": "9e16c986a8cfead115729d14d6136d5a0dc1c8dd1b192255c2250de7facb8582",
+    "tests/test_safe_capacity_preflight.py": "003dcb18cb44112833cf353165b5ab3e3ad7d66aa03ff6a5e2433b736b29b216",
+    "tests/test_safe_capacity_strategy.py": "e925e53132824900b2468cd1d06f25853448a304e4e68fbbd85859a3e188c827",
+    "tests/test_scan.py": "fbd981f11e8e2a11c6a0ab41e0235c80df616e3c04ddb9c7f109d2768fbb4eee",
+    "tests/test_triage.py": "94f60538f99d40be07c083502de565e0bf38313504594fc1f78ef1b7e3705f0b",
+    "tests/test_visualization_f0.py": "519bfe0b6e609ec8e74836b81e6e0311310c4e755e201dd5a0f44e44e518fc38",
+    "tests/test_visualization_f5.py": "a7d99eccf505d52d346ece130f5caf36d4d46abcc7c8c1c6f9362b7e14cc8959",
+    "tests/test_visualization_html.py": "35197b7201755505ed43abe6d51dd1b00d481a9cf194e0edf1cd96dd9b08b1bd",
+    "tests/test_visualization_model.py": "65c3c44d4910b1fc38b03f0940c8d0657c3ec43cbb7290d19f618e901945d977",
+    "tests/test_visualization_report.py": "1f948c73b5d0eef7a037c121ca58cc5cd19e8d50c9014309c09d01f67095ff47",
+    "tests/test_visualization_treemap.py": "464453a942d8cb8ae057bba3902d269facce75e20374a1f0cbce641ac3ba114f"
+  },
+  "independent_review": {
+    "candidate_head": "530fb64791f85cb1b173a485fc22ab4749bbe744",
+    "reviewer": "capacity lane, read-only",
+    "result": "No remaining material findings in reviewed K1/K2/K3/K5 interfaces. Direct synthetic overtarget reproducer rejected with CAPACITY_ACTION_NOT_ADMITTED; canonical single selection passed; no files changed."
+  }
+}
