@@ -72,10 +72,12 @@
       "depends_on": [],
       "parallel_group": "WAVE_1",
       "owned": [
-        "new app-evidence modules",
-        "focused tests"
+        "src/filesteward/ownership/windows_app.py",
+        "tests/test_ownership_windows_app.py",
+        "private _windows_* helpers only"
       ],
-      "gate": "installed app ownership/consequence explainable"
+      "gate": "installed app ownership/consequence explainable",
+      "branch": "feature/windows-app-attribution-20261007"
     },
     {
       "id": "J3",
@@ -83,10 +85,12 @@
       "depends_on": [],
       "parallel_group": "WAVE_1",
       "owned": [
-        "new repo-evidence modules",
-        "focused tests"
+        "src/filesteward/ownership/repository.py",
+        "tests/test_ownership_repository.py",
+        "private _git_* helpers only"
       ],
-      "gate": "dirty/reproducible/generated distinctions proven"
+      "gate": "dirty/reproducible/generated distinctions proven",
+      "branch": "feature/repository-attribution-20261007"
     },
     {
       "id": "J4",
@@ -95,7 +99,15 @@
         "J2",
         "J3"
       ],
-      "gate": "normalized consequence evidence drives disposition"
+      "gate": "normalized consequence evidence drives disposition",
+      "branch": "feature/storage-ownership-reducer-20261007",
+      "owned": [
+        "src/filesteward/ownership/graph.py",
+        "src/filesteward/ownership/reducer.py",
+        "src/filesteward/ownership/__init__.py",
+        "tests/test_ownership_graph.py",
+        "tests/test_ownership_reducer.py"
+      ]
     },
     {
       "id": "J5",
@@ -104,7 +116,8 @@
         "J0",
         "J4"
       ],
-      "gate": "preflight blocks stale/unsafe dependency state"
+      "gate": "preflight blocks stale/unsafe dependency state",
+      "branch": "feature/dependency-aware-delete-preflight-20261007"
     },
     {
       "id": "J6",
@@ -119,8 +132,10 @@
         "reconciled PR #29 visualization lineage"
       ],
       "external_prerequisites": [
-        "refresh and reconcile PR #29 / current main UX lineage before visualization mutation"
-      ]
+        "J4 integrated into refreshed main",
+        "apply PR29 selective-port procedure from judgment closure contract"
+      ],
+      "branch": "integration/j6-pr29-lineage-20261007"
     },
     {
       "id": "J7",
@@ -151,7 +166,10 @@
   },
   "ui_collision": {
     "current_pr": 29,
-    "rule": "Do not independently rewrite src/filesteward/visualization/** from backend lanes; reconcile refreshed PR29/main before J6."
+    "source_head_at_decision": "c093f2cb69d69be153fcf983b6ad785636825b7e",
+    "disposition": "SELECTIVE_LINEAGE_PORT_NOT_WHOLE_BRANCH_MERGE",
+    "strategy_ref": "harness/contracts/dependency-aware-judgment-closure.v1.json",
+    "rule": "After J4 integration, create the dedicated J6 branch from refreshed main and selectively port only the allowlisted PR29 lineage. Current safety/ownership/deletion contracts remain authoritative."
   },
   "first_successor": [
     "J0",
@@ -268,5 +286,11 @@
       "gate": "RG10_POST_ACTION_VERIFY",
       "applies": "before whole sprint terminal success"
     }
-  ]
+  ],
+  "judgment_closure": {
+    "state": "CLOSED_FOR_CURRENT_KNOWN_GRAPH",
+    "contract_ref": "harness/contracts/dependency-aware-judgment-closure.v1.json",
+    "blocked_judgment_gap": "NONE",
+    "rule": "Cursor executes the closed integration order, lane ownership, module boundaries, PR29 selective-port policy, and provider PR policy. It does not choose an alternate architecture."
+  }
 }
