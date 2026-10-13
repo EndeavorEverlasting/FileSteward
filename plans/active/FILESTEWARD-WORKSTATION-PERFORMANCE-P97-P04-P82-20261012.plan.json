@@ -2,7 +2,7 @@
   "schema_version": "filesteward.plan/v1",
   "sprint_id": "FILESTEWARD-WORKSTATION-PERFORMANCE-20261012",
   "repository": "EndeavorEverlasting/FileSteward",
-  "execution_floor": "2303131cf8664cf205e4783272622b812e89bd10",
+  "execution_floor": "1bc5057b69e137c34016755dffc6bf78db18dc95",
   "branch": "main",
   "outcome": "Maintain private append-only evidence-based performance profiles by workstation without reducing storage ownership protections.",
   "prompted_by": [
@@ -88,8 +88,8 @@
       "owned": [
         "scripts/windows/*performance*"
       ],
-      "status": "IN_PROGRESS",
-      "proof": "actual OS scheduler receipt; no implicit C-drive scan",
+      "status": "INTEGRATED",
+      "proof": "PR #51 merged; synthetic schedule suite green; preview-never-registers proven; live recurring registration NOT exercised (operator cadence required)",
       "execution_adapter": "CURSOR_TASK_SUBAGENT"
     },
     {
@@ -104,8 +104,8 @@
         "harness/evals/",
         "tests/"
       ],
-      "status": "IN_PROGRESS",
-      "proof": "no risk-state promotion, stale identity mismatch refusal, all original tests pass",
+      "status": "INTEGRATED",
+      "proof": "PR #50 merged; safety corpus + harness eval on main; combined full suite 621 passed / 10 skipped",
       "execution_adapter": "CURSOR_TASK_SUBAGENT"
     }
   ],
@@ -134,7 +134,7 @@
         "F3"
       ],
       "graph_width": 2,
-      "dispatch_state": "DISPATCHED_F4_F5",
+      "dispatch_state": "F4_F5_INTEGRATED",
       "requires_satisfied_at": "2303131cf8664cf205e4783272622b812e89bd10"
     }
   ],
@@ -153,9 +153,10 @@
     "real_host_capture": "REQUIRES_LOCAL_WINDOWS_OBSERVATION"
   },
   "blockers": [
-    "F4 recurring registration blocked until operator supplies authorized cadence",
-    "interactive web dashboard not in F4/F5 scope",
-    "wear/latency/thermal collectors still UNKNOWN by design"
+    "F4 recurring Task Scheduler registration blocked until operator supplies authorized cadence",
+    "interactive web dashboard not implemented (JSON/text projection only)",
+    "wear/latency/thermal collectors still UNKNOWN by design",
+    "cross-host profile management unfinished"
   ],
   "convergence_owner": "FileSteward canonical main maintainer after all proof gates"
 }

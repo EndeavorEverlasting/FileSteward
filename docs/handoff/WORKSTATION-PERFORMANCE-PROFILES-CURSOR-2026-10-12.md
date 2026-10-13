@@ -112,3 +112,11 @@ Parallel group C dispatched via Cursor Task subagents + isolated worktrees:
 - F5: feature/workstation-perf-f5-safety-20261013
   worktree: %USERPROFILE%\dev\worktrees\FileSteward\workstation-perf-f5-safety-20261013
 Registration of a recurring Task Scheduler job remains blocked until the operator supplies an authorized cadence. Preview/register-opt-in must be separately proven.
+
+## F4/F5 integration (2026-10-13)
+
+- F5 PR #50 MERGED; F4 PR #51 MERGED; main contains both (1bc5057).
+- Combined local+main validation: 621 passed, 10 skipped.
+- Scheduler preview requires explicit --cadence and does not register tasks; no FileSteward schtasks registration observed after preview.
+- LIVE_RECURRING_SCHEDULE: not authorized / not registered.
+- Parent objective still open for authorized cadence, richer hardware metrics, and any future interactive dashboard.
