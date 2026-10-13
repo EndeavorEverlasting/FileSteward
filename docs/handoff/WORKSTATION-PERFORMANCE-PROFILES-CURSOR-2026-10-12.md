@@ -97,3 +97,8 @@ F1 INTEGRATED on main. Parallel group B dispatched via isolated worktrees:
 - F3: feature/workstation-perf-f3-dashboard-20261013
   worktree: %USERPROFILE%\dev\worktrees\FileSteward\workstation-perf-f3-dashboard-20261013
 Coordinator will converge PRs after lane validation; do not merge unfinished sibling lanes away.
+
+## F2/F3 integration
+
+F2 PR #46 and F3 PR #45 merged to main. Parallel group B INTEGRATED. F4/F5 remain successor.
+
