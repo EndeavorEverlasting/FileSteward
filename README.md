@@ -235,6 +235,7 @@ The module never scans file contents or grants cleanup approval:
     python -m filesteward.profiles capture --host-key PTop --volume 'C:\'
     python -m filesteward.profiles show --host-key PTop
     python -m filesteward.profiles compare --host-key PTop
+    python -m filesteward.visualization.performance --host-key PTop
 
 See [profile specification](docs/program/workstation-performance-profiles.md)
 and [Cursor handoff](docs/handoff/WORKSTATION-PERFORMANCE-PROFILES-CURSOR-2026-10-12.md).
