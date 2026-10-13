@@ -6,7 +6,11 @@ action-authorizing interface. No scanner or deletion code was changed.
 
 ## Capture on each workstation
 
-Run from the proven canonical checkout, after editable installation:
+Run from the proven canonical checkout. For CPU/RAM sampling, install the optional extra in the proven Python environment:
+
+    python -m pip install -e '.[profiles]'
+
+Then capture and inspect:
 
     python -m filesteward.profiles capture --host-key PTop --volume 'C:\'
     python -m filesteward.profiles show --host-key PTop
