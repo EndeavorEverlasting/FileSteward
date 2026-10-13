@@ -971,7 +971,7 @@ def render_decision_chamber_script() -> str:
     const requestEpoch = contextEpoch;
     clearItemProjection();
     state.selectedNodeId = id;
-    state.capabilityNote = 'Reading current evidence…';
+    state.capabilityNote = 'Reading current evidence...';
     applyScene();
     if (!bridge || !bridge.origin || !bridge.statePath) {
       localOpenGate(id, requestedScene);
