@@ -102,3 +102,13 @@ Coordinator will converge PRs after lane validation; do not merge unfinished sib
 
 F2 PR #46 and F3 PR #45 merged to main. Parallel group B INTEGRATED. F4/F5 remain successor.
 
+
+## F4/F5 successor dispatch (2026-10-13)
+
+Verified main floor at admission: 2303131 (plan admission PR #48 advanced main).
+Parallel group C dispatched via Cursor Task subagents + isolated worktrees:
+- F4: feature/workstation-perf-f4-scheduler-20261013
+  worktree: %USERPROFILE%\dev\worktrees\FileSteward\workstation-perf-f4-scheduler-20261013
+- F5: feature/workstation-perf-f5-safety-20261013
+  worktree: %USERPROFILE%\dev\worktrees\FileSteward\workstation-perf-f5-safety-20261013
+Registration of a recurring Task Scheduler job remains blocked until the operator supplies an authorized cadence. Preview/register-opt-in must be separately proven.
