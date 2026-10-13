@@ -67,6 +67,8 @@ def _latest(path: Path, obj: dict[str, Any]) -> None:
 
 def _ensure_identity(directory: Path, alias: str, binding: str) -> str:
     path = directory / "identity.json"
+    if path.is_symlink():
+        raise ProfileError("identity artifact is a symlink")
     if not path.exists():
         salt = secrets.token_hex(16)
         try:
@@ -168,8 +170,8 @@ def capture(alias: str, volumes: Sequence[str], *,
     alias = _key(alias)
     base = Path(profiles_root) if profiles_root is not None else _root()
     directory = base / alias
-    if directory.is_symlink():
-        raise ProfileError("profile directory is symlink")
+    if base.is_symlink() or directory.is_symlink():
+        raise ProfileError("profile root/directory is symlink")
     directory.mkdir(parents=True, exist_ok=True)
     if directory.is_symlink():
         raise ProfileError("profile directory was replaced by symlink")
@@ -196,12 +198,60 @@ def capture(alias: str, volumes: Sequence[str], *,
 
 def load_latest(alias: str, *, profiles_root: Path | None = None) -> dict[str, Any]:
     directory = (Path(profiles_root) if profiles_root is not None else _root()) / _key(alias)
-    if directory.is_symlink():
-        raise ProfileError("profile directory is symlink")
+    if directory.is_symlink() or (directory / "latest.json").is_symlink():
+        raise ProfileError("profile directory/latest pointer is symlink")
     result = _read(directory / "latest.json")
     if result.get("schema_version") != SCHEMA or result.get("alias") != alias:
         raise ProfileError("invalid host/schema binding")
     return result
+
+
+def compare_latest(alias: str, *, profiles_root: Path | None = None) -> dict[str, Any]:
+    """Compare the two newest snapshots of one host; never infer causality."""
+    base = Path(profiles_root) if profiles_root is not None else _root()
+    directory = base / _key(alias)
+    snapshots = directory / "snapshots"
+    if directory.is_symlink() or snapshots.is_symlink():
+        raise ProfileError("profile snapshot path is symlink")
+    if not snapshots.is_dir():
+        raise ProfileError("no captured snapshots")
+    files = sorted(snapshots.glob("*.json"))
+    if len(files) < 2:
+        raise ProfileError("at least two snapshots required")
+    if files[-1].is_symlink() or files[-2].is_symlink():
+        raise ProfileError("snapshot is symlink")
+    previous, current = _read(files[-2]), _read(files[-1])
+    for snap in (previous, current):
+        if snap.get("schema_version") != SCHEMA or snap.get("alias") != alias:
+            raise ProfileError("cross-host or schema-mismatched history")
+        if snap.get("profile_provides_delete_authority") is not False:
+            raise ProfileError("unsafe snapshot authority marker")
+    prior_volumes = {
+        row["declared_root"]: row for row in
+        previous.get("observation", {}).get("volumes", [])
+    }
+    diffs = []
+    for row in current.get("observation", {}).get("volumes", []):
+        root = row["declared_root"]
+        older = prior_volumes.get(root)
+        diffs.append({
+            "declared_root": root,
+            "previous_free_pct": older["free_pct"] if older else None,
+            "current_free_pct": row["free_pct"],
+            "change_free_percentage_points":
+                round(row["free_pct"] - older["free_pct"], 2) if older else None,
+            "current_capacity_status": row["capacity_status"],
+            "comparison_quality": "SAME_DECLARED_ROOT" if older else "NO_COMPARATOR",
+        })
+    return {
+        "schema_version": "filesteward.workstation-profile-comparison/v1",
+        "alias": alias,
+        "previous_snapshot_id": previous["snapshot_id"],
+        "current_snapshot_id": current["snapshot_id"],
+        "volumes": diffs,
+        "causal_attribution": "NOT_ESTABLISHED",
+        "authorization_state": "OBSERVATION_ONLY",
+    }
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Private read-only workstation profile")
@@ -212,13 +262,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     collect.add_argument("--sample-seconds", type=float, default=0.2)
     show = commands.add_parser("show")
     show.add_argument("--host-key", required=True)
+    compare = commands.add_parser("compare")
+    compare.add_argument("--host-key", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "capture":
             path = capture(args.host_key, args.volume, sample_seconds=args.sample_seconds)
             print("PROFILE_OBSERVED_ONLY: " + str(path))
-        else:
+        elif args.command == "show":
             print(json.dumps(load_latest(args.host_key), indent=2))
+        else:
+            print(json.dumps(compare_latest(args.host_key), indent=2))
     except (ProfileError, OSError, ValueError, TypeError) as exc:
         print("profile refused: " + str(exc), file=sys.stderr)
         return 2
