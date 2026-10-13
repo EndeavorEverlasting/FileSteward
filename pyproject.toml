@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filesteward"
-version = "0.15.0"
+version = "0.15.1"
 description = "Human-in-the-loop file triage and cleanup analysis with operator-owned ambiguity."
 readme = "README.md"
 license = "MIT"
@@ -23,6 +23,12 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+filesteward = [
+    "contracts/judgment-scene-workflow.v1.json",
+    "contracts/storage-reclaim-visual-system.tokens.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

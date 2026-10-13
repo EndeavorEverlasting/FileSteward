@@ -386,7 +386,9 @@
       "raw-eligible provenance drift rejects stale authorization before package emission",
       "non-receipt saved choices reopen on full evidence digest drift",
       "camera motion and viewport resize cannot strand or occlude chamber controls",
-      "chamber native touch scrolling must reach below-fold content"
+      "chamber native touch scrolling must reach below-fold content",
+      "receipt payload with next candidate must retain deleted subject until explicit continuation",
+      "later staging cannot overwrite prior still-valid durable approval"
     ],
     "positive_controls": [
       "KEEP persists and advances to next item",
@@ -394,9 +396,11 @@
       "RESULT renders receipt and continuation",
       "fresh generated evidence reaches VALUE_DECISION before AUTHORIZATION_GATE",
       "all owners remain inspectable with protective cross-domain precedence",
-      "empty search restoration and touch filter use preserve one state owner"
+      "empty search restoration and touch filter use preserve one state owner",
+      "synthetic receipt subject/explicit continuation across five browser modes",
+      "two staged items survive durable approval reload"
     ],
-    "browser_receipt": "var/runs/cinematic-browser-20261013/navigation-v11-results.json",
-    "proof_status": "BOUNDED_SYNTHETIC_SUPPORTED_INPUT_PASS"
+    "browser_receipt": "var/runs/cinematic-browser-20261013/final-repaired-v15-results.json",
+    "proof_status": "REVIEW_REPAIRS_REQUIRE_EXACT_HEAD_REPROOF"
   }
 }

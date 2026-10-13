@@ -126,3 +126,32 @@ def test_evidence_drift_reopens_keep_and_rejects_stale_delete_before_artifacts(t
     monkeypatch.setattr(module, "emit_delete_manifest", unexpected)
     with pytest.raises(ValueError, match="current value intent"):
         bridge.execute_permanent_delete_ui("run", [node.node_id], tmp_path, "DELETE_PERMANENTLY")
+
+
+def test_staging_preserves_prior_still_valid_approval_after_reload(tmp_path):
+    import json
+    from filesteward.approval import ApprovalAction
+    from filesteward.review_bridge import ApprovalRequest
+    nodes = {key: _reclaim_node(key) for key in ("a", "b")}
+    rows = [{"item_id":key,"disposition":"RECLAIM_PROVEN","proposed_action":"quarantine"} for key in nodes]
+    bridge = ReviewBridge(tmp_path,"run","a"*64,"token","",scan_root=tmp_path,
+                          ownership_resolver=generated_evidence,_nodes=nodes,_plan_rows=rows)
+    for key in nodes:
+        bridge.record_decision(DecisionRequest("run",key,DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT))
+        bridge.record_approval(ApprovalRequest("run",key,"a"*64,ApprovalAction.QUARANTINE,True))
+    assert json.loads(bridge.approval_record_path().read_text())["approved_item_ids"] == ["a","b"]
+    reloaded = ReviewBridge(tmp_path,"run","a"*64,"token","",scan_root=tmp_path,
+                            ownership_resolver=generated_evidence,_nodes=nodes,_plan_rows=rows)
+    reloaded._load_persisted()
+    assert set(reloaded._approvals) == {"a","b"}
+    assert all(reloaded.state_payload(key)["open_decision_scene"] == "STAGED" for key in nodes)
+
+
+def test_approval_reload_rejects_wrong_run_even_with_matching_plan(tmp_path):
+    import json
+    from filesteward.approval import ApprovalRecord
+    bridge = ReviewBridge(tmp_path,"current","a"*64,"token","",_nodes={"a":_reclaim_node("a")})
+    bridge.approval_record_path().write_text(json.dumps(ApprovalRecord("other","a"*64,("a",)).as_mapping()))
+    bridge._load_persisted()
+    assert not bridge._approvals
+    assert bridge.state_payload("a")["authorization_state"] == "UNAPPROVED"

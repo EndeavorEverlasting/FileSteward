@@ -201,6 +201,26 @@ def main():
                         step("touch-filter", lambda: page.locator('.filter-chip[data-filter="UNKNOWN"]').tap(timeout=3000))
                         case["touch_effect"] = snapshot(page)["filter"] == "UNKNOWN"
                         step("touch-all", lambda: page.locator('.filter-chip[data-filter="ALL"]').tap(timeout=3000))
+                    # Synthetic receipt payload proves client context binding only;
+                    # no destructive endpoint or executor is called.
+                    step("receipt-home", lambda: page.locator('#brand-home').click(timeout=3000))
+                    receipt_payload = page.request.get(service.url + 'api/v1/state?item_id=reclaim-1').json()
+                    receipt_payload.update(selected_node_id='reclaim-1', next_item_id='review-1',
+                        open_decision_scene='RESULT', allowed_intents=[], execution_state='complete',
+                        deletion_receipt={'overall':'SUCCEEDED','attempted':1,'succeeded':1,'failed':0,'skipped':0})
+                    from filesteward.visualization.judgment_script import load_scene_script
+                    terminal = load_scene_script()['VERIFY_RETURN']
+                    receipt_payload['script_scene'] = {'scene_id':'VERIFY_RETURN',
+                        'headline':terminal['render_script']['headline'], 'purpose':terminal['purpose'],
+                        'primary_impact':terminal['primary_impact'], 'evidence_status':'Synthetic receipt rendering control',
+                        'continuations':terminal['transitions']}
+                    page.route("**/api/v1/state?*", lambda route: route.fulfill(json=receipt_payload))
+                    step("receipt-open", lambda: page.locator('.decision-guide-step[data-guide-step="RESOLVE"]').click(timeout=3000))
+                    case['capability_not_error'] = not page.locator('#chamber-error').is_visible()
+                    case['receipt_subject_anchored'] = page.evaluate("() => window.__filestewardDecisionChamber.selectedNodeId === 'reclaim-1'") and snapshot(page)['selected'] == 'reclaim-1'
+                    step("receipt-continue", lambda: page.locator('[data-next-action="return_home"]').click(timeout=3000))
+                    case['receipt_continuation_explicit'] = snapshot(page)['selected'] == 'review-1'
+                    page.unroute("**/api/v1/state?*")
                     # Read failure is intentionally injected; it must be visible
                     # and fail closed, rather than silently inventing local state.
                     step("failure-home", lambda: page.locator('#brand-home').click(timeout=3000))
@@ -227,7 +247,7 @@ def main():
     failures = sum(len(c["errors"]) + sum("failure" in s for s in c["steps"]) + (not c["composition_preserved"]) + (not c.get("decision_advanced")) + (not c.get("selection_agrees")) + (c["initial"]["overflow"] > 1) for c in results["cases"])
     if args.full_acceptance:
         failures += sum(not c.get(check) for c in results["cases"] for check in
-                       ["empty_search", "empty_explained", "empty_restored", "read_failure_visible", "read_failure_closed"])
+                       ["empty_search", "empty_explained", "empty_restored", "read_failure_visible", "read_failure_closed", "receipt_subject_anchored", "receipt_continuation_explicit", "capability_not_error"])
         failures += sum(not c.get(check) for c in results["cases"] if c["mode"] == "touch"
                         for check in ["touch_effect", "touch_chamber_scroll"])
         failures += sum(not c.get("resize_clear") for c in results["cases"] if args.resolved_fixtures)

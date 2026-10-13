@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from importlib import resources
 from pathlib import Path
 
 from filesteward.models import CleanupDisposition
@@ -14,7 +15,15 @@ from filesteward.visualization.literal import escape_text
 
 def load_scene_script() -> dict[str, dict]:
     path = Path(__file__).resolve().parents[3] / "harness/contracts/judgment-scene-workflow.v1.json"
-    document = json.loads(path.read_text(encoding="utf-8"))
+    # The harness is the authoring authority. Installed distributions carry an
+    # exact, tested mirror so report rendering does not depend on a checkout.
+    # An unreadable or malformed canonical file must still fail closed.
+    text = path.read_text(encoding="utf-8") if path.is_file() else (
+        resources.files("filesteward").joinpath(
+            "contracts", "judgment-scene-workflow.v1.json"
+        ).read_text(encoding="utf-8")
+    )
+    document = json.loads(text)
     scenes = {scene["scene_id"]: scene for scene in document["scenes"]}
     for scene in scenes.values():
         for target in scene["transitions"].values():
@@ -33,6 +42,8 @@ def project_script(flow: DecisionFlowState | None, *, completed: bool = False, i
     }
     if incident:
         scene_id = "INCIDENT_RECOVERY"
+    elif stage in {"RESULT", "CLOSED"}:
+        scene_id = "VERIFY_RETURN"
     elif flow is not None and flow.script_scene_id is not None:
         scene_id = flow.script_scene_id
     elif stage == "RESOLVE":

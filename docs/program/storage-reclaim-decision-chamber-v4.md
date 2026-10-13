@@ -14,11 +14,13 @@ Canonical journey:
 MAP -> FOCUS -> GATE -> RESOLVE -> APPROVAL -> STAGED
 ```
 
-Permanent deletion is **not** implemented by this program. The first approved action remains **quarantine**. The UI may describe the operator's intent as a delete candidate, but the truthful terminal scene is:
+This donor design originally covered **quarantine** staging. The current implementation also exposes a separate gated `DELETE_PERMANENTLY` path governed by [Operator Delete Path](../agent/OPERATOR-DELETE-PATH.md). Quarantine staging retains its truthful terminal scene:
 
 > DELETE INTENT RECORDED -> APPROVED FOR ACTION -> QUARANTINE STAGED -> NO BYTES REMOVED YET
 
 That distinction is visible in the scene, not buried in documentation.
+
+Permanent deletion requires current value and affirmative ownership/regeneration evidence, a recorded bounded scan root, an exact eligible manifest, fresh preflight `PASS`, a distinct operator approval artifact bound to the exact run/manifest/rows/action, and the repository-owned bounded executor. Receipt readback reports succeeded/failed/skipped items; reclaimed bytes require measured before/after free-space verification. Classification, staging, and approval never prove deletion. This design document claims no live deletion or verified reclaim.
 
 ## 2. UNKNOWN is interactive, not manually promotable
 
@@ -42,7 +44,7 @@ HUMAN_REVIEW similarly offers:
 
 The operator does not hand-edit `UNKNOWN -> RECLAIM_PROVEN`.
 
-## 3. Approval gate
+## 3. Quarantine approval gate
 
 Only `RECLAIM_PROVEN + UNAPPROVED` enters APPROVAL.
 
@@ -57,6 +59,8 @@ Approval is a separate artifact bound to:
 The approval artifact lives only beneath ignored runtime state. It is never inferred from a click highlight.
 
 After authoritative receipt readback, the scene may enter STAGED.
+
+These quarantine approval bindings do not authorize permanent deletion. Its separate exact-manifest approval and fresh execution checks follow the operator-delete contract above; a quarantine receipt cannot substitute for a deletion execution receipt.
 
 ## 4. Staged delete cinematic
 

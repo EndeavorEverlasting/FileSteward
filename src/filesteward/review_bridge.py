@@ -424,7 +424,8 @@ class ReviewBridge:
         approval_path = self.approval_record_path()
         if approval_path.is_file():
             record = json.loads(approval_path.read_text(encoding="utf-8"))
-            if record.get("cleanup_plan_sha256") == self.cleanup_plan_sha256:
+            if (record.get("run_id") == self.run_id
+                    and record.get("cleanup_plan_sha256") == self.cleanup_plan_sha256):
                 for item_id in record.get("approved_item_ids") or ():
                     self._approvals[str(item_id)] = {
                         "authorization_state": AuthorizationState.APPROVED_FOR_ACTION.value,
@@ -990,16 +991,31 @@ class ReviewBridge:
             if (recorded.get("intent") != DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT.value
                     or recorded.get("evidence_digest") != current["evidence_digest"]):
                 raise ValueError("current value intent and evidence must match before approval")
+            retained_ids = []
+            for item_id, approval in self._approvals.items():
+                prior_node = self._nodes.get(item_id)
+                prior_choice = self._decisions.get(item_id) or {}
+                if (prior_node is not None and approval.get("action") == request.action.value
+                        and prior_choice.get("intent") == DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT.value):
+                    prior_evidence = self._resolution_for(prior_node)
+                    if (prior_evidence["raw_delete_eligible"]
+                            and prior_choice.get("evidence_digest") == prior_evidence["evidence_digest"]):
+                        retained_ids.append(item_id)
+            approved_ids = tuple(dict.fromkeys([*retained_ids, request.item_id]))
             record = ApprovalRecord(
                 run_id=request.run_id,
                 cleanup_plan_sha256=request.cleanup_plan_sha256,
-                approved_item_ids=(request.item_id,),
+                approved_item_ids=approved_ids,
                 action=request.action,
             )
             errors = validate_approval_against_plan(record, self._plan_rows)
             if errors:
                 raise ValueError("; ".join(errors))
             _atomic_write_json(self.approval_record_path(), record.as_mapping())
+            for item_id in set(self._approvals) - set(approved_ids):
+                self._approvals.pop(item_id, None)
+                if item_id in self._nodes:
+                    self._nodes[item_id].authorization_state = AuthorizationState.UNAPPROVED
             self._approvals[request.item_id] = {
                 "authorization_state": AuthorizationState.APPROVED_FOR_ACTION.value,
                 "action": request.action.value,
@@ -1118,6 +1134,9 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
             self._reject(403, "CORS preflight is not permitted")
 
         def do_GET(self) -> None:  # noqa: N802
+            if not is_loopback_host(self.headers.get("Host", "")):
+                self._reject(403, "Host must be loopback")
+                return
             parsed = urlparse(self.path)
             if parsed.path == "/favicon.ico":
                 self.send_response(204)
@@ -1270,10 +1289,15 @@ def run_review_until_interrupt(
         open_browser=open_browser,
         scan_root=scan_root,
     )
-    if on_ready is not None:
-        on_ready(result)
     try:
-        result.thread.join()
+        if on_ready is not None:
+            on_ready(result)
+        while result.thread.is_alive():
+            result.thread.join(0.5)
     except KeyboardInterrupt:
+        pass
+    finally:
         result.server.shutdown()
+        result.server.server_close()
+        result.thread.join(timeout=2)
     return result

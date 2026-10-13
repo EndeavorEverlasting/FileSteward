@@ -14,7 +14,7 @@
   ],
   "provider_base_sha_at_capture": "09597b68d260cf8a8e0163bf25333722d03c7357",
   "provider_head_sha_at_capture": "c093f2cb69d69be153fcf983b6ad785636825b7e",
-  "local_head_sha_at_capture_or_unknown": "3687cdfdb421282667f39de1285cd5a87c7c194e",
+  "local_head_sha_at_capture_or_unknown": "ad9302c28e2939942f6c9e1dac34af34a112b77f",
   "completed_facts": [
     {
       "proof_state": "DESIGNED",
@@ -40,6 +40,17 @@
         "tests/test_judgment_runtime.py",
         "scripts/cinematic_browser_probe.py",
         "harness/evals/judgment-scene-regression.v1.json"
+      ]
+    },
+    {
+      "proof_state": "LOCALLY_VALIDATED",
+      "fact": "Provider review repairs: bound receipt context, durable approvals, loopback report Host protection, portable installed scene/token resources, server lifecycle and version helper",
+      "evidence": [
+        "tests/test_judgment_runtime.py",
+        "tests/test_review_bridge_http.py",
+        "tests/test_judgment_packaging.py",
+        "tests/test_versioning.py",
+        "var/runs/cinematic-browser-20261013/packaging-proof/receipt.json"
       ]
     }
   ],
@@ -72,9 +83,10 @@
     "Canonical judgment mapping required before recurring cleanup/settings semantics"
   ],
   "proof_receipts": [
-    "var/runs/cinematic-browser-20261013/navigation-v11-results.json",
-    "var/runs/cinematic-browser-20261013/final-full-suite.log",
-    "var/runs/cinematic-browser-20261013/continuation-candidate-receipt.json"
+    "var/runs/cinematic-browser-20261013/final-repaired-v15-results.json",
+    "var/runs/cinematic-browser-20261013/repaired-exact-head-full-suite.log",
+    "var/runs/cinematic-browser-20261013/continuation-candidate-receipt.json",
+    "var/runs/cinematic-browser-20261013/packaging-proof/receipt.json"
   ],
   "proof_ceiling": "Synthetic normalized unit/HTTP and five-mode Edge browser evidence; no live ownership collector, semantic app/repo execution, recurring cleanup policy, real data mutation or production proof",
   "unresolved_review_threads": [],

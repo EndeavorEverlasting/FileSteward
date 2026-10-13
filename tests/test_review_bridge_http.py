@@ -67,6 +67,10 @@ def test_bridge_security_and_decision_flow(review_run: Path) -> None:
         # HTML is served with runtime injection and no durable token file.
         with urlopen(origin + "/", timeout=5) as response:
             html = response.read().decode("utf-8")
+        for report_path in ("/", "/report.html"):
+            code, body = _json(origin + report_path, headers={"Host":"attacker.example"})
+            assert code == 403
+            assert "loopback" in body["error"]
         assert "decision-bridge-runtime" in html
         assert "NO BYTES REMOVED" in html
         runtime = json.loads(
@@ -333,3 +337,19 @@ def test_bridge_security_and_decision_flow(review_run: Path) -> None:
     finally:
         result.server.shutdown()
         result.server.server_close()
+
+
+def test_server_interrupt_closes_listener_and_uses_bounded_join(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    import filesteward.review_bridge as module
+    thread = Mock()
+    thread.is_alive.return_value = True
+    thread.join.side_effect = [KeyboardInterrupt(), None]
+    server = Mock()
+    result = SimpleNamespace(thread=thread, server=server)
+    monkeypatch.setattr(module, "serve_review", lambda *args, **kwargs: result)
+    assert module.run_review_until_interrupt(Path("unused"), open_browser=False) is result
+    assert thread.join.call_args_list[0].args == (0.5,)
+    server.shutdown.assert_called_once()
+    server.server_close.assert_called_once()

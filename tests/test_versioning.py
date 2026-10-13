@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "versioning.py"
 SPEC = importlib.util.spec_from_file_location("filesteward_versioning", SCRIPT)
@@ -157,3 +159,51 @@ def test_subsequent_visual_pass_bumps_from_committed_candidate(tmp_path: Path) -
     assert '__version__ = "0.3.0"' in (
         root / "src/filesteward/__init__.py"
     ).read_text(encoding="utf-8")
+
+
+def test_untracked_visual_pass_preserves_unrelated_work_and_index(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    (root / "src/filesteward/visualization").mkdir(parents=True)
+    (root / "pyproject.toml").write_text('version = "0.1.0"\n', encoding="utf-8")
+    (root / "README.md").write_text("base\n", encoding="utf-8")
+    (root / ".gitignore").write_text("ignored.py\n", encoding="utf-8")
+    _git(root, "init")
+    _git(root, "config", "user.email", "test@example.com")
+    _git(root, "config", "user.name", "FileSteward Test")
+    _git(root, "add", ".")
+    _git(root, "commit", "-m", "base")
+    base = _git(root, "rev-parse", "HEAD").strip()
+    visual = "src/filesteward/visualization/new scene.py"
+    (root / visual).write_text("NEW = True\n", encoding="utf-8")
+    (root / "src/filesteward/visualization/ignored.py").write_text("ignore\n", encoding="utf-8")
+    (root / "README.md").write_text("staged\n", encoding="utf-8")
+    _git(root, "add", "README.md")
+    (root / "README.md").write_text("unstaged\n", encoding="utf-8")
+    index_before = _git(root, "diff", "--cached")
+    assert visual in versioning.changed_paths(base, root=root)
+    assert versioning.visual_change_paths(versioning.worktree_changed_paths(root)) == [visual]
+    # Explicit refs describe committed candidates only.
+    assert versioning.changed_paths(base, head=base, root=root) == []
+    with pytest.raises(ValueError, match="new visual pass"):
+        versioning.ensure_visual_bump(base=base, root=root)
+    _, after, paths, changed = versioning.ensure_visual_bump(base=base, fix=True, root=root)
+    assert str(after) == "0.1.1"
+    assert paths == [visual] and changed
+    assert _git(root, "rev-parse", "HEAD").strip() == base
+    assert _git(root, "diff", "--cached") == index_before
+    assert (root / "README.md").read_text(encoding="utf-8") == "unstaged\n"
+    assert _git(root, "ls-files", "--", visual) == ""
+
+
+@pytest.mark.parametrize("init_text", ["# missing version\n", '__version__ = "0.1.0"\n__version__ = "0.1.1"\n'])
+def test_write_version_validates_both_files_before_mutation(tmp_path: Path, init_text: str) -> None:
+    root = tmp_path / "repo"
+    (root / "src/filesteward").mkdir(parents=True)
+    project = root / "pyproject.toml"
+    package = root / "src/filesteward/__init__.py"
+    project.write_text('version = "0.1.0"\n', encoding="utf-8")
+    package.write_text(init_text, encoding="utf-8")
+    originals = (project.read_bytes(), package.read_bytes())
+    with pytest.raises(ValueError, match="exactly one __version__"):
+        versioning.write_version(versioning.Version.parse("0.2.0"), root=root)
+    assert (project.read_bytes(), package.read_bytes()) == originals

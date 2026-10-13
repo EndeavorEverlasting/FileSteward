@@ -106,25 +106,24 @@ def changed_paths(base: str, head: str = "HEAD", root: Path | None = None) -> li
     """Return proof-relevant changed paths for the requested candidate.
 
     When `head` is the live worktree (`HEAD`), include committed branch changes plus
-    staged and unstaged edits. This makes `ensure-visual-bump` useful before the
+    staged, unstaged, and untracked edits. This makes `ensure-visual-bump` useful before the
     commit that introduces the visual change rather than only after it.
     """
 
     paths: set[str] = set()
 
     def add(output: str) -> None:
-        paths.update(line.strip() for line in output.splitlines() if line.strip())
+        paths.update(path for path in output.split("\0") if path)
 
-    add(run_git(["diff", "--name-only", f"{base}...{head}"], root=root))
+    add(run_git(["diff", "--name-only", "-z", f"{base}...{head}"], root=root))
     if head == "HEAD":
-        add(run_git(["diff", "--name-only", "HEAD"], root=root))
-        add(run_git(["diff", "--name-only", "--cached"], root=root))
+        paths.update(worktree_changed_paths(root))
     return sorted(paths)
 
 
 
 def worktree_changed_paths(root: Path | None = None) -> list[str]:
-    """Return staged + unstaged paths relative to the current committed HEAD.
+    """Return staged, unstaged, and non-ignored untracked paths at HEAD.
 
     This is the per-polish-pass boundary. A long-lived feature branch may
     already be versioned above main; a new worktree visual mutation must still
@@ -134,11 +133,12 @@ def worktree_changed_paths(root: Path | None = None) -> list[str]:
     root = root or repo_root()
     paths: set[str] = set()
     for args in (
-        ["diff", "--name-only", "HEAD"],
-        ["diff", "--name-only", "--cached"],
+        ["diff", "--name-only", "-z", "HEAD"],
+        ["diff", "--name-only", "-z", "--cached"],
+        ["ls-files", "--others", "--exclude-standard", "-z"],
     ):
         output = run_git(args, root=root)
-        paths.update(line.strip() for line in output.splitlines() if line.strip())
+        paths.update(path for path in output.split("\0") if path)
     return sorted(paths)
 
 def current_version(root: Path | None = None) -> Version:
@@ -150,17 +150,19 @@ def write_version(version: Version, root: Path | None = None) -> None:
     path = pyproject_path(root)
     original = path.read_text(encoding="utf-8")
     updated = replace_pyproject_version(original, version)
-    path.write_text(updated, encoding="utf-8")
     init_path = root / "src" / "filesteward" / "__init__.py"
     if not init_path.is_file():
+        path.write_text(updated, encoding="utf-8")
         return
     init_text = init_path.read_text(encoding="utf-8")
-    if not INIT_VERSION_RE.search(init_text):
-        raise ValueError("src/filesteward/__init__.py must declare __version__")
-    init_path.write_text(
-        INIT_VERSION_RE.sub(lambda m: f'{m.group(1)}{version}{m.group(3)}', init_text, count=1),
-        encoding="utf-8",
+    if len(INIT_VERSION_RE.findall(init_text)) != 1:
+        raise ValueError("src/filesteward/__init__.py must declare exactly one __version__")
+    updated_init = INIT_VERSION_RE.sub(
+        lambda m: f'{m.group(1)}{version}{m.group(3)}', init_text, count=1
     )
+    # Validate both authorities before mutating either file.
+    path.write_text(updated, encoding="utf-8")
+    init_path.write_text(updated_init, encoding="utf-8")
 
 
 def ensure_visual_bump(

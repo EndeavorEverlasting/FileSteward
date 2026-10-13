@@ -49,6 +49,7 @@ def render_decision_chamber_markup() -> str:
     <p id="script-purpose"></p>
     <p id="script-impact"></p>
   </section>
+  <p id="chamber-capability-note" hidden></p>
   <p id="chamber-error" role="alert" hidden></p>
   <section id="chamber-result" aria-label="Execution receipt" hidden></section>
   <details id="chamber-evidence-trace" hidden>
@@ -291,6 +292,7 @@ def render_decision_chamber_script() -> str:
     nextItemId: null,
     scriptScene: null,
     error: null,
+    capabilityNote: null,
     receipt: null,
     sceneEvidence: null,
     busy: false,
@@ -521,6 +523,13 @@ def render_decision_chamber_script() -> str:
     if (scene === 'RESULT' || scene === 'STAGED') {
       addAction({id:'return_home',label:'Return to Atlas',explain:'Review the remaining evidence without changing your search or filters.',mode:'return'});
       row.querySelector('[data-next-action="return_home"]').onclick = () => {
+        if (state.openDecisionScene === 'RESULT' && state.nextItemId) {
+          state.selectedNodeId = state.nextItemId;
+          state.nextItemId = null;
+          state.node = null;
+          if (window.FileStewardSelection) window.FileStewardSelection.activate(state.selectedNodeId, false);
+          else paintSelectionMarkers(state.selectedNodeId);
+        }
         state.openDecisionScene = 'MAP';
         state.receipt = null;
         applyScene();
@@ -721,6 +730,9 @@ def render_decision_chamber_script() -> str:
     }
     if (sceneLabel) sceneLabel.textContent = scene;
     if (chamberBrief) chamberBrief.textContent = sceneBrief(scene);
+    const noteEl = document.getElementById('chamber-capability-note');
+    noteEl.hidden = !state.capabilityNote;
+    noteEl.textContent = state.capabilityNote || '';
     const errorEl = document.getElementById('chamber-error');
     errorEl.hidden = !state.error;
     errorEl.textContent = state.error || '';
@@ -829,18 +841,16 @@ def render_decision_chamber_script() -> str:
           : 'Selected evidence stays anchored while the active gate moves.';
       }
     }
+    // Final DOM projection can grow both the chamber and the authored guide.
+    // Resolve their measured geometry before exposing the completed scene.
+    if (open && overlapsDecisionPath()) dockChamberInView();
   };
 
   const absorbState = (payload) => {
     const previousScriptScene = state.scriptScene && state.scriptScene.scene_id;
     if (!payload) return;
-    if (payload.next_item_id) {
-      state.nextItemId = payload.next_item_id;
-      state.selectedNodeId = payload.next_item_id;
-    } else if (payload.selected_node_id) {
-      state.selectedNodeId = payload.selected_node_id;
-      state.nextItemId = payload.next_item_id || null;
-    }
+    state.nextItemId = payload.next_item_id || null;
+    if (payload.selected_node_id) state.selectedNodeId = payload.selected_node_id;
     state.activeGateId = payload.active_gate_id || null;
     if (payload.open_decision_scene) {
       state.openDecisionScene = payload.open_decision_scene;
@@ -853,7 +863,8 @@ def render_decision_chamber_script() -> str:
     state.scriptScene = payload.script_scene || null;
     state.sceneEvidence = payload.scene_evidence || null;
     state.receipt = payload.deletion_receipt || null;
-    state.error = payload.delete_unavailable_reason || null;
+    state.capabilityNote = payload.delete_unavailable_reason || null;
+    state.error = null;
     if (payload.execution_state) state.executionState = payload.execution_state;
     state.node = payload.node || state.node;
     state.digest = payload.cleanup_plan_sha256 || state.digest;

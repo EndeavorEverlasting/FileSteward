@@ -2,7 +2,7 @@
 
 **Authority:** `[project].version` in `pyproject.toml`
 
-**Current candidate version:** `0.15.0` (adapter-backed cinematic scene progression; no release tag)
+**Current candidate version:** `0.15.1` (adapter-backed cinematic scene progression; no release tag)
 
 
 **Status:** P130 repository versioning system established for future changes; no release tag is created by this sprint.
@@ -62,7 +62,7 @@ python scripts/versioning.py guard --base origin/main
 
 It fails when shipped visualization changed without a higher product version.
 
-## Current Memory Atlas transition
+## Historical Memory Atlas transition example
 
 The Memory Atlas v3 design phase does not bump the product merely because a design document exists.
 
@@ -72,9 +72,9 @@ The first runtime v3 implementation should run:
 python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-feature
 ```
 
-With the current `0.1.0` base, that yields `0.2.0`.
+At the time this example was established, the `0.1.0` base yielded `0.2.0`. These are historical example versions; the current candidate is `0.15.1`, as declared in `pyproject.toml`.
 
-Later accepted visual-only polish on a `0.2.x` floor uses `visual-polish` and increments PATCH.
+Accepted visual-only polish uses `visual-polish` and increments PATCH from the refreshed base, unless the candidate already advanced beyond that base. A version bump is not release or deployment proof.
 
 ## Tags and releases
 

@@ -20,8 +20,8 @@
 
 - `decision_flow.allowed_intents()` is the only legal-choice authority.
 - Presentation cues never promote disposition, invent reclaim, or authorize mutation.
-- Permanent deletion is NOT IMPLEMENTED.
-- Terminal mutation truth remains: QUARANTINE STAGED — NO BYTES REMOVED.
+- The current implementation has a separate gated `DELETE_PERMANENTLY` path governed by [Operator Delete Path](../agent/OPERATOR-DELETE-PATH.md): current value and affirmative ownership/regeneration evidence, a recorded bounded scan root, an exact eligible manifest, fresh preflight `PASS`, distinct operator approval bound to run/manifest/rows/action, and the repository-owned bounded executor.
+- Quarantine staging truth remains: QUARANTINE STAGED — NO BYTES REMOVED. It never authorizes permanent deletion. Deletion/result copy follows execution receipt counts and measured reclaim verification; this document claims no live deletion or reclaimed bytes.
 - Warm espresso/copper contract remains canonical; no navy/cyan except OS forced-colors.
 
 ## Domain vocabulary
