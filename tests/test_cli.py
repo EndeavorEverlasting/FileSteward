@@ -55,6 +55,7 @@ class TestEntryPointIdentity:
             "validate",
             "plan",
             "visualize",
+            "review",
             "delete-manifest",
             "delete-preflight",
             "delete-approve",

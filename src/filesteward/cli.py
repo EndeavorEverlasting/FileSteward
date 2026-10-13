@@ -179,6 +179,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="run directory beneath the canonical ignored var/runs/ tree",
     )
 
+    review = subparsers.add_parser(
+        "review", help="serve a validated Decision Chamber on loopback; startup does not delete"
+    )
+    review.add_argument("target", help="validated run beneath canonical var/runs")
+    review.add_argument("--port", type=int, default=0)
+    review.add_argument("--no-browser", action="store_true")
+    review.add_argument("--scan-root", default=None)
+
     delete_manifest = subparsers.add_parser(
         "delete-manifest",
         help=(
@@ -637,6 +645,25 @@ def _run_delete_execute(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _run_review(args: argparse.Namespace) -> int:
+    from filesteward.review_bridge import run_review_until_interrupt
+
+    if not 0 <= args.port <= 65535:
+        print("filesteward review: --port must be in 0..65535", file=sys.stderr)
+        return EXIT_INVALID
+    try:
+        target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
+        run_review_until_interrupt(
+            target, port=args.port, open_browser=not args.no_browser,
+            scan_root=normalize_declared_path(args.scan_root) if args.scan_root else None,
+            on_ready=lambda result: print(f"filesteward review: {result.url}", flush=True),
+        )
+    except (ValueError, OSError, UnicodeError, TypeError, RuntimeError) as exc:
+        print(f"filesteward review: {exc}", file=sys.stderr)
+        return EXIT_INVALID
+    return EXIT_OK
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -649,6 +676,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return _run_plan(args)
     if args.command == "visualize":
         return _run_visualize(args)
+    if args.command == "review":
+        return _run_review(args)
     if args.command == "delete-manifest":
         return _run_delete_manifest(args)
     if args.command == "delete-preflight":

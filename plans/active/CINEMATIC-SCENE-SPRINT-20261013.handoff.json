@@ -1,0 +1,94 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "CINEMATIC-SCENE-SPRINT-20261013",
+  "lane_id": "J6",
+  "role": "cinematic lineage execution coordinator",
+  "canonical_plan_ref": "plans/active/CINEMATIC-SCENE-SPRINT-20261013.md",
+  "contract_refs": [
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/contracts/action-scene-impact.v1.json",
+    "harness/contracts/dependency-aware-judgment-closure.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/contracts/execution-handoff-packet.schema.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json"
+  ],
+  "provider_base_sha_at_capture": "09597b68d260cf8a8e0163bf25333722d03c7357",
+  "provider_head_sha_at_capture": "c093f2cb69d69be153fcf983b6ad785636825b7e",
+  "local_head_sha_at_capture_or_unknown": "09597b68d260cf8a8e0163bf25333722d03c7357",
+  "completed_facts": [
+    {
+      "proof_state": "DESIGNED",
+      "fact": "Eleven canonical scenes inventoried without adding judgment policy",
+      "evidence": [
+        "harness/contracts/judgment-scene-workflow.v1.json",
+        "plans/active/CINEMATIC-SCENE-SPRINT-20261013.scenes.json"
+      ]
+    },
+    {
+      "proof_state": "LOCALLY_VALIDATED",
+      "fact": "Selective lineage, script index, honest capability and receipt UI, readable layouts and saved KEEP continuation validated at bounded synthetic proof ceiling",
+      "evidence": [
+        "tests/test_cinematic_script.py",
+        "var/runs/cinematic-browser-20261013/decision-proof-results.json",
+        "var/runs/cinematic-browser-20261013/full-suite.log"
+      ]
+    }
+  ],
+  "remaining_work": [
+    {
+      "acceptance": "RG7, focused retained tests, RG8 browser acceptance and current safety remain green",
+      "depends_on": [],
+      "work_id": "J6_PRESENTATION",
+      "action": "Complete adapter-backed technical/value scene integration and full supported-input scene/action acceptance; reference index alone is not workflow implementation"
+    },
+    {
+      "acceptance": "RG5/RG6 and containment/content verification with exact receipts",
+      "depends_on": [
+        "J6_PRESENTATION"
+      ],
+      "work_id": "J6_CONVERGE",
+      "action": "Refresh candidate/provider truth, validate full suite, review and integrate exact head"
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "src/filesteward/visualization/**",
+    "src/filesteward/review_bridge.py",
+    "src/filesteward/approval.py",
+    "src/filesteward/cli.py review route",
+    "tests for owned surfaces",
+    "plans/active/CINEMATIC-SCENE-SPRINT-20261013*"
+  ],
+  "forbidden_surfaces": [
+    "current ownership/deletion/capacity/scheduler safety source unless narrowly proven integration repair",
+    "live user scans/deletes",
+    "Task Scheduler registration",
+    "production deployment"
+  ],
+  "dependencies": [],
+  "external_prerequisites": [
+    "Exact bounded authorization required before real filesystem observation/mutation",
+    "Authorized cadence required for real recurring observation registration",
+    "Canonical judgment mapping required before recurring cleanup/settings semantics"
+  ],
+  "proof_receipts": [
+    "var/runs/cinematic-browser-20261013/decision-proof-results.json",
+    "var/runs/cinematic-browser-20261013/full-suite.log",
+    "var/runs/cinematic-browser-20261013/candidate-receipt.json"
+  ],
+  "proof_ceiling": "Bounded synthetic local unit and Edge browser proof; not all scripted workflows, touch, real deletion or production proof",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [],
+  "blocked_judgment_gap": {
+    "canonical_owner": "harness/contracts/judgment-scene-workflow.v1.json",
+    "why_required": "Presentation cannot invent cleanup policy or convert observation scheduling into destructive authority",
+    "missing_judgment": "Maintenance preferences and recurring cleanup authorization have no scene/action mapping"
+  },
+  "autonomy_gap": "NONE",
+  "exact_next_action": {
+    "owner": "J6 execution coordinator",
+    "can_execute_without_operator": true,
+    "phase": "EXECUTE",
+    "action": "Read candidate receipt and remaining acceptance gaps, refresh provider truth, then resume adapter-backed scene integration under existing contracts; keep draft until full gates pass"
+  },
+  "return_contract": "Report modified files, exact validation/results/receipts, candidate SHA, review status and proof ceiling; preserve gaps and continue independent safe work."
+}

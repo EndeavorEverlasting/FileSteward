@@ -367,5 +367,21 @@
     ],
     "p82_loop": "HYPOTHESIS -> BUILD/PROBE -> MEASURE -> CRITIQUE -> DECIDE; first PASS is a checkpoint, not automatic closure."
   },
-  "mutation_rule": "Any change to scripted scenes, accepted interaction grammar, or protected behavior requires updating this ledger plus a negative fixture and positive control; local agents may not delete the oracle to make a candidate pass."
+  "mutation_rule": "Any change to scripted scenes, accepted interaction grammar, or protected behavior requires updating this ledger plus a negative fixture and positive control; local agents may not delete the oracle to make a candidate pass.",
+  "cinematic_lineage_20261013": {
+    "retained_controls": "tests/test_cinematic_script.py",
+    "negative_cases": [
+      "offline approval cannot fabricate authority",
+      "missing current ownership adapter hides delete",
+      "stale plan decisions do not replay",
+      "failed request surfaces actionable error"
+    ],
+    "positive_controls": [
+      "KEEP persists and advances to next item",
+      "all eleven authored scenes remain discoverable",
+      "RESULT renders receipt and continuation"
+    ],
+    "browser_receipt": "var/runs/cinematic-browser-20261013/decision-proof-results.json",
+    "proof_status": "BOUNDED_SYNTHETIC_BROWSER_PASS_FULL_SCENE_ACCEPTANCE_INCOMPLETE"
+  }
 }
