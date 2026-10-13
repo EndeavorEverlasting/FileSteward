@@ -15,11 +15,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
+from filesteward.policy.paths import is_symlink_or_reparse
+
 SCHEMA = "filesteward.workstation-performance-profile/v1"
 KEY = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,47}\Z")
 
 class ProfileError(ValueError):
     pass
+
+def _refuse_linked(path: Path, label: str) -> None:
+    """Fail closed on symlink or Windows junction/reparse (Path.is_symlink misses junctions)."""
+    if is_symlink_or_reparse(path):
+        raise ProfileError(f"{label} is a symlink/reparse")
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -67,8 +74,7 @@ def _latest(path: Path, obj: dict[str, Any]) -> None:
 
 def _ensure_identity(directory: Path, alias: str, binding: str) -> str:
     path = directory / "identity.json"
-    if path.is_symlink():
-        raise ProfileError("identity artifact is a symlink")
+    _refuse_linked(path, "identity artifact")
     if not path.exists():
         salt = secrets.token_hex(16)
         try:
@@ -170,11 +176,12 @@ def capture(alias: str, volumes: Sequence[str], *,
     alias = _key(alias)
     base = Path(profiles_root) if profiles_root is not None else _root()
     directory = base / alias
-    if base.is_symlink() or directory.is_symlink():
-        raise ProfileError("profile root/directory is symlink")
+    if base.exists():
+        _refuse_linked(base, "profile root")
+    if directory.exists():
+        _refuse_linked(directory, "profile directory")
     directory.mkdir(parents=True, exist_ok=True)
-    if directory.is_symlink():
-        raise ProfileError("profile directory was replaced by symlink")
+    _refuse_linked(directory, "profile directory")
     lock_path = directory / ".capture.lock"
     try:
         with lock_path.open("x", encoding="utf-8") as lock:
@@ -185,11 +192,10 @@ def capture(alias: str, volumes: Sequence[str], *,
         binding_status = _ensure_identity(directory, alias, machine_binding or _binding())
         observed = observer(volumes, sample_seconds=sample_seconds)
         snapshots = directory / "snapshots"
-        if snapshots.is_symlink():
-            raise ProfileError("snapshots directory is symlink")
+        if snapshots.exists():
+            _refuse_linked(snapshots, "snapshots directory")
         snapshots.mkdir(exist_ok=True)
-        if snapshots.is_symlink():
-            raise ProfileError("snapshots directory changed to symlink")
+        _refuse_linked(snapshots, "snapshots directory")
         name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8]
         result = {"schema_version": SCHEMA, "alias": alias, "snapshot_id": name,
                   "captured_utc": _now(), "os_family": platform.system(),
@@ -200,16 +206,20 @@ def capture(alias: str, volumes: Sequence[str], *,
                   "privacy": "LOCAL_ONLY_METADATA"}
         snapshot = snapshots / (name + ".json")
         _create(snapshot, result)
-        _latest(directory / "latest.json", result)
+        latest = directory / "latest.json"
+        if latest.exists():
+            _refuse_linked(latest, "latest pointer")
+        _latest(latest, result)
         return snapshot
     finally:
         lock_path.unlink(missing_ok=True)
 
 def load_latest(alias: str, *, profiles_root: Path | None = None) -> dict[str, Any]:
     directory = (Path(profiles_root) if profiles_root is not None else _root()) / _key(alias)
-    if directory.is_symlink() or (directory / "latest.json").is_symlink():
-        raise ProfileError("profile directory/latest pointer is symlink")
-    result = _read(directory / "latest.json")
+    latest = directory / "latest.json"
+    _refuse_linked(directory, "profile directory")
+    _refuse_linked(latest, "latest pointer")
+    result = _read(latest)
     if result.get("schema_version") != SCHEMA or result.get("alias") != alias:
         raise ProfileError("invalid host/schema binding")
     return result
@@ -220,15 +230,16 @@ def compare_latest(alias: str, *, profiles_root: Path | None = None) -> dict[str
     base = Path(profiles_root) if profiles_root is not None else _root()
     directory = base / _key(alias)
     snapshots = directory / "snapshots"
-    if directory.is_symlink() or snapshots.is_symlink():
-        raise ProfileError("profile snapshot path is symlink")
+    _refuse_linked(directory, "profile directory")
+    if snapshots.exists():
+        _refuse_linked(snapshots, "snapshots directory")
     if not snapshots.is_dir():
         raise ProfileError("no captured snapshots")
     files = sorted(snapshots.glob("*.json"))
     if len(files) < 2:
         raise ProfileError("at least two snapshots required")
-    if files[-1].is_symlink() or files[-2].is_symlink():
-        raise ProfileError("snapshot is symlink")
+    _refuse_linked(files[-1], "snapshot")
+    _refuse_linked(files[-2], "snapshot")
     previous, current = _read(files[-2]), _read(files[-1])
     for snap in (previous, current):
         if snap.get("schema_version") != SCHEMA or snap.get("alias") != alias:

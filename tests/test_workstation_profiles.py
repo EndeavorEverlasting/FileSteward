@@ -78,8 +78,41 @@ def test_profile_symlink_refused(tmp_path):
         (root / "PTop").symlink_to(outside, target_is_directory=True)
     except (OSError, NotImplementedError):
         pytest.skip("OS disallows test symlink")
-    with pytest.raises(ProfileError, match="symlink"):
+    with pytest.raises(ProfileError, match="symlink/reparse"):
         capture("PTop", [str(tmp_path)], profiles_root=root)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction fixture")
+def test_profile_junction_refused(tmp_path):
+    """Windows junctions are not Path.is_symlink(); must still fail closed."""
+    import subprocess
+
+    root = tmp_path / "private"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    junction = root / "PTop"
+    completed = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(junction), str(outside)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0 or not junction.exists():
+        pytest.skip(f"junction fixture unavailable: {completed.stderr}")
+    with pytest.raises(ProfileError, match="symlink/reparse"):
+        capture(
+            "PTop",
+            [str(tmp_path)],
+            profiles_root=root,
+            observer=lambda volumes, sample_seconds=0: {
+                "volumes": [], "metrics": {}, "missing_metrics": []
+            },
+            machine_binding="windows\0ptop",
+        )
+    assert not (outside / "identity.json").exists()
+    assert not (outside / "snapshots").exists()
+
 
 def test_unsafe_sample_length_refused(tmp_path):
     with pytest.raises(ProfileError):
