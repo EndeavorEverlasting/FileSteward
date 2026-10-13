@@ -22,7 +22,11 @@ git checkout and runtime before claiming a profile belongs to a given host.
 
 Snapshots append to ignored var/profiles/ALIAS/snapshots/*.json; identity.json
 binds the alias to a salted digest of platform name, and latest.json is the
-atomic latest projection. These paths may contain private workstation
+atomic latest projection. Capture is serialized per host with .capture.lock. A stale lock after a crash
+blocks future captures until the operator verifies no collection is running;
+do not automatically clear it based on age.
+
+These paths may contain private workstation
 information and MUST NEVER be committed or uploaded. The salted name binding
 protects against ordinary cross-host mistakes; it is NOT secure hardware
 attestation and does not prove a machine has not been cloned or renamed.
