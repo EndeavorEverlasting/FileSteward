@@ -2,7 +2,7 @@
   "schema_version": "filesteward.plan/v1",
   "sprint_id": "FILESTEWARD-WORKSTATION-PERFORMANCE-20261012",
   "repository": "EndeavorEverlasting/FileSteward",
-  "execution_floor": "9a4a3c1127fa349f5be0b6dfb8af8ff60e49d14f",
+  "execution_floor": "fcd1bf5efe451562f122d659c759527ec487c114",
   "branch": "main",
   "outcome": "Maintain private append-only evidence-based performance profiles by workstation without reducing storage ownership protections.",
   "prompted_by": [
@@ -59,8 +59,8 @@
       "owned": [
         "src/filesteward/profiles/windows*"
       ],
-      "status": "WAITING",
-      "proof": "CIM/physical-to-volume mapping and synthetic/error-boundary test",
+      "status": "INTEGRATED",
+      "proof": "PR #46 merged; windows CIM media_type mapping + tests on main",
       "execution_adapter": "LOCAL_AGENT_RUNTIME",
       "parallel_group": "B"
     },
@@ -73,8 +73,8 @@
       "owned": [
         "src/filesteward/visualization/performance*"
       ],
-      "status": "WAITING",
-      "proof": "read-only projection, same-alias same-volume quality, accessibility",
+      "status": "INTEGRATED",
+      "proof": "PR #45 merged after main reconcile; observation-only projection on main",
       "execution_adapter": "LOCAL_AGENT_RUNTIME",
       "parallel_group": "B"
     },
@@ -120,7 +120,7 @@
         "F1"
       ],
       "graph_width": 2,
-      "dispatch_state": "READY_F1_INTEGRATED_DISPATCH_F2_F3",
+      "dispatch_state": "F2_F3_INTEGRATED",
       "requires_satisfied_at": "9a4a3c1127fa349f5be0b6dfb8af8ff60e49d14f"
     }
   ],
