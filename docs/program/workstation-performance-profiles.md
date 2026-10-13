@@ -16,6 +16,19 @@ Then capture and inspect:
     python -m filesteward.profiles show --host-key PTop
     python -m filesteward.profiles compare --host-key PTop
 
+Opt-in Windows Task Scheduler (preview never registers; cadence + authorize required):
+
+    python -m filesteward.profiles.schedule preview --host-key PTop --volume 'C:\' --cadence DAILY/03:00
+    python -m filesteward.profiles.schedule run-once --host-key PTop --volume 'C:\'
+    python -m filesteward.profiles.schedule register --host-key PTop --volume 'C:\' --cadence DAILY/03:00 --authorize OPERATOR_OPT_IN_REGISTER_PROFILE_SCHEDULE --live-schtasks
+    python -m filesteward.profiles.schedule inspect --host-key PTop --live-schtasks
+    python -m filesteward.profiles.schedule disable --host-key PTop --authorize OPERATOR_OPT_IN_DISABLE_PROFILE_SCHEDULE --live-schtasks
+    python -m filesteward.profiles.schedule unregister --host-key PTop --authorize OPERATOR_OPT_IN_UNREGISTER_PROFILE_SCHEDULE --live-schtasks
+
+PowerShell wrapper: `scripts/windows/performance-profile-schedule.ps1`. No default cadence,
+no silent replace of foreign tasks, no SYSTEM/password storage. Runtime receipts stay under
+ignored `var/profiles/schedule/`.
+
 Read-only history/decision-support projection (never delete authority):
 
     python -m filesteward.visualization.performance --host-key PTop
