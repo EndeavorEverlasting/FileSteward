@@ -14,7 +14,7 @@
   ],
   "provider_base_sha_at_capture": "09597b68d260cf8a8e0163bf25333722d03c7357",
   "provider_head_sha_at_capture": "c093f2cb69d69be153fcf983b6ad785636825b7e",
-  "local_head_sha_at_capture_or_unknown": "09597b68d260cf8a8e0163bf25333722d03c7357",
+  "local_head_sha_at_capture_or_unknown": "3687cdfdb421282667f39de1285cd5a87c7c194e",
   "completed_facts": [
     {
       "proof_state": "DESIGNED",
@@ -32,22 +32,23 @@
         "var/runs/cinematic-browser-20261013/decision-proof-results.json",
         "var/runs/cinematic-browser-20261013/full-suite.log"
       ]
+    },
+    {
+      "proof_state": "IMPLEMENTED",
+      "fact": "Adapter-backed canonical evidence/value/auth projection; evidence drift invalidation; cross-input/error/empty-state and chamber geometry repairs",
+      "evidence": [
+        "tests/test_judgment_runtime.py",
+        "scripts/cinematic_browser_probe.py",
+        "harness/evals/judgment-scene-regression.v1.json"
+      ]
     }
   ],
   "remaining_work": [
     {
-      "acceptance": "RG7, focused retained tests, RG8 browser acceptance and current safety remain green",
-      "depends_on": [],
-      "work_id": "J6_PRESENTATION",
-      "action": "Complete adapter-backed technical/value scene integration and full supported-input scene/action acceptance; reference index alone is not workflow implementation"
-    },
-    {
-      "acceptance": "RG5/RG6 and containment/content verification with exact receipts",
-      "depends_on": [
-        "J6_PRESENTATION"
-      ],
       "work_id": "J6_CONVERGE",
-      "action": "Refresh candidate/provider truth, validate full suite, review and integrate exact head"
+      "action": "Bind exact head to final local/browser receipts, reconcile provider review and integrate coherent owned slice",
+      "depends_on": [],
+      "acceptance": "RG5/RG6/RG8 and default-branch containment"
     }
   ],
   "owned_mutation_surfaces": [
@@ -71,11 +72,11 @@
     "Canonical judgment mapping required before recurring cleanup/settings semantics"
   ],
   "proof_receipts": [
-    "var/runs/cinematic-browser-20261013/decision-proof-results.json",
-    "var/runs/cinematic-browser-20261013/full-suite.log",
-    "var/runs/cinematic-browser-20261013/candidate-receipt.json"
+    "var/runs/cinematic-browser-20261013/navigation-v11-results.json",
+    "var/runs/cinematic-browser-20261013/final-full-suite.log",
+    "var/runs/cinematic-browser-20261013/continuation-candidate-receipt.json"
   ],
-  "proof_ceiling": "Bounded synthetic local unit and Edge browser proof; not all scripted workflows, touch, real deletion or production proof",
+  "proof_ceiling": "Synthetic normalized unit/HTTP and five-mode Edge browser evidence; no live ownership collector, semantic app/repo execution, recurring cleanup policy, real data mutation or production proof",
   "unresolved_review_threads": [],
   "private_evidence_refs": [],
   "blocked_judgment_gap": {
@@ -87,8 +88,8 @@
   "exact_next_action": {
     "owner": "J6 execution coordinator",
     "can_execute_without_operator": true,
-    "phase": "EXECUTE",
-    "action": "Read candidate receipt and remaining acceptance gaps, refresh provider truth, then resume adapter-backed scene integration under existing contracts; keep draft until full gates pass"
+    "phase": "PROVE",
+    "action": "Finish final source/browser/local gates, refresh exact provider head/review threads, converge authorized J6 slice and verify containment"
   },
   "return_contract": "Report modified files, exact validation/results/receipts, candidate SHA, review status and proof ceiling; preserve gaps and continue independent safe work."
 }

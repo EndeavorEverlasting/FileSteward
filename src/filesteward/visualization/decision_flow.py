@@ -58,6 +58,7 @@ class DecisionIntent(str, Enum):
     REVIEW_LATER = "REVIEW_LATER"
     APPROVE_QUARANTINE = "APPROVE_QUARANTINE"
     DELETE_PERMANENTLY = "DELETE_PERMANENTLY"
+    RECLAIM_GENERATED_OUTPUT = "RECLAIM_GENERATED_OUTPUT"
 
 
 class PendingAction(str, Enum):
@@ -89,6 +90,7 @@ class DecisionFlowState:
     last_transition: str = "open"
     scene_revision: int = 0
     execution_state: ExecutionState = ExecutionState.EXECUTABLE
+    script_scene_id: str | None = None
 
 
 def _value(value: object) -> str:
@@ -142,6 +144,12 @@ def open_decision_session(node: _Node) -> DecisionFlowState:
 def allowed_intents(state: DecisionFlowState) -> tuple[DecisionIntent, ...]:
     """Return operator choices without pretending they are evidence transitions."""
 
+    if state.script_scene_id == "VALUE_DECISION":
+        safe = (DecisionIntent.KEEP, DecisionIntent.REVIEW_LATER)
+        if state.disposition is CleanupDisposition.RECLAIM_PROVEN:
+            return (DecisionIntent.KEEP, DecisionIntent.RECLAIM_GENERATED_OUTPUT, DecisionIntent.REVIEW_LATER)
+        return safe
+
     if state.scene in {DecisionScene.GATE, DecisionScene.RESOLVE}:
         if state.disposition is CleanupDisposition.UNKNOWN:
             return (
@@ -186,6 +194,13 @@ def choose_intent(
         "last_scene": state.scene,
         "last_transition": intent.value.lower(),
     }
+
+    if intent is DecisionIntent.RECLAIM_GENERATED_OUTPUT:
+        return replace(
+            state, scene=DecisionScene.APPROVAL, script_scene_id="AUTHORIZATION_GATE",
+            pending_action=PendingAction.REQUEST_APPROVAL, execution_state=ExecutionState.EXECUTABLE,
+            **common,
+        )
 
     if intent is DecisionIntent.RESCAN:
         next_state = replace(state, pending_action=PendingAction.RESCAN, **common)

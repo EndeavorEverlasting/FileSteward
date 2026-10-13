@@ -5,5 +5,5 @@ mutation authority; authorization is a separate, operator-owned state
 system. Ambiguity belongs to the operator.
 """
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 __all__ = ["__version__"]

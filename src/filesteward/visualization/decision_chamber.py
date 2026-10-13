@@ -51,6 +51,11 @@ def render_decision_chamber_markup() -> str:
   </section>
   <p id="chamber-error" role="alert" hidden></p>
   <section id="chamber-result" aria-label="Execution receipt" hidden></section>
+  <details id="chamber-evidence-trace" hidden>
+    <summary>How FileSteward reached this scene</summary>
+    <div id="chamber-evidence-facts"></div>
+    <ol id="chamber-evidence-chapters"></ol>
+  </details>
 
   <p class="chamber-brief fs-type-body" id="chamber-brief" aria-live="polite">
     Closed — choose a Decision Path step to open a distinct chamber scene.
@@ -107,7 +112,7 @@ def render_decision_chamber_css() -> str:
   color:var(--fs-text-primary);backdrop-filter:blur(10px);
   box-shadow:0 0 0 1px color-mix(in srgb,var(--fs-accent) 18%,transparent),
              0 18px 40px color-mix(in srgb,var(--fs-bg-canvas) 55%,transparent);
-  touch-action:none;
+  touch-action:pan-y pinch-zoom;
 }
 .decision-chamber[data-docked="free"]{
   /* Viewport-fixed so a tall overflowing stage cannot park the chamber below the fold. */
@@ -117,7 +122,7 @@ def render_decision_chamber_css() -> str:
 .decision-chamber.is-dragging{
   opacity:.94;box-shadow:0 0 0 1px var(--fs-accent),0 18px 48px color-mix(in srgb,var(--fs-bg-canvas) 70%,transparent);
 }
-.chamber-orientation[data-drag-handle="true"]{cursor:grab;user-select:none;}
+.chamber-orientation[data-drag-handle="true"]{cursor:grab;user-select:none;touch-action:none;}
 .decision-chamber.is-dragging .chamber-orientation[data-drag-handle="true"]{cursor:grabbing;}
 .chamber-next-actions{padding:.55rem;border:1px solid var(--fs-border-subtle);border-radius:4px;background:color-mix(in srgb,var(--fs-accent) 8%,var(--fs-bg-surface-1));}
 .chamber-next-actions[hidden]{display:none!important;}
@@ -217,10 +222,10 @@ button.evidence-state-action:focus-visible{outline:3px solid var(--fs-focus);out
 .workspace[data-open-decision-scene="STAGED"] .map-node[data-ghost="true"]{
   opacity:.28;filter:grayscale(.35);
 }
-.workspace[data-staged-cinematic="true"] .decision-chamber{
+.decision-chamber[data-staged-cinematic="true"]{
   animation:fs-staged-settle 720ms ease-out both;
 }
-.workspace[data-staged-cinematic="true"] .decision-chamber[data-docked="free"]{
+.decision-chamber[data-staged-cinematic="true"][data-docked="free"]{
   animation:fs-staged-settle-free 720ms ease-out both;
 }
 @keyframes fs-staged-settle{
@@ -244,11 +249,11 @@ button.evidence-state-action .state-marker,.evidence-state-action .state-marker{
   .chamber-chrome{grid-template-columns:1fr;}
 }
 @media (prefers-reduced-motion:reduce){
-  .workspace[data-staged-cinematic="true"] .decision-chamber,
-  .workspace[data-staged-cinematic="true"] .decision-chamber[data-docked="free"],
+  .decision-chamber[data-staged-cinematic="true"],
+  .decision-chamber[data-staged-cinematic="true"][data-docked="free"],
   .chamber-gate[data-active="true"]{animation:none;}
   .chamber-gate[data-active="true"]{transform:none;}
-  .workspace[data-staged-cinematic="true"] .decision-chamber:not([data-docked="free"]){transform:none;}
+  .decision-chamber[data-staged-cinematic="true"]:not([data-docked="free"]){transform:none;}
 }
 @media (forced-colors:active){
   .decision-chamber,.chamber-gate,.chamber-actions button,.chamber-confirm,button.evidence-state-action{
@@ -267,6 +272,9 @@ def render_decision_chamber_script() -> str:
   const chamber = document.getElementById('decision-chamber');
   const bridgeEl = document.getElementById('decision-bridge-runtime');
   if (!workspace || !chamber) return;
+  // Fixed viewport docking must escape the Atlas isolation/overflow context.
+  // The same chamber and existing state owner remain in charge.
+  document.body.appendChild(chamber);
 
   const bridge = bridgeEl ? JSON.parse(bridgeEl.textContent || '{}') : null;
   const state = {
@@ -284,6 +292,7 @@ def render_decision_chamber_script() -> str:
     scriptScene: null,
     error: null,
     receipt: null,
+    sceneEvidence: null,
     busy: false,
     node: null,
     digest: bridge && bridge.cleanupPlanSha256 ? bridge.cleanupPlanSha256 : null
@@ -475,6 +484,9 @@ def render_decision_chamber_script() -> str:
     if (scene === 'RESOLVE' || scene === 'APPROVAL') {
       state.allowedIntents.forEach((intent) => {
         if (intent === 'APPROVE_QUARANTINE') {
+          // The exact scope and real confirmation are already in this scene.
+          // A second button that merely reopens APPROVAL would be a dead click.
+          if (scene === 'APPROVAL') return;
           addAction({
             id: 'open_approval',
             label: 'STAGE REMOVAL PATH',
@@ -561,7 +573,8 @@ def render_decision_chamber_script() -> str:
       set('approval-digest', state.digest || 'synthetic-offline');
       set('approval-auth', state.auth);
     }
-    if (gateLine) gateLine.hidden = !(scene === 'GATE' || scene === 'RESOLVE');
+    if (gateLine) gateLine.hidden = !(scene === 'GATE' || scene === 'RESOLVE')
+      || Boolean(state.scriptScene && state.scriptScene.scene_id === 'VALUE_DECISION');
     renderSceneNextActions();
   };
 
@@ -581,10 +594,7 @@ def render_decision_chamber_script() -> str:
   };
   const placeChamber = (left, top) => {
     /* left/top are viewport client coordinates; free-dock uses position:fixed. */
-    const box = visibleStageBox();
-    const availH = Math.max(120, Math.min(box.bottom, window.innerHeight - 8) - Math.max(box.top, 8));
     chamber.dataset.docked = 'free';
-    chamber.style.maxHeight = Math.min(Math.max(120, availH - 8), window.innerHeight * 0.7) + 'px';
     void chamber.offsetHeight;
     const width = chamber.offsetWidth || 320;
     const height = chamber.offsetHeight || 160;
@@ -607,36 +617,40 @@ def render_decision_chamber_script() -> str:
       }));
     } catch (_err) { /* ignore */ }
   };
+  const chamberObstacles = () => ['decision-compass', 'brand-home'].map(id => document.getElementById(id))
+    .concat([...document.querySelectorAll('.phone-command-bar')])
+    .concat(innerWidth < 800 ? [...document.querySelectorAll('.navigator-pane')] : [])
+    .filter(el => el && el.getClientRects().length)
+    .map(el => el.getBoundingClientRect()).filter(r => r.bottom > 0 && r.top < innerHeight);
+  const overlapsDecisionPath = () => {
+    if (chamber.hidden) return false;
+    const a = chamber.getBoundingClientRect();
+    return chamberObstacles().some(b => a.left < b.right && a.right > b.left
+      && a.top < b.bottom && a.bottom > b.top);
+  };
   const dockChamberInView = () => {
     const box = visibleStageBox();
     chamber.dataset.docked = 'free';
-    const availH = Math.max(120, Math.min(box.bottom, window.innerHeight - 8) - Math.max(box.top, 8));
-    const maxH = Math.min(Math.max(120, availH - 8), window.innerHeight * 0.7);
-    chamber.style.maxHeight = maxH + 'px';
-    void chamber.offsetHeight;
     const width = chamber.offsetWidth || 320;
-    let height = Math.min(chamber.offsetHeight || 160, maxH);
-    /* Prefer lower-center of the visible stage∩viewport band. */
-    let left = Math.max(8, Math.min(
-      window.innerWidth - width - 8,
-      box.left + Math.max(0, (box.right - box.left - width) * 0.5)
-    ));
-    let top = Math.max(8, window.innerHeight - height - 8);
-    const stageBottom = Math.min(box.bottom, window.innerHeight - 8);
-    if (stageBottom - height - 12 >= Math.max(box.top, 8)) {
-      top = stageBottom - height - 12;
-    }
-    placeChamber(left, top);
-    /* Second pass after layout — content can grow past the first offsetHeight. */
+    const left = Math.max(8, Math.min(innerWidth - width - 8,
+      box.left + Math.max(0, (box.right - box.left - width) * .5)));
+    // Choose the largest unobstructed vertical band. Home, the authored path,
+    // and the phone toolbar remain reachable while chamber content scrolls.
+    let bands = [[8, innerHeight - 8]];
+    chamberObstacles().filter(r => left < r.right && left + width > r.left).forEach(r => {
+      bands = bands.flatMap(([a,b]) => r.bottom + 12 <= a || r.top - 12 >= b ? [[a,b]]
+        : [[a, Math.min(b,r.top - 12)], [Math.max(a,r.bottom + 12),b]].filter(([x,y]) => y-x > 0));
+    });
+    bands.sort((a,b) => (b[1]-b[0]) - (a[1]-a[0]));
+    const [top,bottom] = bands[0] || [8,innerHeight-8];
+    chamber.style.maxHeight = Math.max(48, Math.min(bottom-top,innerHeight*.7)) + 'px';
     void chamber.offsetHeight;
-    const lived = chamber.getBoundingClientRect();
-    if (lived.bottom > window.innerHeight - 4 || lived.top < 4) {
-      height = Math.min(lived.height || height, maxH);
-      top = Math.max(8, window.innerHeight - height - 8);
-      left = Math.max(8, Math.min(window.innerWidth - lived.width - 8, lived.left));
-      placeChamber(left, top);
-    }
+    placeChamber(left, Math.max(top,bottom-chamber.offsetHeight));
   };
+  new ResizeObserver(() => {
+    if (!chamber.hidden && overlapsDecisionPath()) dockChamberInView();
+  }).observe(chamber);
+  window.addEventListener('resize', () => { if (!chamber.hidden) dockChamberInView(); });
   const restoreChamberPos = () => {
     try {
       const saved = JSON.parse(sessionStorage.getItem('fs.decisionChamber.pos') || 'null');
@@ -653,7 +667,7 @@ def render_decision_chamber_script() -> str:
           || r.right > window.innerWidth - 4
           || r.left < 4
           || r.height < 8;
-        if (clipped) dockChamberInView();
+        if (clipped || overlapsDecisionPath()) dockChamberInView();
         return;
       }
     } catch (_err) { /* ignore */ }
@@ -662,6 +676,7 @@ def render_decision_chamber_script() -> str:
 
   const applyScene = () => {
     workspace.dataset.openDecisionScene = state.openDecisionScene;
+    chamber.dataset.stagedCinematic = state.openDecisionScene === 'STAGED' ? 'true' : 'false';
     chamber.setAttribute('data-open-scene', state.openDecisionScene);
     const scene = state.openDecisionScene;
     /* FOCUS frames Atlas evidence only — chamber chrome opens at GATE+. */
@@ -680,7 +695,7 @@ def render_decision_chamber_script() -> str:
           || r.top < 4
           || r.right > window.innerWidth - 4
           || r.left < 4
-          || r.height < 8
+          || r.height < 8 || overlapsDecisionPath()
         ) {
           dockChamberInView();
         }
@@ -694,6 +709,13 @@ def render_decision_chamber_script() -> str:
       window.setTimeout(ensureChamberInView, 0);
       window.setTimeout(ensureChamberInView, 48);
       window.setTimeout(ensureChamberInView, 160);
+      // Atlas transitions and smooth scroll move the guide without resizing it.
+      const trackingUntil = performance.now() + 800;
+      const trackSceneGeometry = () => {
+        ensureChamberInView();
+        if (!chamber.hidden && performance.now() < trackingUntil) requestAnimationFrame(trackSceneGeometry);
+      };
+      requestAnimationFrame(trackSceneGeometry);
     } else {
       chamber.removeAttribute('data-docked');
     }
@@ -707,6 +729,34 @@ def render_decision_chamber_script() -> str:
     document.getElementById('script-purpose').textContent = scripted ? scripted.purpose : 'Offline evidence view. Decisions require the local review session.';
     document.getElementById('script-impact').textContent = scripted ? scripted.primary_impact + ': ' + scripted.evidence_status : 'No authorization or filesystem action has occurred.';
     chamber.dataset.scriptScene = scripted ? scripted.scene_id : '';
+    const evidenceTrace = document.getElementById('chamber-evidence-trace');
+    evidenceTrace.hidden = !state.sceneEvidence;
+    const facts = document.getElementById('chamber-evidence-facts');
+    const chapters = document.getElementById('chamber-evidence-chapters');
+    facts.replaceChildren(); chapters.replaceChildren();
+    if (state.sceneEvidence) {
+      const evidence = state.sceneEvidence;
+      const conclusion = document.createElement('p');
+      conclusion.textContent = evidence.ownership_badge + ': ' + (evidence.owners.join(', ') || 'owner unresolved');
+      facts.appendChild(conclusion);
+      const freshness = document.createElement('p');
+      freshness.textContent = evidence.fresh ? 'Current normalized evidence' : 'Current complete evidence is unavailable';
+      facts.appendChild(freshness);
+      if (evidence.missing_fact) {
+        const missing = document.createElement('p'); missing.textContent = evidence.missing_fact + '. ' + evidence.why_it_matters;
+        facts.appendChild(missing);
+      }
+      (evidence.trace || []).forEach((chapter) => {
+        const item = document.createElement('li');
+        item.textContent = chapter.scene_id.replace(/_/g,' ') + ': ' + chapter.status + '. ' + chapter.finding;
+        chapters.appendChild(item);
+      });
+      (evidence.unavailable_semantic_actions || []).forEach((action) => {
+        const unavailable = document.createElement('p');
+        unavailable.textContent = action.replace(/_/g,' ') + ': the semantic action adapter is not connected. No raw deletion substitute is allowed.';
+        facts.appendChild(unavailable);
+      });
+    }
     const resultEl = document.getElementById('chamber-result');
     resultEl.hidden = !state.receipt;
     resultEl.replaceChildren();
@@ -782,6 +832,7 @@ def render_decision_chamber_script() -> str:
   };
 
   const absorbState = (payload) => {
+    const previousScriptScene = state.scriptScene && state.scriptScene.scene_id;
     if (!payload) return;
     if (payload.next_item_id) {
       state.nextItemId = payload.next_item_id;
@@ -800,6 +851,7 @@ def render_decision_chamber_script() -> str:
     state.auth = payload.authorization_state || state.auth;
     state.allowedIntents = payload.allowed_intents || [];
     state.scriptScene = payload.script_scene || null;
+    state.sceneEvidence = payload.scene_evidence || null;
     state.receipt = payload.deletion_receipt || null;
     state.error = payload.delete_unavailable_reason || null;
     if (payload.execution_state) state.executionState = payload.execution_state;
@@ -821,6 +873,7 @@ def render_decision_chamber_script() -> str:
       else paintSelectionMarkers(state.selectedNodeId);
     }
     applyScene();
+    if (previousScriptScene !== (state.scriptScene && state.scriptScene.scene_id)) chamber.scrollTop = 0;
   };
 
   const localOpenGate = (id, requestedScene) => {
@@ -870,44 +923,37 @@ def render_decision_chamber_script() -> str:
     applyScene();
   };
 
-  const sceneCompatibleWithServer = (requestedScene, payload) => {
-    if (!requestedScene || !payload) return false;
-    const serverScene = payload.open_decision_scene;
-    const auth = payload.authorization_state;
-    const evidence = String(payload.evidence_disposition || '').toUpperCase();
-    // Never force STAGED when server is on APPROVAL / lacks delete-stage authority.
-    if (requestedScene === 'STAGED') {
-      if (serverScene && serverScene !== 'STAGED') return false;
-      if (auth !== 'APPROVED_FOR_ACTION') return false;
-    }
-    if (requestedScene === 'APPROVAL') {
-      if (auth === 'APPROVED_FOR_ACTION' && serverScene === 'STAGED') return false;
-      if (evidence && evidence.indexOf('RECLAIM') < 0) return false;
-    }
-    if (serverScene === 'RESULT' && requestedScene !== 'RESULT') return false;
-    return true;
-  };
-
+  let evidenceRequestRevision = 0;
   const fetchState = async (id, requestedScene) => {
+    const requestRevision = ++evidenceRequestRevision;
     if (!bridge || !bridge.origin || !bridge.statePath) {
       localOpenGate(id, requestedScene);
       return;
     }
     const url = bridge.origin + bridge.statePath + '?item_id=' + encodeURIComponent(id);
-    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!response.ok) {
-      localOpenGate(id, requestedScene);
+    let payload;
+    try {
+      const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!response.ok) throw new Error('State readback refused');
+      payload = await response.json();
+      if (!payload || payload.run_id !== bridge.runId || !Array.isArray(payload.allowed_intents)) {
+        throw new Error('Invalid current-state readback');
+      }
+    } catch (_error) {
+      if (requestRevision !== evidenceRequestRevision) return;
+      state.allowedIntents = [];
+      state.executionState = 'blocked';
+      state.error = 'The current evidence could not be read from the local review session. Reconnect and reopen this evidence; no action is authorized.';
+      state.openDecisionScene = 'GATE';
+      state.scriptScene = null;
+      state.sceneEvidence = null;
+      applyScene();
       return;
     }
-    const payload = await response.json();
+    if (requestRevision !== evidenceRequestRevision) return;
     absorbState(payload);
-    // Server readback owns scene; client requestedScene is advisory only.
-    if (requestedScene && sceneCompatibleWithServer(requestedScene, payload)) {
-      if (requestedScene !== state.openDecisionScene) {
-        state.openDecisionScene = requestedScene;
-        applyScene();
-      }
-    }
+    // Requested tutorial steps never override the server-owned value,
+    // authorization, failure or continuation state returned by readback.
   };
 
   const nextOfflineItemId = (currentId) => {
@@ -1074,6 +1120,25 @@ def render_decision_chamber_script() -> str:
     if (!control) return;
     openFromEvidenceControl(event);
   });
+
+  document.addEventListener('filesteward:selection-cleared', () => {
+    evidenceRequestRevision += 1;
+    state.selectedNodeId = null;
+    state.allowedIntents = [];
+    state.sceneEvidence = null;
+    state.scriptScene = null;
+    state.openDecisionScene = 'MAP';
+    applyScene();
+  });
+  let dockingFrame = null;
+  document.addEventListener('scroll', (event) => {
+    if (chamber.hidden || event.target === chamber || chamber.contains(event.target)) return;
+    if (dockingFrame !== null) return;
+    dockingFrame = requestAnimationFrame(() => {
+      dockingFrame = null;
+      if (overlapsDecisionPath()) dockChamberInView();
+    });
+  }, true);
 
   document.addEventListener('filesteward:selection', (event) => {
     const id = event.detail && event.detail.id;

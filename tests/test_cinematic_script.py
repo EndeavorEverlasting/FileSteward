@@ -75,12 +75,12 @@ def test_human_review_ui_never_asks_operator_to_assert_regenerability(tmp_path):
 def test_receipt_completes_every_succeeded_item_and_passes_same_owner_to_both_gates(tmp_path, monkeypatch):
     from types import SimpleNamespace
     import filesteward.review_bridge as bridge_module
-    from filesteward.ownership.actions import unresolved_ownership
+    from safe_capacity_fixtures import generated_evidence
 
     nodes = {key: _reclaim_node(key) for key in ("a", "b", "c")}
     scan = tmp_path / "scan"
     scan.mkdir()
-    resolver = lambda path: unresolved_ownership(path)
+    resolver = generated_evidence
     bridge = ReviewBridge(tmp_path, "run", "a" * 64, "token", "", scan_root=scan,
                           ownership_resolver=resolver, _nodes=nodes)
     seen = []
@@ -105,6 +105,8 @@ def test_receipt_completes_every_succeeded_item_and_passes_same_owner_to_both_ga
             {"item_id": "b", "status": "SUCCEEDED"},
             {"item_id": "c", "status": "FAILED"},
         ]})
+    for item_id in nodes:
+        bridge.record_decision(DecisionRequest("run", item_id, DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT))
     payload = bridge.execute_permanent_delete_ui("run", ["a", "b", "c"], scan, "DELETE_PERMANENTLY")
     assert seen == [resolver, resolver]
     assert payload["execution_state"] == "blocked"

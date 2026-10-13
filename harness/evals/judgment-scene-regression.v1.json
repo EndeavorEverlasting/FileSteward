@@ -369,19 +369,34 @@
   },
   "mutation_rule": "Any change to scripted scenes, accepted interaction grammar, or protected behavior requires updating this ledger plus a negative fixture and positive control; local agents may not delete the oracle to make a candidate pass.",
   "cinematic_lineage_20261013": {
-    "retained_controls": "tests/test_cinematic_script.py",
+    "retained_controls": [
+      "tests/test_cinematic_script.py",
+      "tests/test_judgment_runtime.py",
+      "tests/test_review_bridge_http.py"
+    ],
     "negative_cases": [
       "offline approval cannot fabricate authority",
       "missing current ownership adapter hides delete",
       "stale plan decisions do not replay",
-      "failed request surfaces actionable error"
+      "failed request surfaces actionable error",
+      "incomplete, stale or future ownership evidence cannot invite reclaim",
+      "changed provenance invalidates persisted mark even when graph revision matches",
+      "state-read failures cannot fall back to client authority",
+      "floating chamber cannot occlude authored path or phone controls",
+      "raw-eligible provenance drift rejects stale authorization before package emission",
+      "non-receipt saved choices reopen on full evidence digest drift",
+      "camera motion and viewport resize cannot strand or occlude chamber controls",
+      "chamber native touch scrolling must reach below-fold content"
     ],
     "positive_controls": [
       "KEEP persists and advances to next item",
       "all eleven authored scenes remain discoverable",
-      "RESULT renders receipt and continuation"
+      "RESULT renders receipt and continuation",
+      "fresh generated evidence reaches VALUE_DECISION before AUTHORIZATION_GATE",
+      "all owners remain inspectable with protective cross-domain precedence",
+      "empty search restoration and touch filter use preserve one state owner"
     ],
-    "browser_receipt": "var/runs/cinematic-browser-20261013/decision-proof-results.json",
-    "proof_status": "BOUNDED_SYNTHETIC_BROWSER_PASS_FULL_SCENE_ACCEPTANCE_INCOMPLETE"
+    "browser_receipt": "var/runs/cinematic-browser-20261013/navigation-v11-results.json",
+    "proof_status": "BOUNDED_SYNTHETIC_SUPPORTED_INPUT_PASS"
   }
 }

@@ -429,9 +429,8 @@ def _render_footer_ticker(
         disposition_label=disposition_label,
         scene_hint=scene_hint,
     )
-    # Duplicate for seamless loop.
-    doubled = list(items) + list(items)
-    spans = "".join(f"<span>{escape_text(item)}</span>" for item in doubled)
+    # Status is stable task information, not decorative scrolling content.
+    spans = "".join(f"<span>{escape_text(item)}</span>" for item in items)
     return (
         '<footer class="footer footer-ticker" tabindex="0" '
         'aria-label="Status ticker">'

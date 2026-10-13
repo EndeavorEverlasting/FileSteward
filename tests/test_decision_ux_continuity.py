@@ -191,6 +191,7 @@ def test_partial_delete_does_not_mark_complete(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import filesteward.review_bridge as bridge_mod
+    from safe_capacity_fixtures import generated_evidence
 
     run_dir = tmp_path / "run"
     run_dir.mkdir()
@@ -202,6 +203,7 @@ def test_partial_delete_does_not_mark_complete(
         session_token="token",
         report_html="",
         scan_root=tmp_path / "scan",
+        ownership_resolver=generated_evidence,
         _nodes={node.node_id: node},
     )
     (tmp_path / "scan").mkdir()
@@ -250,6 +252,7 @@ def test_partial_delete_does_not_mark_complete(
         },
     )
 
+    bridge.record_decision(DecisionRequest("continuity-run", node.node_id, DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT))
     payload = bridge.execute_permanent_delete_ui(
         "continuity-run",
         [node.node_id],

@@ -676,6 +676,11 @@ def render_cinematic_experience_script() -> str:
     pointerModality = 'pointer';
     hideReticleUntilPointer = false;
     lastPointer = { x: event.clientX, y: event.clientY };
+    if (!stage.contains(event.target)) {
+      if (reticle) reticle.classList.remove('is-visible', 'is-active');
+      if (cartouche) { cartouche.hidden = true; cartouche.setAttribute('aria-hidden','true'); }
+      return;
+    }
     const cue = cueFrom(event.target);
     paintCue(cue, event.clientX, event.clientY, true, true);
   };

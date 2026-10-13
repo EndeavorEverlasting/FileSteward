@@ -129,10 +129,10 @@ def test_staged_copy_and_warm_palette_contract_remain_present() -> None:
 
 def test_fetch_state_does_not_force_staged_over_server_approval() -> None:
     html = render_report_shell(_model())
-    assert "sceneCompatibleWithServer" in html
-    assert "Never force STAGED when server is on APPROVAL" in html
+    assert "Requested tutorial steps never override the server-owned value" in html
     # Blind overwrite of openDecisionScene from requestedScene is gone.
     assert "absorbState(await response.json());\n    if (requestedScene) {\n      state.openDecisionScene = requestedScene;" not in html
-    assert "sceneCompatibleWithServer(requestedScene, payload)" in html
+    fetch_body = html.split("const fetchState =", 1)[1].split("const nextOfflineItemId", 1)[0]
+    assert "state.openDecisionScene = requestedScene" not in fetch_body
     assert "runtime.scanRoot" in html or "bridge.scanRoot" in html
     assert "delete_permanently_missing_scan_root" in html

@@ -48,6 +48,7 @@ def render_report_html(
                placeholder="Search paths and groups" aria-label="Search paths and groups"
                autocomplete="off">
       </label>
+      <p id="navigator-empty-state" class="empty" role="status" hidden>No items match these filters. Clear the search or choose another filter.</p>
 """
     extra_css = """
 .filter-chip{border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-secondary);border-radius:var(--fs-radius-pill);padding:0.25rem 0.625rem;min-height:2rem;font-size:var(--fs-type-small-size);cursor:pointer;margin:2px;}
@@ -139,6 +140,8 @@ def render_report_html(
     }});
 
     const selected = document.querySelector('.nav-row.selected:not([hidden])');
+    const emptyState = document.getElementById('navigator-empty-state');
+    if (emptyState) emptyState.hidden = Boolean(document.querySelector('.nav-row:not([hidden])'));
     if (!selected) {{
       const first = document.querySelector('.nav-row:not([hidden])');
       if (first) {{
@@ -161,6 +164,7 @@ def render_report_html(
         }}
         const mapWrap = document.querySelector('.map-wrap');
         if (mapWrap) mapWrap.classList.remove('selection-active');
+        document.dispatchEvent(new CustomEvent('filesteward:selection-cleared'));
       }}
     }}
   }};

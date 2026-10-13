@@ -60,7 +60,8 @@ def test_non_loopback_bind_is_rejected(review_run: Path) -> None:
 
 def test_bridge_security_and_decision_flow(review_run: Path) -> None:
     assert not is_loopback_host("0.0.0.0")
-    result = serve_review(review_run, port=0, open_browser=False)
+    from safe_capacity_fixtures import generated_evidence
+    result = serve_review(review_run, port=0, open_browser=False, ownership_resolver=generated_evidence)
     try:
         origin = result.url.rstrip("/")
         # HTML is served with runtime injection and no durable token file.
@@ -291,6 +292,20 @@ def test_bridge_security_and_decision_flow(review_run: Path) -> None:
             },
         )
         assert code == 400
+
+        # Approval cannot bypass the current value choice.
+        code, body = _json(f"{origin}{APPROVAL_PATH}", method="POST", payload={
+            "run_id": result.run_id, "item_id": reclaim_id,
+            "cleanup_plan_sha256": result.cleanup_plan_sha256,
+            "action": "QUARANTINE", "confirm": True,
+        }, headers={"Content-Type": "application/json", "Origin": origin, SESSION_HEADER: token})
+        assert code == 400
+        assert "current value intent" in body["error"]
+        code, body = _json(f"{origin}{DECISION_PATH}", method="POST", payload={
+            "run_id": result.run_id, "item_id": reclaim_id, "intent": "RECLAIM_GENERATED_OUTPUT",
+        }, headers={"Content-Type": "application/json", "Origin": origin, SESSION_HEADER: token})
+        assert code == 200
+        assert body["script_scene"]["scene_id"] == "AUTHORIZATION_GATE"
 
         # Exact approval stages quarantine without deleting bytes.
         code, body = _json(

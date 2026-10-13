@@ -2,7 +2,7 @@
 
 **Authority:** `[project].version` in `pyproject.toml`
 
-**Current candidate version:** `0.14.0` (selective cinematic lineage reconciliation; no release tag)
+**Current candidate version:** `0.15.0` (adapter-backed cinematic scene progression; no release tag)
 
 
 **Status:** P130 repository versioning system established for future changes; no release tag is created by this sprint.

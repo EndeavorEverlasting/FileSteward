@@ -24,7 +24,7 @@ from enum import Enum
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from filesteward.approval import (
     ApprovalAction,
@@ -47,8 +47,8 @@ from filesteward.deletion.preflight import load_run_protection_context
 from filesteward.deletion.receipt import DELETE_RECEIPT_FILENAME
 from filesteward.manifest import validate_run
 from filesteward.models import AuthorizationState, CleanupDisposition
-from filesteward.ownership.actions import OwnershipResolver, unresolved_ownership
-from filesteward.visualization.judgment_script import project_script
+from filesteward.ownership.actions import OwnershipEvidence, OwnershipResolver, unresolved_ownership
+from filesteward.visualization.judgment_script import load_scene_script, project_script, resolve_scene_evidence
 from filesteward.policy.paths import normalize_declared_path, prove_run_dir_under_runtime
 from filesteward.run import CleanupRun
 from filesteward.visualization.decision_flow import (
@@ -107,6 +107,7 @@ class DecisionBridgeIntent(str, Enum):
     KEEP = "KEEP"
     REVIEW_LATER = "REVIEW_LATER"
     DELETE_PERMANENTLY = "DELETE_PERMANENTLY"
+    RECLAIM_GENERATED_OUTPUT = "RECLAIM_GENERATED_OUTPUT"
 
 
 _COMPLETED_OPERATOR_INTENTS = frozenset(
@@ -450,8 +451,12 @@ class ReviewBridge:
         return str(intent) if intent else None
 
     def _is_completed_item(self, item_id: str) -> bool:
-        return (self._operator_intent_for(item_id) in _COMPLETED_OPERATOR_INTENTS
-                or (self._decisions.get(item_id) or {}).get("receipt_succeeded") is True)
+        recorded = self._decisions.get(item_id) or {}
+        if recorded.get("receipt_succeeded") is True:
+            return True
+        node = self._nodes.get(item_id)
+        return bool(node and self._operator_intent_for(item_id) in _COMPLETED_OPERATOR_INTENTS
+                    and recorded.get("evidence_digest") == self._resolution_for(node)["evidence_digest"])
 
     def _is_actionable_node(self, node: _NodeView) -> bool:
         if node.disposition in _NON_ACTIONABLE_DISPOSITIONS:
@@ -512,7 +517,18 @@ class ReviewBridge:
             "operator_intents": operator_intents,
         }
 
-    def _session_for(self, node: _NodeView):
+    def _resolution_for(self, node: _NodeView) -> dict[str, object]:
+        try:
+            evidence = self.ownership_resolver(node.path)
+            if not isinstance(evidence, OwnershipEvidence):
+                raise TypeError("resolver did not return normalized OwnershipEvidence")
+            return resolve_scene_evidence(node.path, node.disposition, evidence)
+        except (OSError, ValueError, TypeError, RuntimeError) as exc:
+            resolution = resolve_scene_evidence(node.path, node.disposition, unresolved_ownership(node.path))
+            resolution["missing_fact"] = f"The ownership adapter failed ({type(exc).__name__}); current facts are unavailable"
+            return resolution
+
+    def _session_for(self, node: _NodeView, resolution: dict[str, object] | None = None):
         if self._is_completed_item(node.node_id):
             closed = open_decision_session(node)
             return replace(
@@ -522,7 +538,20 @@ class ReviewBridge:
                 last_transition=self._last_transition or "complete",
                 execution_state=ExecutionState.COMPLETE,
             )
-        return open_decision_session(node)
+        current = resolution if resolution is not None else self._resolution_for(node)
+        flow = open_decision_session(node)
+        recorded = self._decisions.get(node.node_id) or {}
+        requested = recorded.get("intent") == DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT.value
+        same_evidence = recorded.get("evidence_digest") == current["evidence_digest"]
+        if requested and same_evidence and current["raw_delete_eligible"]:
+            scene = (DecisionScene.STAGED if node.authorization_state is AuthorizationState.APPROVED_FOR_ACTION
+                     else DecisionScene.APPROVAL)
+            return replace(flow, scene=scene, script_scene_id="AUTHORIZATION_GATE")
+        return replace(
+            flow, scene=DecisionScene.RESOLVE, script_scene_id=str(current["scene_id"]),
+            disposition=CleanupDisposition(str(current["effective_disposition"])),
+            pending_action=PendingAction.NONE, execution_state=ExecutionState.EXECUTABLE,
+        )
 
     def state_payload(self, item_id: str | None = None) -> dict[str, object]:
         with self._lock:
@@ -533,7 +562,8 @@ class ReviewBridge:
                 nxt = self._next_actionable_node(requested)
                 selected_id = nxt.node_id if nxt is not None else requested
             node = self._nodes.get(selected_id) if selected_id else None
-            flow = self._session_for(node) if node is not None else None
+            resolution = self._resolution_for(node) if node is not None else None
+            flow = self._session_for(node, resolution) if node is not None else None
             pending = self._pending_by_item.get(selected_id or "")
             execution = self._execution_by_item.get(selected_id or "")
             if pending is not None and flow is not None:
@@ -552,6 +582,12 @@ class ReviewBridge:
                 intents = [intent for intent in intents if intent != "DECLARE_REGENERABLE_CONTRACT"]
                 if self.ownership_resolver is unresolved_ownership or self.scan_root is None:
                     intents = [intent for intent in intents if intent != "DELETE_PERMANENTLY"]
+                if resolution and not resolution["raw_delete_eligible"]:
+                    intents = [intent for intent in intents if intent not in {
+                        "DELETE_PERMANENTLY", "APPROVE_QUARANTINE", "RECLAIM_GENERATED_OUTPUT"
+                    }]
+                if resolution and flow.script_scene_id == "VALUE_DECISION":
+                    intents = [intent for intent in intents if intent in resolution["value_actions"]]
             next_item = selected_id
             next_scene = flow.scene.value if flow else DecisionScene.MAP.value
             if requested and self._is_completed_item(requested):
@@ -583,9 +619,8 @@ class ReviewBridge:
                 "selected_node_id": selected_id,
                 "current_item_id": current_item_id,
                 "next_item_id": next_item,
-                "evidence_disposition": (
-                    node.disposition.value if node else None
-                ),
+                "evidence_disposition": flow.disposition.value if flow else None,
+                "inventory_disposition": node.disposition.value if node else None,
                 "authorization_state": (
                     node.authorization_state.value if node else None
                 ),
@@ -599,7 +634,11 @@ class ReviewBridge:
                 "scene_revision": self._scene_revision,
                 "classification_views": self._classification_views(),
                 "allowed_intents": intents,
-                "script_scene": project_script(flow, completed=self._is_completed_item(selected_id or "")),
+                "script_scene": project_script(
+                    flow, completed=self._is_completed_item(selected_id or ""),
+                    resolved=bool(resolution and resolution["fresh"]),
+                ),
+                "scene_evidence": resolution,
                 "delete_unavailable_reason": (
                     "Current ownership and regeneration adapters are not admitted for this review session."
                     if self.ownership_resolver is unresolved_ownership else
@@ -634,8 +673,14 @@ class ReviewBridge:
                 raise ValueError(f"item {request.item_id} is not in the presentation model")
             if self._is_completed_item(request.item_id):
                 return self.state_payload(request.item_id)
-            session = open_decision_session(node)
+            resolution = self._resolution_for(node)
+            session = self._session_for(node, resolution)
             intent = DecisionIntent(request.intent.value)
+            if (intent is DecisionIntent.RECLAIM_GENERATED_OUTPUT
+                    and not resolution["raw_delete_eligible"]):
+                raise ValueError("current ownership and regeneration do not admit reclaim")
+            if session.script_scene_id == "VALUE_DECISION" and intent.value not in resolution["value_actions"]:
+                raise ValueError("intent is not a legal value choice for current ownership")
             if intent is DecisionIntent.APPROVE_QUARANTINE:
                 raise ValueError("approval must use POST /api/v1/approval")
             flow = choose_intent(session, intent)
@@ -644,10 +689,13 @@ class ReviewBridge:
                 "evidence_disposition": node.disposition.value,
                 "recorded_at": _utc_now(),
                 "label": f"Decision: {request.intent.value.replace('_', ' ')} REQUESTED",
+                "evidence_digest": resolution["evidence_digest"],
             }
             self._persist_decisions()
             self._scene_revision += 1
             self._last_transition = flow.last_transition
+            if intent is DecisionIntent.RECLAIM_GENERATED_OUTPUT:
+                return self.state_payload(request.item_id)
             if request.intent in {
                 DecisionBridgeIntent.KEEP,
                 DecisionBridgeIntent.REVIEW_LATER,
@@ -799,6 +847,18 @@ class ReviewBridge:
             refusal = scan_root_allowed_for_execute(scan)
             if refusal:
                 raise ValueError(refusal)
+            for item_id in ids:
+                node = self._nodes[item_id]
+                current = self._resolution_for(node)
+                if not current["raw_delete_eligible"]:
+                    raise ValueError("current ownership and regeneration evidence do not admit permanent deletion")
+                flow = self._session_for(node, current)
+                recorded = self._decisions.get(item_id) or {}
+                if (recorded.get("intent") != DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT.value
+                        or recorded.get("evidence_digest") != current["evidence_digest"]
+                        or flow.script_scene_id != "AUTHORIZATION_GATE"
+                        or DecisionIntent.DELETE_PERMANENTLY not in allowed_intents(flow)):
+                    raise ValueError("current value intent and evidence must match before permanent authorization")
             approval_path = self.approval_record_path()
             if approval_path.is_file():
                 quarantine = json.loads(approval_path.read_text(encoding="utf-8"))
@@ -923,6 +983,13 @@ class ReviewBridge:
                 raise ValueError(f"item {request.item_id} is not in the presentation model")
             if node.disposition is not CleanupDisposition.RECLAIM_PROVEN:
                 raise ValueError("only RECLAIM_PROVEN evidence may be approved")
+            current = self._resolution_for(node)
+            if not current["raw_delete_eligible"]:
+                raise ValueError("current ownership and regeneration evidence do not admit approval")
+            recorded = self._decisions.get(request.item_id) or {}
+            if (recorded.get("intent") != DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT.value
+                    or recorded.get("evidence_digest") != current["evidence_digest"]):
+                raise ValueError("current value intent and evidence must match before approval")
             record = ApprovalRecord(
                 run_id=request.run_id,
                 cleanup_plan_sha256=request.cleanup_plan_sha256,
@@ -981,6 +1048,22 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
             self.wfile.write(body)
 
         def _reject(self, code: int, message: str) -> None:
+            # On Windows, closing with an unread small POST body can reset the
+            # connection before the client receives its explicit refusal.
+            # Drain only a bounded body, without parsing or trusting it.
+            if self.command == "POST" and not getattr(self, "_body_consumed", False):
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if 0 < length <= 65536:
+                        previous_timeout = self.connection.gettimeout()
+                        try:
+                            self.connection.settimeout(0.25)
+                            self.rfile.read(length)
+                        finally:
+                            self.connection.settimeout(previous_timeout)
+                except (ValueError, OSError):
+                    pass
+                self._body_consumed = True
             self._json(code, {"error": message})
 
         def _mutation_guard(self) -> bool:
@@ -1020,6 +1103,7 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
                 self._reject(400, "request body too large")
                 return None
             raw = self.rfile.read(length)
+            self._body_consumed = True
             try:
                 data = json.loads(raw.decode("utf-8"))
             except (UnicodeError, json.JSONDecodeError):
@@ -1047,11 +1131,7 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
                 if not is_loopback_host(host):
                     self._reject(403, "Host must be loopback")
                     return
-                item_id = None
-                if parsed.query:
-                    for part in parsed.query.split("&"):
-                        if part.startswith("item_id="):
-                            item_id = part.split("=", 1)[1]
+                item_id = parse_qs(parsed.query).get("item_id", [None])[0]
                 self._json(200, bridge.state_payload(item_id))
                 return
             self._reject(404, "not found")
@@ -1133,6 +1213,7 @@ def serve_review(
     bind_host: str = "127.0.0.1",
     regenerate_report: bool = True,
     scan_root: str | Path | None = None,
+    ownership_resolver: OwnershipResolver = unresolved_ownership,
 ) -> ReviewServeResult:
     """Validate, regenerate report, and serve the Decision Bridge on loopback."""
 
@@ -1145,6 +1226,7 @@ def serve_review(
         run_dir,
         regenerate_report=regenerate_report,
         scan_root=scan_root,
+        ownership_resolver=ownership_resolver,
     )
     handler = _make_handler(bridge)
     try:
