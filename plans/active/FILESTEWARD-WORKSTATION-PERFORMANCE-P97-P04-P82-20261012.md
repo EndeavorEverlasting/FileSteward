@@ -28,7 +28,7 @@ through a proven execution adapter.
 F2+F3 -> F4 opt-in scheduled local collection; F3 -> F5 safety gate integration.
 No new automation is authorized until host capture/trend correctness is proven.
 
-This branch owns F0/F1 only: profiles package, synthetic tests, tracked
+F0/F1 INTEGRATED on main. Successor lanes F2/F3 own: profiles package, synthetic tests, tracked
 P97/P04/P82 plan, program guide. It does not own deletion, scanner,
 visualization UI, agents/TokenCorridor, installed applications or local PTop.
 
