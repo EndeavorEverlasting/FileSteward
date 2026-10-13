@@ -88,3 +88,12 @@ explicit null/UNKNOWN; no private readings committed. Entire CLI present but
 not set up (`entire status --json` -> enabled:false). No new scheduler; no
 dashboard integration. F2/F3 missing-collector and history/dashboard work
 remains successor scope per the tracked P04 plan. Use CHANGED | PROVED | NEXT.
+
+## Successor dispatch (F2/F3)
+
+F1 INTEGRATED on main. Parallel group B dispatched via isolated worktrees:
+- F2: feature/workstation-perf-f2-windows-20261013
+  worktree: %USERPROFILE%\dev\worktrees\FileSteward\workstation-perf-f2-windows-20261013
+- F3: feature/workstation-perf-f3-dashboard-20261013
+  worktree: %USERPROFILE%\dev\worktrees\FileSteward\workstation-perf-f3-dashboard-20261013
+Coordinator will converge PRs after lane validation; do not merge unfinished sibling lanes away.
