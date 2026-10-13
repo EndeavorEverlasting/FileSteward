@@ -109,3 +109,17 @@ def test_compare_capacity_trend_only_same_host_same_root(tmp_path):
     assert comparison["volumes"][0]["current_capacity_status"] == "BELOW_TARGET"
     assert comparison["causal_attribution"] == "NOT_ESTABLISHED"
     assert comparison["authorization_state"] == "OBSERVATION_ONLY"
+
+
+def test_overlapping_capture_fails_closed_without_mutation(tmp_path):
+    base = tmp_path / "profiles"
+    directory = base / "PTop"
+    directory.mkdir(parents=True)
+    lock = directory / ".capture.lock"
+    lock.write_text("held", encoding="utf-8")
+    with pytest.raises(ProfileError, match="CAPTURE_BUSY"):
+        capture("PTop", [str(tmp_path)], profiles_root=base,
+                machine_binding="win\0ptop")
+    assert lock.read_text(encoding="utf-8") == "held"
+    assert not (directory / "identity.json").exists()
+    assert not (directory / "snapshots").exists()
