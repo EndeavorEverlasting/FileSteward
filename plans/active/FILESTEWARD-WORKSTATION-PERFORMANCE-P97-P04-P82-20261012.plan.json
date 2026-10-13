@@ -2,7 +2,7 @@
   "schema_version": "filesteward.plan/v1",
   "sprint_id": "FILESTEWARD-WORKSTATION-PERFORMANCE-20261012",
   "repository": "EndeavorEverlasting/FileSteward",
-  "execution_floor": "fcd1bf5efe451562f122d659c759527ec487c114",
+  "execution_floor": "2303131cf8664cf205e4783272622b812e89bd10",
   "branch": "main",
   "outcome": "Maintain private append-only evidence-based performance profiles by workstation without reducing storage ownership protections.",
   "prompted_by": [
@@ -88,9 +88,9 @@
       "owned": [
         "scripts/windows/*performance*"
       ],
-      "status": "WAITING",
+      "status": "IN_PROGRESS",
       "proof": "actual OS scheduler receipt; no implicit C-drive scan",
-      "execution_adapter": "LOCAL_AGENT_RUNTIME"
+      "execution_adapter": "CURSOR_TASK_SUBAGENT"
     },
     {
       "id": "F5",
@@ -104,9 +104,9 @@
         "harness/evals/",
         "tests/"
       ],
-      "status": "WAITING",
+      "status": "IN_PROGRESS",
       "proof": "no risk-state promotion, stale identity mismatch refusal, all original tests pass",
-      "execution_adapter": "LOCAL_AGENT_RUNTIME"
+      "execution_adapter": "CURSOR_TASK_SUBAGENT"
     }
   ],
   "parallel_groups": [
@@ -122,6 +122,20 @@
       "graph_width": 2,
       "dispatch_state": "F2_F3_INTEGRATED",
       "requires_satisfied_at": "9a4a3c1127fa349f5be0b6dfb8af8ff60e49d14f"
+    },
+    {
+      "id": "C",
+      "members": [
+        "F4",
+        "F5"
+      ],
+      "requires": [
+        "F2",
+        "F3"
+      ],
+      "graph_width": 2,
+      "dispatch_state": "DISPATCHED_F4_F5",
+      "requires_satisfied_at": "2303131cf8664cf205e4783272622b812e89bd10"
     }
   ],
   "validation_commands": [
@@ -139,9 +153,9 @@
     "real_host_capture": "REQUIRES_LOCAL_WINDOWS_OBSERVATION"
   },
   "blockers": [
-    "cannot verify PTop canonical checkout or Entire from connector runtime",
-    "local tests not executed",
-    "real host metrics not observed"
+    "F4 recurring registration blocked until operator supplies authorized cadence",
+    "interactive web dashboard not in F4/F5 scope",
+    "wear/latency/thermal collectors still UNKNOWN by design"
   ],
   "convergence_owner": "FileSteward canonical main maintainer after all proof gates"
 }
