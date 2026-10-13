@@ -16,6 +16,10 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from filesteward.policy.paths import is_symlink_or_reparse
+from filesteward.profiles.windows import (
+    WindowsMediaProbe,
+    resolve_declared_volumes_media_type,
+)
 
 SCHEMA = "filesteward.workstation-performance-profile/v1"
 KEY = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,47}\Z")
@@ -99,7 +103,8 @@ def _ensure_identity(directory: Path, alias: str, binding: str) -> str:
 
 def observe(volumes: Sequence[str], *, sample_seconds: float = 0.2,
             disk_usage: Callable[[str], Any] = shutil.disk_usage,
-            psutil_module: Any = None) -> dict[str, Any]:
+            psutil_module: Any = None,
+            windows_media_probe: WindowsMediaProbe | None = None) -> dict[str, Any]:
     if not 1 <= len(volumes) <= 32:
         raise ProfileError("declare 1-32 volumes explicitly")
     if not 0 <= sample_seconds <= 5:
@@ -115,7 +120,6 @@ def observe(volumes: Sequence[str], *, sample_seconds: float = 0.2,
                "media_type": None, "temperature_c": None}
     missing = ["volume_latency_ms: no mapped volume counter",
                "device_wear_pct: no trusted collector",
-               "media_type: no trusted physical mapping",
                "temperature_c: no trusted sensor"]
     if psutil_module is None:
         missing.extend(["cpu_utilization_pct: psutil unavailable",
@@ -139,6 +143,7 @@ def observe(volumes: Sequence[str], *, sample_seconds: float = 0.2,
             missing.append("memory: unavailable")
     results = []
     seen = set()
+    resolved_roots: list[str] = []
     for volume in volumes:
         root = os.path.abspath(os.path.expanduser(volume))
         casefolded = os.path.normcase(root).casefold()
@@ -162,6 +167,15 @@ def observe(volumes: Sequence[str], *, sample_seconds: float = 0.2,
                         "free_pct": percent, "capacity_status": status,
                         "target_pct": 20, "critical_pct": 10,
                         "action_authorization": "NONE"})
+        resolved_roots.append(root)
+    media_type, media_missing = resolve_declared_volumes_media_type(
+        resolved_roots, probe=windows_media_probe)
+    if media_type is not None:
+        metrics["media_type"] = media_type
+    elif media_missing:
+        missing.append(media_missing)
+    else:
+        missing.append("media_type: no trusted physical mapping")
     return {"metrics": metrics, "volumes": results, "missing_metrics": missing}
 
 def _root() -> Path:
