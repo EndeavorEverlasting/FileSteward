@@ -34,9 +34,16 @@ attestation and does not prove a machine has not been cloned or renamed.
 Explicit selected volumes only. Collection reads capacity and, when optional
 psutil is available, a short 0–5 second CPU-utilization and RAM sample.
 Without psutil those measurements remain null with explicit explanations.
-Thermals, disk I/O latency, SSD/HDD mapping and wear remain unverified; no
-values are fabricated. Samples are point-in-time observations, NOT comparable
-performance benchmarks without the same workload and conditions.
+
+On Windows, `media_type` may be filled only through a fail-closed CIM
+physical-to-volume mapping (`profiles/windows.py`): logical disk → partition →
+disk drive index → `MSFT_PhysicalDisk.MediaType` (SSD/HDD/SCM). Unspecified,
+ambiguous, multi-volume disagreement, missing PowerShell/CIM, or non-Windows
+hosts leave `media_type` null with an explicit `missing_metrics` reason. The
+collector never invents labels and never persists SMART serials or model
+strings into profile metrics. Thermals, disk I/O latency, and wear remain
+unverified; no values are fabricated. Samples are point-in-time observations,
+NOT comparable performance benchmarks without the same workload and conditions.
 
 Capacity is CRITICAL below 10% free, BELOW_TARGET at 10–under 20%, and
 AT_OR_ABOVE_TARGET at least 20%. This is operational visibility, NEVER
