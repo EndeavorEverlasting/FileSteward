@@ -10,6 +10,7 @@ Run from the proven canonical checkout, after editable installation:
 
     python -m filesteward.profiles capture --host-key PTop --volume 'C:\'
     python -m filesteward.profiles show --host-key PTop
+    python -m filesteward.profiles compare --host-key PTop
 
 Change host-key to the alias of the actual machine; never assume PTop and
 another workstation are interchangeable. The agent must verify local hostname,
