@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from filesteward.profiles import (
-    ProfileError, SCHEMA, _key, capture, load_latest, observe,
+    ProfileError, SCHEMA, _key, capture, compare_latest, load_latest, observe,
 )
 
 def test_host_key_rejects_alias_traversal():
@@ -84,3 +84,28 @@ def test_profile_symlink_refused(tmp_path):
 def test_unsafe_sample_length_refused(tmp_path):
     with pytest.raises(ProfileError):
         observe([str(tmp_path)], sample_seconds=30)
+
+
+def test_compare_capacity_trend_only_same_host_same_root(tmp_path):
+    root = tmp_path / "history"
+    volume = tmp_path / "C"
+    volume.mkdir()
+    observations = iter([
+        {"volumes": [{"declared_root": str(volume), "free_pct": 21.5, "capacity_status": "AT_OR_ABOVE_TARGET"}],
+         "metrics": {}, "missing_metrics": []},
+        {"volumes": [{"declared_root": str(volume), "free_pct": 18.0, "capacity_status": "BELOW_TARGET"}],
+         "metrics": {}, "missing_metrics": []},
+    ])
+    def synthetic(v, *, sample_seconds):
+        return next(observations)
+    with pytest.raises(ProfileError, match="two snapshots"):
+        capture("test", [str(volume)], profiles_root=root,
+                observer=synthetic, machine_binding="linux\0test")
+        compare_latest("test", profiles_root=root)
+    capture("test", [str(volume)], profiles_root=root,
+            observer=synthetic, machine_binding="linux\0test")
+    comparison = compare_latest("test", profiles_root=root)
+    assert comparison["volumes"][0]["change_free_percentage_points"] == -3.5
+    assert comparison["volumes"][0]["current_capacity_status"] == "BELOW_TARGET"
+    assert comparison["causal_attribution"] == "NOT_ESTABLISHED"
+    assert comparison["authorization_state"] == "OBSERVATION_ONLY"
