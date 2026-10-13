@@ -83,7 +83,7 @@
     "Canonical judgment mapping required before recurring cleanup/settings semantics"
   ],
   "proof_receipts": [
-    "var/runs/cinematic-browser-20261013/final-context-v18-results.json",
+    "var/runs/cinematic-browser-20261013/final-context-v19-results.json",
     "var/runs/cinematic-browser-20261013/context-exact-head-full-suite.log",
     "var/runs/cinematic-browser-20261013/continuation-candidate-receipt.json"
   ],

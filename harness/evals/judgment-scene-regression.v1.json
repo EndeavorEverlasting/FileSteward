@@ -406,7 +406,7 @@
       "late action readbacks remain attributed and explicitly reviewable",
       "native900/1100 layout and filtering preserve container-query oracle"
     ],
-    "browser_receipt": "var/runs/cinematic-browser-20261013/final-context-v18-results.json",
+    "browser_receipt": "var/runs/cinematic-browser-20261013/final-context-v19-results.json",
     "proof_status": "REVIEW_REPAIRS_REQUIRE_EXACT_HEAD_REPROOF"
   }
 }
