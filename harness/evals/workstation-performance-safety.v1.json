@@ -1,0 +1,180 @@
+{
+  "schema_version": "filesteward.workstation-performance-safety/v1",
+  "purpose": "Adversarial oracle: workstation performance profiles remain observation-only and never authorize reclaim, scan, apply, or deletion.",
+  "expected_global_invariants": [
+    "authorization_state is OBSERVATION_ONLY on capture, load, compare, and projection",
+    "profile_provides_delete_authority is false",
+    "volume action_authorization is NONE for every capacity_status",
+    "CRITICAL and BELOW_TARGET are visibility labels only; reclaim_or_action_state stays null",
+    "profiles and projections never generate, sign, or approve deletion manifests",
+    "unknown or unavailable metrics stay null; missing never becomes zero",
+    "host-alias binding mismatch refuses with HOST_BINDING_MISMATCH",
+    "symlink, junction, and reparse redirect of profile artifacts is refused",
+    "scheduled-capture command surface must not invoke scan, apply, or delete",
+    "committed fixtures are synthetic; var/ runtime captures remain gitignored"
+  ],
+  "allowed_profile_cli_commands": [
+    "capture",
+    "show",
+    "compare"
+  ],
+  "forbidden_scheduler_tokens": [
+    "scan",
+    "apply",
+    "delete",
+    "quarantine",
+    "approve",
+    "manifest",
+    "reclaim"
+  ],
+  "forbidden_authority_keys": [
+    "approved_manifest",
+    "deletion_manifest",
+    "operator_approval",
+    "approval_digest",
+    "signed_manifest",
+    "reclaim_authority",
+    "delete_authority_granted"
+  ],
+  "cases": [
+    {
+      "id": "CAP-HEALTHY",
+      "kind": "capacity",
+      "fixture": "synthetic volume with free_pct >= 20",
+      "expected": [
+        "AT_OR_ABOVE_TARGET",
+        "action_authorization=NONE",
+        "OBSERVATION_ONLY"
+      ]
+    },
+    {
+      "id": "CAP-LOW",
+      "kind": "capacity",
+      "fixture": "synthetic volume with 10 <= free_pct < 20",
+      "expected": [
+        "BELOW_TARGET",
+        "action_authorization=NONE",
+        "reclaim_or_action_state=null"
+      ]
+    },
+    {
+      "id": "CAP-CRITICAL",
+      "kind": "capacity",
+      "fixture": "synthetic volume with free_pct < 10",
+      "expected": [
+        "CRITICAL",
+        "action_authorization=NONE",
+        "profile_provides_delete_authority=false",
+        "no reclaim promotion"
+      ]
+    },
+    {
+      "id": "MEDIA-SSD",
+      "kind": "media",
+      "fixture": "injected CIM probe returns MediaType code 4",
+      "expected": [
+        "media_type=SSD",
+        "action_authorization=NONE"
+      ]
+    },
+    {
+      "id": "MEDIA-HDD",
+      "kind": "media",
+      "fixture": "injected CIM probe returns MediaType code 3",
+      "expected": [
+        "media_type=HDD",
+        "action_authorization=NONE"
+      ]
+    },
+    {
+      "id": "MEDIA-AMBIGUOUS",
+      "kind": "media",
+      "fixture": "declared volumes disagree SSD vs HDD",
+      "expected": [
+        "media_type=null",
+        "missing_metrics records ambiguity"
+      ]
+    },
+    {
+      "id": "CIM-PERMISSIONS",
+      "kind": "media",
+      "fixture": "CIM probe reports permission/unavailable failure",
+      "expected": [
+        "media_type=null",
+        "missing never fabricated as zero"
+      ]
+    },
+    {
+      "id": "HOST-RENAME",
+      "kind": "binding",
+      "fixture": "same alias with different machine_binding",
+      "expected": [
+        "HOST_BINDING_MISMATCH",
+        "no new snapshot written"
+      ]
+    },
+    {
+      "id": "SNAPSHOT-CORRUPT",
+      "kind": "integrity",
+      "fixture": "latest.json corrupted or schema-mismatched",
+      "expected": [
+        "ProfileError or ProjectionError refuse"
+      ]
+    },
+    {
+      "id": "CAPTURE-LOCK",
+      "kind": "concurrency",
+      "fixture": "existing .capture.lock",
+      "expected": [
+        "CAPTURE_BUSY",
+        "no identity or snapshot mutation"
+      ]
+    },
+    {
+      "id": "SCHEDULER-STUB",
+      "kind": "scheduler",
+      "fixture": "stub scheduled argv / allowlist for profile CLI",
+      "expected": [
+        "only capture|show|compare allowed",
+        "scan|apply|delete refused"
+      ]
+    },
+    {
+      "id": "PARTIAL-FAILURE",
+      "kind": "integrity",
+      "fixture": "second capture fails after one successful snapshot",
+      "expected": [
+        "first snapshot retained append-only",
+        "authorization markers unchanged"
+      ]
+    },
+    {
+      "id": "REPARSE-REDIRECT",
+      "kind": "filesystem",
+      "fixture": "symlink or Windows junction redirects profile directory",
+      "expected": [
+        "symlink/reparse refused",
+        "no artifacts written through redirect"
+      ]
+    },
+    {
+      "id": "PROTECTED-UNDER-CRITICAL",
+      "kind": "ownership-boundary",
+      "fixture": "CRITICAL capacity must not emit reclaim or delete authority",
+      "expected": [
+        "profile_provides_delete_authority=false",
+        "action_authorization=NONE",
+        "no deletion manifest keys"
+      ]
+    },
+    {
+      "id": "FIXTURE-PRIVACY",
+      "kind": "privacy",
+      "fixture": "committed safety fixtures and gitignore checks",
+      "expected": [
+        "no real host identifiers in fixtures",
+        "var/ ignored"
+      ]
+    }
+  ]
+}
