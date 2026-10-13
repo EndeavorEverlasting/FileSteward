@@ -241,7 +241,7 @@ def compare_latest(alias: str, *, profiles_root: Path | None = None) -> dict[str
             "change_free_percentage_points":
                 round(row["free_pct"] - older["free_pct"], 2) if older else None,
             "current_capacity_status": row["capacity_status"],
-            "comparison_quality": "SAME_DECLARED_ROOT" if older else "NO_COMPARATOR",
+            "comparison_quality": "ROOT_LABEL_MATCH_DEVICE_ID_UNVERIFIED" if older else "NO_COMPARATOR",
         })
     return {
         "schema_version": "filesteward.workstation-profile-comparison/v1",
