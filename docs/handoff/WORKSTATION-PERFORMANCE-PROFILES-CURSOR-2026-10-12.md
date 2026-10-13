@@ -81,9 +81,10 @@ Host name digest is a local alias-collision guard, not hardware attestation.
 
 ## Status ceiling
 
-LOCAL_VALIDATED on PTop canonical worktree (feature branch): focused and full
-pytest green after junction/reparse fail-closed repair. Entire CLI present but
-not set up (`entire status --json` -> enabled:false). Windows host C: capture
-still REQUIRED SUCCESSOR after merge when operator elects live observation.
-No new scheduler; no dashboard integration. Use CHANGED | PROVED | NEXT, and
-distinguish all local/integration/deployment/live levels.
+INTEGRATED on main (merge contains junction/reparse repair). LOCAL_VALIDATED:
+focused + full pytest green on refreshed main. LIVE_CAPTURED on PTop: two
+bounded C: observations under ignored var/profiles; missing collectors remain
+explicit null/UNKNOWN; no private readings committed. Entire CLI present but
+not set up (`entire status --json` -> enabled:false). No new scheduler; no
+dashboard integration. F2/F3 missing-collector and history/dashboard work
+remains successor scope per the tracked P04 plan. Use CHANGED | PROVED | NEXT.
