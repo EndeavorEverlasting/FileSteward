@@ -16,6 +16,11 @@ Then capture and inspect:
     python -m filesteward.profiles show --host-key PTop
     python -m filesteward.profiles compare --host-key PTop
 
+Read-only history/decision-support projection (never delete authority):
+
+    python -m filesteward.visualization.performance --host-key PTop
+    python -m filesteward.visualization.performance --host-key PTop --format text
+
 Change host-key to the alias of the actual machine; never assume PTop and
 another workstation are interchangeable. The agent must verify local hostname,
 git checkout and runtime before claiming a profile belongs to a given host.
