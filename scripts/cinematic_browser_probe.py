@@ -129,6 +129,7 @@ def main():
                 for entry in entries:
                     step("home-before:" + entry, lambda: page.locator("#brand-home").click(timeout=3000))
                     if entry == "pane_inspector":
+                        step("all-before-inspector", lambda: (page.locator('.filter-chip[data-filter="ALL"]').focus(), page.keyboard.press("Enter")))
                         step("focus-for-inspector", lambda: page.locator('.sector-card[data-node-id="review-1"]').click(timeout=3000))
                         step("decision-for-inspector", lambda: page.locator('.phone-command-bar [data-atlas-action="toggle_decision"]' if width < 800 else '#atlas-decision').click(timeout=3000))
                     step("scene-entry:" + entry, lambda entry=entry: page.locator("#" + entry).click(timeout=3000))
@@ -201,6 +202,27 @@ def main():
                         step("touch-filter", lambda: page.locator('.filter-chip[data-filter="UNKNOWN"]').tap(timeout=3000))
                         case["touch_effect"] = snapshot(page)["filter"] == "UNKNOWN"
                         step("touch-all", lambda: page.locator('.filter-chip[data-filter="ALL"]').tap(timeout=3000))
+                    step("race-home", lambda: page.locator('#brand-home').click(timeout=3000))
+                    step("race-select", lambda: page.locator('.nav-row[data-node-id="review-1"]').click(timeout=3000))
+                    step("race-open", lambda: page.locator('.decision-guide-step[data-guide-step="RESOLVE"]').click(timeout=3000))
+                    held = {}
+                    def hold_decision(route):
+                        held['response'] = route.fetch()
+                        held['route'] = route
+                    page.route("**/api/v1/decision", hold_decision)
+                    step("race-save", lambda: page.locator('#chamber-next-actions-row [data-next-action="keep"]').click(timeout=3000))
+                    step("race-home-before-selection", lambda: page.locator('#brand-home').click(timeout=3000))
+                    step("race-new-selection", lambda: page.locator('.nav-row[data-node-id="prot-1"]').click(timeout=3000))
+                    step("race-return-home", lambda: page.locator('#brand-home').click(timeout=3000))
+                    if 'route' in held:
+                        held['route'].fulfill(response=held['response'])
+                    page.wait_for_timeout(300)
+                    case['late_action_preserves_selection'] = snapshot(page)['selected'] == 'prot-1'
+                    case['late_action_preserves_home'] = page.locator('#decision-chamber').is_hidden()
+                    case['late_action_retained'] = page.evaluate("() => window.__filestewardDecisionChamber.readbackHistory.some(r => r.itemId === 'review-1' && r.payload)")
+                    page.unroute("**/api/v1/decision")
+                    step("late-action-review", lambda: page.locator('#action-readback-buttons button').click(timeout=3000))
+                    case['late_action_review_operable'] = page.locator('#action-readback-notice').is_hidden() and snapshot(page)['selected'] == page.evaluate("() => window.__filestewardDecisionChamber.selectedNodeId")
                     # Synthetic receipt payload proves client context binding only;
                     # no destructive endpoint or executor is called.
                     step("receipt-home", lambda: page.locator('#brand-home').click(timeout=3000))
@@ -228,6 +250,7 @@ def main():
                     step("failure-open", lambda: page.locator('.decision-guide-step[data-guide-step="RESOLVE"]').click(timeout=3000))
                     case["read_failure_visible"] = page.locator('#chamber-error').is_visible()
                     case["read_failure_closed"] = page.evaluate("() => window.__filestewardDecisionChamber.allowedIntents.length === 0")
+                    case['read_failure_clears_subject'] = page.evaluate("() => window.__filestewardDecisionChamber.node === null && window.__filestewardDecisionChamber.evidence === null && window.__filestewardDecisionChamber.auth === 'UNAPPROVED'")
                     page.unroute("**/api/v1/state?*")
                     capture("read-failure")
                     # Network-abort console entries are expected only in this
@@ -247,7 +270,7 @@ def main():
     failures = sum(len(c["errors"]) + sum("failure" in s for s in c["steps"]) + (not c["composition_preserved"]) + (not c.get("decision_advanced")) + (not c.get("selection_agrees")) + (c["initial"]["overflow"] > 1) for c in results["cases"])
     if args.full_acceptance:
         failures += sum(not c.get(check) for c in results["cases"] for check in
-                       ["empty_search", "empty_explained", "empty_restored", "read_failure_visible", "read_failure_closed", "receipt_subject_anchored", "receipt_continuation_explicit", "capability_not_error"])
+                       ["empty_search", "empty_explained", "empty_restored", "read_failure_visible", "read_failure_closed", "receipt_subject_anchored", "receipt_continuation_explicit", "capability_not_error", "late_action_preserves_selection", "late_action_retained", "late_action_preserves_home", "late_action_review_operable", "read_failure_clears_subject"])
         failures += sum(not c.get(check) for c in results["cases"] if c["mode"] == "touch"
                         for check in ["touch_effect", "touch_chamber_scroll"])
         failures += sum(not c.get("resize_clear") for c in results["cases"] if args.resolved_fixtures)

@@ -1042,6 +1042,14 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
+        def handle(self) -> None:
+            try:
+                super().handle()
+            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+                # Browser cancellation/closing a loopback keep-alive is an
+                # ordinary disconnect, not a server operation failure.
+                self.close_connection = True
+
         def log_message(self, format: str, *args: object) -> None:  # noqa: A003
             return
 

@@ -388,7 +388,11 @@
       "camera motion and viewport resize cannot strand or occlude chamber controls",
       "chamber native touch scrolling must reach below-fold content",
       "receipt payload with next candidate must retain deleted subject until explicit continuation",
-      "later staging cannot overwrite prior still-valid durable approval"
+      "later staging cannot overwrite prior still-valid durable approval",
+      "delayed GET/POST after new selection or Home cannot restore an earlier context",
+      "failed reads clear earlier subject/evidence/authorization",
+      "filtered sector cards must leave geometry and interaction",
+      "HUD status cues must follow selected evidence"
     ],
     "positive_controls": [
       "KEEP persists and advances to next item",
@@ -398,9 +402,11 @@
       "all owners remain inspectable with protective cross-domain precedence",
       "empty search restoration and touch filter use preserve one state owner",
       "synthetic receipt subject/explicit continuation across five browser modes",
-      "two staged items survive durable approval reload"
+      "two staged items survive durable approval reload",
+      "late action readbacks remain attributed and explicitly reviewable",
+      "native900/1100 layout and filtering preserve container-query oracle"
     ],
-    "browser_receipt": "var/runs/cinematic-browser-20261013/final-repaired-v15-results.json",
+    "browser_receipt": "var/runs/cinematic-browser-20261013/final-context-v18-results.json",
     "proof_status": "REVIEW_REPAIRS_REQUIRE_EXACT_HEAD_REPROOF"
   }
 }

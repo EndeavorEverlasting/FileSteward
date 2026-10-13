@@ -14,7 +14,7 @@
   ],
   "provider_base_sha_at_capture": "09597b68d260cf8a8e0163bf25333722d03c7357",
   "provider_head_sha_at_capture": "c093f2cb69d69be153fcf983b6ad785636825b7e",
-  "local_head_sha_at_capture_or_unknown": "ad9302c28e2939942f6c9e1dac34af34a112b77f",
+  "local_head_sha_at_capture_or_unknown": "12ad531813b65db7e5d8d33e16ccd705ebcea66f",
   "completed_facts": [
     {
       "proof_state": "DESIGNED",
@@ -83,10 +83,9 @@
     "Canonical judgment mapping required before recurring cleanup/settings semantics"
   ],
   "proof_receipts": [
-    "var/runs/cinematic-browser-20261013/final-repaired-v15-results.json",
-    "var/runs/cinematic-browser-20261013/repaired-exact-head-full-suite.log",
-    "var/runs/cinematic-browser-20261013/continuation-candidate-receipt.json",
-    "var/runs/cinematic-browser-20261013/packaging-proof/receipt.json"
+    "var/runs/cinematic-browser-20261013/final-context-v18-results.json",
+    "var/runs/cinematic-browser-20261013/context-exact-head-full-suite.log",
+    "var/runs/cinematic-browser-20261013/continuation-candidate-receipt.json"
   ],
   "proof_ceiling": "Synthetic normalized unit/HTTP and five-mode Edge browser evidence; no live ownership collector, semantic app/repo execution, recurring cleanup policy, real data mutation or production proof",
   "unresolved_review_threads": [],

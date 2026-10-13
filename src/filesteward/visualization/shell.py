@@ -849,6 +849,15 @@ def _selection_script() -> str:
       document.querySelectorAll('[data-selection-summary-for]')
     ).find((el) => el.getAttribute('data-selection-summary-for') === id);
     if (summary && summarySource) summary.innerHTML = summarySource.innerHTML;
+    const statusOrbs = document.getElementById('atlas-status-orbs');
+    const orbSource = Array.from(document.querySelectorAll('[data-status-orbs-for]'))
+      .find((el) => el.getAttribute('data-status-orbs-for') === id);
+    const orbContext = orbSource && orbSource.content.firstElementChild;
+    if (statusOrbs) {
+      statusOrbs.innerHTML = orbContext ? orbContext.innerHTML : '';
+      statusOrbs.hidden = !orbContext || orbContext.hidden;
+      statusOrbs.dataset.contextNodeId = orbContext ? id : '';
+    }
     const mapWrap = document.querySelector('.map-wrap');
     if (mapWrap) mapWrap.classList.toggle('selection-active', Boolean(id));
     const navRow = Array.from(document.querySelectorAll('.nav-row')).find(
@@ -885,6 +894,14 @@ def _selection_script() -> str:
     );
   };
   window.FileStewardSelection = { activate };
+  document.addEventListener('filesteward:selection-cleared', () => {
+    const statusOrbs = document.getElementById('atlas-status-orbs');
+    if (statusOrbs) {
+      statusOrbs.replaceChildren();
+      statusOrbs.hidden = true;
+      statusOrbs.dataset.contextNodeId = '';
+    }
+  });
   const visibleNavRows = () => Array.from(document.querySelectorAll('.nav-row:not([hidden])'));
   const moveNav = (delta, edge) => {
     const rows = visibleNavRows();
@@ -1220,6 +1237,7 @@ def render_report_shell(
     # JS swap without reclassification or client-side evidence inference.
     inspector_templates = []
     selection_templates = []
+    status_orb_templates = []
     subtitle_templates = []
     for node in model.nodes:
         node_flow = open_decision_session(node)
@@ -1232,6 +1250,10 @@ def render_report_shell(
             f'<template data-selection-summary-for="{escape_attr(node.node_id)}">'
             f"{_render_selection_summary(node)}"
             f"</template>"
+        )
+        status_orb_templates.append(
+            f'<template data-status-orbs-for="{escape_attr(node.node_id)}">'
+            f'{_render_status_orbs(node)}</template>'
         )
         subtitle_templates.append(
             f'<template data-subtitle-for="{escape_attr(node.node_id)}">'
@@ -1335,6 +1357,7 @@ def render_report_shell(
 </div>
 {"".join(inspector_templates)}
 {"".join(selection_templates)}
+{"".join(status_orb_templates)}
 {"".join(subtitle_templates)}
 {render_focus_templates(model.nodes)}
 {render_atlas_runtime_json(model.nodes, rects)}

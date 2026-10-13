@@ -338,6 +338,7 @@ def render_cinematic_css() -> str:
 .sector-card::before,.focus-chamber::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 0 8%,color-mix(in srgb,var(--fs-accent) 12%,transparent) 8% 8.3%,transparent 8.3% 91.7%,color-mix(in srgb,var(--fs-accent) 12%,transparent) 91.7% 92%,transparent 92%),linear-gradient(0deg,transparent 0 13%,color-mix(in srgb,var(--fs-border-default) 42%,transparent) 13% 13.4%,transparent 13.4% 86.6%,color-mix(in srgb,var(--fs-border-default) 42%,transparent) 86.6% 87%,transparent 87%);}
 .sector-card:hover,.sector-card:focus-visible{transform:translateY(-2px);border-color:var(--fs-accent);box-shadow:inset 0 1px 0 color-mix(in srgb,white 8%,transparent),0 18px 34px rgba(0,0,0,.22);}
 .sector-card.selected{border-color:var(--fs-accent);box-shadow:inset 0 0 0 2px var(--fs-accent),0 20px 42px color-mix(in srgb,var(--fs-accent) 18%,transparent);}
+.sector-card[hidden]{display:none!important;}
 .sector-major{grid-column:span 3;grid-row:span 2;}
 .sector-wide{grid-column:span 3;}
 .sector-standard{grid-column:span 2;}
@@ -417,7 +418,8 @@ def render_cinematic_css() -> str:
   .signal-hard-stop{outline:3px solid CanvasText;}
   .signal-primary{outline:3px solid Highlight;}
 }
-.workspace{container-type:inline-size;container-name:atlas;min-width:0;}
+.app{container-type:inline-size;container-name:atlas;min-width:0;}
+.workspace{min-width:0;}
 .map-pane,.navigator-pane,.inspector-pane,.storage-stage,.focus-identity,.focus-path,.sector-name,.sector-path{min-width:0;}
 .atlas-hud{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;padding:.55rem .75rem;border-bottom:1px solid var(--fs-border-subtle);background:color-mix(in srgb,var(--fs-bg-surface-1) 88%,#05080c 12%);}
 .atlas-hud button,.phone-command-bar button,.atlas-open,.atlas-fit{appearance:none;min-height:44px;min-width:44px;padding:.35rem .7rem;border:1px solid var(--fs-border-default);border-radius:var(--fs-radius-sm);background:var(--fs-bg-surface-2);color:var(--fs-text-primary);font-weight:750;cursor:pointer;}
@@ -442,12 +444,10 @@ def render_cinematic_css() -> str:
 @keyframes fs-signal-pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--fs-state-review-edge) 35%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--fs-state-review-edge) 8%,transparent)}}
 .phone-command-bar{display:none;position:sticky;bottom:0;z-index:12;gap:.35rem;padding:.45rem .45rem calc(.45rem + env(safe-area-inset-bottom,0px));background:var(--fs-bg-shell);border-top:1px solid var(--fs-border-subtle);}
 .workspace[data-decision-open="true"] .inspector-pane{opacity:1;visibility:visible;pointer-events:auto;}
-@container atlas (max-width:1280px){
-  .workspace[data-scene="overview"]{grid-template-columns:minmax(3.5rem,4.5rem) minmax(0,1fr);}
-  .workspace[data-scene="overview"] .navigator-pane .nav,.workspace[data-scene="overview"] .filters,.workspace[data-scene="overview"] .search-label{display:none;}
+/* A query container cannot query itself. Keep the incumbent navigator reachable. */
+@container atlas (min-width:800px) and (max-width:1280px){
+  .workspace[data-scene="overview"],.workspace[data-scene="focus"]{grid-template-columns:minmax(220px,280px) minmax(0,1fr);}
   .workspace[data-scene="overview"] .inspector-pane{display:none;}
-  .workspace[data-scene="focus"]{grid-template-columns:minmax(0,1fr);}
-  .workspace[data-scene="focus"] .navigator-pane{display:none;}
   .workspace[data-scene="focus"] .inspector-pane{grid-column:1/-1;display:block;max-height:42vh;overflow:auto;}
   .focus-chamber{grid-template-columns:minmax(0,1fr);}
   .focus-identity h3,.focus-path,.selection-name,.selection-path{overflow-wrap:anywhere;white-space:normal;}

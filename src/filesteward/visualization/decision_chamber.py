@@ -96,6 +96,9 @@ def render_decision_chamber_markup() -> str:
     STAGED — QUARANTINE REQUIRED — NO BYTES REMOVED
   </p>
 </aside>
+<section id="action-readback-notice" class="chamber-next-actions" aria-label="Finished action readbacks" hidden>
+  <p>Action readbacks for earlier evidence</p><div id="action-readback-buttons"></div>
+</section>
 """
 
 
@@ -276,6 +279,8 @@ def render_decision_chamber_script() -> str:
   // Fixed viewport docking must escape the Atlas isolation/overflow context.
   // The same chamber and existing state owner remain in charge.
   document.body.appendChild(chamber);
+  const readbackNotice = document.getElementById('action-readback-notice');
+  if (readbackNotice) workspace.before(readbackNotice);
 
   const bridge = bridgeEl ? JSON.parse(bridgeEl.textContent || '{}') : null;
   const state = {
@@ -293,6 +298,7 @@ def render_decision_chamber_script() -> str:
     scriptScene: null,
     error: null,
     capabilityNote: null,
+    readbackHistory: [],
     receipt: null,
     sceneEvidence: null,
     busy: false,
@@ -934,9 +940,39 @@ def render_decision_chamber_script() -> str:
     applyScene();
   };
 
+  let contextEpoch = 0;
   let evidenceRequestRevision = 0;
+  const clearItemProjection = () => {
+    state.node = null; state.evidence = null; state.auth = 'UNAPPROVED';
+    state.decisionLabel = 'NONE'; state.receipt = null; state.sceneEvidence = null;
+    state.scriptScene = null; state.activeGateId = null; state.nextItemId = null;
+    state.allowedIntents = []; state.capabilityNote = null; state.error = null;
+  };
+  const retainEarlierReadback = (payload, itemId, error, itemName) => {
+    const saved = payload ? JSON.parse(JSON.stringify(payload)) : null;
+    state.readbackHistory.push({itemId, payload:saved, error:error || null, itemName:itemName || itemId});
+    if (!readbackNotice) return;
+    readbackNotice.hidden = false;
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'next-action';
+    button.textContent = error ? 'Check unconfirmed action for ' + itemId
+      : 'Review finished action for ' + (itemName || itemId);
+    button.onclick = () => {
+      contextEpoch += 1; evidenceRequestRevision += 1;
+      if (saved && saved.deletion_receipt) absorbState(saved);
+      else { state.selectedNodeId = itemId; clearItemProjection(); fetchState(itemId, 'GATE'); }
+      button.remove();
+      readbackNotice.hidden = !readbackNotice.querySelector('button');
+    };
+    document.getElementById('action-readback-buttons').appendChild(button);
+  };
   const fetchState = async (id, requestedScene) => {
     const requestRevision = ++evidenceRequestRevision;
+    const requestEpoch = contextEpoch;
+    clearItemProjection();
+    state.selectedNodeId = id;
+    state.capabilityNote = 'Reading current evidence�';
+    applyScene();
     if (!bridge || !bridge.origin || !bridge.statePath) {
       localOpenGate(id, requestedScene);
       return;
@@ -951,8 +987,9 @@ def render_decision_chamber_script() -> str:
         throw new Error('Invalid current-state readback');
       }
     } catch (_error) {
-      if (requestRevision !== evidenceRequestRevision) return;
+      if (requestRevision !== evidenceRequestRevision || requestEpoch !== contextEpoch) return;
       state.allowedIntents = [];
+      state.capabilityNote = null;
       state.executionState = 'blocked';
       state.error = 'The current evidence could not be read from the local review session. Reconnect and reopen this evidence; no action is authorized.';
       state.openDecisionScene = 'GATE';
@@ -961,7 +998,7 @@ def render_decision_chamber_script() -> str:
       applyScene();
       return;
     }
-    if (requestRevision !== evidenceRequestRevision) return;
+    if (requestRevision !== evidenceRequestRevision || requestEpoch !== contextEpoch) return;
     absorbState(payload);
     // Requested tutorial steps never override the server-owned value,
     // authorization, failure or continuation state returned by readback.
@@ -983,24 +1020,35 @@ def render_decision_chamber_script() -> str:
 
   const safeFetch = async (url, options) => {
     if (state.busy) return null;
-    state.busy = true;
-    state.error = null;
-    applyScene();
+    const requestEpoch = contextEpoch;
+    const itemId = state.selectedNodeId;
+    const itemName = (state.node && state.node.display_name) || itemId;
+    state.busy = true; state.error = null; applyScene();
     try {
       const response = await fetch(url, options);
-      if (!response.ok) {
-        const failure = await response.json().catch(() => ({}));
-        state.error = (failure.error || failure.message || 'The action was refused.') + ' Review the current evidence before retrying.';
-        state.executionState = 'blocked';
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || payload.message || 'The action was refused.');
+      if (!payload || payload.run_id !== bridge.runId || !Array.isArray(payload.allowed_intents)) {
+        throw new Error('The action outcome could not be read. Inspect its authoritative readback before retrying.');
+      }
+      if (requestEpoch !== contextEpoch || itemId !== state.selectedNodeId) {
+        retainEarlierReadback(payload, itemId, null, itemName);
         return null;
       }
-      return response;
-    } catch (_error) {
-      state.error = 'The local review connection failed. Reconnect and refresh the evidence; no successful action is confirmed.';
-      state.executionState = 'blocked';
+      return payload;
+    } catch (error) {
+      const message = (error.message || 'The local review connection failed.')
+        + ' The outcome is unconfirmed; inspect the authoritative readback before retrying.';
+      if (requestEpoch !== contextEpoch || itemId !== state.selectedNodeId) {
+        retainEarlierReadback(null, itemId, message, itemName);
+      } else {
+        state.error = message; state.executionState = 'blocked';
+      }
       return null;
     } finally {
       state.busy = false;
+      // Repaint only the current model to release its global busy controls.
+      // A stale payload is retained separately and is never projected here.
       applyScene();
     }
   };
@@ -1015,7 +1063,7 @@ def render_decision_chamber_script() -> str:
       applyScene();
       return;
     }
-    const response = await safeFetch(bridge.origin + bridge.decisionPath, {
+    const payload = await safeFetch(bridge.origin + bridge.decisionPath, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1027,8 +1075,8 @@ def render_decision_chamber_script() -> str:
         intent: intent
       })
     });
-    if (!response) return;
-    absorbState(await response.json());
+    if (!payload) return;
+    absorbState(payload);
   };
 
   const postDeletePermanently = async () => {
@@ -1057,7 +1105,7 @@ def render_decision_chamber_script() -> str:
       irreversible_confirmation: 'DELETE_PERMANENTLY',
       scan_root: scanRoot
     };
-    const response = await safeFetch(bridge.origin + bridge.deletePath, {
+    const payload = await safeFetch(bridge.origin + bridge.deletePath, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1065,8 +1113,8 @@ def render_decision_chamber_script() -> str:
       },
       body: JSON.stringify(body)
     });
-    if (!response) return;
-    absorbState(await response.json());
+    if (!payload) return;
+    absorbState(payload);
   };
 
   const postApproval = async () => {
@@ -1076,7 +1124,7 @@ def render_decision_chamber_script() -> str:
       applyScene();
       return;
     }
-    const response = await safeFetch(bridge.origin + bridge.approvalPath, {
+    const payload = await safeFetch(bridge.origin + bridge.approvalPath, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1090,8 +1138,8 @@ def render_decision_chamber_script() -> str:
         confirm: true
       })
     });
-    if (!response) return;
-    absorbState(await response.json());
+    if (!payload) return;
+    absorbState(payload);
   };
 
   if (confirmBtn) confirmBtn.addEventListener('click', postApproval);
@@ -1133,7 +1181,9 @@ def render_decision_chamber_script() -> str:
   });
 
   document.addEventListener('filesteward:selection-cleared', () => {
+    contextEpoch += 1;
     evidenceRequestRevision += 1;
+    clearItemProjection();
     state.selectedNodeId = null;
     state.allowedIntents = [];
     state.sceneEvidence = null;
@@ -1154,6 +1204,9 @@ def render_decision_chamber_script() -> str:
   document.addEventListener('filesteward:selection', (event) => {
     const id = event.detail && event.detail.id;
     if (!id) return;
+    contextEpoch += 1;
+    evidenceRequestRevision += 1;
+    clearItemProjection();
     state.selectedNodeId = id;
     paintSelectionMarkers(id);
     if (state.openDecisionScene === 'GATE' || state.openDecisionScene === 'RESOLVE' || state.openDecisionScene === 'APPROVAL' || state.openDecisionScene === 'STAGED') {
@@ -1171,6 +1224,7 @@ def render_decision_chamber_script() -> str:
     state.lastTransition = 'path_step_' + String(key).toLowerCase();
     if (!state.selectedNodeId) state.selectedNodeId = selectedId();
     if (key === 'MAP' || key === 'FOCUS') {
+      contextEpoch += 1; evidenceRequestRevision += 1;
       state.openDecisionScene = key;
       applyScene();
       return;
@@ -1184,6 +1238,7 @@ def render_decision_chamber_script() -> str:
   });
 
   document.addEventListener('filesteward:atlas-home', () => {
+    contextEpoch += 1; evidenceRequestRevision += 1;
     state.openDecisionScene = 'MAP';
     state.lastTransition = 'atlas_home_reset';
     state.lastScene = null;
