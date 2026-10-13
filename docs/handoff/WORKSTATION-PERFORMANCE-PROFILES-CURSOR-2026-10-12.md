@@ -22,14 +22,16 @@ specified in docs/agent/CANONICAL-PATHS.md:
 Runtime is ignored var/profiles. Verify exact host identity, checkout status,
 and Entire status on PTop; do not infer DTop or Admin Box state.
 
-## What was changed (remote, not locally validated)
+## What was changed
 
 - Python profiles package with independent module CLI:
   python -m filesteward.profiles capture --host-key PTop --volume 'C:\'
   python -m filesteward.profiles show --host-key PTop
   python -m filesteward.profiles compare --host-key PTop
 - Package opt-in profiles extra for psutil in pyproject.toml
-- tests/test_workstation_profiles.py, including host mismatch and append-only
+- tests/test_workstation_profiles.py, including host mismatch, append-only,
+  and Windows junction/reparse refusal (reuses policy.is_symlink_or_reparse)
+- pytest pythonpath=src so worktree checkouts collect without prior install
 - program guide and typed sprint plan
 
 No scan/delete/approval/visualization code was modified. No real inventory,
@@ -79,7 +81,9 @@ Host name digest is a local alias-collision guard, not hardware attestation.
 
 ## Status ceiling
 
-REMOTE_BRANCH_AND_PR_CREATED, tests NOT EXECUTED; Windows host capture NOT
-EXECUTED; no new scheduler; no dashboard integration. First gate: exact
-canonical checkout and executable tests on PTop. Use CHANGED | PROVED | NEXT,
-and distinguish all local/integration/deployment/live levels.
+LOCAL_VALIDATED on PTop canonical worktree (feature branch): focused and full
+pytest green after junction/reparse fail-closed repair. Entire CLI present but
+not set up (`entire status --json` -> enabled:false). Windows host C: capture
+still REQUIRED SUCCESSOR after merge when operator elects live observation.
+No new scheduler; no dashboard integration. Use CHANGED | PROVED | NEXT, and
+distinguish all local/integration/deployment/live levels.
