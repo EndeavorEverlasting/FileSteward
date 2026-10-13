@@ -175,26 +175,35 @@ def capture(alias: str, volumes: Sequence[str], *,
     directory.mkdir(parents=True, exist_ok=True)
     if directory.is_symlink():
         raise ProfileError("profile directory was replaced by symlink")
-    binding_status = _ensure_identity(directory, alias, machine_binding or _binding())
-    observed = observer(volumes, sample_seconds=sample_seconds)
-    snapshots = directory / "snapshots"
-    if snapshots.is_symlink():
-        raise ProfileError("snapshots directory is symlink")
-    snapshots.mkdir(exist_ok=True)
-    if snapshots.is_symlink():
-        raise ProfileError("snapshots directory changed to symlink")
-    name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8]
-    result = {"schema_version": SCHEMA, "alias": alias, "snapshot_id": name,
-              "captured_utc": _now(), "os_family": platform.system(),
-              "os_release": platform.release(), "architecture": platform.machine(),
-              "binding_status": binding_status, "observation": observed,
-              "authorization_state": "OBSERVATION_ONLY",
-              "profile_provides_delete_authority": False,
-              "privacy": "LOCAL_ONLY_METADATA"}
-    snapshot = snapshots / (name + ".json")
-    _create(snapshot, result)
-    _latest(directory / "latest.json", result)
-    return snapshot
+    lock_path = directory / ".capture.lock"
+    try:
+        with lock_path.open("x", encoding="utf-8") as lock:
+            lock.write("FileSteward capture in progress; investigate before removing\n")
+    except FileExistsError as exc:
+        raise ProfileError("CAPTURE_BUSY: existing host capture lock; verify owner before recovery") from exc
+    try:
+        binding_status = _ensure_identity(directory, alias, machine_binding or _binding())
+        observed = observer(volumes, sample_seconds=sample_seconds)
+        snapshots = directory / "snapshots"
+        if snapshots.is_symlink():
+            raise ProfileError("snapshots directory is symlink")
+        snapshots.mkdir(exist_ok=True)
+        if snapshots.is_symlink():
+            raise ProfileError("snapshots directory changed to symlink")
+        name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8]
+        result = {"schema_version": SCHEMA, "alias": alias, "snapshot_id": name,
+                  "captured_utc": _now(), "os_family": platform.system(),
+                  "os_release": platform.release(), "architecture": platform.machine(),
+                  "binding_status": binding_status, "observation": observed,
+                  "authorization_state": "OBSERVATION_ONLY",
+                  "profile_provides_delete_authority": False,
+                  "privacy": "LOCAL_ONLY_METADATA"}
+        snapshot = snapshots / (name + ".json")
+        _create(snapshot, result)
+        _latest(directory / "latest.json", result)
+        return snapshot
+    finally:
+        lock_path.unlink(missing_ok=True)
 
 def load_latest(alias: str, *, profiles_root: Path | None = None) -> dict[str, Any]:
     directory = (Path(profiles_root) if profiles_root is not None else _root()) / _key(alias)
