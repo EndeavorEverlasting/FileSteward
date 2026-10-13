@@ -1,0 +1,146 @@
+{
+  "schema_version": "filesteward.plan/v1",
+  "sprint_id": "FILESTEWARD-WORKSTATION-PERFORMANCE-20261012",
+  "repository": "EndeavorEverlasting/FileSteward",
+  "execution_floor": "197c22ef976cb8caa668c4740f7911afc0fe3407",
+  "branch": "feature/workstation-performance-profiles-20261012",
+  "outcome": "Maintain private append-only evidence-based performance profiles by workstation without reducing storage ownership protections.",
+  "prompted_by": [
+    "P97",
+    "P04",
+    "P82"
+  ],
+  "host_runtime": "LOCAL_AGENT_RUNTIME",
+  "provider_route": "GitHub connector supports repository writes only",
+  "canonical_checkout": "%USERPROFILE%\\dev\\FileSteward",
+  "noncanonical_observed": "C:\\Users\\CheeksMcClappeth\\Desktop\\Dev\\FileSteward (empty; never overwrite or delete automatically)",
+  "safety": [
+    "never commit real device captures or host identity artifacts",
+    "host alias mismatch fails closed",
+    "application/repo/serviceability ownership protection wins over capacity pressure",
+    "performance observations are never cleanup/deletion approvals",
+    "no recursive filesystem inspection/stress test/network export",
+    "no real host runtime proof can be inferred from a PR"
+  ],
+  "lanes": [
+    {
+      "id": "F0",
+      "name": "schema / prior art / safety",
+      "depends_on": [],
+      "owned": [
+        "docs/program/workstation-performance-profiles.md",
+        "plans/active/FILESTEWARD-WORKSTATION-PERFORMANCE-P97-P04-P82-20261012.md"
+      ],
+      "status": "REMOTE_COMMITTED",
+      "proof": "GitHub branch, review required",
+      "execution_adapter": "CURRENT_CHAT_RUNTIME GitHub connector"
+    },
+    {
+      "id": "F1",
+      "name": "private local baseline and synthetic tests",
+      "depends_on": [
+        "F0"
+      ],
+      "owned": [
+        "src/filesteward/profiles",
+        "tests/test_workstation_profiles.py"
+      ],
+      "status": "REMOTE_COMMITTED_TESTS_NOT_EXECUTED",
+      "proof": "focused tests and full repo regressions still pending",
+      "execution_adapter": "LOCAL_AGENT_RUNTIME",
+      "launch": "python -m pytest -q tests/test_workstation_profiles.py && python -m pytest -q"
+    },
+    {
+      "id": "F2",
+      "name": "Windows devices and trustworthy volume mapping",
+      "depends_on": [
+        "F1"
+      ],
+      "owned": [
+        "src/filesteward/profiles/windows*"
+      ],
+      "status": "WAITING",
+      "proof": "CIM/physical-to-volume mapping and synthetic/error-boundary test",
+      "execution_adapter": "LOCAL_AGENT_RUNTIME",
+      "parallel_group": "B"
+    },
+    {
+      "id": "F3",
+      "name": "history and decision dashboard projections",
+      "depends_on": [
+        "F1"
+      ],
+      "owned": [
+        "src/filesteward/visualization/performance*"
+      ],
+      "status": "WAITING",
+      "proof": "read-only projection, same-alias same-volume quality, accessibility",
+      "execution_adapter": "LOCAL_AGENT_RUNTIME",
+      "parallel_group": "B"
+    },
+    {
+      "id": "F4",
+      "name": "opt-in recurrent read-only capture",
+      "depends_on": [
+        "F2",
+        "F3"
+      ],
+      "owned": [
+        "scripts/windows/*performance*"
+      ],
+      "status": "WAITING",
+      "proof": "actual OS scheduler receipt; no implicit C-drive scan",
+      "execution_adapter": "LOCAL_AGENT_RUNTIME"
+    },
+    {
+      "id": "F5",
+      "name": "ownership/policy regression and safe integration",
+      "depends_on": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "owned": [
+        "harness/evals/",
+        "tests/"
+      ],
+      "status": "WAITING",
+      "proof": "no risk-state promotion, stale identity mismatch refusal, all original tests pass",
+      "execution_adapter": "LOCAL_AGENT_RUNTIME"
+    }
+  ],
+  "parallel_groups": [
+    {
+      "id": "B",
+      "members": [
+        "F2",
+        "F3"
+      ],
+      "requires": [
+        "F1"
+      ],
+      "graph_width": 2,
+      "dispatch_state": "WAITING_FOR_VALIDATED_F1_AND_AGENT_ADAPTER"
+    }
+  ],
+  "validation_commands": [
+    "python -m pytest -q tests/test_workstation_profiles.py",
+    "python -m pytest -q",
+    "python -m filesteward.profiles capture --host-key PTop --volume 'C:\\'",
+    "python -m filesteward.profiles compare --host-key PTop"
+  ],
+  "acceptance": {
+    "host_alias_mixup": 0,
+    "private_snapshots_committed": 0,
+    "snapshot_overwrites": 0,
+    "unavailable_metrics_fabricated": 0,
+    "deletion_authorized_by_profile": 0,
+    "real_host_capture": "REQUIRES_LOCAL_WINDOWS_OBSERVATION"
+  },
+  "blockers": [
+    "cannot verify PTop canonical checkout or Entire from connector runtime",
+    "local tests not executed",
+    "real host metrics not observed"
+  ],
+  "convergence_owner": "FileSteward canonical main maintainer after all proof gates"
+}
