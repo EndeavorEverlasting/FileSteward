@@ -226,6 +226,22 @@ FileSteward/
 
 Real inventories, filenames, hashes, extracted metadata, queue decisions, quarantine contents, and action logs belong in ignored runtime locations. Sanitized examples and synthetic test fixtures belong in version control.
 
+## Workstation performance profiles (isolated observation lane)
+
+An opt-in, local-only workstation profiling module records per-host CPU/RAM
+samples when psutil is available and capacity of explicitly declared volumes.
+The module never scans file contents or grants cleanup approval:
+
+    python -m filesteward.profiles capture --host-key PTop --volume 'C:\'
+    python -m filesteward.profiles show --host-key PTop
+    python -m filesteward.profiles compare --host-key PTop
+
+See [profile specification](docs/program/workstation-performance-profiles.md)
+and [Cursor handoff](docs/handoff/WORKSTATION-PERFORMANCE-PROFILES-CURSOR-2026-10-12.md).
+All real profile records stay beneath the ignored local var/profiles tree.
+No Windows-host capture, integration or performance diagnosis is implied by
+this source-level implementation.
+
 ## Roadmap
 
 ### Phase 1 — Review queue foundation
