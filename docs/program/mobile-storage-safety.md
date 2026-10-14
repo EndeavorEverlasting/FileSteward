@@ -76,3 +76,30 @@ Platform authority references:
 - https://developer.android.com/training/data-storage/shared/media
 - https://developer.android.com/training/data-storage/shared/documents-files
 - https://developer.apple.com/documentation/photokit/delivering-an-enhanced-privacy-experience-in-your-photos-app
+
+## Reciprocal architecture contribution ledger
+
+The broader seven-row source/consumer analysis, rejected blind-copy cases,
+runtime placement and hypothesis gates are maintained as a **contribution
+proposal** in EscapeHatch's
+[PR #61](https://github.com/EndeavorEverlasting/EscapeHatch/pull/61)
+(`docs/CROSS_REPO_EVIDENCE_CONTRIBUTION_20261013.md`). FileSteward
+retains authority over each adopted storage domain contract.
+
+Priority successors, independently owned:
+
+1. Compare FileSteward's current deletion receipts with EscapeHatch's
+   structured event journal on the **same synthetic decisions/retries**.
+   Add an event-sourced adapter only if recovery/replay proof improves;
+   do not create a parallel authority or capture private filenames.
+2. Use EscapeHatch's canonical semantic action/modality approach to
+   project FileSteward's existing ownership actions into native mobile
+   review surfaces. The domain decision reducer stays in FileSteward.
+3. Carry FileSteward's stale-evidence and app-serviceability guards
+   into EscapeHatch event evidence classification, but never transplant
+   Windows registry probes or deletion commands into browser control.
+4. Evaluate offline-first sync/conflict contracts separately for
+   FileSteward private inventories. Consent to view files never grants
+   consent to upload private records.
+
+M0 remains the only coded phone-storage contribution in this PR.
