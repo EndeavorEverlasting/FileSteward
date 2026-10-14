@@ -13,9 +13,9 @@
     "harness/evals/execution-handoff-review-gates.v1.json",
     "src/filesteward/contracts/runtime-profile.v1.json"
   ],
-  "provider_base_sha_at_capture": "e83a051d5291a43d93c0143ebe6ce9ac65b245ee",
-  "provider_head_sha_at_capture": "e83a051d5291a43d93c0143ebe6ce9ac65b245ee",
-  "local_head_sha_at_capture_or_unknown": "e83a051d5291a43d93c0143ebe6ce9ac65b245ee",
+  "provider_base_sha_at_capture": "721bea3350bb3aea24edce07f5a30fb3c44f8525",
+  "provider_head_sha_at_capture": "721bea3350bb3aea24edce07f5a30fb3c44f8525",
+  "local_head_sha_at_capture_or_unknown": "721bea3350bb3aea24edce07f5a30fb3c44f8525",
   "completed_facts": [
     {
       "proof_state": "IMPLEMENTED",
@@ -44,16 +44,36 @@
         "var/windows-distribution/runtime-identity-debug/explorer-parent-receipt.json",
         "var/launch-review-repairs-v2.log"
       ]
-    }
-  ],
-  "remaining_work": [
+    },
     {
-      "work_id": "LAUNCH_SHIP",
-      "action": "Prove source/browser/native package, converge exact reviewed head, publish preview and verify public URLs",
-      "depends_on": [],
-      "acceptance": "Local regression, packaged runtime, exact-head review, main containment, public byte hash"
+      "proof_state": "MERGED",
+      "fact": "PR55 integrated; release commit 0950896 contained in main 721bea3",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/55",
+        "var/launch-final-gates.json"
+      ]
+    },
+    {
+      "proof_state": "LOCALLY_VALIDATED",
+      "fact": "Final exact release head: 974 passed / 10 environment skips; actual checksum-bound ZIP and EXE native proof; published CMD payload download/checksum/install/default launch succeeds",
+      "evidence": [
+        "var/launch-final-head-full-suite.log",
+        "var/windows-distribution/release-native-v0160-0950896/native-proof.json",
+        "var/runs/windows-public-downloads/published-bootstrap-proof.json"
+      ]
+    },
+    {
+      "proof_state": "APPLIED",
+      "fact": "v0.16.0 unsigned preview published; repository Pages and homepage active; all five public download byte hashes and actual browser download verified",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/releases/tag/v0.16.0",
+        "https://endeavoreverlasting.github.io/FileSteward/",
+        "var/runs/windows-public-downloads/public-download-proof.json",
+        "var/runs/windows-public-downloads/public-page-proof.json"
+      ]
     }
   ],
+  "remaining_work": [],
   "owned_mutation_surfaces": [
     "src/filesteward/launch.py",
     "src/filesteward/sample.py",
@@ -86,9 +106,15 @@
     "var/launch-full-suite-v2.log",
     "var/runs/windows-launch-browser/results.json",
     "var/runs/windows-launch-design/download-local-proof.json",
-    "var/windows-distribution/prototype-v0160-2/distribution-manifest.json"
+    "var/windows-distribution/prototype-v0160-2/distribution-manifest.json",
+    "var/launch-final-gates.json",
+    "var/launch-final-head-full-suite.log",
+    "var/windows-distribution/release-native-v0160-0950896/native-proof.json",
+    "var/runs/windows-public-downloads/public-download-proof.json",
+    "var/runs/windows-public-downloads/public-page-proof.json",
+    "var/runs/windows-public-downloads/published-bootstrap-proof.json"
   ],
-  "proof_ceiling": "Synthetic/source browser and native desktop functional preview validated; clean final-head rebuilt artifacts, review convergence and public HTTP publication remain pending. Inherited Codex AppData virtualization still refuses. No clean VM, signing, live scan/delete/schedule or production proof.",
+  "proof_ceiling": "Accessible launch slice merged, unsigned preview published and HTTP/native/Edge verified. Native app launched from the exact public bootstrap payload using ownership-only PassThru instrumentation and left running. Source/browser and actual ZIP/EXE functional proof; no clean Windows VM, signing, live scan/delete/scheduling, semantic ownership collector or production cleanup proof.",
   "unresolved_review_threads": [],
   "private_evidence_refs": [],
   "blocked_judgment_gap": {
@@ -100,8 +126,8 @@
   "exact_next_action": {
     "owner": "LAUNCH coordinator",
     "can_execute_without_operator": true,
-    "phase": "PROVE",
-    "action": "Prove source/browser/native package, converge exact reviewed head, publish preview and verify public URLs"
+    "phase": "CONTINUE",
+    "action": "Accessible launch slice complete. Future signing/clean-machine certification and canonical maintenance-policy work require their separate scope and authority."
   },
   "return_contract": "Report concrete downloadable URLs only after HTTP verification, exact version/head/asset hashes, native and browser results, integration and unsigned preview limits."
 }
