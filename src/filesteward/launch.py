@@ -164,15 +164,37 @@ class LaunchSession:
         identifier = "import-" + uuid.uuid4().hex
         target = self.candidate(identifier)
         target.mkdir()
-        for name, raw in decoded.items():
-            with (target / name).open("xb") as stream:
-                stream.write(raw)
-        errors = validate_run(target)
-        if errors:
-            raise ValueError("Imported evidence did not pass validation: " + "; ".join(errors[:3]))
-        metadata = json.loads((target / "run.json").read_text(encoding="utf-8"))
-        _write_json(target / ".launch-run.json", dict(schema_version="filesteward.launch-run/v1",
-            run_id=metadata["run_id"], title="Imported review", is_sample=False))
+        created = []
+        try:
+            for name, raw in decoded.items():
+                path = target / name
+                with path.open("xb") as stream:
+                    identity = os.fstat(stream.fileno())
+                    created.append((path, identity.st_dev, identity.st_ino))
+                    stream.write(raw)
+            errors = validate_run(target)
+            if errors:
+                raise ValueError("Imported evidence did not pass validation: " + "; ".join(errors[:3]))
+            metadata = json.loads((target / "run.json").read_text(encoding="utf-8"))
+            _write_json(target / ".launch-run.json", dict(schema_version="filesteward.launch-run/v1",
+                run_id=metadata["run_id"], title="Imported review", is_sample=False))
+        except Exception:
+            # These are this request's transient copies, never source files.
+            # Remove only exact created objects; preserve substituted/linked
+            # paths and unknown additions rather than recursively deleting.
+            if not is_symlink_or_reparse(target):
+                for path, device, inode in created:
+                    try:
+                        current = path.lstat()
+                        if not is_symlink_or_reparse(path) and (current.st_dev, current.st_ino) == (device, inode):
+                            path.unlink()
+                    except OSError:
+                        pass
+                try:
+                    target.rmdir()
+                except OSError:
+                    pass
+            raise
         return self.open_review(identifier)
 
     def open_review(self, identifier: str) -> str:

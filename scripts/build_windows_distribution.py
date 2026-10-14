@@ -130,7 +130,10 @@ def build(label: str, *, prototype: bool = False, root: Path = ROOT) -> Path:
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
         for path in sorted((output / "onedir").rglob("*")):
             if path.is_file():
-                bundle.write(path, path.relative_to(output / "onedir").as_posix())
+                info = zipfile.ZipInfo(path.relative_to(output / "onedir").as_posix(), (1980, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.external_attr = 0o100644 << 16
+                bundle.writestr(info, path.read_bytes())
     assets = (executable, output / "FileSteward.cmd", archive)
     hashes = {path.name: sha256(path) for path in assets}
     (output / "SHA256SUMS.txt").write_text("".join(f"{digest}  {name}\n" for name, digest in hashes.items()), encoding="ascii")

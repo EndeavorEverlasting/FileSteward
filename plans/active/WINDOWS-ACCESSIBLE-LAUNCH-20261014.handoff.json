@@ -35,6 +35,15 @@
         "var/runs/windows-launch-design/download-local-proof.json",
         "var/windows-distribution/prototype-v0160-2/distribution-manifest.json"
       ]
+    },
+    {
+      "proof_state": "LOCALLY_VALIDATED",
+      "fact": "Ordinary desktop native folder and onefile proof: no Python/Git on child PATH, unrelated working directory, sample/import, duplicate instance, shutdown; review repairs pass 60 focused tests",
+      "evidence": [
+        "var/windows-distribution/prototype-native-v0160-4/native-proof.json",
+        "var/windows-distribution/runtime-identity-debug/explorer-parent-receipt.json",
+        "var/launch-review-repairs-v2.log"
+      ]
     }
   ],
   "remaining_work": [
@@ -79,7 +88,7 @@
     "var/runs/windows-launch-design/download-local-proof.json",
     "var/windows-distribution/prototype-v0160-2/distribution-manifest.json"
   ],
-  "proof_ceiling": "Synthetic local/HTTP tests, source Edge browser, and frozen version startup validated; functional native runtime and public publication pending. Codex-inherited filesystem redirection is correctly refused; no live scan/delete/schedule or production proof.",
+  "proof_ceiling": "Synthetic/source browser and native desktop functional preview validated; clean final-head rebuilt artifacts, review convergence and public HTTP publication remain pending. Inherited Codex AppData virtualization still refuses. No clean VM, signing, live scan/delete/schedule or production proof.",
   "unresolved_review_threads": [],
   "private_evidence_refs": [],
   "blocked_judgment_gap": {

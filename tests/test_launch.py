@@ -206,12 +206,13 @@ def test_import_refuses_bad_file_set_before_creating_run(launch_service, tmp_pat
 
 
 def test_malformed_evidence_is_not_added_to_recent_reviews(launch_service, tmp_path):
-    session, _, _ = launch_service
+    session, _, runtime = launch_service
     files = uploaded_sample(tmp_path)
     next(file for file in files if file["name"] == "inventory.csv")["data"] = base64.b64encode(b"invalid,csv\n").decode()
     status, _, result = request(session.origin, "POST", "/api/v1/launch/import", {"files": files}, authorized(session))
     assert status == 400 and "validation" in result["error"]
     assert session.recent() == [] and session.reviews == {}
+    assert list((runtime / "runs").iterdir()) == []
 
 
 @pytest.mark.parametrize("marker_payload", [["not a marker object"], {"schema_version": "wrong-schema"}])

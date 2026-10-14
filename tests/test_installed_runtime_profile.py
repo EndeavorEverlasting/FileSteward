@@ -207,3 +207,14 @@ def test_packaged_policy_admits_only_private_runtime_runs(frozen_install, monkey
 def test_source_repository_runtime_contract_is_unchanged():
     assert paths.runtime_root() == paths.repository_root() / "var"
     assert paths.resolve_run_dir_argument("var/runs/demo") == paths.repository_root() / "var/runs/demo"
+
+
+def test_interrupted_marker_write_never_publishes_an_unmarked_family(frozen_install, monkeypatch):
+    known, _ = frozen_install
+    def interrupted(*args, **kwargs):
+        raise OSError("simulated interrupted marker write")
+    monkeypatch.setattr(profile.json, "dump", interrupted)
+    with pytest.raises(OSError, match="interrupted"):
+        profile.initialize_installed_runtime()
+    assert not (known / "FileSteward").exists()
+    assert not list(known.glob(".filesteward-startup-*"))

@@ -31,6 +31,8 @@ def test_output_admission_preserves_existing_proof_and_rejects_escape(tmp_path: 
 
 
 def test_public_build_refuses_dirty_source_before_creating_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(distribution.sys, "platform", "win32")
+    monkeypatch.setattr(distribution.platform, "machine", lambda: "AMD64")
     monkeypatch.setattr(distribution, "git", lambda *args, **kwargs: " M src/filesteward/launch.py")
     with pytest.raises(ValueError, match="clean source HEAD"):
         distribution.build("must-not-exist", root=tmp_path)
@@ -51,6 +53,8 @@ def test_frozen_entry_reports_startup_failure_and_returns_nonzero(monkeypatch: p
     monkeypatch.setitem(sys.modules, "filesteward.launch", fake_launch)
     assert entry.main([]) == 2
     assert "Application root marker was refused" in capsys.readouterr().err
+    if os.name != "nt":
+        return  # The console refusal above is portable; MessageBox is native.
     import ctypes
 
     dialogs = []
@@ -81,6 +85,7 @@ def test_bootstrap_binds_exact_version_digest_and_preserves_existing_files() -> 
     assert "ReparsePoint" in bootstrap
 
 
+@pytest.mark.skipif(os.name != "nt", reason="native Windows PowerShell parser")
 def test_bootstrap_payload_is_valid_windows_powershell(tmp_path: Path) -> None:
     bootstrap = distribution.render_bootstrap(
         (ROOT / "packaging/windows/FileSteward.cmd.in").read_text(encoding="utf-8"), "0.16.0", "a" * 64
@@ -99,6 +104,7 @@ def test_bootstrap_rejects_nonliteral_identity_inputs() -> None:
             distribution.render_bootstrap("@VERSION@ @EXE_SHA256@", version, digest)
 
 
+@pytest.mark.skipif(os.name != "nt", reason="native Windows PowerShell bootstrap proof")
 def test_bootstrap_synthetic_download_hash_reuse_and_bad_existing_file(tmp_path: Path) -> None:
     source = tmp_path / "synthetic.exe"
     source.write_bytes(b"synthetic executable transport fixture")

@@ -23,6 +23,6 @@ Forbidden scope: live user inventories/deletion, recurring registration, invente
 
 ## Acceptance and promotion
 
-Require focused safety/HTTP/bootstrap tests, retained full suite, real Edge welcome/sample/import proof, actual Windows executable startup from unrelated working directory without Python on PATH, duplicate launch and stop proof, clean-head reproducible manifest/checksums, exact-head review and default-branch containment. Then publish v0.16.0 unsigned preview assets and repository page; verify public download bytes against SHA-256 and page links. Signing and clean-machine certification remain explicit proof gaps.
+Require focused safety/HTTP/bootstrap tests, retained full suite, real Edge welcome/sample/import proof, actual Windows executable startup from unrelated working directory without Python on PATH, duplicate launch and stop proof, clean-head source-bound manifest/checksums with deterministic ZIP entry metadata, exact-head review and default-branch containment. Then publish v0.16.0 unsigned preview assets and repository page; verify public download bytes against SHA-256 and page links. Signing and clean-machine certification remain explicit proof gaps.
 
 Evidence belongs in ignored var/runs and var/windows-distribution; committed docs carry only synthetic scope and receipt references. Published URLs are claims only after provider/HTTP verification.

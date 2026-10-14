@@ -81,6 +81,10 @@ def prove(distribution: Path, output: Path) -> dict:
                 raise ValueError("distribution asset digest no longer matches its manifest")
     output.mkdir(parents=True)
     external = Path(tempfile.mkdtemp(prefix="FileSteward native proof " + output.name + " "))
+    # Windows executable lookup includes CWD. Evaluate the restricted PATH
+    # from the same unrelated, empty directory used for this proof, rather
+    # than the runner's virtual-environment Scripts directory.
+    os.chdir(external)
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
     environment["PATH"] = str(Path(os.environ["SystemRoot"]) / "System32")
@@ -133,6 +137,13 @@ def prove(distribution: Path, output: Path) -> dict:
             try:
                 def ready():
                     instance = json.loads(instance_file.read_text(encoding="utf-8"))
+                    owned_pids = {process.pid}
+                    try:
+                        owned_pids.update(child.pid for child in psutil.Process(process.pid).children(recursive=True))
+                    except psutil.NoSuchProcess:
+                        pass
+                    if instance.get("pid") not in owned_pids:
+                        return None
                     health = request(instance["origin"] + "/api/v1/launch/health")
                     return instance if health.get("instance_id") == instance["instance_id"] else None
 

@@ -212,21 +212,40 @@ def initialize_installed_runtime(application_root: str | Path | None = None) -> 
         # marker. The bootstrap or a prior admitted launch must establish it.
         _validate_application_marker(root)
     else:
+        staged = _safe_path(Path(tempfile.mkdtemp(prefix=".filesteward-startup-", dir=profile.local_app_data)))
+        staged_marker = staged / APPLICATION_MARKER
+        staged_identity = staged.stat()
+        marker_identity = None
         try:
-            root.mkdir()
-        except FileExistsError:
-            _validate_application_marker(root)
-        else:
-            _safe_path(root)
-            marker = _safe_path(root / APPLICATION_MARKER)
-            with marker.open("x", encoding="utf-8") as stream:
+            with staged_marker.open("x", encoding="utf-8") as stream:
+                marker_identity = os.fstat(stream.fileno())
                 json.dump({"schema_version": "filesteward.application-root/v1",
                            "app_id": "filesteward", "runtime_profile": PROFILE_ID,
                            "created_version": __version__}, stream, indent=2)
                 stream.write("\n")
                 stream.flush()
                 os.fsync(stream.fileno())
+            # Windows rename refuses an existing destination and publishes a
+            # complete marked family atomically. Never adopt an unknown root.
+            if root.exists():
+                _validate_application_marker(root)
+            else:
+                try:
+                    os.rename(staged, root)
+                except FileExistsError:
+                    _validate_application_marker(root)
             _validate_application_marker(root)
+        finally:
+            # Only this startup's empty staging directory/marker are eligible
+            # for temporary cleanup; no recursive removal or user data paths.
+            if staged.exists() and not staged.is_symlink():
+                current = staged.lstat()
+                if (current.st_dev, current.st_ino) == (staged_identity.st_dev, staged_identity.st_ino):
+                    if staged_marker.exists() and not staged_marker.is_symlink() and marker_identity:
+                        marker = staged_marker.lstat()
+                        if (marker.st_dev, marker.st_ino) == (marker_identity.st_dev, marker_identity.st_ino):
+                            staged_marker.unlink()
+                    staged.rmdir()
     namespace = profile.local_app_data / "FileSteward"
     for target in (namespace / "runtime", profile.runtime_root, profile.runtime_root / "runs"):
         _safe_path(target)

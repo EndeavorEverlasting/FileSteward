@@ -41,10 +41,25 @@ if (Test-Path -LiteralPath $appRoot) {
     throw 'Existing application marker does not match FileSteward; nothing was changed.'
   }
 } else {
-  [IO.Directory]::CreateDirectory($appRoot) | Out-Null
-  $markerText = '{"schema_version":"filesteward.application-root/v1","app_id":"filesteward","runtime_profile":"windows-localappdata/v1"}'
-  $stream = [IO.File]::Open($markerPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
-  try { $bytes=[Text.Encoding]::UTF8.GetBytes($markerText); $stream.Write($bytes,0,$bytes.Length) } finally { $stream.Dispose() }
+  $stage = Join-Path $localData ('.filesteward-startup-' + [Guid]::NewGuid().ToString('N'))
+  if (Test-Path -LiteralPath $stage) { throw 'Startup staging collision; nothing was changed.' }
+  [IO.Directory]::CreateDirectory($stage) | Out-Null
+  $stageMarker = Join-Path $stage '.filesteward-application.json'
+  try {
+    $markerText = '{"schema_version":"filesteward.application-root/v1","app_id":"filesteward","runtime_profile":"windows-localappdata/v1"}'
+    $stream = [IO.File]::Open($stageMarker, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try { $bytes=[Text.Encoding]::UTF8.GetBytes($markerText); $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+    [IO.Directory]::Move($stage, $appRoot)
+  } finally {
+    if (Test-Path -LiteralPath $stage -PathType Container) {
+      Assert-OrdinaryDirectory $stage
+      if (Test-Path -LiteralPath $stageMarker -PathType Leaf) {
+        $stageItem = Get-Item -LiteralPath $stageMarker -Force
+        if (!($stageItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) { Remove-Item -LiteralPath $stageMarker }
+      }
+      [IO.Directory]::Delete($stage, $false)
+    }
+  }
 }
 $appDirectory = Join-Path $appRoot 'app'
 $versionDirectory = Join-Path $appDirectory "v$version"
