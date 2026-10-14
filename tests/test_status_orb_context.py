@@ -22,9 +22,9 @@ def test_status_orbs_follow_selection_and_clear_without_client_classification() 
         f'<template data-status-orbs-for="{node.node_id}">{_render_status_orbs(node)}</template>'
         for node in (protected, gap)
     )
-    with sync_playwright() as playwright:
+    with sync_playwright() as driver:
         try:
-            browser = playwright.chromium.launch(channel="msedge", headless=True)
+            browser = driver.chromium.launch(channel="msedge", headless=True)
         except playwright.Error as error:
             pytest.skip(f"Installed Edge browser unavailable: {error}")
         try:

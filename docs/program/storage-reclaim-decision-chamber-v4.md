@@ -219,7 +219,7 @@ Blue/cyan may appear only when an operating-system forced-color mode chooses it.
 
 The provider-pushed Decision Chamber contract/palette candidate is **0.3.0**. The next local V4-C scene/bridge wiring is a distinct visual-feature pass and must auto-bump **0.3.0 -> 0.4.0** before that implementation commit.
 
-The version helper now treats staged/unstaged visual changes relative to the previous committed HEAD as a new visual pass. Therefore the local V4-C implementation must run `python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-feature --fix` and the expected result is `0.3.0 -> 0.4.0`. Later visual passes likewise advance again instead of silently reusing an older branch bump.
+The version helper now treats staged/unstaged visual changes relative to the previous committed HEAD as a new visual pass. Therefore the local V4-C implementation must run `python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-feature` and the expected result is `0.3.0 -> 0.4.0`. Later visual passes likewise advance again instead of silently reusing an older branch bump.
 
 ## 12. Localhost Decision Bridge — exact interaction transport
 
