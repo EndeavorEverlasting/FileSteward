@@ -273,6 +273,7 @@ class ReviewBridge:
     host_header: str = "127.0.0.1"
     scan_root: Path | None = None
     ownership_resolver: OwnershipResolver = unresolved_ownership
+    observation_only: bool = False
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
     _nodes: dict[str, _NodeView] = field(default_factory=dict, repr=False)
     _plan_rows: list[dict[str, object]] = field(default_factory=list, repr=False)
@@ -291,6 +292,7 @@ class ReviewBridge:
         regenerate_report: bool = True,
         scan_root: str | Path | None = None,
         ownership_resolver: OwnershipResolver = unresolved_ownership,
+        observation_only: bool = False,
     ) -> ReviewBridge:
         target = prove_run_dir_under_runtime(run_dir)
         errors = validate_run(target)
@@ -326,7 +328,7 @@ class ReviewBridge:
         with plan_path.open("r", encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle):
                 plan_rows.append(dict(row))
-        loaded_root = cls._load_scan_root_from_run_json(target)
+        loaded_root = None if observation_only else cls._load_scan_root_from_run_json(target)
         bridge = cls(
             run_dir=target,
             run_id=model.run_id,
@@ -335,6 +337,7 @@ class ReviewBridge:
             report_html=html,
             scan_root=loaded_root,
             ownership_resolver=ownership_resolver,
+            observation_only=observation_only,
             _nodes=nodes,
             _plan_rows=plan_rows,
         )
@@ -362,6 +365,8 @@ class ReviewBridge:
     def set_scan_root(
         self, scan_root: str | Path, *, persist: bool = False
     ) -> Path:
+        if self.observation_only:
+            raise ValueError("Observation-only review cannot admit a current scan root")
         root = normalize_declared_path(scan_root)
         self.scan_root = root
         if persist:
@@ -422,7 +427,7 @@ class ReviewBridge:
                     if isinstance(value, dict)
                 }
         approval_path = self.approval_record_path()
-        if approval_path.is_file():
+        if approval_path.is_file() and not self.observation_only:
             record = json.loads(approval_path.read_text(encoding="utf-8"))
             if (record.get("run_id") == self.run_id
                     and record.get("cleanup_plan_sha256") == self.cleanup_plan_sha256):
@@ -520,7 +525,8 @@ class ReviewBridge:
 
     def _resolution_for(self, node: _NodeView) -> dict[str, object]:
         try:
-            evidence = self.ownership_resolver(node.path)
+            evidence = (unresolved_ownership(node.path) if self.observation_only
+                        else self.ownership_resolver(node.path))
             if not isinstance(evidence, OwnershipEvidence):
                 raise TypeError("resolver did not return normalized OwnershipEvidence")
             return resolve_scene_evidence(node.path, node.disposition, evidence)
@@ -541,6 +547,8 @@ class ReviewBridge:
             )
         current = resolution if resolution is not None else self._resolution_for(node)
         flow = open_decision_session(node)
+        if self.observation_only:
+            flow = replace(flow, authorization_state=AuthorizationState.UNAPPROVED)
         recorded = self._decisions.get(node.node_id) or {}
         requested = recorded.get("intent") == DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT.value
         same_evidence = recorded.get("evidence_digest") == current["evidence_digest"]
@@ -581,6 +589,8 @@ class ReviewBridge:
                 # Technical recoverability is adapter-owned, never an operator
                 # declaration. Missing live adapters must not look executable.
                 intents = [intent for intent in intents if intent != "DECLARE_REGENERABLE_CONTRACT"]
+                if self.observation_only:
+                    intents = [intent for intent in intents if intent in {"KEEP", "REVIEW_LATER"}]
                 if self.ownership_resolver is unresolved_ownership or self.scan_root is None:
                     intents = [intent for intent in intents if intent != "DELETE_PERMANENTLY"]
                 if resolution and not resolution["raw_delete_eligible"]:
@@ -623,8 +633,10 @@ class ReviewBridge:
                 "evidence_disposition": flow.disposition.value if flow else None,
                 "inventory_disposition": node.disposition.value if node else None,
                 "authorization_state": (
-                    node.authorization_state.value if node else None
+                    (AuthorizationState.UNAPPROVED.value if self.observation_only
+                     else node.authorization_state.value) if node else None
                 ),
+                "observation_only": self.observation_only,
                 "open_decision_scene": open_scene,
                 "next_scene": next_scene,
                 "active_gate_id": flow.active_gate_id if flow else None,
@@ -641,6 +653,8 @@ class ReviewBridge:
                 ),
                 "scene_evidence": resolution,
                 "delete_unavailable_reason": (
+                    "This review is observation-only. Imported or sample evidence cannot start a scan, create approval, or execute deletion."
+                    if self.observation_only else
                     "Current ownership and regeneration adapters are not admitted for this review session."
                     if self.ownership_resolver is unresolved_ownership else
                     ("No bounded scan root is recorded." if self.scan_root is None else None)
@@ -665,6 +679,10 @@ class ReviewBridge:
 
     def record_decision(self, request: DecisionRequest) -> dict[str, object]:
         with self._lock:
+            if self.observation_only and request.intent not in {
+                DecisionBridgeIntent.KEEP, DecisionBridgeIntent.REVIEW_LATER,
+            }:
+                raise ValueError("Observation-only review cannot request a scan or mutating action")
             if request.run_id != self.run_id:
                 raise ValueError("run_id does not match the served run")
             if request.intent is DecisionBridgeIntent.DELETE_PERMANENTLY:
@@ -715,6 +733,8 @@ class ReviewBridge:
             return self.state_payload(request.item_id)
 
     def _apply_rescan(self, item_id: str, pending: PendingAction) -> None:
+        if self.observation_only:
+            raise ValueError("Observation-only review cannot execute a rescan")
         self._pending_by_item[item_id] = pending
         self._execution_by_item[item_id] = ExecutionState.PENDING
         self._last_transition = "rescan_pending"
@@ -823,6 +843,8 @@ class ReviewBridge:
         irreversible_confirmation: str,
     ) -> dict[str, object]:
         with self._lock:
+            if self.observation_only:
+                raise ValueError("Observation-only review cannot execute permanent deletion")
             if run_id != self.run_id:
                 raise ValueError("run_id does not match the served run")
             token = str(irreversible_confirmation or "").strip()
@@ -975,6 +997,8 @@ class ReviewBridge:
 
     def record_approval(self, request: ApprovalRequest) -> dict[str, object]:
         with self._lock:
+            if self.observation_only:
+                raise ValueError("Observation-only review cannot create approval")
             if request.run_id != self.run_id:
                 raise ValueError("run_id does not match the served run")
             if request.cleanup_plan_sha256 != self.cleanup_plan_sha256:
@@ -1241,6 +1265,7 @@ def serve_review(
     regenerate_report: bool = True,
     scan_root: str | Path | None = None,
     ownership_resolver: OwnershipResolver = unresolved_ownership,
+    observation_only: bool = False,
 ) -> ReviewServeResult:
     """Validate, regenerate report, and serve the Decision Bridge on loopback."""
 
@@ -1254,6 +1279,7 @@ def serve_review(
         regenerate_report=regenerate_report,
         scan_root=scan_root,
         ownership_resolver=ownership_resolver,
+        observation_only=observation_only,
     )
     handler = _make_handler(bridge)
     try:

@@ -29,6 +29,18 @@ $worktreeRoot = Join-Path $devRoot 'worktrees\FileSteward'
 - Worktree lanes live under `dev\worktrees\FileSteward\<lane>`.
 - The checkout never nests inside another checkout, and worktrees never live inside the checkout or at unrelated siblings.
 
+### 3.1 Installed Windows application profile
+
+The downloadable application has a distinct installed profile, `windows-localappdata/v1`, owned by `src/filesteward/contracts/runtime-profile.v1.json`. It does not redefine a wheel's site-packages or a frozen extraction directory as a development checkout.
+
+- Resolve LocalAppData exclusively through Windows `SHGetKnownFolderPath(FOLDERID_LocalAppData)`; no environment variable, current-directory, or guessed-path fallback is admitted. A host container that transparently redirects the family directory away from that declared OS path is refused rather than treated as ordinary desktop launch proof.
+- The installed application family root is exactly `<LocalAppData>/FileSteward`, identified by `.filesteward-application.json` with schema `filesteward.application-root/v1`, `app_id: filesteward`, and `runtime_profile: windows-localappdata/v1`. The marker is shared across versions; `created_version` is informational and never locks updates. Bootstrap-installed executable versions may live under `app/vX.Y.Z`.
+- A direct downloaded EXE may initialize an absent family root after validating its immutable bundled build identity (`filesteward.build-info/v1`, app identity, runtime profile, and running package version). Its physical download/extraction location is transport input, never runtime or checkout authority. Wheel admission verifies installed distribution metadata, package version, and import origin. An existing unmarked or mismatched family root is never silently adopted.
+- Private runtime output lives exclusively at `<LocalAppData>/FileSteward/runtime/var`; runs live under `var/runs/<run_id>`. Relative `var/runs/...` arguments resolve against `<LocalAppData>/FileSteward/runtime`, independently of invocation CWD.
+- Reject forbidden roots and any symlink/reparse component in the admitted family/runtime path. Missing markers during read-only resolution, mismatched markers, bundled profile identity/version, KnownFolder results, or package identity fail closed. A launcher residing on Desktop/Downloads does not relocate its admitted application family or runtime there.
+- Startup may stage a complete application marker in a unique `.filesteward-startup-*` sibling under the OS LocalAppData result, then atomically publish the absent application family. Cleanup is limited to that startup's exact marker and empty staging directory; unknown additions are preserved. `initialize_installed_runtime` creates only the admitted runtime directories and a readiness receipt. Startup readiness grants no scan, deletion, approval, or recurring-task authority. Live storage evidence stays private in this runtime tree.
+- Source/editable development retains sections 3 and 4 unchanged. `repository_root()` still requires the checkout packaging marker. Installed runtime readiness, executable/browser launch proof, remote integration, publication, and production verification remain separate evidence states.
+
 ## 4. Roles
 
 Each role has exactly one owner. Do not collapse roles.

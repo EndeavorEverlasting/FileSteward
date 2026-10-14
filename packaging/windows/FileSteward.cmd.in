@@ -1,0 +1,88 @@
+@echo off
+setlocal
+set "FS_BOOTSTRAP=%~f0"
+powershell.exe -NoLogo -NoProfile -Command "$text=[IO.File]::ReadAllText($env:FS_BOOTSTRAP); $marker='# POWERSHELL_PAYLOAD'; $body=$text.Substring($text.LastIndexOf($marker)+$marker.Length); & ([ScriptBlock]::Create($body))"
+if errorlevel 1 (
+  echo FileSteward could not start. Read the message above for the next step.
+  pause
+  exit /b 1
+)
+exit /b 0
+# POWERSHELL_PAYLOAD
+$ErrorActionPreference = 'Stop'
+$version = '@VERSION@'
+$expectedHash = '@EXE_SHA256@'
+$downloadUrl = 'https://github.com/EndeavorEverlasting/FileSteward/releases/download/v@VERSION@/FileSteward.exe'
+$localData = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+if ([string]::IsNullOrWhiteSpace($localData)) { throw 'Windows LocalAppData is unavailable.' }
+$appRoot = Join-Path $localData 'FileSteward'
+$markerPath = Join-Path $appRoot '.filesteward-application.json'
+function Get-ExecutableHash([string]$path) {
+  $stream = [IO.File]::OpenRead($path)
+  $algorithm = [Security.Cryptography.SHA256]::Create()
+  try { return [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '') }
+  finally { $algorithm.Dispose(); $stream.Dispose() }
+}
+function Assert-OrdinaryDirectory([string]$path) {
+  if (Test-Path -LiteralPath $path) {
+    $item = Get-Item -LiteralPath $path -Force
+    if (!$item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+      throw "FileSteward requires an ordinary directory: $path"
+    }
+  }
+}
+Assert-OrdinaryDirectory $appRoot
+if (Test-Path -LiteralPath $appRoot) {
+  if (!(Test-Path -LiteralPath $markerPath -PathType Leaf)) { throw 'Existing FileSteward directory is unmarked; nothing was changed.' }
+  $markerItem = Get-Item -LiteralPath $markerPath -Force
+  if ($markerItem.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Application marker cannot be a link.' }
+  $marker = Get-Content -LiteralPath $markerPath -Raw | ConvertFrom-Json
+  if ($marker.schema_version -ne 'filesteward.application-root/v1' -or $marker.app_id -ne 'filesteward' -or $marker.runtime_profile -ne 'windows-localappdata/v1') {
+    throw 'Existing application marker does not match FileSteward; nothing was changed.'
+  }
+} else {
+  $stage = Join-Path $localData ('.filesteward-startup-' + [Guid]::NewGuid().ToString('N'))
+  if (Test-Path -LiteralPath $stage) { throw 'Startup staging collision; nothing was changed.' }
+  [IO.Directory]::CreateDirectory($stage) | Out-Null
+  $stageMarker = Join-Path $stage '.filesteward-application.json'
+  try {
+    $markerText = '{"schema_version":"filesteward.application-root/v1","app_id":"filesteward","runtime_profile":"windows-localappdata/v1"}'
+    $stream = [IO.File]::Open($stageMarker, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try { $bytes=[Text.Encoding]::UTF8.GetBytes($markerText); $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+    [IO.Directory]::Move($stage, $appRoot)
+  } finally {
+    if (Test-Path -LiteralPath $stage -PathType Container) {
+      Assert-OrdinaryDirectory $stage
+      if (Test-Path -LiteralPath $stageMarker -PathType Leaf) {
+        $stageItem = Get-Item -LiteralPath $stageMarker -Force
+        if (!($stageItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) { Remove-Item -LiteralPath $stageMarker }
+      }
+      [IO.Directory]::Delete($stage, $false)
+    }
+  }
+}
+$appDirectory = Join-Path $appRoot 'app'
+$versionDirectory = Join-Path $appDirectory "v$version"
+Assert-OrdinaryDirectory $appDirectory
+Assert-OrdinaryDirectory $versionDirectory
+[IO.Directory]::CreateDirectory($versionDirectory) | Out-Null
+$target = Join-Path $versionDirectory 'FileSteward.exe'
+if (Test-Path -LiteralPath $target) {
+  $item = Get-Item -LiteralPath $target -Force
+  if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or (Get-ExecutableHash $target) -ne $expectedHash) {
+    throw 'Existing FileSteward.exe does not match this release. It was not replaced.'
+  }
+} else {
+  $temporary = Join-Path $versionDirectory ('.download-' + [Guid]::NewGuid().ToString('N') + '.tmp')
+  try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Write-Host "Downloading FileSteward $version from its pinned GitHub release..."
+    $client = New-Object Net.WebClient
+    try { $client.DownloadFile($downloadUrl, $temporary) } finally { $client.Dispose() }
+    if ((Get-ExecutableHash $temporary) -ne $expectedHash) { throw 'Download checksum failed. The download will not run.' }
+    [IO.File]::Move($temporary, $target)
+  } finally {
+    if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary }
+  }
+}
+Start-Process -FilePath $target -WorkingDirectory $versionDirectory -WindowStyle Hidden
