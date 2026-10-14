@@ -4,7 +4,7 @@ The Windows distribution starts FileSteward's local browser application without 
 
 ## Artifacts and identity
 
-The release has four download assets: `FileSteward.exe`, `FileSteward.cmd`, `FileSteward-windows-x64.zip`, and `SHA256SUMS.txt`. The EXE embeds Python, package resources, license notices, and `filesteward/contracts/build-info.json` with package version, runtime profile, exact source commit, and prototype status. The ZIP contains the easier-to-inspect folder distribution.
+The release has four primary download assets: `FileSteward.exe`, `FileSteward.cmd`, `FileSteward-windows-x64.zip`, and `SHA256SUMS.txt`. The v0.16.0 publication also includes `distribution-manifest.json` as additional public audit metadata; it does not change the four primary asset contract. The EXE embeds Python, package resources, license notices, and `filesteward/contracts/build-info.json` with package version, runtime profile, exact source commit, and prototype status. The ZIP contains the easier-to-inspect folder distribution.
 
 The readable CMD/PowerShell bootstrap downloads the exact version's EXE over HTTPS, verifies the executable SHA256 embedded during the build, then launches it. It uses Windows Known Folder LocalAppData, creating `FileSteward/app/vVERSION/FileSteward.exe`. A versionless `.filesteward-application.json` marker binds `schema_version: filesteward.application-root/v1`, `app_id: filesteward`, and `runtime_profile: windows-localappdata/v1`. An existing unmarked application root, reparse point, or mismatching executable stops launch without replacement. The downloaded EXE's location does not define the private runtime root.
 

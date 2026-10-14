@@ -112,7 +112,8 @@
     "var/windows-distribution/release-native-v0160-0950896/native-proof.json",
     "var/runs/windows-public-downloads/public-download-proof.json",
     "var/runs/windows-public-downloads/public-page-proof.json",
-    "var/runs/windows-public-downloads/published-bootstrap-proof.json"
+    "var/runs/windows-public-downloads/published-bootstrap-proof.json",
+    "harness/evals/windows-preview-publication-20261014.json"
   ],
   "proof_ceiling": "Accessible launch slice merged, unsigned preview published and HTTP/native/Edge verified. Native app launched from the exact public bootstrap payload using ownership-only PassThru instrumentation and left running. Source/browser and actual ZIP/EXE functional proof; no clean Windows VM, signing, live scan/delete/scheduling, semantic ownership collector or production cleanup proof.",
   "unresolved_review_threads": [],
@@ -127,7 +128,7 @@
     "owner": "LAUNCH coordinator",
     "can_execute_without_operator": true,
     "phase": "PROVE",
-    "action": "Terminal verification: run gh release view v0.16.0 --json isDraft,isPrerelease,assets,url and require isDraft=false with the five recorded assets. Run gh api repos/EndeavorEverlasting/FileSteward/releases/tags/v0.16.0 and compare assets[].digest to sha256 values in canonical ignored var/runs/windows-accessible-launch-20261014/public-downloads.json (all five), with manifest.json retaining the source identity and three primary asset digests. GET https://endeavoreverlasting.github.io/FileSteward/ and require HTTP 200. Fetch origin/main and run git merge-base --is-ancestor 0950896a2791036c08723ab89eba9700a60717ac origin/main. Record results in that run's publication-receipt.json with state LAUNCH_SLICE_COMPLETE, then stop this sprint; do not dispatch separately scoped signing or cleanup work."
+    "action": "Terminal verification: read harness/evals/windows-preview-publication-20261014.json, which contains only public release identity and expected digests and is available in a clean checkout. Run gh api repos/EndeavorEverlasting/FileSteward/releases/tags/v0.16.0; require draft=false, the four required named assets, and matching assets[].digest values from the receipt. Verify any additional recorded metadata asset when present; extra assets do not fail the four-asset contract. Run git ls-remote origin refs/tags/v0.16.0 refs/tags/v0.16.0^{} and require the resolved tag commit to equal 0950896a2791036c08723ab89eba9700a60717ac. Fetch origin/main and run git merge-base --is-ancestor 0950896a2791036c08723ab89eba9700a60717ac origin/main. GET the receipt's public page URL and require HTTP 200. Record the results in ignored var/runs/windows-accessible-launch-20261014/publication-receipt.json with state LAUNCH_SLICE_COMPLETE, then stop this sprint; do not dispatch separately scoped signing or cleanup work. No ignored local receipts are prerequisites for this verification."
   },
   "return_contract": "Report concrete downloadable URLs only after HTTP verification, exact version/head/asset hashes, native and browser results, integration and unsigned preview limits."
 }

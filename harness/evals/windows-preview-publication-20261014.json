@@ -1,0 +1,34 @@
+{
+  "schema_version": "filesteward.windows-preview-publication/v1",
+  "release_tag": "v0.16.0",
+  "validated_source_commit": "0950896a2791036c08723ab89eba9700a60717ac",
+  "release_url": "https://github.com/EndeavorEverlasting/FileSteward/releases/tag/v0.16.0",
+  "page_url": "https://endeavoreverlasting.github.io/FileSteward/",
+  "required_assets": [
+    "FileSteward.exe",
+    "FileSteward.cmd",
+    "FileSteward-windows-x64.zip",
+    "SHA256SUMS.txt"
+  ],
+  "additional_recorded_assets": [
+    "distribution-manifest.json"
+  ],
+  "asset_sha256": {
+    "FileSteward.exe": "75a24bec5725ab03a5d53943c8bd494c9585eadd0e439e704d720c4b54e491c7",
+    "FileSteward.cmd": "c274f8fc60f9cc6109470b9a260a71fc48b344185e62bd4760b92cd5c6f82594",
+    "FileSteward-windows-x64.zip": "9cdfeb99504d3b52ea5ec895f5af16b20c3818ae64ac92a5967fdea7ef3afb63",
+    "SHA256SUMS.txt": "2adbb956d978aa861f439eee0a304839e2bb54cb5bc51fb915e51b09bfa63128",
+    "distribution-manifest.json": "68220131f43bc4eff2f02e891c20ebabbff5073ac9668d163eaacc7809a2c8da"
+  },
+  "proof": {
+    "local_suite": "974 passed, 10 existing environment skips",
+    "native": "Hashed ZIP and EXE startup, sample/import, duplicate and stop; no Python/Git on child PATH",
+    "browser": "Source four modes; public page three modes and actual EXE download",
+    "bootstrap": "Exact public payload download/hash/install/default launch; PassThru instrumentation captures only process ownership"
+  },
+  "limits": [
+    "unsigned preview",
+    "no clean-machine certification",
+    "no live user scan/delete/scheduling or production cleanup proof"
+  ]
+}
