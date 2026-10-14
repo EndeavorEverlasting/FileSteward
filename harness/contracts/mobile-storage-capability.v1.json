@@ -1,0 +1,78 @@
+{
+  "schema_version": "filesteward.mobile-storage-capability/v1",
+  "owner": "EndeavorEverlasting/FileSteward",
+  "classification_owner": "src/filesteward/mobile/policy.py",
+  "source_inspiration": [
+    {
+      "donor": "EndeavorEverlasting/EscapeHatch",
+      "source_path": "contracts/application-event-journal.v1.json",
+      "source_branch": "feat/application-event-journal-local-optin-20261011",
+      "pattern": "user-scoped consent, metadata-only observations, bounded private evidence, no outcome promotion from observation",
+      "status": "candidate not merged"
+    },
+    {
+      "donor": "EndeavorEverlasting/EscapeHatch",
+      "source_path": "contracts/application-assist-presence-surface.v1.json",
+      "source_branch": "main",
+      "pattern": "one product state with platform-native interaction adapters",
+      "status": "reference"
+    }
+  ],
+  "platforms": [
+    "ANDROID",
+    "IOS"
+  ],
+  "surfaces": [
+    "MEDIA_LIBRARY",
+    "USER_SELECTED_DOCUMENTS",
+    "OTHER_APP_PRIVATE",
+    "SYSTEM_MANAGED",
+    "OWN_APP_CACHE"
+  ],
+  "permissions": [
+    "NOT_REQUESTED",
+    "DENIED",
+    "LIMITED",
+    "AUTHORIZED"
+  ],
+  "cloud_residency": [
+    "UNKNOWN",
+    "LOCAL_ONLY",
+    "SYNCED",
+    "REMOTE_ONLY"
+  ],
+  "non_executable": true,
+  "mutation_authority": "NEVER_FROM_REVIEW_RESULT",
+  "protected_scope": [
+    "OTHER_APP_PRIVATE",
+    "SYSTEM_MANAGED",
+    "OWN_APP_CACHE_WHEN_PROOF_MISSING"
+  ],
+  "interface": {
+    "input": "MobileEvidence(platform,surface,permission,cloud_residency,owner_verified,regeneration_proven,observed_local_bytes)",
+    "output": "MobileReviewDecision(disposition,route,reason_codes,estimated_reclaim_bytes=None,mutation_authorized=False)"
+  },
+  "platform_adapters": {
+    "ANDROID": {
+      "media": "Photo Picker or scoped MediaStore",
+      "documents": "Storage Access Framework selected URI",
+      "app_private": "not enumerated generically",
+      "no_all_files_by_default": true
+    },
+    "IOS": {
+      "media": "limited/full PhotoKit or user-selected picker",
+      "documents": "Files document picker",
+      "app_private": "not enumerated generically",
+      "no_whole_device_scanner": true
+    }
+  },
+  "evidence_policy": {
+    "permission_not_mutation": true,
+    "sync_not_backup": true,
+    "unknown_local_bytes_not_reclaim": true,
+    "synthetic_fixtures_only_in_public_repo": true,
+    "raw_names_and_contents_not_in_public_receipts": true
+  },
+  "validation": "python -m pytest -q tests/test_mobile_storage_policy.py",
+  "proof_ceiling": "Synthetic policy tests, not real device or native adapter acceptance"
+}
