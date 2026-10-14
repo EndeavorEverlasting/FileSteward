@@ -26,3 +26,7 @@ Forbidden scope: live user inventories/deletion, recurring registration, invente
 Require focused safety/HTTP/bootstrap tests, retained full suite, real Edge welcome/sample/import proof, actual Windows executable startup from unrelated working directory without Python on PATH, duplicate launch and stop proof, clean-head source-bound manifest/checksums with deterministic ZIP entry metadata, exact-head review and default-branch containment. Then publish v0.16.0 unsigned preview assets and repository page; verify public download bytes against SHA-256 and page links. Signing and clean-machine certification remain explicit proof gaps.
 
 Evidence belongs in ignored var/runs and var/windows-distribution; committed docs carry only synthetic scope and receipt references. Published URLs are claims only after provider/HTTP verification.
+
+## Result
+
+Merged PR #55 at main 721bea3350bb3aea24edce07f5a30fb3c44f8525. Published unsigned preview v0.16.0 at exact validated release commit 0950896a2791036c08723ab89eba9700a60717ac, contained in main. Final suite 974 passed / 10 environment skips. Real Edge and native hashed ZIP/EXE paths passed; the actual public CMD payload downloaded, verified, installed and launched the preview. All five public assets match local bytes; the public page and actual browser download passed. Repo homepage points to the live page. See the adjacent handoff packet for deterministic private receipts and proof limits. Signing, clean-machine certification and live cleanup are not claimed.
