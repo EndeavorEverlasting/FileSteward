@@ -4,10 +4,11 @@ Contract: repository/worktree/runtime/entry-point path resolution belongs
 exclusively to ``docs/agent/CANONICAL-PATHS.md``. This module encodes the
 machine-checkable portion of that contract:
 
-* all generated runtime output lives beneath the repository's ignored
-  ``var/`` tree — never an arbitrary user path, never a forbidden root;
-* path resolution fails closed when the canonical checkout marker cannot
-  be proved;
+* development output lives beneath the repository's ignored ``var/`` tree;
+  an admitted installed Windows application uses the explicit OS KnownFolder
+  private runtime profile instead — never CWD or an arbitrary environment path;
+* missing checkout authority requires complete installed-profile admission,
+  never a plausible-looking replacement checkout;
 * operator-declared paths normalize to absolute form before comparison;
 * run-dir admission resists symlink/junction escape.
 """
@@ -81,13 +82,21 @@ def repository_root() -> Path:
 
 
 def runtime_root() -> Path:
-    """Ignored runtime root: ``<repository>/var``.
+    """Development ``<repository>/var`` or admitted installed private runtime.
 
     Raises ``RuntimeError`` if the resolved root would sit beneath a
     forbidden root (Desktop/Documents/OneDrive/Backups).
     """
 
-    root = repository_root() / "var"
+    from filesteward.runtime_profile import resolve_installed_runtime
+    import sys
+
+    if getattr(sys, "frozen", False):
+        return resolve_installed_runtime().runtime_root
+    try:
+        root = repository_root() / "var"
+    except RuntimeError:
+        return resolve_installed_runtime().runtime_root
     if is_under_forbidden_root(root):
         raise RuntimeError(
             f"runtime root {root} resolves beneath a forbidden root; STOP"
@@ -124,14 +133,22 @@ def normalize_declared_path(path: PathLike) -> Path:
 def resolve_run_dir_argument(path: PathLike) -> Path:
     """Resolve a CLI ``--run-dir`` against the repository when relative.
 
-    Relative paths are joined to ``repository_root()`` so invocation CWD
-    cannot silently relocate runtime output. Absolute paths normalize in
-    place (``..`` collapsed).
+    Relative paths use the development checkout, or the admitted installed
+    runtime parent for ``var/runs/...``. Invocation CWD cannot relocate output.
+    Absolute paths normalize in place (``..`` collapsed).
     """
 
     candidate = Path(os.fspath(path))
     if not candidate.is_absolute():
-        candidate = repository_root() / candidate
+        import sys
+        if getattr(sys, "frozen", False):
+            base = runtime_root().parent
+        else:
+            try:
+                base = repository_root()
+            except RuntimeError:
+                base = runtime_root().parent
+        candidate = base / candidate
     return normalize_declared_path(candidate)
 
 

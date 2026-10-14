@@ -88,6 +88,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    launch = subparsers.add_parser("launch", help="open the local welcome app without scanning")
+    launch.add_argument("--no-browser", action="store_true")
+    launch.add_argument("--port", type=int, default=0)
+
     scan = subparsers.add_parser(
         "scan", help="read-only inventory of an approved root"
     )
@@ -668,6 +672,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
 
+    if args.command == "launch":
+        from filesteward.launch import main as launch_main
+        launch_args = ["--port", str(args.port)]
+        if args.no_browser:
+            launch_args.append("--no-browser")
+        return launch_main(launch_args)
     if args.command == "scan":
         return _run_scan(args)
     if args.command == "validate":

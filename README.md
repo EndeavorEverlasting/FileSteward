@@ -6,9 +6,13 @@ FileSteward is a human-in-the-loop file triage project for Downloads and other u
 
 ## Status
 
-**Design-stage / pre-alpha.**
+**Windows preview / pre-alpha — 0.16.0.**
 
-The repository currently defines the product and safety contract. The scanner, review queue, executor, WinDirStat adapter, duplicate analysis, and optional AI enrichment are planned work unless a later release and its validation evidence state otherwise.
+Open the [Windows download page](https://endeavoreverlasting.github.io/FileSteward/) for the illustrated start guide. Choose the self-contained [FileSteward.exe](https://github.com/EndeavorEverlasting/FileSteward/releases/download/v0.16.0/FileSteward.exe), the readable [CMD bootstrap](https://github.com/EndeavorEverlasting/FileSteward/releases/download/v0.16.0/FileSteward.cmd), or the [portable ZIP](https://github.com/EndeavorEverlasting/FileSteward/releases/download/v0.16.0/FileSteward-windows-x64.zip). See [checksums](https://github.com/EndeavorEverlasting/FileSteward/releases/download/v0.16.0/SHA256SUMS.txt) and [startup details](docs/windows-start.md).
+
+The unsigned Windows preview opens a local welcome page without Python, Git, or administrator installation. Explore an illustrative sample or explicitly import existing observational run artifacts. Startup does not scan your files, delete anything, or schedule recurring cleanup. Imported evidence is a captured review, not current deletion authority.
+
+The repository includes read-only inventory, validated manifests, the Memory Atlas and Decision Chamber, and a separately gated exact-manifest permanent-deletion path. Live ownership judgment, recurring cleanup policy, duplicate analysis, and optional AI enrichment are incomplete. The downloadable welcome app does not enable live cleanup.
 
 For agent-session crash recovery — where tooling state lives, how to resume a lost session, and how to prove repository state after an interruption — see [`docs/agent/RECOVERY.md`](docs/agent/RECOVERY.md).
 

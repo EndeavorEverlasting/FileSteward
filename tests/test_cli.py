@@ -42,7 +42,7 @@ class TestEntryPointIdentity:
         assert data["project"]["scripts"]["filesteward"] == "filesteward.cli:main"
         assert data["project"]["requires-python"] == ">=3.12"
 
-    def test_parser_vocabulary_is_p04_contract(self) -> None:
+    def test_parser_vocabulary_preserves_p04_and_explicit_launch(self) -> None:
         parser = build_parser()
         subparsers_action = next(
             action
@@ -51,6 +51,7 @@ class TestEntryPointIdentity:
         )
         assert subparsers_action.choices is not None
         assert set(subparsers_action.choices) == {
+            "launch",
             "scan",
             "validate",
             "plan",

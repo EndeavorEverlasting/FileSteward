@@ -1,0 +1,98 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "WINDOWS-ACCESSIBLE-LAUNCH-20261014",
+  "lane_id": "LAUNCH",
+  "role": "Windows launch integration coordinator",
+  "canonical_plan_ref": "plans/active/WINDOWS-ACCESSIBLE-LAUNCH-SPRINT-2026-10-14.md",
+  "contract_refs": [
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/contracts/action-scene-impact.v1.json",
+    "harness/contracts/dependency-aware-judgment-closure.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/contracts/execution-handoff-packet.schema.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json",
+    "src/filesteward/contracts/runtime-profile.v1.json"
+  ],
+  "provider_base_sha_at_capture": "e83a051d5291a43d93c0143ebe6ce9ac65b245ee",
+  "provider_head_sha_at_capture": "e83a051d5291a43d93c0143ebe6ce9ac65b245ee",
+  "local_head_sha_at_capture_or_unknown": "e83a051d5291a43d93c0143ebe6ce9ac65b245ee",
+  "completed_facts": [
+    {
+      "proof_state": "IMPLEMENTED",
+      "fact": "Versioned welcome, explicit synthetic sample/import and self-contained Windows build path",
+      "evidence": [
+        "src/filesteward/launch.py",
+        "scripts/build_windows_distribution.py",
+        "docs/index.html"
+      ]
+    },
+    {
+      "proof_state": "LOCALLY_VALIDATED",
+      "fact": "Retained suite 973 passed with 10 environment skips; stable four-mode Edge sample/import/recovery/shutdown; folder and single executable version startup succeed",
+      "evidence": [
+        "var/launch-full-suite-v2.log",
+        "var/runs/windows-launch-browser/results.json",
+        "var/runs/windows-launch-design/download-local-proof.json",
+        "var/windows-distribution/prototype-v0160-2/distribution-manifest.json"
+      ]
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "LAUNCH_SHIP",
+      "action": "Prove source/browser/native package, converge exact reviewed head, publish preview and verify public URLs",
+      "depends_on": [],
+      "acceptance": "Local regression, packaged runtime, exact-head review, main containment, public byte hash"
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "src/filesteward/launch.py",
+    "src/filesteward/sample.py",
+    "src/filesteward/runtime_profile.py",
+    "src/filesteward/policy/paths.py installed profile",
+    "src/filesteward/review_bridge.py observation-only admission",
+    "src/filesteward/cli.py launch route",
+    "packaging/windows/**",
+    "scripts/build_windows_distribution.py",
+    "tests for owned surfaces",
+    "docs launch pages",
+    "plans/active/WINDOWS-ACCESSIBLE-LAUNCH*",
+    "product version"
+  ],
+  "forbidden_surfaces": [
+    "live user scans/deletes",
+    "Task Scheduler registration",
+    "new cleanup judgment policy",
+    "unrelated work"
+  ],
+  "dependencies": [],
+  "external_prerequisites": [
+    "Exact bounded authorization required before real filesystem observation/mutation",
+    "Authorized cadence required for real recurring observation registration",
+    "Canonical judgment mapping required before recurring cleanup/settings semantics"
+  ],
+  "proof_receipts": [
+    "var/runs/windows-launch-design/",
+    "var/windows-distribution/",
+    "var/launch-full-suite-v2.log",
+    "var/runs/windows-launch-browser/results.json",
+    "var/runs/windows-launch-design/download-local-proof.json",
+    "var/windows-distribution/prototype-v0160-2/distribution-manifest.json"
+  ],
+  "proof_ceiling": "Synthetic local/HTTP tests, source Edge browser, and frozen version startup validated; functional native runtime and public publication pending. Codex-inherited filesystem redirection is correctly refused; no live scan/delete/schedule or production proof.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [],
+  "blocked_judgment_gap": {
+    "canonical_owner": "harness/contracts/judgment-scene-workflow.v1.json",
+    "why_required": "Presentation cannot invent cleanup policy or convert observation scheduling into destructive authority",
+    "missing_judgment": "Maintenance preferences and recurring cleanup authorization have no scene/action mapping"
+  },
+  "autonomy_gap": "NONE",
+  "exact_next_action": {
+    "owner": "LAUNCH coordinator",
+    "can_execute_without_operator": true,
+    "phase": "PROVE",
+    "action": "Prove source/browser/native package, converge exact reviewed head, publish preview and verify public URLs"
+  },
+  "return_contract": "Report concrete downloadable URLs only after HTTP verification, exact version/head/asset hashes, native and browser results, integration and unsigned preview limits."
+}

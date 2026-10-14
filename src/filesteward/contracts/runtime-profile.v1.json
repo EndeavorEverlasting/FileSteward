@@ -1,0 +1,16 @@
+{
+  "schema_version": "filesteward.runtime-profile/v1",
+  "profile_id": "windows-localappdata/v1",
+  "profile_version": 1,
+  "known_folder_id": "F1B32785-6FBA-4FCF-9D55-7B8E7F157091",
+  "application_namespace": "FileSteward",
+  "runtime_components": ["runtime", "var"],
+  "application_marker": {
+    "filename": ".filesteward-application.json",
+    "schema_version": "filesteward.application-root/v1",
+    "app_id": "filesteward",
+    "runtime_profile": "windows-localappdata/v1"
+  },
+  "supported_modes": ["frozen", "wheel"],
+  "startup_authority": "create private runtime and open application only; no scan, deletion, approval, or recurring registration"
+}
