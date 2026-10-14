@@ -1,0 +1,384 @@
+{
+  "schema_version": "filesteward.cinematic-scene-inventory/v1",
+  "canonical_owner": "harness/contracts/judgment-scene-workflow.v1.json",
+  "captured_base": "09597b68d260cf8a8e0163bf25333722d03c7357",
+  "proof_state": "DESIGNED",
+  "scenes": [
+    {
+      "scene_id": "ATLAS_HOME",
+      "tutorial_step": "MAP",
+      "impact": "ORIENT",
+      "use_cases": [
+        "report opened",
+        "Home activated",
+        "verification completes"
+      ],
+      "purpose": "Show capacity state and the next evidence-bearing cleanup opportunities without manufacturing deletion pressure.",
+      "must_show": [
+        "free capacity",
+        "target band",
+        "largest decision-relevant regions",
+        "current filters",
+        "why a candidate is surfaced"
+      ],
+      "automatic_work": [
+        "compute free-space band",
+        "rank candidates by impact subject to safety evidence",
+        "restore active filters/search where still applicable"
+      ],
+      "legal_effect": "FOCUS a candidate",
+      "transitions": {
+        "candidate_selected": "TARGET_FOCUS",
+        "filter_changed": "ATLAS_HOME",
+        "target_met_no_pending_user_goal": "ATLAS_HOME"
+      },
+      "success_evidence": [
+        "candidate focus changes canonical selection",
+        "same search/filter context remains intact"
+      ]
+    },
+    {
+      "scene_id": "TARGET_FOCUS",
+      "tutorial_step": "FOCUS",
+      "impact": "ORIENT",
+      "use_cases": [
+        "candidate selected"
+      ],
+      "purpose": "Make one storage target legible before asking for any judgment.",
+      "must_show": [
+        "size",
+        "path abstraction safe for UI",
+        "current disposition",
+        "known owner",
+        "first unresolved gate",
+        "projected safe actions if any",
+        "ownership badges",
+        "dependency badges",
+        "lifecycle classification with evidence reason"
+      ],
+      "automatic_work": [
+        "load known attribution/consequence/recoverability evidence",
+        "identify first unresolved technical gate"
+      ],
+      "legal_effect": "OPEN FIRST UNRESOLVED GATE",
+      "transitions": {
+        "unresolved_gate_present": "EVIDENCE_GATE",
+        "all_technical_gates_resolved": "VALUE_DECISION",
+        "protected_no_value_choice": "VALUE_DECISION"
+      },
+      "success_evidence": [
+        "exact first unresolved gate is visible",
+        "no illegal action is rendered as operable"
+      ]
+    },
+    {
+      "scene_id": "EVIDENCE_GATE",
+      "tutorial_step": "GATE",
+      "impact": "CLASSIFY",
+      "use_cases": [
+        "TARGET_FOCUS exposes unresolved gate",
+        "later proof becomes stale"
+      ],
+      "purpose": "Route to the exact technical fact that blocks a safe decision.",
+      "must_show": [
+        "missing fact",
+        "why it matters",
+        "safe probe being run or exact blocker",
+        "no destructive control"
+      ],
+      "automatic_work": [
+        "classify gate as attribution/consequence/recoverability/evidence-drift",
+        "start safe read-only resolver automatically when available"
+      ],
+      "legal_effect": "RUN/CONTINUE SAFE CHECK only when automation cannot start itself",
+      "transitions": {
+        "attribution_unknown": "ATTRIBUTION_RESOLVE",
+        "consequence_unknown": "CONSEQUENCE_RESOLVE",
+        "recoverability_unknown": "RECOVERABILITY_RESOLVE",
+        "evidence_stale": "ATTRIBUTION_RESOLVE",
+        "irreducible_external_fact": "VALUE_DECISION"
+      },
+      "success_evidence": [
+        "one gate owns attention",
+        "operator is not asked to guess a technical fact"
+      ]
+    },
+    {
+      "scene_id": "ATTRIBUTION_RESOLVE",
+      "tutorial_step": "RESOLVE",
+      "impact": "CLASSIFY",
+      "use_cases": [
+        "ownership unknown/partial/conflicting",
+        "dependency evidence stale"
+      ],
+      "purpose": "Determine what owns or depends on the selected storage.",
+      "must_show": [
+        "adapters checked",
+        "evidence found",
+        "conflicts",
+        "current ownership conclusion"
+      ],
+      "automatic_work": [
+        "check application install/runtime/serviceability adapters",
+        "check service and scheduled-task references",
+        "check repository/worktree protection and ownership",
+        "check toolchain and user-data evidence",
+        "record evidence provenance and conflicts",
+        "correlate candidate tree against Windows uninstall/install/modify/repair/update paths before any cache/reclaim classification",
+        "detect broken installed state when registration survives but referenced serviceability executable is missing",
+        "build cross-domain ownership graph so application, repository, worktree, toolchain, service/task, package, generated-output, and user-data edges can coexist",
+        "when Entire CLI/Graph is available, use it to enrich current repository relationship/activity evidence without treating absence as deletion evidence"
+      ],
+      "legal_effect": "automatic read-only resolution",
+      "transitions": {
+        "owner_resolved": "CONSEQUENCE_RESOLVE",
+        "conflicting_evidence": "CONSEQUENCE_RESOLVE",
+        "adapters_exhausted_unknown": "VALUE_DECISION"
+      },
+      "success_evidence": [
+        "normalized ownership evidence exists or exact unresolved fact is recorded"
+      ]
+    },
+    {
+      "scene_id": "CONSEQUENCE_RESOLVE",
+      "tutorial_step": "RESOLVE",
+      "impact": "CLASSIFY",
+      "use_cases": [
+        "ownership evidence available",
+        "ownership conflict requires consequence-first protection"
+      ],
+      "purpose": "Determine what breaks or changes if the storage is acted on.",
+      "must_show": [
+        "consequence class",
+        "evidence basis",
+        "protected reason when applicable",
+        "next unresolved fact"
+      ],
+      "automatic_work": [
+        "apply storage-dependency reducer",
+        "classify runtime/serviceability/service/task/repository/toolchain/user-data consequence",
+        "fail closed on conflict",
+        "classify registered-app tree intersection or missing registered uninstaller/update executable as protected application/serviceability consequence",
+        "apply most-protective-edge-wins when storage has multiple owners/dependents"
+      ],
+      "legal_effect": "automatic reducer",
+      "transitions": {
+        "protected_dependency": "VALUE_DECISION",
+        "reclaimable_requires_regeneration_proof": "RECOVERABILITY_RESOLVE",
+        "repository_requires_reproducibility_proof": "RECOVERABILITY_RESOLVE",
+        "consequence_safe_and_recoverability_known": "VALUE_DECISION"
+      },
+      "success_evidence": [
+        "consequence class maps deterministically to a disposition floor"
+      ]
+    },
+    {
+      "scene_id": "RECOVERABILITY_RESOLVE",
+      "tutorial_step": "RESOLVE",
+      "impact": "CLASSIFY",
+      "use_cases": [
+        "cache/build/repository candidate needs recoverability proof"
+      ],
+      "purpose": "Prove whether bytes can be recreated or safely reacquired before offering reclaim.",
+      "must_show": [
+        "recovery mechanism",
+        "proof status",
+        "unique local evidence",
+        "failure consequence"
+      ],
+      "automatic_work": [
+        "prove deterministic application cache regeneration when claimed",
+        "prove repository remote/reproducibility and unique-work state",
+        "prove generated/build artifact source boundary",
+        "record unavailable network/provider as uncertainty rather than safety",
+        "never treat reinstall availability alone as permission for raw deletion of an installed application's live tree; semantic repair/uninstall remains the action boundary"
+      ],
+      "legal_effect": "automatic read-only proof",
+      "transitions": {
+        "recoverability_proven": "VALUE_DECISION",
+        "unique_or_unrecoverable": "VALUE_DECISION",
+        "proof_unavailable": "VALUE_DECISION"
+      },
+      "success_evidence": [
+        "reclaim eligibility never derives from age/size/path alone"
+      ]
+    },
+    {
+      "scene_id": "VALUE_DECISION",
+      "tutorial_step": "RESOLVE",
+      "impact": "DECIDE",
+      "use_cases": [
+        "technical gates resolved",
+        "safe adapters exhausted with exact unresolved fact"
+      ],
+      "purpose": "Ask only the human judgment that remains after technical safety is resolved.",
+      "must_show": [
+        "technical safety summary",
+        "space impact",
+        "why each action is legal",
+        "exact unresolved fact if any",
+        "plain-language owner/dependency badges such as Required by app, Part of active repo, Stable repo, Legacy repo candidate, Shared dependency, or Unknown ownership",
+        "why active/stable/legacy-candidate classification was reached"
+      ],
+      "automatic_work": [
+        "derive legal semantic actions from target kind + disposition",
+        "persist prior operator choice if context fingerprint still matches"
+      ],
+      "legal_effect": null,
+      "transitions": {
+        "keep": "VERIFY_RETURN",
+        "review_later": "VERIFY_RETURN",
+        "safe_reclaim_intent": "AUTHORIZATION_GATE",
+        "uninstall_intent": "AUTHORIZATION_GATE",
+        "repair_intent": "AUTHORIZATION_GATE"
+      },
+      "success_evidence": [
+        "operator choice concerns value/preference, not guessed technical safety"
+      ]
+    },
+    {
+      "scene_id": "AUTHORIZATION_GATE",
+      "tutorial_step": "APPROVAL",
+      "impact": "AUTHORIZE",
+      "use_cases": [
+        "VALUE_DECISION records a mutating intent"
+      ],
+      "purpose": "Bind one explicit operator authorization to exact target, semantic action, evidence revision, and projected consequence.",
+      "must_show": [
+        "semantic action",
+        "exact scope summary",
+        "projected reclaim",
+        "risk/consequence",
+        "evidence freshness",
+        "what will be verified afterward"
+      ],
+      "automatic_work": [
+        "build exact manifest/action package",
+        "refresh dependency evidence",
+        "invalidate on drift"
+      ],
+      "legal_effect": "AUTHORIZE EXACT ACTION",
+      "transitions": {
+        "authorized_and_fresh": "RECLAIM_EXECUTION",
+        "evidence_drift": "EVIDENCE_GATE",
+        "cancelled": "VALUE_DECISION"
+      },
+      "success_evidence": [
+        "authorization artifact binds exact target/action/evidence revision"
+      ]
+    },
+    {
+      "scene_id": "RECLAIM_EXECUTION",
+      "tutorial_step": "STAGED",
+      "impact": "RECLAIM",
+      "use_cases": [
+        "fresh exact authorization exists"
+      ],
+      "purpose": "Execute the already-authorized semantic action through its repository-owned mechanism.",
+      "must_show": [
+        "action in progress/result",
+        "exact target",
+        "receipt status",
+        "bytes not yet claimed until measured"
+      ],
+      "automatic_work": [
+        "invoke semantic owner action",
+        "capture receipt",
+        "never silently widen target scope"
+      ],
+      "legal_effect": null,
+      "transitions": {
+        "execution_success": "VERIFY_RETURN",
+        "execution_failure": "INCIDENT_RECOVERY",
+        "post_action_regression_signal": "INCIDENT_RECOVERY"
+      },
+      "success_evidence": [
+        "receipt exists",
+        "execution scope equals authorization scope"
+      ]
+    },
+    {
+      "scene_id": "VERIFY_RETURN",
+      "tutorial_step": "STAGED",
+      "impact": "VERIFY",
+      "use_cases": [
+        "keep/review decision completed",
+        "mutation receipt exists"
+      ],
+      "purpose": "Prove user value and return the operator to a coherent next scene.",
+      "must_show": [
+        "what changed or did not change",
+        "measured capacity impact",
+        "health check",
+        "next candidate or Home"
+      ],
+      "automatic_work": [
+        "measure free-space delta when applicable",
+        "verify action-specific health",
+        "refresh filters/queues",
+        "preserve unrelated search/filter state"
+      ],
+      "legal_effect": "CONTINUE TO NEXT RELEVANT DECISION or HOME",
+      "transitions": {
+        "healthy_next_candidate": "TARGET_FOCUS",
+        "target_met_or_queue_empty": "ATLAS_HOME",
+        "regression_detected": "INCIDENT_RECOVERY"
+      },
+      "success_evidence": [
+        "impact measured",
+        "health verified",
+        "continuation explicit"
+      ]
+    },
+    {
+      "scene_id": "INCIDENT_RECOVERY",
+      "tutorial_step": "RESOLVE",
+      "impact": "VERIFY",
+      "use_cases": [
+        "post-action health check fails",
+        "operator reports regression linked to prior action"
+      ],
+      "purpose": "Turn a broken-app or other regression into a bounded recovery and retained prevention loop.",
+      "must_show": [
+        "affected capability",
+        "last exact action",
+        "recovery status",
+        "causal state",
+        "what is frozen until proven"
+      ],
+      "automatic_work": [
+        "freeze same-family automatic eligibility",
+        "preserve receipt/evidence",
+        "run safe diagnostic attribution",
+        "route repair through semantic owner",
+        "classify causal state"
+      ],
+      "legal_effect": "RUN SAFE RECOVERY/DIAGNOSTIC when automatic continuation is impossible",
+      "transitions": {
+        "repaired_and_cause_classified": "VERIFY_RETURN",
+        "unresolved_but_safe_to_stop": "ATLAS_HOME"
+      },
+      "success_evidence": [
+        "causal state is proven/disproven/unresolved",
+        "regression family is added to retained ledger when systemic"
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "id": "MAINTENANCE_PREFERENCES_AND_RECURRING_CLEANUP",
+      "state": "BLOCKED_JUDGMENT_GAP",
+      "canonical_owner": "harness/contracts/judgment-scene-workflow.v1.json",
+      "missing_mapping": "Preference scope/persistence, cleanup recurrence eligibility, lifetime/revocation of authority, evidence drift, failure and post-action verification",
+      "existing_owner": "profiles.schedule is observation-only, not cleanup authority",
+      "implemented": false
+    },
+    {
+      "id": "UNMAPPED_ORGANIZATION_ACTIONS",
+      "state": "BLOCKED_JUDGMENT_GAP",
+      "canonical_owner": "harness/contracts/judgment-scene-workflow.v1.json",
+      "missing_mapping": "README ambitions for subject moves, rename/archive, duplicate quarantine and restore do not define canonical judgment-scene action families",
+      "implemented": false
+    }
+  ]
+}

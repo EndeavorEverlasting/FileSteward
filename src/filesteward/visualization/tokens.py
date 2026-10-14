@@ -37,9 +37,14 @@ def token_document_path() -> Path:
     )
     if repo_docs.is_file():
         return repo_docs
+    # Wheels contain an exact mirror of the authoring contract. Keep the Path
+    # API and existing validation/cache behavior for installed entry points.
+    packaged = Path(__file__).resolve().parents[1] / "contracts" / repo_docs.name
+    if packaged.is_file():
+        return packaged
     raise FileNotFoundError(
         "visual-system token contract missing: "
-        "docs/program/storage-reclaim-visual-system.tokens.json"
+        "docs/program/storage-reclaim-visual-system.tokens.json or packaged mirror"
     )
 
 

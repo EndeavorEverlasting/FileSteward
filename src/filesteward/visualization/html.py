@@ -48,6 +48,7 @@ def render_report_html(
                placeholder="Search paths and groups" aria-label="Search paths and groups"
                autocomplete="off">
       </label>
+      <p id="navigator-empty-state" class="empty" role="status" hidden>No items match these filters. Clear the search or choose another filter.</p>
 """
     extra_css = """
 .filter-chip{border:1px solid var(--fs-border-default);background:var(--fs-bg-surface-2);color:var(--fs-text-secondary);border-radius:var(--fs-radius-pill);padding:0.25rem 0.625rem;min-height:2rem;font-size:var(--fs-type-small-size);cursor:pointer;margin:2px;}
@@ -58,11 +59,18 @@ def render_report_html(
 """
     if "</style>" in html:
         html = html.replace("</style>", extra_css + "</style>", 1)
-    needle = '<div class="pane-head"><h2>Storage navigator</h2></div>'
-    if needle in html:
+    needle_btn = 'data-scene-entry="pane_navigator"'
+    needle_legacy = '<div class="pane-head"><h2>Storage navigator</h2></div>'
+    if needle_btn in html:
+        # Insert filter/search controls immediately after the navigator pane head.
+        head_end = html.find("</div>", html.find(needle_btn))
+        if head_end != -1:
+            insert_at = head_end + len("</div>")
+            html = html[:insert_at] + controls + html[insert_at:]
+    elif needle_legacy in html:
         html = html.replace(
-            needle,
-            '<div class="pane-head"><h2>Storage navigator</h2></div>' + controls,
+            needle_legacy,
+            needle_legacy + controls,
             1,
         )
 
@@ -86,10 +94,26 @@ def render_report_html(
   let activeFilter = "ALL";
   let query = "";
 
+  const dispositionsFor = (filter) => {{
+    if (!filter || filter === "ALL") return null;
+    if (filter === "AMBIGUOUS") return ["HUMAN_REVIEW", "UNKNOWN"];
+    if (filter.indexOf("|") >= 0) {{
+      return filter.split("|").map((part) => part.trim()).filter(Boolean);
+    }}
+    return [filter];
+  }};
+
+  const stateMatches = (disposition, filter) => {{
+    const allowed = dispositionsFor(filter);
+    if (allowed === null) return true;
+    return allowed.indexOf(disposition) >= 0;
+  }};
+
   const visibleFor = (id) => {{
     const meta = nodeMeta[id];
     if (!meta) return true;
-    const stateMatch = activeFilter === "ALL" || meta.disposition === activeFilter;
+    const stateMatch = activeFilter === "ALL" || meta.disposition === activeFilter
+      || stateMatches(meta.disposition, activeFilter);
     const searchMatch = !query || meta.search.includes(query);
     return stateMatch && searchMatch;
   }};
@@ -100,13 +124,24 @@ def render_report_html(
       el.hidden = !visibleFor(id);
     }});
 
+    const allowed = dispositionsFor(activeFilter);
     document.querySelectorAll('.filter-chip').forEach((chip) => {{
-      const active = chip.getAttribute('data-filter') === activeFilter;
+      const chipFilter = chip.getAttribute('data-filter') || 'ALL';
+      let active = false;
+      if (activeFilter === "ALL") {{
+        active = chipFilter === "ALL";
+      }} else if (allowed) {{
+        active = allowed.indexOf(chipFilter) >= 0;
+      }} else {{
+        active = chipFilter === activeFilter;
+      }}
       chip.classList.toggle('active', active);
       chip.setAttribute('aria-pressed', active ? 'true' : 'false');
     }});
 
     const selected = document.querySelector('.nav-row.selected:not([hidden])');
+    const emptyState = document.getElementById('navigator-empty-state');
+    if (emptyState) emptyState.hidden = Boolean(document.querySelector('.nav-row:not([hidden])'));
     if (!selected) {{
       const first = document.querySelector('.nav-row:not([hidden])');
       if (first) {{
@@ -116,14 +151,41 @@ def render_report_html(
         document.querySelectorAll('.nav-row.selected, .map-node.selected, [data-node-id].selected').forEach((el) => {{
           el.classList.remove('selected');
           el.removeAttribute('aria-current');
+          el.removeAttribute('aria-selected');
+          el.removeAttribute('data-selected');
         }});
         const inspector = document.getElementById('inspector-body');
         if (inspector) {{
           inspector.innerHTML = '<p class="empty">No items match these filters.</p>';
         }}
+        const summary = document.getElementById('selection-summary');
+        if (summary) {{
+          summary.innerHTML = '<span class="selection-empty">No items match these filters.</span>';
+        }}
+        const mapWrap = document.querySelector('.map-wrap');
+        if (mapWrap) mapWrap.classList.remove('selection-active');
+        document.dispatchEvent(new CustomEvent('filesteward:selection-cleared'));
       }}
     }}
   }};
+
+  const setFilter = (filter) => {{
+    activeFilter = filter || "ALL";
+    applyFilters();
+    document.dispatchEvent(
+      new CustomEvent('filesteward:filter-changed', {{ detail: {{ filter: activeFilter }} }})
+    );
+  }};
+
+  const getFilter = () => activeFilter;
+
+  window.FileStewardFilters = {{ setFilter, getFilter }};
+
+  document.addEventListener('filesteward:set-filter', (event) => {{
+    const next = event && event.detail ? event.detail.filter : null;
+    if (next == null) return;
+    setFilter(next);
+  }});
 
   const chips = Array.from(document.querySelectorAll('.filter-chip'));
   chips.forEach((chip, index) => {{
@@ -132,8 +194,7 @@ def render_report_html(
       chip.getAttribute('data-filter') === activeFilter ? 'true' : 'false'
     );
     chip.addEventListener('click', () => {{
-      activeFilter = chip.getAttribute('data-filter') || 'ALL';
-      applyFilters();
+      setFilter(chip.getAttribute('data-filter') || 'ALL');
     }});
     chip.addEventListener('keydown', (event) => {{
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
@@ -143,7 +204,7 @@ def render_report_html(
       next.focus();
       // Activate on arrow navigation so focus and filter results stay aligned.
       activeFilter = next.getAttribute('data-filter') || 'ALL';
-      applyFilters();
+      setFilter(activeFilter);
     }});
   }});
 

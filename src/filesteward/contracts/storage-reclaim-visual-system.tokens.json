@@ -1,0 +1,283 @@
+{
+  "schema_version": "filesteward.visual-system.tokens/v1",
+  "contract_id": "storage-reclaim-visual-system",
+  "color_scheme": "light dark",
+  "typography": {
+    "sans": [
+      "Segoe UI Variable Text",
+      "Segoe UI Variable",
+      "Segoe UI",
+      "system-ui",
+      "-apple-system",
+      "BlinkMacSystemFont",
+      "sans-serif"
+    ],
+    "mono": [
+      "Cascadia Mono",
+      "Cascadia Code",
+      "Consolas",
+      "ui-monospace",
+      "monospace"
+    ],
+    "scale": {
+      "display": {
+        "size_px": 28,
+        "line_height_px": 36,
+        "weight": 600
+      },
+      "title_lg": {
+        "size_px": 20,
+        "line_height_px": 28,
+        "weight": 600
+      },
+      "title": {
+        "size_px": 16,
+        "line_height_px": 24,
+        "weight": 600
+      },
+      "body": {
+        "size_px": 14,
+        "line_height_px": 20,
+        "weight": 400
+      },
+      "body_strong": {
+        "size_px": 14,
+        "line_height_px": 20,
+        "weight": 600
+      },
+      "small": {
+        "size_px": 12,
+        "line_height_px": 16,
+        "weight": 400
+      },
+      "small_strong": {
+        "size_px": 12,
+        "line_height_px": 16,
+        "weight": 600
+      },
+      "micro": {
+        "size_px": 11,
+        "line_height_px": 14,
+        "weight": 500
+      }
+    },
+    "min_body_px": 12,
+    "tabular_nums": true
+  },
+  "space": {
+    "unit_px": 4,
+    "scale_px": {
+      "1": 4,
+      "2": 8,
+      "3": 12,
+      "4": 16,
+      "5": 20,
+      "6": 24,
+      "8": 32,
+      "10": 40,
+      "12": 48
+    },
+    "pane_padding_desktop_px": 16,
+    "pane_padding_compact_px": 12,
+    "page_edge_px": [
+      20,
+      24
+    ],
+    "row_height_min_px": 40,
+    "row_height_preferred_px": 44,
+    "pointer_target_min_px": 40,
+    "pointer_target_preferred_px": 44
+  },
+  "radius_px": {
+    "xs": 4,
+    "sm": 6,
+    "md": 10,
+    "lg": 14,
+    "pill": 999,
+    "treemap_max": 4
+  },
+  "shadow": {
+    "light": {
+      "sm": "0 1px 2px rgba(0,0,0,.06)",
+      "md": "0 4px 16px rgba(0,0,0,.08)"
+    },
+    "dark": {
+      "sm": "0 1px 2px rgba(0,0,0,.20)",
+      "md": "0 4px 16px rgba(0,0,0,.28)"
+    }
+  },
+  "motion": {
+    "easing": "cubic-bezier(.2, 0, 0, 1)",
+    "hover_ms": [
+      100,
+      140
+    ],
+    "selection_ms": [
+      120,
+      160
+    ],
+    "pane_ms": [
+      160,
+      200
+    ],
+    "treemap_zoom_max_ms": 200,
+    "reduced_motion_ms": 0.01
+  },
+  "breakpoints_px": {
+    "wide_min": 1440,
+    "standard_min": 1180,
+    "medium_min": 800,
+    "narrow_max": 799
+  },
+  "shell_grid": {
+    "desktop_min_width_px": 1280,
+    "desktop_min_height_px": 720,
+    "columns": "minmax(260px, 320px) minmax(480px, 1fr) minmax(320px, 400px)",
+    "navigator_share": "25%",
+    "treemap_share": "45-50%",
+    "inspector_share": "25-30%"
+  },
+  "treemap": {
+    "outer_padding_px": 8,
+    "gap_normal_px": 2,
+    "gap_dense_px": 3,
+    "min_label_dimension_px": 3,
+    "selection_outline_px": 3
+  },
+  "themes": {
+    "light": {
+      "bg-canvas": "#F3EDE3",
+      "bg-shell": "#FBF7F0",
+      "bg-surface-1": "#F8F1E7",
+      "bg-surface-2": "#EFE5D8",
+      "bg-surface-3": "#E6D8C8",
+      "bg-hover": "#E0CFBD",
+      "bg-selected": "#E7D2BE",
+      "border-subtle": "#D2C1AE",
+      "border-default": "#BCA892",
+      "border-strong": "#8D7765",
+      "text-primary": "#2A211B",
+      "text-secondary": "#5D4D42",
+      "text-muted": "#7B695B",
+      "text-disabled": "#A49385",
+      "text-inverse": "#FBF7F0",
+      "accent-050": "#F7EFE7",
+      "accent-100": "#EFDFD1",
+      "accent-300": "#C59A78",
+      "accent-500": "#9F6F4F",
+      "accent-600": "#8D5F3F",
+      "accent-700": "#744B32",
+      "accent-800": "#5A3927",
+      "accent": "#8D5F3F",
+      "accent-hover": "#744B32",
+      "accent-pressed": "#5A3927",
+      "focus": "#7B5034",
+      "state-review": "#8A5D17",
+      "state-review-bg": "#FAEFD9",
+      "state-review-edge": "#BA8332",
+      "state-unknown": "#655B52",
+      "state-unknown-bg": "#EDE6DE",
+      "state-unknown-edge": "#958579",
+      "state-protected": "#994B3D",
+      "state-protected-bg": "#F6E4DF",
+      "state-protected-edge": "#C16C59",
+      "state-keep": "#626B43",
+      "state-keep-bg": "#EBECDD",
+      "state-keep-edge": "#8C9363",
+      "state-reclaim": "#4F713E",
+      "state-reclaim-bg": "#E5ECDD",
+      "state-reclaim-edge": "#779963"
+    },
+    "dark": {
+      "bg-canvas": "#15120F",
+      "bg-shell": "#1C1814",
+      "bg-surface-1": "#211C18",
+      "bg-surface-2": "#2A231E",
+      "bg-surface-3": "#332A24",
+      "bg-hover": "#3A3028",
+      "bg-selected": "#4A3528",
+      "border-subtle": "#473B32",
+      "border-default": "#5C4A3E",
+      "border-strong": "#8B7666",
+      "text-primary": "#F3EBDD",
+      "text-secondary": "#D2C4B2",
+      "text-muted": "#A3917F",
+      "text-disabled": "#76685C",
+      "text-inverse": "#18130F",
+      "accent-050": "#251B14",
+      "accent-100": "#352319",
+      "accent-300": "#B9825B",
+      "accent-500": "#C9976F",
+      "accent-600": "#D7AA82",
+      "accent-700": "#E3BE9A",
+      "accent-800": "#EFD3B7",
+      "accent": "#D7AA82",
+      "accent-hover": "#E3BE9A",
+      "accent-pressed": "#B9825B",
+      "focus": "#E7C49F",
+      "state-review": "#D6A24A",
+      "state-review-bg": "#372A18",
+      "state-review-edge": "#B77C2E",
+      "state-unknown": "#C1B6A8",
+      "state-unknown-bg": "#2D2924",
+      "state-unknown-edge": "#897C6D",
+      "state-protected": "#D47B67",
+      "state-protected-bg": "#3A211C",
+      "state-protected-edge": "#B55746",
+      "state-keep": "#A9AD7B",
+      "state-keep-bg": "#282A1E",
+      "state-keep-edge": "#7F8659",
+      "state-reclaim": "#86A76A",
+      "state-reclaim-bg": "#202B1B",
+      "state-reclaim-edge": "#63834E"
+    }
+  },
+  "disposition_token_map": {
+    "HUMAN_REVIEW": "state-review",
+    "UNKNOWN": "state-unknown",
+    "PROTECTED": "state-protected",
+    "KEEP_PROVEN": "state-keep",
+    "RECLAIM_PROVEN": "state-reclaim"
+  },
+  "authorization_visual": {
+    "UNAPPROVED": {
+      "tone": "neutral",
+      "icon": "lock"
+    },
+    "APPROVED_FOR_ACTION": {
+      "tone": "accent",
+      "icon": "signed-check"
+    },
+    "APPLIED": {
+      "tone": "accent",
+      "icon": "signed-check"
+    },
+    "VERIFIED": {
+      "tone": "strong-neutral",
+      "icon": "confirmation"
+    }
+  },
+  "invariants": [
+    "magnitude_never_implies_actionability",
+    "evidence_color_never_implies_authorization",
+    "selection_never_implies_approval",
+    "reclaim_green_never_used_for_authorization",
+    "state_never_color_alone",
+    "receipt_text_literal_only",
+    "no_mutation_without_exact_operator_approval_receipt",
+    "delete_intent_stages_quarantine_before_any_permanent_deletion",
+    "dominant_atlas_palette_is_warm_material_not_blue_cyan"
+  ],
+  "material_reference_palette": {
+    "family": "warm-material",
+    "reference": "operator-supplied AYOCIN/ATMOS screenshots, 2026-10-04",
+    "intent": "ivory + espresso + walnut + copper/amber + stone + moss/forest",
+    "forbidden_dominant": [
+      "navy",
+      "electric-blue",
+      "cyan",
+      "generic-AI-neon"
+    ],
+    "note": "mechanism/palette translation only; no third-party assets, branding, or copied source"
+  }
+}

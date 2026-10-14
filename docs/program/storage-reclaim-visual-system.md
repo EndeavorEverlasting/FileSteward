@@ -1,5 +1,12 @@
 # FileSteward Visual System — F0 Contract Freeze
 
+> **2026-10-04 live-UX supersession:** the original F0/F6 flat visual grammar
+> was falsified on the private real-scale report. For the current operator
+> surface, `docs/program/storage-reclaim-memory-atlas-v2.md` supersedes this
+> document's first-frame composition, depth, and motion choices. The evidence,
+> authorization, accessibility, privacy, and no-destructive-control invariants
+> in this document remain binding.
+
 **Status:** F0 CONTRACT FROZEN BY DESIGN PROTOTYPE  
 **Version:** visual-system/v1  
 **Primary consumer:** F2 — modern visual system + report shell  
