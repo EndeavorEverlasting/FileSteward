@@ -13,9 +13,9 @@
     "harness/evals/execution-handoff-review-gates.v1.json",
     "src/filesteward/contracts/runtime-profile.v1.json"
   ],
-  "provider_base_sha_at_capture": "721bea3350bb3aea24edce07f5a30fb3c44f8525",
-  "provider_head_sha_at_capture": "721bea3350bb3aea24edce07f5a30fb3c44f8525",
-  "local_head_sha_at_capture_or_unknown": "721bea3350bb3aea24edce07f5a30fb3c44f8525",
+  "provider_base_sha_at_capture": "97d5933601f078c7d1c10830f763b46b0f1e5cba",
+  "provider_head_sha_at_capture": "97d5933601f078c7d1c10830f763b46b0f1e5cba",
+  "local_head_sha_at_capture_or_unknown": "97d5933601f078c7d1c10830f763b46b0f1e5cba",
   "completed_facts": [
     {
       "proof_state": "IMPLEMENTED",
@@ -126,8 +126,8 @@
   "exact_next_action": {
     "owner": "LAUNCH coordinator",
     "can_execute_without_operator": true,
-    "phase": "CONTINUE",
-    "action": "Accessible launch slice complete. Future signing/clean-machine certification and canonical maintenance-policy work require their separate scope and authority."
+    "phase": "PROVE",
+    "action": "Terminal verification: run gh release view v0.16.0 --json isDraft,isPrerelease,assets,url; require isDraft=false and the five recorded assets. GET https://endeavoreverlasting.github.io/FileSteward/ and require HTTP 200. Fetch origin/main and run git merge-base --is-ancestor 0950896a2791036c08723ab89eba9700a60717ac origin/main. Compare provider asset SHA-256 values with the canonical ignored var/runs/windows-accessible-launch-20261014/manifest.json receipt. Record results in that run's publication-receipt.json with state LAUNCH_SLICE_COMPLETE, then stop this sprint; do not dispatch separately scoped signing or cleanup work."
   },
   "return_contract": "Report concrete downloadable URLs only after HTTP verification, exact version/head/asset hashes, native and browser results, integration and unsigned preview limits."
 }
