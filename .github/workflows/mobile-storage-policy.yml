@@ -5,6 +5,7 @@ on:
       - "src/filesteward/mobile/**"
       - "tests/test_mobile_storage_policy.py"
       - "harness/contracts/mobile-storage-capability.v1.json"
+      - "docs/program/mobile-storage-safety.md"
       - ".github/workflows/mobile-storage-policy.yml"
   push:
     branches:
@@ -13,6 +14,7 @@ on:
       - "src/filesteward/mobile/**"
       - "tests/test_mobile_storage_policy.py"
       - "harness/contracts/mobile-storage-capability.v1.json"
+      - "docs/program/mobile-storage-safety.md"
       - ".github/workflows/mobile-storage-policy.yml"
 jobs:
   synthetic-safety:
