@@ -15,6 +15,8 @@ import subprocess
 import sys
 import tempfile
 import time
+import zipfile
+from pathlib import PurePosixPath
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
@@ -112,7 +114,26 @@ def prove(distribution: Path, output: Path) -> dict:
                     raise RuntimeError("An existing native session is active; proof will not interfere")
             transport = external / (mode + " transport with spaces")
             if mode == "onedir":
-                shutil.copytree(distribution / "onedir/FileSteward", transport)
+                # Prove the actual hashed portable download, rather than an
+                # unhashed intermediate build directory.
+                transport.mkdir()
+                with zipfile.ZipFile(distribution / "FileSteward-windows-x64.zip") as archive:
+                    for member in archive.infolist():
+                        path = PurePosixPath(member.filename)
+                        if (path.is_absolute() or ".." in path.parts or "\\" in member.filename
+                                or ":" in member.filename or not path.parts or path.parts[0] != "FileSteward"
+                                or (member.external_attr >> 16) & 0o170000 == 0o120000):
+                            raise ValueError("Portable archive contains an unsafe entry")
+                        relative = path.relative_to("FileSteward")
+                        target = transport.joinpath(*relative.parts)
+                        if not target.resolve().is_relative_to(transport.resolve()):
+                            raise ValueError("Portable archive escaped its proof directory")
+                        if member.is_dir():
+                            target.mkdir(parents=True, exist_ok=True)
+                        else:
+                            target.parent.mkdir(parents=True, exist_ok=True)
+                            with target.open("xb") as stream:
+                                stream.write(archive.read(member))
             else:
                 transport.mkdir()
                 shutil.copyfile(distribution / "FileSteward.exe", transport / "FileSteward.exe")
