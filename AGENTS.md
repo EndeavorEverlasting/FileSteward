@@ -1,5 +1,9 @@
 # FileSteward — agent entry
 
+## P00/P01/P04 — settled cross-repository product ownership
+AgentSwitchboard is a retired product (donor/verified old callers only). TokenCorridor owns the product control plane. Technical cleanup does not reopen retirement. Never assign new orchestration, policy or website work to AgentSwitchboard.
+
+
 FileSteward handles potentially irreplaceable personal and project data. Local coding agents are execution engines, not judgment authorities.
 
 ## Read before mutation
