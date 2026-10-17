@@ -40,11 +40,8 @@
     "Both source and retained base are >=24 hours old at decision time",
     "Both paths appeared unchanged in two successful scans separated by >=60 minutes",
     "Both paths have equal nonzero length and equal independently recomputed full SHA256",
-    "Source full-file identity and complete ownership/dependency evidence are current before action",
     "Canonical unsuffixed base remains in Downloads; never move final retained copy",
-    "Current installed-application/repository/service/task/toolchain attribution finds no protected or unknown dependency",
-    "Exact source remains identity-and-content-stable when handle-bound same-volume quarantine rename is attempted",
-    "Distinct locally persisted operator standing authorization matches this exact policy version, mode, scope, expiry and limits, and explicit repository approval-flow extension is approved and tested"
+    "Current installed-application/repository/service/task/toolchain attribution finds no protected or unknown dependency"
   ],
   "always_skip": [
     "DOC_OR_BUSINESS_DATA: .msg/.eml/.pdf/.doc/.docx/.xls/.xlsx/.csv/.ppt/.pptx/.txt/.json/.png/.jpg/.jpeg",
@@ -79,7 +76,7 @@
   "acceptance_cases": [
     {
       "id": "D01",
-      "fixture": "report.zip + report (1).zip identical, two stable scans >=60min apart, no ownership edges, standing policy approved",
+      "fixture": "report.zip + report (1).zip identical, two stable scans >=60min apart, complete ownership graph proving no dependency edges, standing policy approved",
       "expect": "QUARANTINE_ONE_KEEP_BASE"
     },
     {
@@ -148,5 +145,17 @@
     "One real reversible quarantine and restore verified without private data entering Git",
     "Merge only exact reviewed PR head with no material unresolved review threads; live proof separately after merge"
   ],
-  "terminal_status": "NOT_COMPLETE_UNTIL_HOURLY_REAL_AUTOMATED_REVIEW_AND_AUTHORIZED_QUARANTINE_OBSERVED"
+  "terminal_status": "NOT_COMPLETE_UNTIL_HOURLY_REAL_AUTOMATED_REVIEW_AND_AUTHORIZED_QUARANTINE_OBSERVED",
+  "candidate_evidence_requirements": [
+    "Complete cross-domain application, repository, toolchain, service, task and shared-dependency attribution; lack of an edge without complete adapter coverage is UNKNOWN",
+    "Stable source/base path identities and full content hashes; re-evaluate exact identity before action"
+  ],
+  "action_eligibility_all": [
+    "All candidate_eligibility_all requirements are satisfied by fresh sealed evidence",
+    "Distinct locally persisted operator-approved standing authorization matches policy version, mode, exact KnownFolder root, action, expiry and limits; governance extension previously approved and tested",
+    "Fresh exact-manifest preflight and separate validated per-manifest approval receipt reference that operator-authorized standing source; no scheduler or agent self-approval",
+    "Revalidate current source and retained base via pinned Windows handles, immediately before the same-volume quarantine rename",
+    "Quarantine target is owned, private, collision-free and on the same volume; otherwise refuse",
+    "All actions have per-item receipts, verified restore and complete attempted/succeeded/failed/skipped counts"
+  ]
 }
