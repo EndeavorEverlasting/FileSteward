@@ -159,7 +159,17 @@ function Get-ExistingTask([string]$name) {
 function Assert-OwnedTask($task) {
     if ($null -eq $task) { throw 'FileSteward task was not found.' }
     if ($task.Description -ne $OwnerMarker) {
-        throw 'A foreign or changed task occupies this name; refusing mutation.'
+        throw 'FOREIGN_TASK_COLLISION: owner marker mismatch; refusing mutation.'
+    }
+    $identity = Get-Identity
+    if (-not ([string]::Equals([string]$task.Principal.UserId, [string]$identity.Name, [StringComparison]::OrdinalIgnoreCase) -or
+              [string]::Equals([string]$task.Principal.UserId, [string]$identity.User.Value, [StringComparison]::OrdinalIgnoreCase))) {
+        throw 'FOREIGN_TASK_COLLISION: principal identity mismatch.'
+    }
+    $actions = @($task.Actions)
+    $self = [IO.Path]::GetFullPath($PSCommandPath)
+    if ($actions.Count -ne 1 -or -not ([string]$actions[0].Arguments).Contains(('-File "' + $self + '"'))) {
+        throw 'FOREIGN_TASK_COLLISION: task no longer runs this pinned script.'
     }
 }
 
