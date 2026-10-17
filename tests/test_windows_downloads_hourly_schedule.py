@@ -44,6 +44,10 @@ def test_hourly_schedule_guards_overlap_and_is_read_only() -> None:
     assert "filesteward.cli scan" in content
     assert "filesteward.cli validate" in content
     assert "VERIFIED_READ_ONLY_REVIEW" in content
+    assert "Invoke-ReadOnlyReview $inputPaths ([ref]$exitCode)" in content
+    assert "exit $exitCode" in content
+    assert "$ExitCode.Value = 4" in content
+    assert "$ExitCode.Value = 0" in content
     assert "WindowsApps Store launcher is not a verified Python interpreter." in content
     assert "requires an operational Python 3.12+" in content
     for forbidden in (
@@ -55,11 +59,24 @@ def test_hourly_schedule_guards_overlap_and_is_read_only() -> None:
 
 def test_root_and_private_artifacts_are_bounded() -> None:
     content = _script()
-    assert "Only the current Windows user Downloads folder" in content
+    assert "SHGetKnownFolderPath" in content
+    assert "374DE290-123F-4565-9164-39C4925E467B" in content
+    assert "DOWNLOADS_KNOWN_FOLDER_MISMATCH" in content
+    assert "NONCANONICAL_CHECKOUT" in content
+    assert "CANONICAL_GIT_MISMATCH" in content
+    assert "CANONICAL_REPOSITORY_MISMATCH" in content
     assert "[IO.FileAttributes]::ReparsePoint" in content
     assert "scripts\\windows\\downloads-hourly-review.ps1" in content
     assert "'var\\runs'" in content
     assert "Unable to" not in content  # keep refusal behavior visible, no permissive fallback
+
+
+def test_one_canonical_function_set_and_complete_heredoc() -> None:
+    content = _script()
+    for function in ('Get-KnownDownloads', 'Resolve-Inputs', 'Get-OwnedTaskName', 'Invoke-ReadOnlyReview'):
+        assert content.count(f'function {function}') == 1, function
+    assert content.count("@'") == content.count("'@") == 1
+    assert "if ($interpreter -match '\\\\Microsoft\\\\WindowsApps\\\\python(?:3)?\\.exe$')" in content
 
 
 def test_powershell_parser_when_available() -> None:
