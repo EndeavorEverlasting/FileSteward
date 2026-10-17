@@ -71,12 +71,12 @@ public static class FileStewardDownloadsKnownFolder {
 
 function Resolve-Inputs {
     $canonical = [IO.Path]::GetFullPath($Checkout).TrimEnd('\')
-    $profile = [Environment]::GetFolderPath('UserProfile')
-    $expectedCanonical = [IO.Path]::GetFullPath((Join-Path $profile 'dev\FileSteward')).TrimEnd('\')
+    $profileRoot = [Environment]::GetFolderPath('UserProfile')
+    $expectedCanonical = [IO.Path]::GetFullPath((Join-Path $profileRoot 'dev\FileSteward')).TrimEnd('\')
     if (-not [string]::Equals($canonical, $expectedCanonical, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'NONCANONICAL_CHECKOUT: required %USERPROFILE%\dev\FileSteward per docs/agent/CANONICAL-PATHS.md.'
     }
-    foreach ($directory in @((Join-Path $profile 'dev'), $canonical)) {
+    foreach ($directory in @((Join-Path $profileRoot 'dev'), $canonical)) {
         if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
             throw 'CANONICAL_CHECKOUT_MISSING: required directory does not exist.'
         }
@@ -113,9 +113,13 @@ function Resolve-Inputs {
     if (-not (Test-Path -LiteralPath $root -PathType Container)) {
         throw 'Downloads directory is inaccessible.'
     }
-    $rootInfo = Get-Item -LiteralPath $root -Force
-    if (($rootInfo.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-        throw 'Downloads is a junction/symlink/reparse path; refusing scheduled traversal.'
+    # Reject redirection through ANY ancestor, not just the Downloads leaf.
+    $walk = [IO.Path]::GetPathRoot($root)
+    foreach ($component in $root.Substring($walk.Length).Split([IO.Path]::DirectorySeparatorChar, [StringSplitOptions]::RemoveEmptyEntries)) {
+        $walk = Join-Path $walk $component
+        if (((Get-Item -LiteralPath $walk -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'DOWNLOADS_REPARSE_ANCESTOR: symbolic link/junction/mount point refused.'
+        }
     }
 
     $interpreter = $Python
