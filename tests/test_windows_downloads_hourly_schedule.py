@@ -44,6 +44,8 @@ def test_hourly_schedule_guards_overlap_and_is_read_only() -> None:
     assert "filesteward.cli scan" in content
     assert "filesteward.cli validate" in content
     assert "VERIFIED_READ_ONLY_REVIEW" in content
+    assert "WindowsApps Store launcher is not a verified Python interpreter." in content
+    assert "requires an operational Python 3.12+" in content
     for forbidden in (
         "Remove-Item", "Clear-RecycleBin", "Move-Item", "delete-execute",
         "delete-approve", "Start-Process -Verb RunAs", "Stop-Process",
