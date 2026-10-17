@@ -299,3 +299,17 @@ The interface should call the same scanner, schemas, validators, and executor as
 ## License
 
 FileSteward is licensed under the [MIT License](LICENSE).
+
+
+## Opt-in hourly Downloads review (source checkout only)
+
+The Windows repository includes an opt-in [hourly Downloads review task](docs/program/downloads-hourly-review.md) that runs FileSteward's existing read-only scan and artifact validation locally without an AI agent. It requires the canonical development checkout and a working Python interpreter; it is **not installed or enabled by the v0.16.0 welcome preview**.
+
+From the verified canonical checkout on the actual Windows user account:
+
+    .\scripts\windows\downloads-hourly-review.ps1 -Mode Preview
+    .\scripts\windows\downloads-hourly-review.ps1 -Mode RunOnce
+    .\scripts\windows\downloads-hourly-review.ps1 -Mode Register -Authorize
+    .\scripts\windows\downloads-hourly-review.ps1 -Mode Status
+
+The task never moves, quarantines, approves or deletes downloaded files. Automatic disposal of future files is a separate FileSteward authorization-policy and runtime-verification gate. Do not infer deletion authority from age, filenames, matching extensions, identical hashes, or a scheduled review.

@@ -1,0 +1,157 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "downloads-recurring-cleanup-20261016",
+  "lane_id": "FILESTEWARD_HOURLY_DOWNLOADS_INTEGRATION",
+  "role": "single canonical convergence owner; native Windows runtime proof on verified host",
+  "canonical_plan_ref": "https://github.com/EndeavorEverlasting/FileSteward/issues/60",
+  "contract_refs": [
+    "AGENTS.md",
+    "docs/agent/CANONICAL-PATHS.md",
+    "docs/agent/LOCAL-AGENT-PROTECTIONS.md",
+    "docs/agent/OPERATOR-DELETE-PATH.md",
+    "harness/contracts/downloads-recurring-cleanup.v1.json",
+    "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "docs/program/downloads-hourly-review.md"
+  ],
+  "provider_base_sha_at_capture": "df0e887aff9abddced3b6e6fe08d051d346d04be",
+  "provider_head_sha_at_capture": "42409558bbf910474dc3b4bcaf76ac0897d87627",
+  "local_head_sha_at_capture_or_unknown": "UNKNOWN_NOT_OBSERVED",
+  "completed_facts": [
+    {
+      "fact": "PR #59 contains an opt-in read-only Windows task, plus contract, tests and runbook",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/59"
+      ],
+      "proof_state": "IMPLEMENTED"
+    },
+    {
+      "fact": "Fixed deterministic candidate/action policy D01-D12 now tracked, but not an executable quarantine engine",
+      "evidence": [
+        "harness/contracts/downloads-recurring-cleanup.v1.json"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Three Codex P2 source fixes applied (numeric exit, Downloads known folder, checkout binding); PowerShell runtime still unproven",
+      "evidence": [
+        "scripts/windows/downloads-hourly-review.ps1",
+        "tests/test_windows_downloads_hourly_schedule.py"
+      ],
+      "proof_state": "IMPLEMENTED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "G0_REVIEW_AND_SOURCE_PROOF",
+      "action": "Refresh main/PR #59 exact head; inspect all four review threads; run PowerShell AST parser + focused and full repository tests on isolated worktree; repair any findings; merge only when required gates green and no material unresolved reviews",
+      "depends_on": [],
+      "acceptance": "Reviewed PR exact head integrated into main; static/PowerShell tests and full suite recorded with command/exit code; zero unresolved material review threads"
+    },
+    {
+      "work_id": "G1_WINDOWS_READONLY_TASK_PROOF",
+      "action": "From actual verified %USERPROFILE%\\dev\\FileSteward canonical checkout on Windows run Preview then RunOnce and Status; prove KnownFolder Downloads root, correct host/principal, valid private run artifacts; register exact owned task only after proof and explicit operator opt-in; inspect two runs",
+      "depends_on": [
+        "G0_REVIEW_AND_SOURCE_PROOF"
+      ],
+      "acceptance": "Two non-overlapping actual hourly scan/validate runs, correct identities, private receipts and nonzero overlap return; no moved/deleted files"
+    },
+    {
+      "work_id": "G2_EXACT_ZIP_DUPLICATE_SELECTOR",
+      "action": "Implement dry-run technical candidate selector only as fixed by harness/contracts/downloads-recurring-cleanup.v1.json. No agent-chosen extensions or age-based heuristics. D01-D12 fixtures and evidence/action separation must pass",
+      "depends_on": [
+        "G0_REVIEW_AND_SOURCE_PROOF"
+      ],
+      "acceptance": "D01-D12 fixture responses exactly match; absent or incomplete attribution yields UNKNOWN; zero filesystem mutation with no approved standing policy"
+    },
+    {
+      "work_id": "G3_STANDING_POLICY_AUTHORITY",
+      "action": "Build compatibility-safe extension for operator-issued standing authorization separate from per-run exact manifest validation, refresh existing approval-contract safety; ask operator ONLY for ENABLE_EXACT_DUPLICATE_ZIP_QUARANTINE_STANDING_POLICY or REVIEW_ONLY when ready",
+      "depends_on": [
+        "G2_EXACT_ZIP_DUPLICATE_SELECTOR"
+      ],
+      "acceptance": "Version/scope/expiry/action/revoke bound authority validated by negative tests; no scheduler self-approval; absent operator approval gives zero moves"
+    },
+    {
+      "work_id": "G4_RESTORE_AND_LIVE_CLEANUP",
+      "action": "After policy authority confirmed, implement Windows handle-bound same-volume private quarantine, exact manifest/preflight/approval/receipt and collision-safe restore; prove one real quarantine+restore and two hourly runs",
+      "depends_on": [
+        "G1_WINDOWS_READONLY_TASK_PROOF",
+        "G3_STANDING_POLICY_AUTHORITY"
+      ],
+      "acceptance": "Zero false positives in D01-D12; exact moved/skipped/failed counts and restore receipts; two consecutive hourly executions with eligible file quarantined only under approved rule"
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "scripts/windows/downloads-hourly-review.ps1",
+    "tests/test_windows_downloads_hourly_schedule.py",
+    "harness/contracts/downloads-recurring-cleanup.v1.json",
+    "tests/test_downloads_recurring_contract.py",
+    "FileSteward-owned narrow future scanner/quarantine executor and tests under src/filesteward and tests, after exact code-owner inspection",
+    "docs/program/downloads-hourly-review.md",
+    "https://github.com/EndeavorEverlasting/FileSteward/issues/60"
+  ],
+  "forbidden_surfaces": [
+    "EndeavorEverlasting/TokenCorridor prompt registry",
+    "AgentSwitchboard retired product",
+    "unrelated PRs, branches, user files, installed app/repair state, personal correspondence and project documents",
+    "generic recursive-delete/Move-Item based automation and any persistent private filename/hash inventory in Git"
+  ],
+  "dependencies": [
+    "G0 precedes G1 and G2 for integrated source",
+    "G2 precedes delegated-standing-authorization design G3",
+    "G1 and G3 precede live quarantine G4",
+    "Whole outcome remains incomplete until G4 proof"
+  ],
+  "external_prerequisites": [
+    "Actual Windows host canonical FileSteward checkout, current user known Downloads, PowerShell and Python 3.12+ runtime verified locally; never guess hostname",
+    "Operator must explicitly approve standing recurring quarantine policy before mutation, including separate governance contract change"
+  ],
+  "proof_receipts": [
+    "https://github.com/EndeavorEverlasting/FileSteward/pull/59",
+    "https://github.com/EndeavorEverlasting/FileSteward/issues/60",
+    "Source readback and static invariants only as of captured head; no Windows/Pester/Pytest run claim"
+  ],
+  "proof_ceiling": "PROVIDER_COMMITTED_UNMERGED; SOURCE_STATIC_VERIFICATION_ONLY; WINDOWS_PARSER_AND_RUNTIME_UNPROVEN",
+  "unresolved_review_threads": [
+    {
+      "thread_id": "PRRT_kwDOTaGtTM6tb3B_",
+      "materiality": "MATERIAL",
+      "status": "REPAIRED_PENDING_REFRESH"
+    },
+    {
+      "thread_id": "PRRT_kwDOTaGtTM6tb3CD",
+      "materiality": "MATERIAL",
+      "status": "REPAIRED_PENDING_REFRESH"
+    },
+    {
+      "thread_id": "PRRT_kwDOTaGtTM6tb3CG",
+      "materiality": "MATERIAL",
+      "status": "REPAIRED_PENDING_REFRESH"
+    },
+    {
+      "thread_id": "PRRT_kwDOTaGtTM6tb6AI",
+      "materiality": "MATERIAL",
+      "status": "REPAIRED_PENDING_REFRESH"
+    }
+  ],
+  "private_evidence_refs": [],
+  "blocked_judgment_gap": {
+    "missing_judgment": "Operator choice at G3: opt in to exact ZIP duplicate reversible quarantine standing-rule authority or retain REVIEW_ONLY",
+    "canonical_owner": "operator",
+    "why_required": "Current repository exact-manifest approvals do not authorize an agent or hourly task to self-approve future unknown download sets"
+  },
+  "autonomy_gap": {
+    "missing_adapter": "Native Windows console/PowerShell/Task Scheduler is not accessible through GitHub provider runtime in this chat",
+    "evidence": "GitHub source and PR review accessible; the current runtime does not expose the user's Windows operating system scheduler or Downloads filesystem",
+    "repair_route": "Local FileSteward agent on verified canonical Windows checkout performs G0 local tests and G1 host proof without asking operator to relay repository evidence"
+  },
+  "exact_next_action": {
+    "phase": "RECOVER",
+    "action": "git -C \"$env:USERPROFILE\\dev\\FileSteward\" status --short --branch; git -C \"$env:USERPROFILE\\dev\\FileSteward\" fetch origin; git -C \"$env:USERPROFILE\\dev\\FileSteward\" rev-parse HEAD; git -C \"$env:USERPROFILE\\dev\\FileSteward\" worktree list --porcelain; then inspect PR #59 exact HEAD, all four review threads, and run PowerShell AST parser before considering merge or task registration",
+    "owner": "FileSteward local integration agent with GitHub provider review access",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "CHANGED | PROVED | NEXT with exact repo+branch+HEAD/PR, checks and exit statuses, D01-D12 results, 4 review thread dispositions, integration vs deployment vs live proof, private artifacts kept local, explicit blocker and first executable command. Never claim review-only scan means decluttering."
+}
