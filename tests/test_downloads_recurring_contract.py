@@ -27,9 +27,13 @@ def test_does_not_silently_enable_actions():
 
 def test_eligibility_requires_hash_stability_owner_proof_and_distinct_authority():
     c = contract()
-    whole = "\n".join(c["candidate_eligibility_all"])
-    for fact in ("SHA256", "two successful scans", "same-volume", "canonical unsuffixed", "application", "operator standing authorization"):
-        assert fact.lower() in whole.lower(), fact
+    technical = "\n".join(c["candidate_eligibility_all"] + c["candidate_evidence_requirements"])
+    action = "\n".join(c["action_eligibility_all"])
+    for fact in ("SHA256", "two successful scans", "canonical unsuffixed", "application"):
+        assert fact.lower() in technical.lower(), fact
+    for fact in ("same-volume", "operator-approved standing authorization", "separate validated"):
+        assert fact.lower() in action.lower(), fact
+    assert "operator-approved" not in technical
     assert c["scope"]["follow_reparse_points"] is False
     assert c["scope"]["traversal"] == "TOP_LEVEL_REGULAR_FILES_ONLY"
     assert c["actions"]["exact_duplicate_zip_quarantine"]["auto_purge"] is False
