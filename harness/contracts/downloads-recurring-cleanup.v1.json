@@ -1,0 +1,152 @@
+{
+  "schema_version": "filesteward.downloads-recurring-cleanup/v1",
+  "status": "DESIGN_CONTRACT_ONLY_NOT_LIVE_AUTHORITY",
+  "parent_issue": 60,
+  "owner": "EndeavorEverlasting/FileSteward",
+  "scope": {
+    "root_source": "WINDOWS_SHGETKNOWNFOLDERPATH_FOLDERID_DOWNLOADS",
+    "traversal": "TOP_LEVEL_REGULAR_FILES_ONLY",
+    "follow_reparse_points": false,
+    "read_content_by_default": false,
+    "quarantine_same_volume_required": true
+  },
+  "scheduler": {
+    "cadence_minutes": 60,
+    "execution": "WINDOWS_TASK_SCHEDULER_CURRENT_INTERACTIVE_USER",
+    "agent_calls_per_run": 0,
+    "concurrent_runs": "SKIP_WITH_NONZERO_EXIT",
+    "default_mode": "REVIEW_ONLY"
+  },
+  "actions": {
+    "review_only": {
+      "mutates_source": false,
+      "needs_operator_authority": false
+    },
+    "exact_duplicate_zip_quarantine": {
+      "state": "BLOCKED_UNTIL_DELEGATED_AUTHORITY_CONTRACT_APPROVED",
+      "mutates_source": true,
+      "action": "MOVE_TO_PRIVATE_QUARANTINE_RETAIN_ORIGINAL",
+      "auto_purge": false,
+      "max_items_per_run": 20,
+      "max_total_bytes_per_run": 1073741824,
+      "minimum_file_age_hours": 24,
+      "minimum_scans": 2,
+      "minimum_scans_apart_minutes": 60
+    }
+  },
+  "candidate_eligibility_all": [
+    "Both paths are regular top-level non-reparse files under current known Downloads",
+    "Only suffix (N).zip whose same-folder unsuffixed base .zip exists; N is a positive integer",
+    "Both source and retained base are >=24 hours old at decision time",
+    "Both paths appeared unchanged in two successful scans separated by >=60 minutes",
+    "Both paths have equal nonzero length and equal independently recomputed full SHA256",
+    "Source full-file identity and complete ownership/dependency evidence are current before action",
+    "Canonical unsuffixed base remains in Downloads; never move final retained copy",
+    "Current installed-application/repository/service/task/toolchain attribution finds no protected or unknown dependency",
+    "Exact source remains identity-and-content-stable when handle-bound same-volume quarantine rename is attempted",
+    "Distinct locally persisted operator standing authorization matches this exact policy version, mode, scope, expiry and limits, and explicit repository approval-flow extension is approved and tested"
+  ],
+  "always_skip": [
+    "DOC_OR_BUSINESS_DATA: .msg/.eml/.pdf/.doc/.docx/.xls/.xlsx/.csv/.ppt/.pptx/.txt/.json/.png/.jpg/.jpeg",
+    "INSTALLER_OR_PACKAGE: .exe/.msi/.msix/.appx/.appxbundle",
+    "ACTIVE_OR_PARTIAL: .crdownload/.partial/.part/.tmp or open/locked",
+    "REPOSITORY_OR_WORKTREE: any Git/Entire source/checkout, nested project, unpushed or shared dependency",
+    "PATH_REDIRECTION: symbolic link, junction, mount point, reparse, cloud placeholder, crossing a volume",
+    "OWNERSHIP_UNKNOWN: unproven app/serviceability/toolchain/task/repository dependency",
+    "NOT_EXACT_DUPLICATE: version-similar but byte-different files, alternate names, suffix without retained original, hash mismatch",
+    "STALE: changed since baseline or immediately before bound file-handle operation"
+  ],
+  "authorization": {
+    "default": "REVIEW_ONLY",
+    "operator_only_choice": "ENABLE_EXACT_DUPLICATE_ZIP_QUARANTINE_STANDING_POLICY",
+    "standing_rule_not_currently_supported": true,
+    "before_enable": [
+      "Extend docs/agent/LOCAL-AGENT-PROTECTIONS.md and exact-manifest approval contracts only through an explicitly operator-authorized governance change",
+      "Persist non-Agent-created, scope/version/expiry/action-bound standing authorization under ignored private runtime",
+      "Derive each per-run manifest deterministically; bind its digest, item set, policy version and fresh ownership graph to a separately validated authorization receipt",
+      "Refuse self-approval without an accepted and independently validated standing-rule authority source",
+      "Require current preflight, handle-bound atomic same-volume move, per-item receipt and restore proof before enabling"
+    ],
+    "blocked_without_approval": "REPORT_CANDIDATES_ONLY_DO_NOT_MOVE"
+  },
+  "recovery": {
+    "quarantine": "PRIVATE_FILESTEWARD_MANAGED_QUARANTINE_NOT_DOWNLOADS",
+    "restore": "EXACT_RECEIPT_AND_SOURCE_IDENTITY_WITH_COLLISION_REFUSAL",
+    "retention": "NO_AUTO_PURGE",
+    "drift": "SKIP_STALE_ITEM_REPORT_FAILURE",
+    "partial": "PARTIAL_NONZERO_EXIT_WITH_EXACT_SUCCEEDED_FAILED_SKIPPED_COUNTS"
+  },
+  "acceptance_cases": [
+    {
+      "id": "D01",
+      "fixture": "report.zip + report (1).zip identical, two stable scans >=60min apart, no ownership edges, standing policy approved",
+      "expect": "QUARANTINE_ONE_KEEP_BASE"
+    },
+    {
+      "id": "D02",
+      "fixture": "setup.exe + setup (1).exe identical",
+      "expect": "SKIP_INSTALLER"
+    },
+    {
+      "id": "D03",
+      "fixture": "client.pdf + client (1).pdf identical",
+      "expect": "SKIP_BUSINESS_DOCUMENT"
+    },
+    {
+      "id": "D04",
+      "fixture": "tool-v1.zip + tool-v2.zip differing hashes",
+      "expect": "SKIP_NOT_EXACT"
+    },
+    {
+      "id": "D05",
+      "fixture": "archive (1).zip only, no unsuffixed original",
+      "expect": "SKIP_NO_CANONICAL"
+    },
+    {
+      "id": "D06",
+      "fixture": "archive.zip + archive (1).zip, content changes before action",
+      "expect": "SKIP_STALE"
+    },
+    {
+      "id": "D07",
+      "fixture": "archive.zip + archive (1).zip, task/service or repo depends on candidate",
+      "expect": "SKIP_PROTECTED"
+    },
+    {
+      "id": "D08",
+      "fixture": "any source under symlink/junction/cloud placeholder",
+      "expect": "SKIP_REPARSE_OR_UNKNOWN"
+    },
+    {
+      "id": "D09",
+      "fixture": "no standing policy/expired/modified policy",
+      "expect": "REPORT_ONLY_ZERO_MOVES"
+    },
+    {
+      "id": "D10",
+      "fixture": "second concurrent hourly process",
+      "expect": "SKIP_NONZERO_NO_MUTATION"
+    },
+    {
+      "id": "D11",
+      "fixture": "quarantine destination collision or another volume",
+      "expect": "SKIP_NO_OVERWRITE"
+    },
+    {
+      "id": "D12",
+      "fixture": "restoring already occupied original path",
+      "expect": "REFUSE_RESTORE_COLLISION"
+    }
+  ],
+  "proof_gates": [
+    "JSON contract schema and fixtures machine-validated",
+    "Focused and full regression suites green without deleting protection tests",
+    "PowerShell parser and scheduler native task XML verified on target Windows host",
+    "Read-only baseline run and two real hourly runs observed with private receipts",
+    "Standing-policy authorization explicitly chosen by operator before any auto-quarantine run",
+    "Zero false-positive actions in fixture suite, drift/overlap and missing-authority cases fail closed",
+    "One real reversible quarantine and restore verified without private data entering Git",
+    "Merge only exact reviewed PR head with no material unresolved review threads; live proof separately after merge"
+  ],
+  "terminal_status": "NOT_COMPLETE_UNTIL_HOURLY_REAL_AUTOMATED_REVIEW_AND_AUTHORIZED_QUARANTINE_OBSERVED"
+}
