@@ -1,0 +1,175 @@
+{
+  "schema_version": "filesteward.steward-adapter-map/v1",
+  "owner": "FileSteward tickets -> registered adapter placement. TokenCorridor owns host execution adapter protocol.",
+  "default": "BLOCKED_ADAPTER",
+  "privacy_default": "PRIVATE_RUNTIME_ONLY",
+  "ticket_to_lane": {
+    "ADAPTER_SCAN_COMPLETENESS": {
+      "consumer": [
+        "INGEST_METADATA"
+      ],
+      "action": "REOBSERVE_APPROVED_ROOT",
+      "inputs": [
+        "exact_source_scan",
+        "item_id",
+        "scan_completeness_reason"
+      ],
+      "returns": [
+        "complete_or_incomplete",
+        "scan_error",
+        "receipt"
+      ],
+      "effect": "READ_ONLY"
+    },
+    "ADAPTER_OWNERSHIP_AUDIT": {
+      "consumer": [
+        "CONVERGE_CROSS_DOMAIN"
+      ],
+      "action": "VALIDATE_GRAPH_EVIDENCE_AND_PROTECTION",
+      "inputs": [
+        "item_id",
+        "graph_revision"
+      ],
+      "returns": [
+        "most_protective_disposition",
+        "graph_revision",
+        "receipt"
+      ],
+      "effect": "READ_ONLY"
+    },
+    "ADAPTER_APP_REPO_ATTRIBUTION": {
+      "consumer": [
+        "RESOLVE_APPLICATION_EXPERIENCE",
+        "RESOLVE_REPOSITORY_DEPENDENCY",
+        "CONVERGE_CROSS_DOMAIN"
+      ],
+      "action": "PARALLEL_READONLY_APP_AND_GIT_FACTS_THEN_REDUCE",
+      "inputs": [
+        "item_id",
+        "known_prior_sources"
+      ],
+      "returns": [
+        "app_evidence_revision",
+        "repo_evidence_revision",
+        "graph_revision",
+        "receipt"
+      ],
+      "effect": "READ_ONLY",
+      "required_join": [
+        "RESOLVE_APPLICATION_EXPERIENCE",
+        "RESOLVE_REPOSITORY_DEPENDENCY"
+      ]
+    },
+    "ADAPTER_ACTIVITY_EVIDENCE": {
+      "consumer": [
+        "RESOLVE_ACTIVITY_AND_DORMANCY"
+      ],
+      "action": "COLLECT_REFERENCE_EVIDENCE",
+      "inputs": [
+        "item_id",
+        "observation_window"
+      ],
+      "returns": [
+        "current_reference_or_unknown",
+        "evidence_completeness",
+        "receipt"
+      ],
+      "effect": "READ_ONLY"
+    },
+    "AGENT_PERSONAL_VALUE_CONTEXT": {
+      "consumer": [
+        "REVIEW_MEMORABILIA"
+      ],
+      "action": "FORMULATE_VALUE_QUESTION_FROM_AUTHORIZED_CONTEXT",
+      "inputs": [
+        "item_id",
+        "permitted_metadata"
+      ],
+      "returns": [
+        "advisory_context",
+        "operator_value_required",
+        "receipt"
+      ],
+      "effect": "ADVISORY",
+      "requires_operator_model_consent": true
+    },
+    "AGENT_DORMANCY_ARCHIVE_INTENT": {
+      "consumer": [
+        "RESOLVE_ARCHIVE_INTENT"
+      ],
+      "action": "FORMULATE_ARCHIVE_KEEP_CHOICE_AFTER_TECH_PROOF",
+      "inputs": [
+        "item_id",
+        "activity_evidence",
+        "ownership_graph_revision"
+      ],
+      "returns": [
+        "operator_choice_required",
+        "receipt"
+      ],
+      "effect": "ADVISORY",
+      "requires_operator_model_consent": true
+    },
+    "AGENT_RULE_GAP_REVIEW": {
+      "consumer": [
+        "CLASSIFICATION_GAP_MINER"
+      ],
+      "action": "PROPOSE_ONE_SYNTHETIC_RULE_EVAL",
+      "inputs": [
+        "aggregate_unknown_signature",
+        "redacted_evidence"
+      ],
+      "returns": [
+        "proposed_contract_delta",
+        "synthetic_fixture",
+        "review_needed"
+      ],
+      "effect": "PROPOSE_ONLY"
+    }
+  },
+  "required_envelope": [
+    "schema_version",
+    "work_id",
+    "source_scan",
+    "item_id",
+    "lane",
+    "reason",
+    "state",
+    "owner",
+    "capability_required",
+    "authority",
+    "result_required",
+    "source_mutation_authorized",
+    "agent_dispatched",
+    "retry_count"
+  ],
+  "adapter_handshake": [
+    "registered_adapter_id",
+    "host_environment",
+    "capabilities",
+    "allowed_repositories",
+    "allowed_data_classes",
+    "max_model_calls",
+    "allowed_effects",
+    "claim_lease_seconds"
+  ],
+  "protocol": [
+    "Adapter selection occurs ONLY from ticket_to_lane mapping; arbitrary lane values are BLOCKED_ADAPTER.",
+    "Ticket admission validates complete envelope, membership in policy catalog, registered actual host capability, allowed data class, explicit model consent, and current safety contracts.",
+    "Local worker acquires bounded work_id lease, submits immutable receipt and sanitized evidence; presence of ticket alone does not launch model or grant authority.",
+    "Independent verifier rebuilds current technical evidence and provenance; invalid or stale receipts reopen exact unresolved facet, not promote action.",
+    "Attempted repo code repair must use owned isolated branch, canonical PR tests/reviews and separate merge authority.",
+    "Execution of FileSteward actions requires existing exact-manifest approval outside this adapter protocol.",
+    "No path, filename or personal content is forwarded to external tools without user-authorized privacy policy.",
+    "Cross-domain most-protective edge wins; no missing or negative source can downgrade an active protection edge."
+  ],
+  "failure_routes": {
+    "NO_REGISTERED_ADAPTER": "BLOCKED_ADAPTER",
+    "NO_MODEL_CONSENT": "BLOCKED_PRIVATE_BOUNDARY",
+    "NO_HOST_PERMISSION": "BLOCKED_AUTHORITY",
+    "EVIDENCE_INCOMPLETE": "BLOCKED_MISSING_EVIDENCE",
+    "CLAIM_EXPIRED": "STALE_EVIDENCE",
+    "RECEIPT_UNVERIFIED": "REOPENED_ON_DRIFT",
+    "SHARED_MUTATION_OWNER_COLLISION": "BLOCKED_RUNTIME"
+  }
+}
