@@ -1,7 +1,7 @@
 {
   "protocol_version": "filesteward.execution-handoff-packet/v1",
   "sprint_id": "FILESTEWARD-SAFE-CAPACITY-20261007",
-  "lane_id": "K4-INTEGRATION",
+  "lane_id": "POST-K4-SUCCESSOR",
   "role": "local execution coordinator",
   "canonical_plan_ref": "plans/active/FILESTEWARD-SAFE-CAPACITY-RECLAMATION-P04-P82-2026-10-07.plan.json",
   "contract_refs": [
@@ -15,92 +15,107 @@
     "harness/contracts/dependency-aware-judgment-closure.v1.json"
   ],
   "provider_base_sha_at_capture": "df0e887aff9abddced3b6e6fe08d051d346d04be",
-  "provider_head_sha_at_capture": "df0e887aff9abddced3b6e6fe08d051d346d04be",
-  "local_head_sha_at_capture_or_unknown": "df0e887aff9abddced3b6e6fe08d051d346d04be",
+  "provider_head_sha_at_capture": "0f046085b5226d372a9ee39926ba330a4b8ef7a7",
+  "local_head_sha_at_capture_or_unknown": "0f046085b5226d372a9ee39926ba330a4b8ef7a7",
   "completed_facts": [
     {
-      "fact": "PR #33 / J0 Package Cache containment is on main; local full suite passed before K4.",
+      "fact": "Dependency-aware Wave 1 foundation (J0/J2/J3/J4) and J6 selective lineage already on main before this session; not reimplemented.",
       "evidence": [
-        "main@df0e887aff9abddced3b6e6fe08d051d346d04be",
-        "tests/test_regenerable_cache_roots.py"
-      ],
-      "proof_state": "LOCALLY_VALIDATED"
-    },
-    {
-      "fact": "J2/J3/J4/J6 and K1/K2/K3/K5 already merged; not reimplemented.",
-      "evidence": [
-        "https://github.com/EndeavorEverlasting/FileSteward/pull/34",
-        "https://github.com/EndeavorEverlasting/FileSteward/pull/35",
-        "https://github.com/EndeavorEverlasting/FileSteward/pull/37",
-        "https://github.com/EndeavorEverlasting/FileSteward/pull/53",
-        "https://github.com/EndeavorEverlasting/FileSteward/pull/39",
-        "https://github.com/EndeavorEverlasting/FileSteward/pull/40"
+        "PR #33",
+        "PR #34",
+        "PR #35",
+        "PR #37",
+        "PR #53"
       ],
       "proof_state": "MERGED"
     },
     {
-      "fact": "J1 Wispr read-only diagnosis: install currently healthy (Update.exe present, processes running); Squirrel log shows finished install; no repair mutation performed.",
+      "fact": "K1/K2/K3/K5 ownership admission + healthy-capacity strategy already on main; J5 freshness is deletion/ownership.py revalidate_ownership.",
+      "evidence": [
+        "PR #39",
+        "PR #40",
+        "src/filesteward/deletion/ownership.py"
+      ],
+      "proof_state": "MERGED"
+    },
+    {
+      "fact": "K4 reclaim receipt postcondition merged via PR #61.",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/61",
+        "main@0f046085b5226d372a9ee39926ba330a4b8ef7a7",
+        "src/filesteward/deletion/postcondition.py",
+        "harness/evals/safe-capacity-k4-proof-2026-10-19.json"
+      ],
+      "proof_state": "MERGED"
+    },
+    {
+      "fact": "J0 local Package Cache containment re-proved on current main; focused regenerable + postcondition tests pass.",
+      "evidence": [
+        "tests/test_regenerable_cache_roots.py",
+        "tests/test_reclaim_postcondition.py"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "J1 Wispr read-only diagnosis: currently healthy (Update.exe + running processes); Squirrel log shows finished install; no repair mutation; historical causal link not independently reproduced.",
       "evidence": [
         "var/runs/wispr-recovery-*/diagnostic.json"
       ],
       "proof_state": "LIVE_READONLY"
     },
     {
-      "fact": "K4 receipt postcondition binds semantic executor, action/owner/graph revisions, capacity, and VERIFIED|PARTIAL|UNVERIFIED.",
+      "fact": "Safe live read-only attribution specimen: WisprFlow classified APP_ACTIVE_REQUIRED / Required by app / PROTECTED.",
       "evidence": [
-        "src/filesteward/deletion/postcondition.py",
-        "harness/evals/safe-capacity-k4-proof-2026-10-19.json"
+        "filesteward.ownership.windows_app + reducer on %LOCALAPPDATA%\\WisprFlow"
       ],
-      "proof_state": "LOCALLY_VALIDATED"
+      "proof_state": "LIVE_READONLY"
     }
   ],
   "remaining_work": [
     {
-      "work_id": "CONVERGE-K4",
-      "action": "Merge feature/safe-capacity-k4-receipt-postcondition-20261019 after RG5/RG6; verify main contains K4 receipt fields.",
-      "depends_on": [
-        "K4"
-      ],
-      "acceptance": "Exact candidate on main; receipt postcondition tests pass on main SHA."
-    },
-    {
       "work_id": "K6",
-      "action": "Selectively reconcile remaining PR #29 lineage against current ownership/deletion/scene contracts only where J6 PR #53 left gaps; do not whole-merge PR #29.",
+      "action": "Audit open PR #29 against main after J6 PR #53; close or selectively port only remaining allowlisted gaps; never whole-merge PR #29. Run RG8 only if visualization mutates.",
       "depends_on": [
         "K4"
       ],
-      "acceptance": "No second state machine; retained scene regressions green; RG8 live UX when mutating visualization."
+      "acceptance": "No second state machine; retained scene regressions green; PR #29 disposition recorded."
     },
     {
       "work_id": "K7",
-      "action": "Complete production ownership adapter + bounded read-only attribution before any live canary; requires explicit operator scope.",
+      "action": "Complete production Windows ownership evidence resolver behind existing OwnershipResolver contract; then bounded read-only attribution/canary only with explicit operator scope.",
       "depends_on": [
         "K4",
         "bounded operator scope"
       ],
-      "acceptance": "Owner-safe live receipt and measured free-space delta; synthetic proof insufficient."
+      "acceptance": "Owner-safe live receipt and measured free-space delta; synthetic proof insufficient for capacity-verified closeout."
+    },
+    {
+      "work_id": "J7_CORPUS",
+      "action": "Run harness/evals/storage-reclamation-p82-corpus.v1.json adversarial oracle + retained judgment-scene regressions on refreshed main.",
+      "depends_on": [
+        "K4"
+      ],
+      "acceptance": "Zero protected/serviceability false-positive reclaim eligibility; retained scene regressions green."
     }
   ],
   "owned_mutation_surfaces": [
-    "src/filesteward/deletion/postcondition.py",
-    "src/filesteward/deletion/execute.py",
-    "src/filesteward/deletion/__init__.py",
-    "tests/test_reclaim_postcondition.py",
-    "docs/agent/OPERATOR-DELETE-PATH.md",
-    "harness/evals/safe-capacity-k4-proof-2026-10-19.json",
-    "docs/handoff current packet"
+    "K6 selective PR29 residual surfaces only when gap-proven",
+    "K7 production ownership adapter under src/filesteward/ownership",
+    "docs/handoff current packet",
+    "harness/evals proof receipts"
   ],
   "forbidden_surfaces": [
     "raw Package Cache / Installer deletion",
     "unscoped live workstation deletion",
     "whole-branch PR #29 merge",
-    "visualization mutation without RG7/RG8"
+    "visualization mutation without RG7/RG8",
+    "default branch direct writes"
   ],
   "dependencies": [
-    "K3/K5 main merge via PR #40"
+    "main@0f046085b5226d372a9ee39926ba330a4b8ef7a7 contains K4"
   ],
   "external_prerequisites": [
-    "Explicit bounded workstation observation/mutation scope before K7 live proof",
+    "Explicit bounded workstation observation/mutation scope before K7 live canary",
     "Entire enable/login optional for repo activity enrichment only"
   ],
   "proof_receipts": [
@@ -108,23 +123,23 @@
     "harness/evals/safe-capacity-k3-k5-proof-2026-10-07.json",
     "harness/evals/safe-capacity-k4-proof-2026-10-19.json"
   ],
-  "proof_ceiling": "Synthetic ownership/action/delete safety + K4 receipt postcondition + Wispr read-only diagnosis. No live destructive canary, no RG8 live UX re-run this session, Entire not enabled.",
+  "proof_ceiling": "Synthetic delete/ownership safety + K4 receipt postcondition merged + Wispr read-only health/attribution. No live destructive canary. RG8 live UX not re-run this session. Entire not enabled. CodeRabbit re-review on final K4 head was still PENDING at merge; material threads were repaired and resolved against local proof.",
   "unresolved_review_threads": [],
   "private_evidence_refs": [
     "var/runs/wispr-recovery-*/"
   ],
   "blocked_judgment_gap": "NONE",
   "autonomy_gap": {
-    "missing_adapter": "Entire not set up (enabled:false); AgentSwitchboard retired; parallel dispatch degraded to serial+native Task",
+    "missing_adapter": "Entire not set up (enabled:false); AgentSwitchboard retired per AGENTS.md; parallel dispatch DEGRADED to serial + native Task",
     "evidence": [
       "entire status --json => not set up",
       "AGENTS.md retired AgentSwitchboard"
     ],
-    "repair_route": "entire enable + agent add when operator wants session tracking; continue serial for independent lanes"
+    "repair_route": "entire enable + agent add when operator wants session tracking; continue serial for independent lanes; production OwnershipResolver completeness is K7"
   },
   "exact_next_action": {
-    "phase": "CONVERGE",
-    "action": "Push/open/merge K4 PR; refresh main; then partition K6 remaining PR29 gap audit vs K7 adapter work without live mutation until scope granted.",
+    "phase": "DISPATCH",
+    "action": "On refreshed main@0f04608, run storage-reclamation P82 corpus + judgment-scene regressions (J7_CORPUS), then open a focused K6 audit of open PR #29 vs main without whole-merge; do not start live canary without operator scope.",
     "owner": "local execution coordinator",
     "can_execute_without_operator": true
   },
