@@ -804,10 +804,13 @@ def _write_receipt(
         return _canonical_digest(fallback)
 
     item_rows = [item.to_dict() for item in result.items]
-    residuals = [
-        item.path for item in result.items if item.path and Path(item.path).exists()
-    ]
     reclaim_dict = None if result.reclaim is None else result.reclaim.to_dict()
+    if reclaim_dict is not None:
+        residuals = [str(p) for p in reclaim_dict.get("residual_paths") or []]
+    else:
+        residuals = [
+            item.path for item in result.items if item.path and Path(item.path).exists()
+        ]
     action_rows = [row.get("action") or {} for row in item_rows]
     postcondition = build_reclaim_postcondition(
         item_actions=action_rows,

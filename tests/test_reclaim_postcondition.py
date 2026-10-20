@@ -99,6 +99,68 @@ def test_postcondition_unverified_without_ownership_binding() -> None:
     assert post["state"] == PostconditionState.UNVERIFIED
 
 
+def test_postcondition_partial_on_no_reclaim_without_capacity_gain() -> None:
+    actions = [
+        item_action_record(
+            item_id="i1",
+            path="C:/tmp/a",
+            status="SUCCEEDED",
+            reason_class="OK",
+            manifest_ownership={
+                "action_kind": "RAW_DELETE_REGENERABLE_ARTIFACT",
+                "owner_ids": ["owner-a"],
+                "graph_revision_id": "g1",
+                "evidence_digest": "e1",
+            },
+            immediate_ownership={
+                "action_kind": "RAW_DELETE_REGENERABLE_ARTIFACT",
+                "owner_ids": ["owner-a"],
+                "graph_revision_id": "g1",
+                "evidence_digest": "e1",
+            },
+        )
+    ]
+    post = build_reclaim_postcondition(
+        item_actions=actions,
+        reclaim={"state": ReclaimState.NO_RECLAIM},
+        free_bytes_before=1000,
+        free_bytes_after=1000,
+        residual_paths=(),
+    )
+    assert post["state"] == PostconditionState.PARTIAL
+
+
+def test_postcondition_unverified_on_unknown_reclaim() -> None:
+    actions = [
+        item_action_record(
+            item_id="i1",
+            path="C:/tmp/a",
+            status="SUCCEEDED",
+            reason_class="OK",
+            manifest_ownership={
+                "action_kind": "RAW_DELETE_REGENERABLE_ARTIFACT",
+                "owner_ids": ["owner-a"],
+                "graph_revision_id": "g1",
+                "evidence_digest": "e1",
+            },
+            immediate_ownership={
+                "action_kind": "RAW_DELETE_REGENERABLE_ARTIFACT",
+                "owner_ids": ["owner-a"],
+                "graph_revision_id": "g1",
+                "evidence_digest": "e1",
+            },
+        )
+    ]
+    post = build_reclaim_postcondition(
+        item_actions=actions,
+        reclaim={"state": ReclaimState.UNKNOWN},
+        free_bytes_before=None,
+        free_bytes_after=None,
+        residual_paths=(),
+    )
+    assert post["state"] == PostconditionState.UNVERIFIED
+
+
 def test_postcondition_partial_on_mixed_outcomes() -> None:
     ok = item_action_record(
         item_id="ok",
@@ -158,11 +220,9 @@ def test_execute_receipt_includes_k4_postcondition(tmp_path: Path) -> None:
     assert receipt["semantic_executor"] == SEMANTIC_EXECUTOR_ID
     assert "postcondition" in receipt
     post = receipt["postcondition"]
-    assert post["state"] in {
-        PostconditionState.VERIFIED,
-        PostconditionState.PARTIAL,
-        PostconditionState.UNVERIFIED,
-    }
+    assert post["ownership_bindings_complete"] is True
+    assert post["residual_paths"] == []
+    assert post["succeeded_item_count"] == 1
     assert post["semantic_executor"] == SEMANTIC_EXECUTOR_ID
     assert receipt["items"]
     action = receipt["items"][0]["action"]
@@ -171,10 +231,21 @@ def test_execute_receipt_includes_k4_postcondition(tmp_path: Path) -> None:
     assert action["graph_revision_after"]
     assert action["owner_ids"]
     # Bytes alone must not be the only proof field.
-    assert "capacity" in post
-    assert "owner_ids" in post
-    assert "graph_revision_before" in post
-    assert "graph_revision_after" in post
+    assert post["owner_ids"] == sorted(action["owner_ids"])
+    assert post["graph_revision_before"] == [action["graph_revision_before"]]
+    assert post["graph_revision_after"] == [action["graph_revision_after"]]
+    assert set(post["capacity"]) == {
+        "free_bytes_before",
+        "free_bytes_after",
+        "free_bytes_delta",
+    }
+    # Real disk_usage can hide free-space gain; map reclaim evidence to postcondition honestly.
+    if post["reclaim_state"] == ReclaimState.VERIFIED_RECLAIM:
+        assert post["state"] == PostconditionState.VERIFIED
+    elif post["reclaim_state"] == ReclaimState.NO_RECLAIM:
+        assert post["state"] == PostconditionState.PARTIAL
+    else:
+        assert post["state"] == PostconditionState.UNVERIFIED
     # Ensure receipt JSON remains loadable/stable.
     raw = json.loads(result.receipt_path.read_text(encoding="utf-8"))
     assert raw["postcondition"]["state"] == post["state"]

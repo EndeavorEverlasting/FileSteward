@@ -122,9 +122,9 @@ def build_reclaim_postcondition(
     elif reclaim_state == ReclaimState.VERIFIED_RECLAIM:
         state = PostconditionState.VERIFIED
         reason = "targets absent, ownership revisions bound, free-space delta supports reclaim"
-    elif reclaim_state == ReclaimState.NO_RECLAIM and not residuals:
-        # Concurrent disk activity can hide free-space gain; targets still gone with bound ownership.
-        state = PostconditionState.VERIFIED
+    elif reclaim_state == ReclaimState.NO_RECLAIM:
+        # Targets gone with bound ownership, but capacity gain was not observed.
+        state = PostconditionState.PARTIAL
         reason = "targets absent with bound ownership; free-space delta did not increase (NO_RECLAIM)"
     elif reclaim_state == ReclaimState.PARTIAL_RECLAIM:
         state = PostconditionState.PARTIAL
