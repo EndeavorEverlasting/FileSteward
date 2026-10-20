@@ -72,16 +72,15 @@ def execute_readonly_cycle(
     with inventory.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
         rows = []
-        for index, row in enumerate(reader):
-            if index < 250:
+        total_rows = 0
+        for row in reader:
+            total_rows += 1
+            if len(rows) < 250:
                 rows.append(row)
-            elif index == 250:
-                rows.append(row)  # sentinel: build_cycle reports incomplete budget
-            else:
-                break
     extra = _load_private_evidence(observations, scan_name=scan_run.name)
     report = build_cycle(rows, extra, scan_id=scan_run.name,
-                         now=now or datetime.now(timezone.utc))
+                         now=now or datetime.now(timezone.utc),
+                         unobserved_input_count=total_rows - len(rows))
     if report["coverage"]["coverage_state"] != "OBSERVED_INPUT":
         # Persist evidence of the budget limit but never indicate scan completion.
         report["coverage"]["completion_state"] = "INCOMPLETE_NO_CLEANUP_AUTHORITY"
