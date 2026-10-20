@@ -19,6 +19,11 @@ from typing import Any, Callable, Mapping, Optional, Sequence, Union
 from filesteward.ownership.actions import OwnershipResolver, unresolved_ownership
 from filesteward.deletion.ownership import revalidate_ownership
 from filesteward.deletion.native import AtomicDeleteUnavailable, bound_delete_target
+from filesteward.deletion.postcondition import (
+    SEMANTIC_EXECUTOR_ID,
+    build_reclaim_postcondition,
+    item_action_record,
+)
 from filesteward.ownership.capacity import CapacityReader, read_capacity, capacity_stop_reason
 
 from filesteward.deletion.approval import (
@@ -66,8 +71,17 @@ class ItemExecutionResult:
     reason_class: str
     detail: str
     ownership: Optional[Mapping[str, Any]] = None
+    ownership_before: Optional[Mapping[str, Any]] = None
 
     def to_dict(self) -> dict[str, Any]:
+        action = item_action_record(
+            item_id=self.item_id,
+            path=self.path,
+            status=self.status,
+            reason_class=self.reason_class,
+            manifest_ownership=self.ownership_before,
+            immediate_ownership=self.ownership,
+        )
         return {
             "item_id": self.item_id,
             "path": self.path,
@@ -75,6 +89,7 @@ class ItemExecutionResult:
             "reason_class": self.reason_class,
             "detail": self.detail,
             "ownership": None if self.ownership is None else dict(self.ownership),
+            "action": action,
         }
 
 
@@ -677,6 +692,7 @@ def execute_permanent_delete(
                 if windows.is_reparse_point(st) or path.is_symlink():
                     raise OSError("reparse detected at unlink time")
                 _delete_directory_if_empty(path, item, dependency_check=dependency_check)
+            before_ownership = item.get("ownership")
             items_out.append(
                 ItemExecutionResult(
                     item_id=item_id,
@@ -685,6 +701,11 @@ def execute_permanent_delete(
                     reason_class="OK",
                     detail="permanently deleted",
                     ownership=immediate_ownership,
+                    ownership_before=(
+                        dict(before_ownership)
+                        if isinstance(before_ownership, Mapping)
+                        else None
+                    ),
                 )
             )
         except CapacityHealthy as exc:
@@ -782,6 +803,19 @@ def _write_receipt(
             return sha256_file(path)
         return _canonical_digest(fallback)
 
+    item_rows = [item.to_dict() for item in result.items]
+    residuals = [
+        item.path for item in result.items if item.path and Path(item.path).exists()
+    ]
+    reclaim_dict = None if result.reclaim is None else result.reclaim.to_dict()
+    action_rows = [row.get("action") or {} for row in item_rows]
+    postcondition = build_reclaim_postcondition(
+        item_actions=action_rows,
+        reclaim=reclaim_dict,
+        free_bytes_before=result.free_bytes_before,
+        free_bytes_after=result.free_bytes_after,
+        residual_paths=residuals,
+    )
     receipt = {
         "schema_version": DELETE_RECEIPT_SCHEMA,
         "mode": DELETE_ACTION,
@@ -794,11 +828,11 @@ def _write_receipt(
         "preflight_sha256": _digest(preflight_path, preflight),
         "free_bytes_before": result.free_bytes_before,
         "free_bytes_after": result.free_bytes_after,
-        "items": [item.to_dict() for item in result.items],
-        "residuals": [
-            item.path for item in result.items if item.path and Path(item.path).exists()
-        ],
-        "reclaim": None if result.reclaim is None else result.reclaim.to_dict(),
+        "semantic_executor": SEMANTIC_EXECUTOR_ID,
+        "items": item_rows,
+        "residuals": residuals,
+        "reclaim": reclaim_dict,
+        "postcondition": postcondition,
         "approval_errors": list(result.approval_errors),
         "preflight_overall": result.preflight_overall,
     }

@@ -35,6 +35,11 @@ from filesteward.deletion.preflight import (
     run_preflight,
     write_preflight_receipt,
 )
+from filesteward.deletion.postcondition import (
+    PostconditionState,
+    SEMANTIC_EXECUTOR_ID,
+    build_reclaim_postcondition,
+)
 from filesteward.deletion.receipt import (
     DELETE_RECEIPT_FILENAME,
     load_delete_receipt,
@@ -68,10 +73,13 @@ __all__ = [
     "ExecutionResult",
     "PREFLIGHT_SCHEMA_VERSION",
     "PreflightResult",
+    "PostconditionState",
     "ReclaimState",
     "ReclaimVerification",
+    "SEMANTIC_EXECUTOR_ID",
     "build_delete_approval",
     "build_delete_manifest",
+    "build_reclaim_postcondition",
     "emit_delete_manifest",
     "execute_permanent_delete",
     "load_delete_approval",

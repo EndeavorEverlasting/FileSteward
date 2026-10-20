@@ -16,6 +16,7 @@ A deletion iteration is successful only when all of the following are true:
 4. C: free bytes were measured before and after the execution.
 5. The run reports the strongest supported reclaim state, with `VERIFIED_RECLAIM` only when the observed free-space evidence supports it.
 6. The final report includes the exact run ID, receipt path, succeeded count, failed/skipped count, projected reclaim, observed free-space delta, and any residual items.
+7. The execution receipt includes a K4 postcondition envelope: semantic executor id, action kind(s), owner identity, ownership graph revision before/after for succeeded items, capacity before/after, and postcondition state `VERIFIED` / `PARTIAL` / `UNVERIFIED`. Free-space delta alone is never sufficient proof that the reclaim was owner-correct.
 
 `implemented`, `tests green`, `PR open`, `PR merged`, `preflight PASS`, `approval artifact written`, and `ready to delete` are all **intermediate states**. An agent must not stop at one of them while the authorized deletion outcome remains executable.
 
