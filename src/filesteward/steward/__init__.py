@@ -200,14 +200,15 @@ def build_cycle(
     now: datetime,
     max_items: int = 250,
     max_tickets: int = 40,
+    unobserved_input_count: int = 0,
 ) -> dict[str, Any]:
-    if not scan_id or "/" in scan_id or "\\" in scan_id or not max_items > 0 or not max_tickets > 0:
+    if not scan_id or "/" in scan_id or "\\" in scan_id or not max_items > 0 or not max_tickets > 0 or unobserved_input_count < 0:
         raise ValueError("invalid bounded cycle configuration")
     if len(rows) > max_items:
         # Deliberately never claim a partial scan as complete.
-        limit_exceeded = len(rows) - max_items
+        limit_exceeded = len(rows) - max_items + unobserved_input_count
     else:
-        limit_exceeded = 0
+        limit_exceeded = unobserved_input_count
     classifications: list[dict[str, Any]] = []
     tickets: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
