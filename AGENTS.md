@@ -11,7 +11,7 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 For any request about automated periodic file classification, usage, memorabilia, app experience, dormancy, repository issue/PR upkeep or an agent-driven Downloads cleanup, **read first**:
 
 - `harness/contracts/steward-program.v1.json`: typed facet rules, read-only default, work/agent limits.
-- `harness/contracts/steward-routing.v1.json` and `harness/contracts/steward-adapter-map.v1.json`: allowed specialist lanes, typed ticket mapping, privacy and evidence boundaries.
+- `harness/contracts/steward-routing.v1.json`, `harness/contracts/steward-adapter-map.v1.json`, and `harness/contracts/steward-worker-protocol.v1.json`: allowed specialist lanes, typed mapping, claim/lease/receipt API, privacy and evidence boundaries.
 - `plans/active/FILESTEWARD-HOURLY-AGENT-STEWARD-P141-P82-P04-20261020.md`: selected product strategy, exact G0-G5 work, tests, blockers, and terminal proof.
 
 Implementation: `python -m filesteward.steward --scan-run <canonical validated var/runs ID>`. Host Task Scheduler wrapper: `scripts/windows/steward-hourly.ps1`. Tests: `tests/test_steward_cycle.py`. **Do not generate a fresh scheduler architecture or treat these tickets as authority to launch agents.** The job currently emits private `BLOCKED_ADAPTER` work orders, not actual agent executions. Complete and prove registered host dispatch adapters under TokenCorridor's harness ownership, with no private path leakage.
