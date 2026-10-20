@@ -145,11 +145,23 @@ def classify_item(
         floor = "PROTECTED"
     if raw_disposition == "UNKNOWN" and floor != "PROTECTED":
         floor = "UNKNOWN"
+    # FileSteward's upstream reclaim nomination is only provisional evidence.
+    # Incomplete current app/activity provenance must downgrade it. Once those
+    # technical facets are complete, unresolved personal value still requires
+    # HUMAN_REVIEW; neither condition authorizes an action.
+    if floor == "RECLAIM_PROVEN":
+        if app == "OWNER_UNRESOLVED" or recency in ("ACTIVITY_UNRESOLVED", "LAST_MODIFIED_OLD"):
+            floor = "UNKNOWN"
+        elif personal in ("VALUE_UNRESOLVED", "POTENTIAL_MEMORABILIA"):
+            floor = "HUMAN_REVIEW"
     reasons: list[str] = []
     lanes: list[str] = []
     if unsafe_shape:
         lanes.append("ADAPTER_SCAN_COMPLETENESS")
         reasons.append("incomplete, partial, or redirected item; no traversal/actuation")
+    if raw_disposition == "PROTECTED" or app in ("APP_REQUIRED", "APP_BROKEN_SERVICEABILITY") or recency == "ACTIVE_PROVEN":
+        lanes.append("ADAPTER_OWNERSHIP_AUDIT")
+        reasons.append("refresh most-protective app/repository/runtime ownership evidence")
     if app == "OWNER_UNRESOLVED":
         lanes.append("ADAPTER_APP_REPO_ATTRIBUTION")
         reasons.append("missing current complete application/repository ownership attribution")
