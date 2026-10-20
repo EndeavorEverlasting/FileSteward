@@ -17,6 +17,7 @@ from typing import Any
 from filesteward.manifest.artifacts import validate_run
 from filesteward.policy.paths import (
     prove_run_dir_under_runtime,
+    is_symlink_or_reparse,
     resolve_run_dir_argument,
     runtime_root,
 )
@@ -38,7 +39,11 @@ def _write(path: Path, value: Any) -> None:
 def _load_private_evidence(path: Path | None, *, scan_name: str) -> dict[str, Any]:
     if path is None:
         return {}
-    base = (runtime_root() / "steward").resolve()
+    private_base = runtime_root() / "steward"
+    for component in (runtime_root(), private_base):
+        if component.exists() and is_symlink_or_reparse(component):
+            raise ValueError("linked private runtime directory refused")
+    base = private_base.resolve()
     resolved = path.resolve(strict=True)
     if base not in resolved.parents or not resolved.is_file():
         raise ValueError("observation file must be beneath FileSteward private var/steward/")
@@ -63,8 +68,17 @@ def execute_readonly_cycle(
     if errors:
         raise ValueError(f"scan validation failed: {len(errors)} error(s): " + "; ".join(errors[:4]))
     inventory = scan_run / "inventory.csv"
+    # Bounded memory even when Downloads contains an enormous inventory.
     with inventory.open("r", encoding="utf-8", newline="") as handle:
-        rows = list(csv.DictReader(handle))
+        reader = csv.DictReader(handle)
+        rows = []
+        for index, row in enumerate(reader):
+            if index < 250:
+                rows.append(row)
+            elif index == 250:
+                rows.append(row)  # sentinel: build_cycle reports incomplete budget
+            else:
+                break
     extra = _load_private_evidence(observations, scan_name=scan_run.name)
     report = build_cycle(rows, extra, scan_id=scan_run.name,
                          now=now or datetime.now(timezone.utc))
@@ -74,6 +88,9 @@ def execute_readonly_cycle(
     else:
         report["coverage"]["completion_state"] = "READ_ONLY_REVIEW_PRODUCED"
     private_root = runtime_root() / "steward" / "cycles"
+    for component in (runtime_root(), private_root.parent, private_root):
+        if component.exists() and is_symlink_or_reparse(component):
+            raise ValueError("linked runtime output path refused")
     private_root.mkdir(parents=True, exist_ok=True)
     cycle_path = private_root / (scan_run.name + "-" + uuid.uuid4().hex[:12])
     cycle_path.mkdir(mode=0o700, exist_ok=False)
