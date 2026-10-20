@@ -76,20 +76,42 @@ This cycle *issues* work into a private outbox; the baseline does not launch wor
 
 **Parallel graph width:** after G0, G1 and G2 can run independently (Windows physical host vs FileSteward Python/adapter code). Do not claim they actually ran parallel unless two workers started and independent receipts exist. Current remote runtime cannot drive the operator's Windows Task Scheduler; that lane remains an explicit host proof blocker.
 
-**First local commands** (must resolve actual checkout/branch before running; do not overwrite dirty/unpushed work):
+**First local commands, correct PR branch, no mutation of canonical main:**
 
-```powershell
+~~~powershell
 $repo = Join-Path $env:USERPROFILE 'dev\FileSteward'
+$wtRoot = Join-Path $env:USERPROFILE 'dev\worktrees\FileSteward'
+$wt = Join-Path $wtRoot 'steward-hourly-20261020'
 git -C $repo status --short --branch
 git -C $repo fetch origin
 git -C $repo worktree list --porcelain
-python -m pytest -q tests/test_steward_cycle.py tests/test_scan.py tests/test_disposition.py tests/test_ownership_reducer.py
+# When no such worktree or local proof branch exists:
+New-Item -ItemType Directory -Force -Path $wtRoot | Out-Null
+git -C $repo worktree add -b steward/local-proof-20261020 $wt origin/feat/steward-hourly-intelligence-20261020
+Set-Location $wt
+git status --short --branch
+git rev-parse HEAD
+python -m compileall -q src/filesteward/steward
+python -m pytest -q tests/test_steward_cycle.py tests/test_steward_contract.py tests/test_scan.py tests/test_disposition.py tests/test_ownership_reducer.py
+$tok=$null; $errors=$null
+[void][System.Management.Automation.Language.Parser]::ParseFile(
+  (Join-Path $wt 'scripts\windows\steward-hourly.ps1'), [ref]$tok, [ref]$errors)
+if ($errors.Count) { $errors | Out-String | Write-Error; throw 'STEWARD_POWERSHELL_PARSE_FAILED' }
+python -m pytest -q
+~~~
+
+If the proof worktree or branch already exists, inspect exact git status, root, branch, head and unpushed work before reuse. Never reset/force-delete. Use another valid lane name only when the proposed name is proven unused. When any command fails: repair and rerun on isolated lane, preserve failing evidence; do not promote.
+
+Only after focused/full local tests, refreshed PR #64 review threads, and exact-head merge are green: update canonical main by git pull --ff-only (only when clean), then run:
+
+~~~powershell
+Set-Location $repo
 .\scripts\windows\steward-hourly.ps1 -Action Preview
 .\scripts\windows\steward-hourly.ps1 -Action RunOnce
 .\scripts\windows\steward-hourly.ps1 -Action Status
-```
+~~~
 
-Only after parser/tests/preview proof and verifying no conflicting scheduled task: `-Action Register -Authorize`. `-Action Disable -Authorize` and `-Action Unregister -Authorize` are required controls. The user has asked to **design and commit**, not to claim host registration happened.
+Only after parser/tests/preview proof and verifying no competing scheduled task: -Action Register -Authorize. -Action Disable -Authorize and -Action Unregister -Authorize are required controls. This repository work does not claim host registration.
 
 ## 6. P82 experiment admission and run criteria
 
