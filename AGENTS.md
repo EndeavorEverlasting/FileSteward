@@ -6,6 +6,18 @@ AgentSwitchboard is a retired product (donor/verified old callers only). TokenCo
 
 FileSteward handles potentially irreplaceable personal and project data. Local coding agents are execution engines, not judgment authorities.
 
+## Hourly FileSteward agent steward — canonical continuing work
+
+For any request about automated periodic file classification, usage, memorabilia, app experience, dormancy, repository issue/PR upkeep or an agent-driven Downloads cleanup, **read first**:
+
+- `harness/contracts/steward-program.v1.json`: typed facet rules, read-only default, work/agent limits.
+- `harness/contracts/steward-routing.v1.json` and `harness/contracts/steward-adapter-map.v1.json`: allowed specialist lanes, typed ticket mapping, privacy and evidence boundaries.
+- `plans/active/FILESTEWARD-HOURLY-AGENT-STEWARD-P141-P82-P04-20261020.md`: selected product strategy, exact G0-G5 work, tests, blockers, and terminal proof.
+
+Implementation: `python -m filesteward.steward --scan-run <canonical validated var/runs ID>`. Host Task Scheduler wrapper: `scripts/windows/steward-hourly.ps1`. Tests: `tests/test_steward_cycle.py`. **Do not generate a fresh scheduler architecture or treat these tickets as authority to launch agents.** The job currently emits private `BLOCKED_ADAPTER` work orders, not actual agent executions. Complete and prove registered host dispatch adapters under TokenCorridor's harness ownership, with no private path leakage.
+
+**No item is disposable merely because it appears inactive, old, redundant, regenerable-looking, or emotionally unimportant to a model.** Existing source `PROTECTED` and `UNKNOWN` safety floors survive classification; memorabilia and archival value remain operator decisions. The source-run validation and exact-manifest approval process cannot be bypassed by the timer. Before installing this task, inspect any #59-era hourly Downloads task; avoid duplicate registrations. Cross-repo status must be refreshed before merging or mutation.
+
 ## Read before mutation
 
 1. `docs/agent/LOCAL-AGENT-PROTECTIONS.md`
