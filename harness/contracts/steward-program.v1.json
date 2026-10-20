@@ -1,0 +1,299 @@
+{
+  "schema_version": "filesteward.steward-program/v1",
+  "scope": {
+    "owner_repo": "EndeavorEverlasting/FileSteward",
+    "canonical_checkout": "%USERPROFILE%\\dev\\FileSteward",
+    "primary_input": "filesteward validated scan-run inventory.csv",
+    "private_state": "<canonical runtime>/var/steward/",
+    "default_root": "current-user Windows FOLDERID_Downloads",
+    "no_cross_user": true,
+    "no_cloud_upload": true,
+    "source_mutation": false
+  },
+  "scheduler": {
+    "engine": "Windows Task Scheduler (cron equivalent)",
+    "frequency": "HOURLY",
+    "execution_context": "limited current interactive user",
+    "first_run": "five minutes after installation",
+    "single_instance": "SKIP_AND_NONZERO",
+    "disabled_until_opt_in": true,
+    "deep_lanes": {
+      "nightly": "00:00-05:00 local after hourly ingestion; feature gate off",
+      "weekly": "Sunday after hourly ingestion; feature gate off"
+    },
+    "model_invocation_default": "NEVER_FROM_TIMER",
+    "agent_dispatch": "TYPED_LOCAL_OUTBOX_ONLY",
+    "max_items_per_hour": 250,
+    "max_agent_tickets_per_hour": 40,
+    "max_agent_tickets_per_asset": 3,
+    "record_budget_exhaustion": true
+  },
+  "invariants": [
+    "CLASSIFICATION_IS_NOT_APPROVAL",
+    "NO_NEW_RECLAIM_PROVEN_FROM_AGE_NAME_EXTENSION_MODEL_OR_ABSENCE",
+    "MOST_PROTECTIVE_OWNER_EDGE_WINS",
+    "NO_CONTENT_READ_OR_CLOUD_HYDRATION_DEFAULT",
+    "UNKNOWN_OWNER_AND_UNKNOWN_COMPLETENESS_FAIL_CLOSED",
+    "NO_AGENT_FREEFORM_COMMAND_EXECUTION",
+    "NO_SCHEDULER_SELF_APPROVAL",
+    "NO_WORKSTATION_SECRETS_IN_REPOSITORY",
+    "LOCAL_PRIVATE_QUEUE_NOT_REMOTE_PROMPT_PAYLOAD",
+    "UNRESOLVED_WORK_PERSISTS_UNTIL_FACTUAL_EVIDENCE_RECONCILES",
+    "COMPLETED_WORK_REQUIRES_RECEIPT_AND_REVALIDATION"
+  ],
+  "facets": {
+    "app_experience": {
+      "values": [
+        "APP_REQUIRED",
+        "APP_BROKEN_SERVICEABILITY",
+        "APP_REGENERABLE_CACHE",
+        "NOT_ATTRIBUTED_AFTER_COMPLETE_ADAPTERS",
+        "OWNER_UNRESOLVED"
+      ],
+      "signals": [
+        "Windows uninstall/install/repair/update registration",
+        "service/scheduled task/shortcut target",
+        "running modules/package identity",
+        "repository and toolchain dependency"
+      ],
+      "no_shortcut": [
+        "AppData path",
+        "installer age",
+        "no running process"
+      ]
+    },
+    "personal_value": {
+      "values": [
+        "OPERATOR_MARKED_MEMORABILIA",
+        "OPERATOR_MARKED_NOT_MEMORABILIA",
+        "POTENTIAL_MEMORABILIA",
+        "VALUE_UNRESOLVED"
+      ],
+      "signals": [
+        "user-authored keep declaration",
+        "photo/video/audio/creative object cues",
+        "semantic context reviewed by authorized local agent"
+      ],
+      "cannot_infer": [
+        "sentimental value from filename",
+        "absence of family faces",
+        "age of personal media"
+      ]
+    },
+    "activity": {
+      "values": [
+        "ACTIVE_PROVEN",
+        "NO_CURRENT_REFERENCE_OBSERVED",
+        "LAST_MODIFIED_OLD",
+        "ACTIVITY_UNRESOLVED"
+      ],
+      "signals": [
+        "scoped Windows handle/runtime/task/service reference",
+        "Git worktree/session/unpushed state",
+        "last modified timestamp as a change observation only",
+        "stable repeated observation window"
+      ],
+      "never_equate": [
+        "mtime == last access",
+        "last access disabled or stale == unused",
+        "not currently opened == dormant"
+      ]
+    },
+    "lifecycle": {
+      "values": [
+        "USER_DECLARED_ARCHIVE",
+        "ACTIVE_REQUIRED",
+        "DORMANCY_CANDIDATE_REVIEW",
+        "LIFECYCLE_UNRESOLVED"
+      ],
+      "signals": [
+        "explicit operator retention/archival choice",
+        "complete owner graph",
+        "current dependency and activity proof",
+        "repeated consistent snapshots"
+      ],
+      "never_infer_archival_from_age": true
+    },
+    "artifact_kind": {
+      "values": [
+        "REPOSITORY",
+        "APPLICATION",
+        "RECORD",
+        "MEDIA",
+        "INSTALLER",
+        "PARTIAL",
+        "GENERATED",
+        "OTHER"
+      ],
+      "role": "NAVIGATION_HINT_ONLY"
+    }
+  },
+  "rule_order": [
+    {
+      "rule_id": "S00",
+      "if": "scan incomplete, symlink/reparse/cloud-placeholder",
+      "outcome": "UNKNOWN",
+      "tickets": [
+        "ADAPTER_SCAN_COMPLETENESS"
+      ],
+      "no_actions": true
+    },
+    {
+      "rule_id": "S10",
+      "if": "upstream PROTECTED or app broken/active or active/dirty repo",
+      "outcome": "PROTECTED",
+      "tickets": [
+        "ADAPTER_OWNERSHIP_AUDIT"
+      ],
+      "no_actions": true
+    },
+    {
+      "rule_id": "S20",
+      "if": "explicit operator memorabilia/keep declaration",
+      "outcome": "KEEP_PROVEN_OR_REVIEW",
+      "tickets": [],
+      "no_actions": true
+    },
+    {
+      "rule_id": "S30",
+      "if": "incomplete owner graph/attribution",
+      "outcome": "UNKNOWN",
+      "tickets": [
+        "ADAPTER_APP_REPO_ATTRIBUTION"
+      ],
+      "no_actions": true
+    },
+    {
+      "rule_id": "S40",
+      "if": "older mtime but activity unknown",
+      "outcome": "HUMAN_REVIEW",
+      "tickets": [
+        "ADAPTER_ACTIVITY_EVIDENCE"
+      ],
+      "no_actions": true
+    },
+    {
+      "rule_id": "S50",
+      "if": "media/creative record with no operator declaration",
+      "outcome": "HUMAN_REVIEW",
+      "tickets": [
+        "AGENT_PERSONAL_VALUE_CONTEXT"
+      ],
+      "no_actions": true
+    },
+    {
+      "rule_id": "S60",
+      "if": "archive intent unrecorded or lifecycle unresolved",
+      "outcome": "HUMAN_REVIEW",
+      "tickets": [
+        "AGENT_DORMANCY_ARCHIVE_INTENT"
+      ],
+      "no_actions": true
+    },
+    {
+      "rule_id": "S90",
+      "if": "all evidence collected and no action consent",
+      "outcome": "OBSERVATION_ONLY",
+      "tickets": [
+        "AGENT_RULE_GAP_REVIEW"
+      ],
+      "no_actions": true
+    }
+  ],
+  "agent_catalog": {
+    "ADAPTER_SCAN_COMPLETENESS": {
+      "owner": "FileSteward native inventory",
+      "requires": [
+        "SCAN_RETRY_READONLY"
+      ],
+      "authority": "READ_ONLY_METADATA",
+      "mode": "DETERMINISTIC"
+    },
+    "ADAPTER_OWNERSHIP_AUDIT": {
+      "owner": "FileSteward ownership.graph",
+      "requires": [
+        "OWNERSHIP_GRAPH_READONLY"
+      ],
+      "authority": "READ_ONLY_METADATA",
+      "mode": "DETERMINISTIC"
+    },
+    "ADAPTER_APP_REPO_ATTRIBUTION": {
+      "owner": "FileSteward ownership adapters",
+      "requires": [
+        "WINDOWS_INSTALLED_APP_AND_GIT_ATTRIBUTION"
+      ],
+      "authority": "READ_ONLY_METADATA",
+      "mode": "DETERMINISTIC"
+    },
+    "ADAPTER_ACTIVITY_EVIDENCE": {
+      "owner": "FileSteward Windows and Git adapters",
+      "requires": [
+        "ACTIVITY_READONLY"
+      ],
+      "authority": "READ_ONLY_METADATA",
+      "mode": "DETERMINISTIC"
+    },
+    "AGENT_PERSONAL_VALUE_CONTEXT": {
+      "owner": "optional private local inference worker",
+      "requires": [
+        "LOCAL_SEMANTIC_MODEL_OPT_IN"
+      ],
+      "authority": "ADVISORY_ONLY",
+      "mode": "OPT_IN_AGENT"
+    },
+    "AGENT_DORMANCY_ARCHIVE_INTENT": {
+      "owner": "optional private local inference worker",
+      "requires": [
+        "LOCAL_SEMANTIC_MODEL_OPT_IN"
+      ],
+      "authority": "ADVISORY_ONLY",
+      "mode": "OPT_IN_AGENT"
+    },
+    "AGENT_RULE_GAP_REVIEW": {
+      "owner": "FileSteward rule maintainer",
+      "requires": [
+        "REPOSITORY_READONLY"
+      ],
+      "authority": "PROPOSE_CONTRACT_PR_ONLY",
+      "mode": "OPT_IN_AGENT"
+    },
+    "AUDIT_MAINTENANCE": {
+      "owner": "FileSteward tests and contracts",
+      "requires": [
+        "REPOSITORY_READONLY"
+      ],
+      "authority": "OBSERVE_AND_PROPOSE",
+      "mode": "OPT_IN_AGENT"
+    }
+  },
+  "dispatch": {
+    "status_when_no_proven_adapter": "BLOCKED_ADAPTER",
+    "never_spawn_shell_from_ticket": true,
+    "queue_item_schema": "filesteward.steward-work-item/v1",
+    "identity": "sha256(policy_version|scan_run_id|item_id|lane)",
+    "claims": "exclusive lease with expiry + provenance + runtime adapter identity",
+    "completion": "receipt accepted only after authoritative reobservation and contract checks",
+    "retries": "3 bounded attempts then BLOCKED_ADAPTER_REPAIR",
+    "privacy": "local outbox, no private paths in committed plans",
+    "concurrency": "lanes parallel only when distinct items or read-only and adapter capacity proved"
+  },
+  "outputs": [
+    "cycle.json",
+    "classified.jsonl",
+    "unresolved.jsonl",
+    "work-items.jsonl",
+    "coverage.json",
+    "receipt.json"
+  ],
+  "proof_gates": [
+    "read-only deterministic cycle under ignored private runtime",
+    "synthetic scenario matrix S01-S12 passed",
+    "schedule preview/status/register/disable/unregister tested with mock or Windows APIs",
+    "no source file modification and no model spend on normal hour",
+    "unresolved count/report derivable from classified rows",
+    "agent adapter returns typed receipts; absent adapter remains BLOCKED_ADAPTER not DISPATCHED",
+    "never promote HUMAN_REVIEW/UNKNOWN/PROTECTED from aging",
+    "two successive actual Windows hourly cycles with monotonic evidence state tracked"
+  ],
+  "release_status": "DESIGNED_WITH_READONLY_COORDINATOR_IMPLEMENTATION; AGENT_ADAPTER_AND_WINDOWS_SCHEDULER_RUNTIME_NOT_LIVE_PROVEN"
+}
