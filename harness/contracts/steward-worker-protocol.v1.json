@@ -1,0 +1,140 @@
+{
+  "schema_version": "filesteward.steward-worker-protocol/v1",
+  "purpose": "Turn FileSteward's read-only work outbox into agent-executable, independently verifiable tasks without making the scheduler a shell or deletion harness.",
+  "entrypoints_to_implement": [
+    {
+      "command": "python -m filesteward.steward.worker inspect --cycle <private cycle path>",
+      "effect": "READ_PRIVATE_QUEUE_ONLY",
+      "receipt": "counts and registered capability states"
+    },
+    {
+      "command": "python -m filesteward.steward.worker claim --cycle <private cycle path> --adapter <registered id> --work-id <exact id>",
+      "effect": "WRITE_PRIVATE_LEASE",
+      "receipt": "claimed work_id, lease nonce, expiry, immutable source revision"
+    },
+    {
+      "command": "python -m filesteward.steward.worker submit --cycle <private cycle path> --work-id <id> --receipt <signed private receipt>",
+      "effect": "WRITE_PRIVATE_ADVISORY_RECEIPT",
+      "receipt": "validated or refused, never cleanup authority"
+    },
+    {
+      "command": "python -m filesteward.steward.worker reconcile --cycle <private cycle path>",
+      "effect": "READ_AND_NORMALIZE_NEW_EVIDENCE",
+      "receipt": "fresh source graph revision, reopened/closed outcomes and unknown census"
+    }
+  ],
+  "not_yet_implemented": true,
+  "private_adapter_registry": {
+    "path": "<canonical runtime>/var/steward/adapters.json",
+    "file_must_not_be_committed": true,
+    "required": [
+      "adapter_id",
+      "host_environment",
+      "provided_capabilities",
+      "allowed_data_classes",
+      "allowed_effects",
+      "repository_binding",
+      "model_consent_revision",
+      "hourly_model_call_cap",
+      "installed_runner_identity",
+      "operator_enablement"
+    ],
+    "default": "NONE_REGISTERED",
+    "unknown_adapter": "BLOCKED_ADAPTER",
+    "no_dynamic_shell": "The adapter is selected by registered id and a validated capability. Never accept command, executable, script or URL generated in a task body."
+  },
+  "claim": {
+    "key": "sha256(stable_asset_fingerprint|facet|policy_version|owner_graph_revision)",
+    "asset_fingerprint_rule": "derived from scanner item_id + bounded root and stable file identity; scan_id alone is NOT deduplication across hourly cycles",
+    "source_scan_referenced": true,
+    "lease_seconds": 600,
+    "lease_extensible_only_with_current_heartbeat": true,
+    "max_retries": 3,
+    "parallel_workers": 2,
+    "locking": "single-writer atomic local claim file or SQLite transaction beneath ignored private runtime",
+    "same_item_collision": "mutually exclusive write to same facet; independent evidence adapters may run concurrently and converge via one reducer"
+  },
+  "receipt": {
+    "schema": "filesteward.steward-agent-receipt/v1",
+    "required": [
+      "work_id",
+      "adapter_id",
+      "lease_nonce",
+      "source_scan",
+      "facet",
+      "policy_version",
+      "started_at_utc",
+      "finished_at_utc",
+      "input_evidence_digest",
+      "output_evidence_digest",
+      "agent_output_kind",
+      "action_effect",
+      "privacy_mode",
+      "model_calls",
+      "validation_state"
+    ],
+    "allowed_agent_output_kind": [
+      "READONLY_EVIDENCE",
+      "ADVISORY_CONTEXT",
+      "OPERATOR_VALUE_QUESTION",
+      "SYNTHETIC_RULE_PROPOSAL",
+      "ENGINEERING_PR_EVIDENCE"
+    ],
+    "allowed_action_effect": [
+      "NONE",
+      "READ_ONLY",
+      "PROPOSAL_ONLY"
+    ],
+    "validation": [
+      "adapter is registered for facet and exact host",
+      "lease matches work_id and has not expired",
+      "policy and scan revisions consistent",
+      "schema/evidence digests valid",
+      "privacy mode and model caps not exceeded",
+      "current protection edges still present",
+      "independent deterministic reducer re-observed affected technical facts"
+    ],
+    "success": "receipt accepted as EVIDENCE_ONLY; must not set APP_REQUIRED false or CLEANUP_APPROVED from agent output",
+    "drift": "REOPEN_EXACT_FACET_WITH_STALE_EVIDENCE",
+    "failure": "BLOCKED_ADAPTER_OR_AUTHORITY_WITH_PRIVATE_RECEIPT"
+  },
+  "resource_policy": {
+    "default_per_hour_model_calls": 0,
+    "per_adapter_opt_in_only": true,
+    "max_hourly_work_tickets": 40,
+    "max_inflight": 2,
+    "max_attempts": 3,
+    "max_scan_items": 250,
+    "model_cost_cap": "operator must set explicit nonzero model-call budget and vendor privacy boundaries separately; missing value means zero"
+  },
+  "adapter_result_semantics": {
+    "technical": "Existing FileSteward scanner/ownership adapter normalizes current machine evidence. AI cannot attest its own assertion.",
+    "personal_value": "Agent may ask a concise operator value question; only authenticated operator declaration can settle memorabilia/archive intent.",
+    "code_fix": "Agent may create isolated branch + reviewed PR and tests; cannot waive main merge gates or mutate unrelated scope.",
+    "file_cleanup": "Not part of this protocol. Must use approved FileSteward exact-manifest execution."
+  },
+  "falsifiers": [
+    "Any agent ticket string is interpolated into shell command execution",
+    "Any reply is treated as operator approval",
+    "Any output or raw filename leaves private runtime without valid privacy consent",
+    "Any lease collision has two concurrent writers on same facet",
+    "Any missing adapter appears dispatched or completed",
+    "Any stale source receipt closes current unresolved work",
+    "Any old file is labeled disposable from mtime",
+    "Any scheduled tick produces model calls with zero configured budget"
+  ],
+  "acceptance": [
+    "W01 absent adapter -> BLOCKED_ADAPTER, no launch",
+    "W02 disabled adapter -> BLOCKED_AUTHORITY",
+    "W03 wrong capability -> refusal",
+    "W04 stale claim -> lease conflict and no execute",
+    "W05 two workers same work id -> exactly one claim",
+    "W06 valid read-only receipt -> evidence recorded; no disposition or approval change",
+    "W07 agent says delete -> refused invalid action effect",
+    "W08 private content forwarding without explicit consent -> refused",
+    "W09 repeat hourly scan same asset+facet -> deduplicated active work",
+    "W10 changed file/graph revision -> reopen instead of accepting stale receipt",
+    "W11 expired lease -> bounded reclaim with retry count",
+    "W12 model budget 0 -> no agent calls, deterministic lanes still complete"
+  ]
+}
