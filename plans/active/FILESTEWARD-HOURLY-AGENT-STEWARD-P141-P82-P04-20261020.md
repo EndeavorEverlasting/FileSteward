@@ -99,9 +99,9 @@ Hypothesis: Given identical synthetic inventories and typed evidence, the stewar
 
 Comparator: current `filesteward.cli scan/validate` produces inventory/plan; prototype additionally produces facet/unknown/ticket artifacts. Falsifiers: any old document/memorabilia/application changes to a new reclaim/approved state, wrong last-access claim, inconsistent rerun tickets, missing unknown item, privacy escape, queue without receipts treated completed, scheduler overlap/foreign task overwritten.
 
-Synthetic cases `tests/test_steward_cycle.py`: S01 old photo (potential memorabilia), S02 operator keep, S03 active app, S04 broken app, S05 old mtime not access, S06 live Git reference, S07 observed no-reference still dormant review, S08 operator-only archive, S09 reparse -> unknown, S10 upstream protected stays protected, S11 budget incomplete, S12 invalid and duplicate inputs refused.
+Synthetic cases `tests/test_steward_cycle.py`: S01 old photo (potential memorabilia), S02 operator keep, S03 active app, S04 broken app, S05 old mtime not access, S06 live Git reference, S07 observed no-reference still dormant review, S08 operator-only archive, S09 reparse -> unknown, S10 upstream protected stays protected, S11 budget incomplete, S12 invalid and duplicate inputs refused, S13 unresolved reclaim downgraded, S14 all protected items route ownership audit, S15 rotating 250-row windows cover the remainder of a 501-row stable inventory.
 
-Measurement: 12 scenario pass count; protected-downgrade violations 0; default agent calls 0; source mutations 0; max 250 observed records/40 work tickets; unresolved counts match entries; two real Windows hourly cycles; proof that incomplete budget stays incomplete.
+Measurement: 15 scenario pass count; protected-downgrade violations 0; default agent calls 0; source mutations 0; max 250 observed records/40 work tickets; unresolved counts match entries; two real Windows hourly cycles; proof that incomplete budget stays incomplete.
 
 Decision: PROMOTE only if semantic and safety fixtures, scheduler native proof, host privacy and adapter acknowledgment pass. WEAKEN if zero-token/UX improvement disproven. REJECT if unsafe classification or agent self-approval. INCONCLUSIVE if host tests unavailable; do not silently promote.
 
