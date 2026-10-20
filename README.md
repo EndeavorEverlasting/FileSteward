@@ -247,6 +247,14 @@ All real profile records stay beneath the ignored local var/profiles tree.
 No Windows-host capture, integration or performance diagnosis is implied by
 this source-level implementation.
 
+## Hourly agent steward (source-only, opt-in)
+
+FileSteward now has a [durable hourly stewardship design and local handoff](plans/active/FILESTEWARD-HOURLY-AGENT-STEWARD-P141-P82-P04-20261020.md), a read-only `python -m filesteward.steward --scan-run <validated-run>` coordinator, [classification/dispatch contracts](harness/contracts/steward-program.v1.json), and synthetic tests.
+
+On a verified **canonical Windows checkout**, `scripts/windows/steward-hourly.ps1 -Action Preview` displays a non-mutating task configuration; `-Action RunOnce` runs scan, validate, classify and writes private unresolved/agent-ticket queues. Register only after local proof using `-Action Register -Authorize`. Disable/unregister also require `-Authorize`. The task is **not** bundled in the existing v0.16.0 Windows preview and is **not registered by this repository change**.
+
+Normal hourly operation uses no AI tokens, launches no agents, and deletes/moves nothing. Tickets are visibly blocked until a registered privacy/authority-scoped adapter is implemented. Memorabilia, activity, application dependency and archive intent are distinct facets; a completed classification is not a cleanup approval. Details, privacy limits and actual dispatch/Windows proof gates are fixed in the [runbook](plans/active/FILESTEWARD-HOURLY-AGENT-STEWARD-P141-P82-P04-20261020.md).
+
 ## Roadmap
 
 ### Phase 1 — Review queue foundation
