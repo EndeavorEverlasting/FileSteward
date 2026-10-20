@@ -163,6 +163,15 @@
         "repo lifecycle reducer test",
         "browser classification readback"
       ]
+    },
+    {
+      "id": "PB19",
+      "behavior": "Transient context stays local to its pointer or keyboard anchor, never covers the hovered subject, related visible evidence or active controls, and fails to compact or suppressed context rather than remote docking. Unavailable targets keep the native pointer and no action promise.",
+      "proof": [
+        "tests/test_context_geometry.py",
+        "tests/test_context_placement_browser.py",
+        "tests/test_scene_composition_contract.py"
+      ]
     }
   ],
   "defect_families": [
@@ -239,6 +248,16 @@
     {
       "id": "AGE_OR_INACTIVITY_MEANS_LEGACY",
       "negative_fixture": "Repo/file is labeled legacy from old timestamps or no recent commit despite unresolved worktree, remote, unique-work, dependency, or reproducibility state.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "CONTEXT_REMOTE_DOCK_OR_OCCLUSION",
+      "negative_fixture": "A tooltip is farther than 48 CSS pixels from its anchor or intersects hovered/related evidence or controls after placement/clamping.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "CONTEXT_WRONG_INPUT_OR_STALE_GEOMETRY",
+      "negative_fixture": "Keyboard context follows old pointer coordinates, or scroll/resize/scene changes leave stale context visible.",
       "expected": "FAIL"
     }
   ],
@@ -338,6 +357,14 @@
         "RECOVERABILITY_RESOLVE",
         "VALUE_DECISION"
       ]
+    },
+    {
+      "id": "PC11",
+      "case": "A full explanation fits locally beside visible evidence; a crowded target falls back without covering evidence or promising unavailable exploration; keyboard focus anchors separately from physical reticle.",
+      "expected_trace": [
+        "ATLAS_HOME",
+        "TARGET_FOCUS"
+      ]
     }
   ],
   "acceptance_matrix": {
@@ -408,5 +435,6 @@
     ],
     "browser_receipt": "var/runs/cinematic-browser-20261013/final-context-v19-results.json",
     "proof_status": "REVIEW_REPAIRS_REQUIRE_EXACT_HEAD_REPROOF"
-  }
+  },
+  "scene_composition_ref": "harness/contracts/scene-composition.v1.json"
 }

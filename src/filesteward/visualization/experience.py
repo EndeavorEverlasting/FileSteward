@@ -7,6 +7,7 @@ changes authorization, or creates a second state machine.
 
 from __future__ import annotations
 
+from filesteward.visualization.context_geometry import context_placement_javascript
 from filesteward.visualization.literal import escape_attr, escape_text
 from filesteward.visualization.scene_surface import path_step_previews
 
@@ -66,8 +67,8 @@ def render_cinematic_experience_markup() -> str:
 
 <div class="atlas-reticle atlas-cursor-portal"
      id="atlas-reticle"
-     data-cursor-mode="explore"
-     data-actionability="OPERABLE"
+     data-cursor-mode="idle"
+     data-actionability="UNAVAILABLE"
      data-portal="body"
      aria-hidden="true">
   <span class="reticle-bracket reticle-bracket-nw"></span>
@@ -75,7 +76,7 @@ def render_cinematic_experience_markup() -> str:
   <span class="reticle-bracket reticle-bracket-sw"></span>
   <span class="reticle-bracket reticle-bracket-se"></span>
   <span class="reticle-core"></span>
-  <span class="reticle-label fs-type-scene" id="atlas-reticle-label">EXPLORE</span>
+  <span class="reticle-label fs-type-scene" id="atlas-reticle-label"></span>
 </div>
 
 <div class="atlas-cartouche atlas-cursor-portal"
@@ -84,7 +85,7 @@ def render_cinematic_experience_markup() -> str:
      data-portal="body"
      hidden
      aria-hidden="true">
-  <strong id="atlas-cartouche-verb" class="fs-type-scene">EXPLORE</strong>
+  <strong id="atlas-cartouche-verb" class="fs-type-scene"></strong>
   <span id="atlas-cartouche-explain" class="fs-type-body">Point at Atlas evidence or controls.</span>
 </div>
 """
@@ -318,6 +319,7 @@ def render_cinematic_experience_css() -> str:
 .atlas-reticle[data-cursor-mode="blocked"],.atlas-reticle[data-cursor-mode="locked"],
 .atlas-reticle[data-actionability="BLOCKED"]{color:var(--atlas-danger);}
 .atlas-reticle.is-active{filter:drop-shadow(0 0 8px currentColor);}
+.atlas-reticle.has-panel .reticle-label{display:none;}
 .atlas-cartouche{
   max-width:18rem;padding:.55rem .7rem;
   border:1px solid color-mix(in srgb,var(--atlas-signal) 50%,var(--fs-border-default));
@@ -325,6 +327,7 @@ def render_cinematic_experience_css() -> str:
   color:var(--fs-text-primary);box-shadow:0 10px 28px color-mix(in srgb,var(--fs-bg-canvas) 55%,transparent);
 }
 .atlas-cartouche[hidden]{display:none!important;}
+.atlas-cartouche[data-presentation="compact"] span{display:none;}
 .atlas-cartouche strong{display:block;font:800 .72rem/1.2 var(--fs-font-mono);letter-spacing:.06em;margin-bottom:.25rem;}
 .atlas-cartouche span{display:block;font:600 .74rem/1.35 var(--fs-font-mono);color:var(--fs-text-secondary);}
 .storage-stage.returning-home .camera-plane,
@@ -351,7 +354,7 @@ html::selection,body::selection,.app::selection,.app *::selection{
   100%{transform:none;filter:none;opacity:1}
 }
 @media (pointer:fine) and (prefers-reduced-motion:no-preference){
-  .storage-stage,.storage-stage *{cursor:none!important;}
+  .storage-stage.has-context-reticle,.storage-stage.has-context-reticle *{cursor:none!important;}
   .atlas-reticle.is-visible{display:block;}
 }
 
@@ -410,8 +413,12 @@ def render_cinematic_experience_script() -> str:
     if (el && el.parentElement !== document.body) document.body.appendChild(el);
   });
 
+
+  /* CONTEXT_GEOMETRY */
+
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const fine = window.matchMedia('(pointer: fine)');
+  const forcedColors = window.matchMedia('(forced-colors: active)');
   const guideSteps = () => Array.from(compass.querySelectorAll('[data-guide-step]'));
   const recentCommands = [];
   let pathLockUntil = 0;
@@ -494,6 +501,7 @@ def render_cinematic_experience_script() -> str:
       + '.decision-chamber button,.inspector,[data-decision-intent],.chamber-gate,.chamber-confirm'
     );
     if (host) {
+      if (host.matches(':disabled,[aria-disabled="true"]')) return { mode: 'idle', label: '', actionability: 'UNAVAILABLE', explain: 'No action available.' };
       const mode = host.getAttribute('data-cursor-mode')
         || (host.classList.contains('decision-guide-step') ? 'resolve' : null)
         || (host.classList.contains('signal-hard-stop') ? 'blocked' : null)
@@ -512,7 +520,9 @@ def render_cinematic_experience_script() -> str:
       if (String(label).toUpperCase() === 'EXPLORE' && host.getAttribute('data-impact-kind') !== 'EXPLORE') {
         return { mode: 'idle', label: '', actionability: 'UNAVAILABLE', explain: 'EXPLORE is reserved.', impact: '', destination: '', fingerprint: '' };
       }
+      if (!label) return { mode: 'idle', label: '', actionability: 'UNAVAILABLE' };
       return {
+        host,
         mode,
         label: String(label).split('_').join(' '),
         actionability: host.getAttribute('data-actionability') || 'OPERABLE',
@@ -529,111 +539,73 @@ def render_cinematic_experience_script() -> str:
   let lastPointer = { x: 0, y: 0 };
   let hideReticleUntilPointer = false;
   let cueFingerprint = '';
+  let lastPointerType = 'mouse';
 
-  /* Chrome that must stay readable — cartouche docks in Atlas negative space instead. */
-  const cartoucheObstacles = () => Array.from(document.querySelectorAll([
-    'header.shell',
-    '.metrics',
-    '.navigator-pane',
-    '.filters',
-    '.filter-chip',
-    '.atlas-hud',
-    '.scene-toolbar',
-    '.phone-command-bar',
-    '.atlas-classification-legend',
-    '.atlas-next-actions:not([hidden])',
-    '#chamber-next-actions:not([hidden])',
-    '.atlas-scene-panel:not([hidden])',
-    '.decision-chamber:not([hidden])',
-    '.decision-compass',
-    '.inspector',
-    '.inspector-pane'
-  ].join(', '))).map((el) => el.getBoundingClientRect()).filter((r) => r.width > 1 && r.height > 1);
-
-  const placeCartoucheAway = (x, y) => {
-    const w = (cartouche && cartouche.offsetWidth) || 280;
-    const h = (cartouche && cartouche.offsetHeight) || 72;
-    const pad = 8;
-    const stageEl = document.getElementById('storage-stage')
-      || document.querySelector('.map-stage')
-      || stage;
-    const stageRect = stageEl.getBoundingClientRect();
-    /* Intersect stage with the visible viewport — stage can extend below fold. */
-    const viewBox = {
-      left: pad,
-      top: pad,
-      right: window.innerWidth - pad,
-      bottom: window.innerHeight - pad
+  let contextTarget = null;
+  let dismissedTarget = null;
+  let describedHost = null;
+  let geometryFrame = 0;
+  const clearContext = () => {
+    cancelAnimationFrame(geometryFrame);
+    stage.classList.remove('has-context-reticle');
+    if (reticle) reticle.classList.remove('is-visible', 'is-active', 'has-panel');
+    if (cartouche) { cartouche.hidden = true; cartouche.setAttribute('aria-hidden', 'true'); }
+    if (describedHost) {
+      const ids = (describedHost.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== 'atlas-cartouche');
+      if (ids.length) describedHost.setAttribute('aria-describedby', ids.join(' '));
+      else describedHost.removeAttribute('aria-describedby');
+      describedHost = null;
+    }
+  };
+  /* Protect hovered and selected subjects, related representations and scene evidence. */
+  const cartoucheObstacles = (host) => {
+    const elements = new Set(document.querySelectorAll([
+      'header.shell', '.metrics', '.atlas-hud', '.scene-toolbar', '.phone-command-bar',
+      '.atlas-classification-legend', '#atlas-next-actions', '.atlas-scene-panel:not([hidden])', '.decision-compass',
+      '.chamber-subject', '#selection-summary', '#chamber-gate-line', '.script-impact', '#chamber-evidence-trace',
+      '#chamber-approval', '#chamber-result', '#chamber-error', '#chamber-next-actions',
+      '.chamber-actions', '.inspector-pane', '.filter-chip', '#storage-search', '.sector-card', '.map-node.selected',
+      '.app button', '.app a', '.app input', '.app select', '.app textarea',
+      '.app summary', '.app [role="button"]', '.app [tabindex="0"]', 'footer'
+    ].join(',')));
+    if (host) {
+      elements.add(host.closest('.sector-card,.map-node,.nav-row,.chamber-gate') || host);
+      const node = host.closest('[data-node-id]');
+      const ids = new Set((host.getAttribute('data-context-related') || '').split(/\s+/).filter(Boolean));
+      if (node) ids.add(node.dataset.nodeId);
+      document.querySelectorAll('[data-node-id]').forEach(el => {
+        if (ids.has(el.dataset.nodeId) || el.dataset.selected === 'true') elements.add(el);
+      });
+    }
+    return [...elements].filter(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden')
+      .map(el => el.getBoundingClientRect()).filter(r => r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < innerHeight);
+  };
+  const placeCartoucheAway = (x, y, host) => {
+    const anchor = pointerModality === 'keyboard' && host ? host.getBoundingClientRect() : {left:x, right:x, top:y, bottom:y};
+    return placeContextPanel({anchor, width:cartouche.offsetWidth, height:cartouche.offsetHeight,
+      viewport:{width:innerWidth, height:innerHeight}, obstacles:cartoucheObstacles(host)});
+  };
+  const watchContextGeometry = (host) => {
+    const signature = () => {
+      const cue = cueFrom(host);
+      const semantics = [cue.label, cue.explain, cue.actionability, cue.fingerprint].join('|');
+      return semantics + cartoucheObstacles(host).map(r =>
+        [r.left, r.top, r.right, r.bottom].map(n => Math.round(n * 2)).join(',')).join('|');
     };
-    const intersect = {
-      left: Math.max(viewBox.left, stageRect.left),
-      top: Math.max(viewBox.top, stageRect.top),
-      right: Math.min(viewBox.right, stageRect.right),
-      bottom: Math.min(viewBox.bottom, stageRect.bottom)
+    const previous = signature();
+    const check = () => {
+      if (cartouche.hidden) return;
+      if (!host || !host.isConnected || signature() !== previous) { clearContext(); return; }
+      geometryFrame = requestAnimationFrame(check);
     };
-    const stageOk = (intersect.right - intersect.left) > w + pad * 2
-      && (intersect.bottom - intersect.top) > h + pad * 2;
-    const clampBox = stageOk ? intersect : viewBox;
-    const obstacles = cartoucheObstacles();
-    /* Soft: prefer empty stage regions away from sector cards when possible. */
-    const softObstacles = Array.from(document.querySelectorAll(
-      '#storage-stage .sector-card, .map-stage .sector-card, .sector-card'
-    )).map((el) => el.getBoundingClientRect()).filter((r) => r.width > 1 && r.height > 1);
-    const hit = (left, top, rects, margin) => rects.some((r) => (
-      left < r.right + margin && left + w > r.left - margin
-      && top < r.bottom + margin && top + h > r.top - margin
-    ));
-    const clampToStage = (left, top) => ({
-      left: Math.min(clampBox.right - w - pad, Math.max(clampBox.left + pad, left)),
-      top: Math.min(clampBox.bottom - h - pad, Math.max(clampBox.top + pad, top))
-    });
-    const score = (left, top) => {
-      const chromeHit = hit(left, top, obstacles, pad);
-      const softHit = hit(left, top, softObstacles, 4);
-      const cx = left + w * 0.5;
-      const cy = top + h * 0.5;
-      const dist = Math.abs(cx - x) + Math.abs(cy - y);
-      return (chromeHit ? 100000 : 0) + (softHit ? 400 : 0) + dist;
-    };
-    const cursorOverChrome = hit(x - 4, y - 4, obstacles, 0)
-      || obstacles.some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
-    const near = cursorOverChrome ? [] : [
-      [x + 20, y + 26],
-      [x - w - 20, y + 26],
-      [x + 20, y - h - 20],
-      [x - w - 20, y - h - 20],
-      [x + 20, y - h * 0.5],
-      [x - w - 20, y - h * 0.5]
-    ];
-    /* Stable stage docks (lower/upper corners) — avoid viewport chrome edges. */
-    const docks = [
-      [clampBox.right - w - pad, clampBox.bottom - h - pad],
-      [clampBox.left + pad, clampBox.top + pad],
-      [clampBox.right - w - pad, clampBox.top + pad],
-      [clampBox.left + pad, clampBox.bottom - h - pad]
-    ];
-    let best = null;
-    let bestScore = Infinity;
-    let bestClear = null;
-    let bestClearScore = Infinity;
-    near.concat(docks).forEach((pair) => {
-      const pos = clampToStage(pair[0], pair[1]);
-      const chromeHit = hit(pos.left, pos.top, obstacles, pad);
-      const s = score(pos.left, pos.top);
-      if (s < bestScore) {
-        bestScore = s;
-        best = pos;
-      }
-      if (!chromeHit && s < bestClearScore) {
-        bestClearScore = s;
-        bestClear = pos;
-      }
-    });
-    /* Never prefer a chrome-overlapping near-cursor seat when a clear stage dock exists. */
-    return bestClear || best || clampToStage(docks[0][0], docks[0][1]);
+    geometryFrame = requestAnimationFrame(check);
   };
 
   const paintCue = (cue, x, y, showCartouche, moveReticlePos) => {
+    clearContext();
+    contextTarget = cue.host || null;
+    if (dismissedTarget && dismissedTarget === contextTarget) return;
+    dismissedTarget = null;
     const fp = cue.fingerprint || (cue.mode + '|' + cue.label + '|' + (cue.impact || ''));
     if (cueFingerprint && fp && cueFingerprint !== fp) {
       if (reticle) reticle.classList.remove('is-visible', 'is-active');
@@ -647,7 +619,7 @@ def render_cinematic_experience_script() -> str:
       }
       return;
     }
-    if (reticle && fine.matches && !reduced.matches && moveReticlePos !== false) {
+    if (reticle && fine.matches && !reduced.matches && !forcedColors.matches && moveReticlePos !== false) {
       if (hideReticleUntilPointer) {
         reticle.classList.remove('is-visible', 'is-active');
       } else {
@@ -655,6 +627,7 @@ def render_cinematic_experience_script() -> str:
         reticle.dataset.actionability = cue.actionability;
         if (reticleLabel) reticleLabel.textContent = cue.label;
         reticle.classList.add('is-visible', 'is-active');
+        stage.classList.add('has-context-reticle');
         reticle.style.transform = 'translate3d(' + (x - 28) + 'px,' + (y - 28) + 'px,0)';
       }
     }
@@ -663,9 +636,22 @@ def render_cinematic_experience_script() -> str:
       if (cartoucheExplain) cartoucheExplain.textContent = cue.explain;
       cartouche.hidden = false;
       cartouche.setAttribute('aria-hidden', 'false');
-      const pos = placeCartoucheAway(x, y);
+      cartouche.dataset.presentation = 'full';
+      let pos = placeCartoucheAway(x, y, cue.host);
+      if (!pos) { cartouche.dataset.presentation = 'compact'; pos = placeCartoucheAway(x, y, cue.host); }
+      if (!pos) {
+        clearContext();
+        cartouche.dataset.presentation = 'suppressed'; return;
+      }
+      if (cue.host && cartouche.dataset.presentation === 'full') {
+        describedHost = cue.host;
+        const ids = new Set((cue.host.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+        ids.add('atlas-cartouche'); cue.host.setAttribute('aria-describedby', [...ids].join(' '));
+      }
+      if (reticle) reticle.classList.add('has-panel');
       cartouche.style.left = pos.left + 'px';
       cartouche.style.top = pos.top + 'px';
+      watchContextGeometry(cue.host);
     } else if (cartouche) {
       cartouche.hidden = true;
       cartouche.setAttribute('aria-hidden', 'true');
@@ -673,10 +659,14 @@ def render_cinematic_experience_script() -> str:
   };
 
   const moveReticle = (event) => {
+    lastPointerType = event.pointerType || 'mouse';
     pointerModality = 'pointer';
     hideReticleUntilPointer = false;
+    if (lastPointer.x !== event.clientX || lastPointer.y !== event.clientY) dismissedTarget = null;
     lastPointer = { x: event.clientX, y: event.clientY };
+    if (event.pointerType === 'touch') { clearContext(); return; }
     if (!stage.contains(event.target)) {
+      clearContext();
       if (reticle) reticle.classList.remove('is-visible', 'is-active');
       if (cartouche) { cartouche.hidden = true; cartouche.setAttribute('aria-hidden','true'); }
       return;
@@ -912,6 +902,7 @@ def render_cinematic_experience_script() -> str:
   app.addEventListener('pointerenter', moveReticle);
   app.addEventListener('pointermove', moveReticle);
   app.addEventListener('pointerleave', () => {
+    clearContext();
     if (reticle) reticle.classList.remove('is-visible', 'is-active');
     if (cartouche) {
       cartouche.hidden = true;
@@ -920,6 +911,7 @@ def render_cinematic_experience_script() -> str:
   });
 
   app.addEventListener('focusin', (event) => {
+    if (lastPointerType === 'touch' && pointerModality !== 'keyboard') { clearContext(); return; }
     const cue = cueFrom(event.target);
     const rect = event.target instanceof Element ? event.target.getBoundingClientRect() : null;
     if (!rect) return;
@@ -933,14 +925,38 @@ def render_cinematic_experience_script() -> str:
     pointerModality = 'keyboard';
     hideReticleUntilPointer = true;
     if (reticle) reticle.classList.remove('is-visible', 'is-active');
-    const x = Number.isFinite(lastPointer.x) && (lastPointer.x || lastPointer.y)
-      ? lastPointer.x
-      : (rect.left + rect.width / 2);
-    const y = Number.isFinite(lastPointer.y) && (lastPointer.x || lastPointer.y)
-      ? lastPointer.y
-      : (rect.top + rect.height / 2);
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
     paintCue(cue, x, y, true, false);
   });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') { dismissedTarget = contextTarget; clearContext(); }
+    if (event.key === 'Tab' || event.key.startsWith('Arrow')) pointerModality = 'keyboard';
+  }, true);
+  app.addEventListener('focusout', clearContext);
+  // A settled camera/card transform may make a local seat usable again.
+  // Re-project from the current hit target, never from an old cached cue.
+  app.addEventListener('transitionend', (event) => {
+    if (!['transform', 'grid-template-columns'].includes(event.propertyName)
+        || lastPointerType === 'touch' || !contextTarget) return;
+    const target = pointerModality === 'keyboard' ? document.activeElement
+      : document.elementFromPoint(lastPointer.x, lastPointer.y);
+    const cue = cueFrom(target);
+    if (cue.host !== contextTarget) return;
+    paintCue(cue, lastPointer.x, lastPointer.y, true, pointerModality !== 'keyboard');
+  });
+  window.addEventListener('resize', clearContext);
+  document.addEventListener('scroll', clearContext, true);
+  reduced.addEventListener('change', clearContext);
+  fine.addEventListener('change', clearContext);
+  forcedColors.addEventListener('change', clearContext);
+  document.addEventListener('visibilitychange', clearContext);
+  if (window.ResizeObserver) {
+    const geometryObserver = new ResizeObserver(clearContext);
+    [stage, compass, document.getElementById('decision-chamber')].filter(Boolean)
+      .forEach(el => geometryObserver.observe(el));
+  }
 
   guideSteps().forEach((step) => {
     step.addEventListener('pointerenter', (event) => {
@@ -977,9 +993,11 @@ def render_cinematic_experience_script() -> str:
 
   let lastObservedScene = workspace.dataset.openDecisionScene || '';
   const observer = new MutationObserver(() => {
+    clearContext();
     const sceneNow = workspace.dataset.openDecisionScene || '';
     if (sceneNow !== lastObservedScene) {
       lastObservedScene = sceneNow;
+      clearContext();
       hideReticleUntilPointer = true;
       if (reticle) reticle.classList.remove('is-visible', 'is-active');
     }
@@ -992,15 +1010,21 @@ def render_cinematic_experience_script() -> str:
   });
 
   document.addEventListener('filesteward:selection', () => {
+    clearContext();
     window.requestAnimationFrame(() => {
       setGuideState();
       syncCameraTrace();
     });
   });
-  document.addEventListener('filesteward:atlas-home', resetHighlights);
+  const chamber = document.getElementById('decision-chamber');
+  if (chamber) new MutationObserver(clearContext).observe(chamber, {childList:true, subtree:true,
+    attributes:true, characterData:true,
+    attributeFilter:['data-script-scene', 'data-open-scene', 'style', 'data-docked', 'data-context-fingerprint',
+      'data-actionability', 'data-cue-label', 'data-cue-explain', 'disabled', 'hidden']});
+  document.addEventListener('filesteward:atlas-home', () => { clearContext(); resetHighlights(); });
 
   setGuideState();
   syncCameraTrace();
 })();
 </script>
-"""
+""".replace("/* CONTEXT_GEOMETRY */", context_placement_javascript())

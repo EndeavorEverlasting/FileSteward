@@ -1,0 +1,107 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "SCENE-CONTEXT-20261020",
+  "lane_id": "scene-context",
+  "role": "coordinator",
+  "canonical_plan_ref": "plans/active/SCENE-CONTEXT-20261020.md",
+  "contract_refs": [
+    "harness/contracts/scene-composition.v1.json",
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/contracts/action-scene-impact.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json"
+  ],
+  "provider_base_sha_at_capture": "b3f96524018f5d0fac8d3d88e0932f1fd9953aee",
+  "provider_head_sha_at_capture": "b3f96524018f5d0fac8d3d88e0932f1fd9953aee",
+  "local_head_sha_at_capture_or_unknown": "b3f96524018f5d0fac8d3d88e0932f1fd9953aee",
+  "completed_facts": [
+    {
+      "fact": "Baseline reproduced distant context and wrong keyboard anchor; composition binds eleven canonical scenes without routing duplication.",
+      "evidence": [
+        "harness/contracts/scene-composition.v1.json",
+        "var/runs/scene-context-review-20261020/baseline-results.json"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Safe source update launcher uses existing loopback welcome owner, separate from released executable bootstrap.",
+      "evidence": [
+        "FileSteward-source.cmd",
+        "tests/test_source_launcher.py",
+        "docs/local-start.md"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Local-only context solver and native fallback preserve evidence and physical pointer modality.",
+      "evidence": [
+        "tests/test_context_geometry.py",
+        "tests/test_context_placement_browser.py",
+        "var/runs/scene-context-browser-regression"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "final",
+      "action": "Validate exact final commit, refresh provider threads, integrate current green candidate and run canonical source launcher.",
+      "depends_on": [],
+      "acceptance": "Exact-head suite and browser proof, no material unresolved review, main containment, launch observed."
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "src/filesteward/visualization/experience.py",
+    "src/filesteward/visualization/context_geometry.py",
+    "harness/contracts/scene-composition.v1.json",
+    "harness/evals/judgment-scene-regression.v1.json",
+    "FileSteward-source.cmd",
+    "docs/local-start.md",
+    "docs/program/scene-composition.md",
+    "tests/test_context_geometry.py",
+    "tests/test_context_placement_browser.py",
+    "tests/test_scene_composition_contract.py",
+    "tests/test_source_launcher.py",
+    "README.md",
+    "pyproject.toml",
+    "src/filesteward/__init__.py",
+    "docs/program/product-versioning.md",
+    "plans/active/SCENE-CONTEXT-20261020*"
+  ],
+  "forbidden_surfaces": [
+    "deletion/ownership policy",
+    "personal storage scans and mutation",
+    "recurring cleanup",
+    "PR29 whole-branch adoption",
+    "published preview assets"
+  ],
+  "dependencies": [],
+  "external_prerequisites": [],
+  "proof_receipts": [
+    "var/final-full-suite-scene-context.log",
+    "var/focused-environment-proof.log",
+    "var/runs/scene-context-browser-regression",
+    "var/runs/cinematic-browser-20261013"
+  ],
+  "proof_ceiling": "Synthetic local browser and repository proof; no live personal-storage collection/deletion/reclaim or new published Windows release.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [
+    "var/runs/scene-context-review-20261020",
+    "var/runs/scene-context-browser-regression"
+  ],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": {
+    "missing_adapter": "Prompt Kit generic dispatch-manifest validation CLI/schema absent; native agents executed but generic manifest-validation proof unavailable. Entire integration disabled on this repository.",
+    "evidence": [
+      "plans/active/SCENE-CONTEXT-20261020.md"
+    ],
+    "repair_route": "Use current repository execution-handoff schema and actual native lane receipts; configure Entire separately if desired."
+  },
+  "exact_next_action": {
+    "phase": "PROVE",
+    "action": "Run exact-head final suite/browser checks, provider review and integration, then source launcher proof.",
+    "owner": "coordinator",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "Report implemented/validated/committed/pushed/merged/entrypoint-observed separately, with exact SHAs, tests, gaps and no personal-storage mutation claim."
+}

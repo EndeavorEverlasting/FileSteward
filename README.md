@@ -12,6 +12,8 @@ Open the [Windows download page](https://endeavoreverlasting.github.io/FileStewa
 
 The unsigned Windows preview opens a local welcome page without Python, Git, or administrator installation. Explore an illustrative sample or explicitly import existing observational run artifacts. Startup does not scan your files, delete anything, or schedule recurring cleanup. Imported evidence is a captured review, not current deletion authority.
 
+To update to the latest source and open the local browser app, use the [source CMD launcher and start guide](docs/local-start.md). It safely fast-forwards the canonical checkout and installs into an isolated Python environment; Git and Python 3.12+ are required.
+
 The repository includes read-only inventory, validated manifests, the Memory Atlas and Decision Chamber, and a separately gated exact-manifest permanent-deletion path. Live ownership judgment, recurring cleanup policy, duplicate analysis, and optional AI enrichment are incomplete. The downloadable welcome app does not enable live cleanup.
 
 For agent-session crash recovery — where tooling state lives, how to resume a lost session, and how to prove repository state after an interruption — see [`docs/agent/RECOVERY.md`](docs/agent/RECOVERY.md).

@@ -1,0 +1,404 @@
+{
+  "schema_version": "filesteward.scene-composition/v1",
+  "authority": "presentation_composition_only_not_second_state_machine",
+  "workflow_ref": "harness/contracts/judgment-scene-workflow.v1.json",
+  "action_ref": "harness/contracts/action-scene-impact.v1.json",
+  "regression_ref": "harness/evals/judgment-scene-regression.v1.json",
+  "components": [
+    {
+      "id": "world",
+      "owner": "camera/Atlas renderer",
+      "responsibility": "Storage regions and spatial relationships; navigation never changes evidence."
+    },
+    {
+      "id": "subject",
+      "owner": "canonical selected_node_id",
+      "responsibility": "One selected target shared by Atlas, inspector and Chamber."
+    },
+    {
+      "id": "related_subjects",
+      "owner": "canonical evidence relationships",
+      "responsibility": "Visible representations of the same target and explicitly evidenced owners/dependencies; proximity never establishes a relationship."
+    },
+    {
+      "id": "gate_evidence",
+      "owner": "judgment_script projection",
+      "responsibility": "Missing fact, safe probes, source evidence, protected reason and freshness."
+    },
+    {
+      "id": "chamber",
+      "owner": "decision_flow plus authoritative readback",
+      "responsibility": "Active script, legal choices, exact authorization and receipt."
+    },
+    {
+      "id": "path_guide",
+      "owner": "existing tutorial projection",
+      "responsibility": "MAP, FOCUS, GATE, RESOLVE, APPROVAL, STAGED; technical subscenes remain RESOLVE."
+    },
+    {
+      "id": "context_reticle",
+      "owner": "interaction projection plus physical pointer",
+      "responsibility": "Transient explanation and truthful immediate action; never an authority owner."
+    },
+    {
+      "id": "chrome",
+      "owner": "existing Home/search/filter owners",
+      "responsibility": "Navigation and orthogonal state preserved across unrelated transitions."
+    },
+    {
+      "id": "input_mode",
+      "owner": "pointer/keyboard/touch adapters",
+      "responsibility": "One semantic capability model; focus cannot relocate the physical pointer."
+    }
+  ],
+  "context_binding": {
+    "authority_inputs_ref": "harness/contracts/action-scene-impact.v1.json#/architecture/canonical_inputs",
+    "invalidation_inputs_ref": "harness/contracts/action-scene-impact.v1.json#/architecture/invalidation_inputs",
+    "geometry_invalidations": [
+      "pointermove",
+      "scroll",
+      "resize",
+      "camera_transform",
+      "chamber_drag",
+      "content_resize",
+      "visibility_change"
+    ],
+    "stale_behavior": "hide_or_recompute_before_next_action",
+    "missing_mapping": "BLOCKED_JUDGMENT_GAP",
+    "preserved_state": [
+      "search",
+      "filters",
+      "selection",
+      "evidence_trace"
+    ]
+  },
+  "context_placement": {
+    "coordinate_space": "viewport_css_pixels",
+    "anchor": "latest_physical_pointer_in_pointer_mode",
+    "keyboard_anchor": "focused_control_separate_from_physical_reticle",
+    "obstacles": [
+      "hovered_target_rect",
+      "visible_same_subject_rects",
+      "visible_scene_related_evidence_rects",
+      "visible_active_controls"
+    ],
+    "relationship_source": "canonical_target_identity_and_scene_regions_only",
+    "candidate_order": [
+      "lower_right",
+      "upper_right",
+      "lower_left",
+      "upper_left",
+      "beside_target"
+    ],
+    "selection_rule": "nearest_legal_candidate_inside_viewport_with_no_obstacle_overlap",
+    "locality_rule": "reject_distant_candidate_even_if_collision_free",
+    "failure_order": [
+      "compact_label_and_retry_local_candidates",
+      "hide_transient_panel_preserve_persistent_evidence"
+    ],
+    "forbidden_fallbacks": [
+      "cover_hovered_target",
+      "cover_related_evidence",
+      "park_on_opposite_viewport_edge",
+      "clamp_after_collision_check",
+      "suppress_persistent_evidence"
+    ],
+    "content_rule": "transient_explanation_only_legal_actions_stay_in_persistent_controls",
+    "no_action_label": "empty_or_No_action_available",
+    "unknown_action": "no_operable_custom_action_cursor",
+    "pointer_events": "none",
+    "max_anchor_gap_css_px": 48,
+    "escape_behavior": "hide_until_target_or_pointer_changes",
+    "accessible_description": "attach_aria_describedby_only_while_full_explanation_visible"
+  },
+  "scenes": [
+    {
+      "scene_id": "ATLAS_HOME",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/0",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/0/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/0/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/0/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/0/success_evidence",
+      "dominant_component": "world",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        "#selection-summary",
+        "#atlas-next-actions"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "TARGET_FOCUS",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/1",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/1/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/1/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/1/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/1/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#selection-summary"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "EVIDENCE_GATE",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/2",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/2/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/2/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/2/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/2/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#chamber-gate-line"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "ATTRIBUTION_RESOLVE",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/3",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/3/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/3/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/3/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/3/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#chamber-evidence-trace"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "CONSEQUENCE_RESOLVE",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/4",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/4/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/4/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/4/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/4/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#chamber-evidence-trace"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "RECOVERABILITY_RESOLVE",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/5",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/5/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/5/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/5/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/5/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#chamber-evidence-trace"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "VALUE_DECISION",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/6",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/6/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/6/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/6/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/6/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#chamber-evidence-trace",
+        "#chamber-actions"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "AUTHORIZATION_GATE",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/7",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/7/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/7/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/7/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/7/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#chamber-approval"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "RECLAIM_EXECUTION",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/8",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/8/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/8/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/8/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/8/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        ".chamber-subject",
+        "#chamber-result"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "VERIFY_RETURN",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/9",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/9/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/9/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/9/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/9/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        "#chamber-result",
+        "#chamber-next-actions"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    },
+    {
+      "scene_id": "INCIDENT_RECOVERY",
+      "script_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/10",
+      "entry_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/10/entry_when",
+      "transitions_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/10/transitions",
+      "evidence_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/10/render_script/must_show",
+      "success_ref": "harness/contracts/judgment-scene-workflow.v1.json#/scenes/10/success_evidence",
+      "dominant_component": "chamber",
+      "required_components": [
+        "world",
+        "subject",
+        "related_subjects",
+        "gate_evidence",
+        "chamber",
+        "path_guide",
+        "context_reticle",
+        "chrome",
+        "input_mode"
+      ],
+      "related_region_selectors": [
+        "#chamber-error",
+        "#chamber-result",
+        "#chamber-evidence-trace"
+      ],
+      "same_subject_selector": "[data-node-id]",
+      "continuation_owner": "canonical_script_after_authoritative_readback"
+    }
+  ]
+}
