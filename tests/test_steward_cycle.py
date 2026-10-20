@@ -90,3 +90,39 @@ def test_result_has_no_permission_to_mutate_or_use_agents():
     assert x["coverage"]["source_mutations"] == 0
     assert x["coverage"]["agent_executions"] == 0
     assert all(t["source_mutation_authorized"] is False for t in x["work_items"])
+
+
+def test_s13_reclaim_nomination_downgrades_when_technical_evidence_missing():
+    c, _ = assess(item("candidate.zip", disposition="RECLAIM_PROVEN"))
+    assert c["safety_floor"] == "UNKNOWN"
+    assert c["authorizes_move_or_delete"] is False
+
+
+def test_s14_protected_items_emit_an_ownership_audit():
+    for disposition, evidence in (
+        ("PROTECTED", {}),
+        ("HUMAN_REVIEW", {"ownership": proof("APP_REQUIRED")}),
+        ("HUMAN_REVIEW", {"activity": proof("ACTIVE_REFERENCE", "GIT_ADAPTER")}),
+    ):
+        c, jobs = assess(item("required.bin", disposition=disposition), evidence)
+        assert c["safety_floor"] == "PROTECTED"
+        assert "ADAPTER_OWNERSHIP_AUDIT" in [j["lane"] for j in jobs]
+
+
+def test_s15_rotating_pages_cover_more_than_first_250(tmp_path):
+    import csv
+    from filesteward.steward.__main__ import select_inventory_page
+    inventory = tmp_path / "inventory.csv"
+    with inventory.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["item_id", "path"])
+        writer.writeheader()
+        for index in range(501):
+            writer.writerow({"item_id": "id-" + str(index), "path": "/fixture/" + str(index)})
+    observed = set()
+    for hour in range(3):
+        rows, page = select_inventory_page(inventory, now=NOW + timedelta(hours=hour))
+        observed.update(r["item_id"] for r in rows)
+        assert page["page_count"] == 3
+        assert len(rows) <= 250
+        assert page["unobserved_this_hour"] == 501 - len(rows)
+    assert len(observed) == 501
