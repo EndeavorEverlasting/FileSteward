@@ -56,6 +56,35 @@ def _load_private_evidence(path: Path | None, *, scan_name: str) -> dict[str, An
     return values
 
 
+def select_inventory_page(inventory: Path, *, now: datetime, page_size: int = 250) -> tuple[list[dict[str, str]], dict[str, int]]:
+    """Rotate a bounded window each UTC hour; never repeatedly starve tail rows.
+
+    Reorders during a run can delay a row, so this is still observation
+    coverage, not a proof of complete lifelong classification.
+    """
+    if now.tzinfo is None or page_size <= 0:
+        raise ValueError("UTC-aware now and positive page_size are required")
+    with inventory.open("r", encoding="utf-8", newline="") as handle:
+        total = sum(1 for _ in csv.DictReader(handle))
+    pages = max(1, (total + page_size - 1) // page_size)
+    hour_index = int(now.astimezone(timezone.utc).timestamp()) // 3600
+    index = hour_index % pages
+    start = index * page_size
+    rows: list[dict[str, str]] = []
+    with inventory.open("r", encoding="utf-8", newline="") as handle:
+        for n, row in enumerate(csv.DictReader(handle)):
+            if n < start:
+                continue
+            if n >= start + page_size:
+                break
+            rows.append(row)
+    return rows, {
+        "total_rows": total, "page_count": pages,
+        "page_index": index, "page_start": start,
+        "unobserved_this_hour": total - len(rows),
+    }
+
+
 def execute_readonly_cycle(
     scan_run: Path,
     *,
@@ -68,19 +97,12 @@ def execute_readonly_cycle(
     if errors:
         raise ValueError(f"scan validation failed: {len(errors)} error(s): " + "; ".join(errors[:4]))
     inventory = scan_run / "inventory.csv"
-    # Bounded memory even when Downloads contains an enormous inventory.
-    with inventory.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        rows = []
-        total_rows = 0
-        for row in reader:
-            total_rows += 1
-            if len(rows) < 250:
-                rows.append(row)
+    instant = now or datetime.now(timezone.utc)
+    rows, window = select_inventory_page(inventory, now=instant)
     extra = _load_private_evidence(observations, scan_name=scan_run.name)
     report = build_cycle(rows, extra, scan_id=scan_run.name,
-                         now=now or datetime.now(timezone.utc),
-                         unobserved_input_count=total_rows - len(rows))
+                         now=instant, unobserved_input_count=window["unobserved_this_hour"])
+    report["coverage"]["hourly_window"] = window
     if report["coverage"]["coverage_state"] != "OBSERVED_INPUT":
         # Persist evidence of the budget limit but never indicate scan completion.
         report["coverage"]["completion_state"] = "INCOMPLETE_NO_CLEANUP_AUTHORITY"
