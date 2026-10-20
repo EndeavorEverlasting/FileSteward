@@ -12,8 +12,8 @@
     "harness/evals/execution-handoff-review-gates.v1.json"
   ],
   "provider_base_sha_at_capture": "b3f96524018f5d0fac8d3d88e0932f1fd9953aee",
-  "provider_head_sha_at_capture": "b3f96524018f5d0fac8d3d88e0932f1fd9953aee",
-  "local_head_sha_at_capture_or_unknown": "b3f96524018f5d0fac8d3d88e0932f1fd9953aee",
+  "provider_head_sha_at_capture": "e5e5860bf8713bd378a2460c0047765dfae37575",
+  "local_head_sha_at_capture_or_unknown": "e5e5860bf8713bd378a2460c0047765dfae37575",
   "completed_facts": [
     {
       "fact": "Baseline reproduced distant context and wrong keyboard anchor; composition binds eleven canonical scenes without routing duplication.",
@@ -40,12 +40,22 @@
         "var/runs/scene-context-browser-regression"
       ],
       "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Exact predecessor suite passed1012/9; final five-mode proof exposed stale Home timeout. Timer repair retained original oracle and passed all five modes. Provider findings route to retained lock, self-update, range and measurement regressions; candidate0.17.0.",
+      "evidence": [
+        "var/exact-head-receipt-e5e5860.json",
+        "var/runs/cinematic-browser-20261013/scene-panel-repair-1-results.json",
+        "tests/test_source_launcher.py",
+        "tests/test_context_placement_browser.py"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
     }
   ],
   "remaining_work": [
     {
       "work_id": "final",
-      "action": "Validate exact final commit, refresh provider threads, integrate current green candidate and run canonical source launcher.",
+      "action": "Commit current review repairs, validate exact resulting head, refresh/resolve provider threads, integrate and prove canonical source launcher.",
       "depends_on": [],
       "acceptance": "Exact-head suite and browser proof, no material unresolved review, main containment, launch observed."
     }
@@ -99,7 +109,7 @@
   },
   "exact_next_action": {
     "phase": "PROVE",
-    "action": "Run exact-head final suite/browser checks, provider review and integration, then source launcher proof.",
+    "action": "Commit current review repairs, validate exact resulting head, refresh/resolve provider threads, integrate and prove canonical source launcher.",
     "owner": "coordinator",
     "can_execute_without_operator": true
   },

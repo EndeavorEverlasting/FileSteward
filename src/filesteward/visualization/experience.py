@@ -581,8 +581,13 @@ def render_cinematic_experience_script() -> str:
       .map(el => el.getBoundingClientRect()).filter(r => r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < innerHeight);
   };
   const placeCartoucheAway = (x, y, host) => {
+    // A fixed auto-width panel shrinks at its previous viewport edge. Measure
+    // every full/compact candidate at the origin before choosing a new seat.
+    cartouche.style.left = '0px';
+    cartouche.style.top = '0px';
+    const measured = cartouche.getBoundingClientRect();
     const anchor = pointerModality === 'keyboard' && host ? host.getBoundingClientRect() : {left:x, right:x, top:y, bottom:y};
-    return placeContextPanel({anchor, width:cartouche.offsetWidth, height:cartouche.offsetHeight,
+    return placeContextPanel({anchor, width:measured.width, height:measured.height,
       viewport:{width:innerWidth, height:innerHeight}, obstacles:cartoucheObstacles(host)});
   };
   const watchContextGeometry = (host) => {
@@ -651,7 +656,7 @@ def render_cinematic_experience_script() -> str:
       if (reticle) reticle.classList.add('has-panel');
       cartouche.style.left = pos.left + 'px';
       cartouche.style.top = pos.top + 'px';
-      watchContextGeometry(cue.host);
+      if (cue.host) watchContextGeometry(cue.host);
     } else if (cartouche) {
       cartouche.hidden = true;
       cartouche.setAttribute('aria-hidden', 'true');
@@ -702,7 +707,10 @@ def render_cinematic_experience_script() -> str:
     syncCameraTrace();
   };
 
+  let scenePanelTimer = null;
   const openScenePanel = (label, explain) => {
+    clearTimeout(scenePanelTimer);
+    scenePanelTimer = null;
     const panel = document.getElementById('atlas-scene-panel');
     const title = document.getElementById('atlas-scene-panel-title');
     const body = document.getElementById('atlas-scene-panel-body');
@@ -712,6 +720,8 @@ def render_cinematic_experience_script() -> str:
   };
 
   const hideScenePanel = () => {
+    clearTimeout(scenePanelTimer);
+    scenePanelTimer = null;
     const panel = document.getElementById('atlas-scene-panel');
     if (panel) {
       panel.hidden = true;
@@ -893,6 +903,7 @@ def render_cinematic_experience_script() -> str:
     }, event.clientX, event.clientY, true, true);
   });
   const endRange = () => {
+    if (rangeDrag && rangeDrag.armed) clearContext();
     rangeDrag = null;
     if (marquee) marquee.hidden = true;
   };
@@ -985,7 +996,7 @@ def render_cinematic_experience_script() -> str:
       if (host.classList.contains('brand-home') || host.getAttribute('data-atlas-action') === 'home') {
         resetHighlights();
         openScenePanel('ATLAS HOME', 'Zooming camera to Atlas Home overview. Path highlight, chamber, and native selection reset.');
-        window.setTimeout(hideScenePanel, 1600);
+        scenePanelTimer = window.setTimeout(hideScenePanel, 1600);
       }
     }
     window.requestAnimationFrame(setGuideState);

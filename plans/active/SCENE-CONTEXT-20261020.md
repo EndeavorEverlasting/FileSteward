@@ -67,7 +67,7 @@ var/runs/cinematic-browser-20261013; full-suite output is ignored var/*.log.
 Exact final candidate/command results and integration evidence are recorded in the
 companion handoff packet and final closeout. Tests or source checks never establish
 live ownership, actual deletion or measured reclaim. The published 0.16.0 executable
-remains a separate release; this source candidate is 0.16.1.
+remains a separate release; this source candidate is 0.17.0.
 
 Second-pass source review also repaired a missing selection-summary exclusion,
 position-only Chamber invalidation, forced-colors native pointer fallback, and
@@ -75,3 +75,19 @@ hybrid touch focus suppression. A geometry watcher invalidates moving obstacles;
 transform completion re-projects from the actual current target, so a stationary
 hover can recover its local seat. Browser regressions prove this with one pointer
 move. Pre-commit suite: 1012 passed / 9 platform skips; exact-head reproof follows.
+
+Provider review requires minor version 0.17.0 for the newly documented source
+update capability. It also identified a hostless FRAME RANGE cue being cleared
+by the new watcher; watch only host-backed cues and clear the drag cue on release.
+The exact-head five-mode journey exposed a one-frame 63px Chamber/Path overlap.
+A stale Home timeout hid a later RESOLVE scene panel and shifted the guide; cancel
+that timeout whenever its panel content is replaced. Frame traces show the old
+75px jump and its absence after repair. The original overlap oracle is retained.
+Source updater lock-race repair is required before integration.
+
+Second provider review also repaired measurement at a previous viewport-edge seat
+(reset to origin before each full/compact measure), and parsed the CMD header as
+one batch block before self-update. Actual self-replacement tests retain both
+success/failure exits; concurrent lock tests cover absent and existing lockfiles.
+The version document no longer embeds a stale current version in its historical
+example. All inline and outside-diff findings require exact-head reconciliation.

@@ -155,3 +155,130 @@ def test_keyboard_context_does_not_use_old_pointer_or_teleport_reticle(context_b
         page.screenshot(path=str(output/"keyboard-context.png"))
     finally:
         page.close()
+
+
+def test_home_timeout_cannot_hide_replacement_scene_or_overlap_path(context_browser):
+    browser, url, output = context_browser
+    page = browser.new_page(viewport={"width": 1440, "height": 900})
+    try:
+        page.goto(url, wait_until="networkidle")
+        page.locator('#brand-home').click()
+        page.wait_for_timeout(100)
+        page.evaluate("""() => {
+          window.__sceneOverlapFrames=[];
+          const end=performance.now()+2400;
+          const sample=()=>{
+            const chamber=document.getElementById('decision-chamber');
+            const a=chamber.getBoundingClientRect();
+            const b=document.getElementById('decision-compass').getBoundingClientRect();
+            window.__sceneOverlapFrames.push(!chamber.hidden&&b.bottom>0&&b.top<innerHeight&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top);
+            if(performance.now()<end)requestAnimationFrame(sample);
+          };requestAnimationFrame(sample);
+        }""")
+        page.locator('.decision-guide-step[data-guide-step="RESOLVE"]').click()
+        assert page.locator('#atlas-scene-panel').is_visible()
+        page.wait_for_timeout(1800)
+        assert page.locator('#atlas-scene-panel').is_visible()
+        assert "RESOLVE" in page.locator('#atlas-scene-panel-title').inner_text()
+        page.wait_for_timeout(500)
+        frames=page.evaluate('window.__sceneOverlapFrames')
+        assert len(frames)>30
+        assert not any(frames), "Chamber covered Decision Path during scene continuation"
+        page.screenshot(path=str(output/'home-replacement-scene.png'))
+    finally:
+        page.close()
+
+
+def test_explicit_range_drag_retains_cue_until_release(context_browser):
+    browser, url, output = context_browser
+    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+    try:
+        page.goto(url, wait_until="networkidle")
+        page.wait_for_timeout(350)
+        page.locator('#storage-search').fill('no-synthetic-target-matches-this-query')
+        page.locator('#storage-stage').scroll_into_view_if_needed()
+        page.wait_for_timeout(200)
+        # Find a genuine eligible map surface by browser hit testing. Never inject a
+        # fake cue/host or drag an authored button to obtain a passing positive.
+        points=page.evaluate("""() => {
+          const surface=document.getElementById('storage-stage').getBoundingClientRect();
+          const chrome='input,textarea,button,a,select,[contenteditable="true"],.decision-compass,.decision-chamber,.atlas-hud,.filters,.navigator-pane,header.shell,.chamber-actions,.next-action';
+          const candidates=[];
+          for(let y=Math.max(20,surface.top+20);y<Math.min(innerHeight-70,surface.bottom-70);y+=40)
+            for(let x=Math.max(20,surface.left+20);x<Math.min(innerWidth-100,surface.right-100);x+=80){
+              let e=document.elementFromPoint(x,y);
+              if(e&&!e.closest(chrome)&&e.closest('.map-wrap,.map-stage,#storage-stage,.map-node,[data-atlas-surface]'))candidates.push({x,y});
+            }
+          return candidates;
+        }""")
+        assert points, "Authored map lacks a reachable non-chrome drag surface"
+        positive=None
+        for point in points:
+            x,y=point['x'],point['y']
+            page.mouse.click(x,y)
+            assert page.locator('#atlas-range-marquee').is_hidden()
+            page.mouse.move(x,y)
+            page.mouse.down()
+            page.mouse.move(x+12,y+12)
+            page.wait_for_timeout(150)
+            page.evaluate('() => new Promise(requestAnimationFrame)')
+            state=snapshot(page)
+            if not state['hidden'] and state['label']=='FRAME RANGE':
+                positive=state
+                assert page.locator('#atlas-range-marquee').is_visible()
+                page.screenshot(path=str(output/'explicit-range-drag.png'))
+                page.mouse.up()
+                assert page.locator('#atlas-range-marquee').is_hidden()
+                assert snapshot(page)['hidden']
+                break
+            page.mouse.up()
+        assert positive is not None, "Explicit range drag lost FRAME RANGE before release"
+    finally:
+        page.close()
+
+
+def test_rendered_context_geometry_after_old_right_seat_and_resize(context_browser):
+    browser, url, output = context_browser
+    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+    try:
+        page.goto(url, wait_until="networkidle")
+        # Establish an actual authored context first, then exercise a right-edge
+        # target and shrink the viewport while its old positioning is retained.
+        hover_card_edge(page)
+        assert not snapshot(page)['hidden']
+        page.locator('#storage-search').fill('no-synthetic-target-matches-this-query')
+        page.locator('#storage-stage').scroll_into_view_if_needed()
+        page.wait_for_timeout(200)
+        bounds=page.locator('#storage-stage').bounding_box()
+        old_seat=None
+        for y in range(max(30,int(bounds['y'])+60),850,50):
+            page.mouse.move(1340,y)
+            page.mouse.down()
+            page.mouse.move(1352,y+12)
+            page.wait_for_timeout(150)
+            candidate=snapshot(page)
+            if not candidate['hidden'] and candidate['rect']['left']>900:
+                old_seat=candidate
+                break
+            page.mouse.up()
+        assert old_seat is not None, 'No real right-edge range context seat'
+        page.set_viewport_size({'width':900,'height':1000})
+        page.wait_for_timeout(150)
+        page.mouse.up()
+        page.locator('#storage-search').fill('')
+        visible=0
+        for node_id in ('reclaim-1','keep-1','unknown-1'):
+            card,x,y=hover_card_edge(page,node_id)
+            state=snapshot(page)
+            if state['hidden']:
+                continue
+            visible+=1
+            r=state['rect']
+            assert r['left']>=8 and r['right']<=892
+            assert r['top']>=8 and r['bottom']<=992
+            assert math.hypot(max(r['left']-x,x-r['right'],0),max(r['top']-y,y-r['bottom'],0))<=48
+            assert card.evaluate("""e=>{let a=e.getBoundingClientRect(),b=document.getElementById('atlas-cartouche').getBoundingClientRect();return !(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)}""")
+        assert visible>0, 'Resized actual targets never expose a legal context seat'
+        page.screenshot(path=str(output/'context-after-resize.png'))
+    finally:
+        page.close()

@@ -259,6 +259,21 @@
       "id": "CONTEXT_WRONG_INPUT_OR_STALE_GEOMETRY",
       "negative_fixture": "Keyboard context follows old pointer coordinates, or scroll/resize/scene changes leave stale context visible.",
       "expected": "FAIL"
+    },
+    {
+      "id": "HOME_TIMER_ERASES_LATER_SCENE",
+      "negative_fixture": "A delayed Home explanation timeout hides a subsequently opened RESOLVE panel and displaces the guide under the Chamber.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "RANGE_CUE_REQUIRES_HOST",
+      "negative_fixture": "A valid explicit FRAME RANGE drag loses its cue at the next animation frame because it has no element host.",
+      "expected": "FAIL"
+    },
+    {
+      "id": "CONTEXT_MEASURED_AT_OLD_SEAT",
+      "negative_fixture": "A panel shrinks at its old viewport-edge position, then expands after collision solving and covers evidence or controls.",
+      "expected": "FAIL"
     }
   ],
   "positive_controls": [
