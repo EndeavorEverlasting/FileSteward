@@ -1,0 +1,25 @@
+{
+  "schema_version": "filesteward.safe-capacity-proof/v1",
+  "proof_id": "SAFE-CAPACITY-K4-RECEIPT-POSTCONDITION-20261019",
+  "lane": "K4",
+  "hypothesis": "A successful reclaim receipt must bind semantic executor, action kind, owner identity, ownership graph revision before/after, capacity before/after, and postcondition VERIFIED|PARTIAL|UNVERIFIED — free-space delta alone is insufficient.",
+  "candidate_branch": "feature/safe-capacity-k4-receipt-postcondition-20261019",
+  "owned_surfaces": [
+    "src/filesteward/deletion/postcondition.py",
+    "src/filesteward/deletion/execute.py",
+    "src/filesteward/deletion/__init__.py",
+    "tests/test_reclaim_postcondition.py",
+    "docs/agent/OPERATOR-DELETE-PATH.md"
+  ],
+  "commands": [
+    "python -m pytest tests/test_reclaim_postcondition.py tests/test_delete_execute.py -q",
+    "python -m pytest -q"
+  ],
+  "focused_result": "16 passed, 1 skipped (test_reclaim_postcondition + test_delete_execute)",
+  "full_suite_result": "976 passed, 13 skipped",
+  "base_main_sha_before_commit": "df0e887aff9abddced3b6e6fe08d051d346d04be",
+  "notes": [
+    "K3 already binds graph_revision into preflight/mutation admission; K4 completes the receipt/postcondition envelope.",
+    "J5 dependency freshness is retained via deletion/ownership.py revalidate_ownership immediately before each mutation."
+  ]
+}
