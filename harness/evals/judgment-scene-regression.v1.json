@@ -509,5 +509,51 @@
       "actual scroll containers retain authored scrollbar styling",
       "reduced motion arrives at same destination without travel"
     ]
+  },
+  "downloads_first_review_20261021": {
+    "operator_redesign_authority": "PR68 and direct operator instruction replace manual normal-onboarding path entry and second-open click with OS discovery, one explicit review and automatic Atlas continuation.",
+    "contract": "harness/contracts/downloads-first-review.v1.json",
+    "invariants": [
+      "D01_no_scan_on_open_or_discovery",
+      "D02_one_click_begins_and_opens_review",
+      "D03_current_scope_explicit_metadata_only",
+      "D04_os_knownfolder_not_guessed",
+      "D05_forbidden_and_linked_paths_still_refused",
+      "D06_drift_between_display_and_click_refused",
+      "D07_client_cannot_forge_scope_or_eligibility",
+      "D08_existing_local_request_auth",
+      "D09_one_job_and_no_automatic_retry",
+      "D10_sample_import_and_old_captures_remain_observational",
+      "D11_no_move_quarantine_delete_schedule_content_read_or_upload",
+      "D12_runtime_storage_stays_os_owned",
+      "D13_keyboard_touch_narrow_reduced_motion_forced_colors",
+      "D14_picker_cancel_does_not_scan",
+      "D15_partial_unknown_protected_not_promoted",
+      "D16_after_process_restart_requires_new_click"
+    ],
+    "retained_controls": [
+      "tests/test_downloads_first_review_acceptance.py",
+      "tests/test_downloads_scope_protocol.py",
+      "tests/test_windows_folders.py",
+      "tests/test_downloads_welcome_browser.py",
+      "tests/test_current_review_browser.py",
+      "tests/test_launch_current_review.py",
+      "tests/test_installed_runtime.py"
+    ],
+    "negative_cases": [
+      "discovery or picker selection starts a scan",
+      "token replay, expiry or cross-session activation",
+      "original directory identity changes at same path",
+      "failed request authentication consumes authority or opens picker",
+      "PARTIAL or EMPTY warning disappears during automatic navigation",
+      "onboarding redesign weakens Atlas judgment or captured-run downgrade"
+    ],
+    "positive_controls": [
+      "one explicit Review Downloads activation reaches current Atlas",
+      "native picker cancellation leaves scopes unconsumed",
+      "selected scope requires separate review activation",
+      "application runtime remains under its existing owner",
+      "sample remains usable when Downloads unavailable"
+    ]
   }
 }

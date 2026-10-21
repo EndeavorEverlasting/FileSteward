@@ -30,6 +30,7 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - Do not resolve semantic ambiguity for the operator.
 - Judgment-bearing UX is script-owned: implement `harness/contracts/judgment-scene-workflow.v1.json`; do not invent, flatten, rename, or compress scenes/choices to bridge a gap.
 - Technical safety facts must be resolved through safe adapters/reducers before asking the operator.
+- Normal onboarding resolves Downloads through the Windows Known Folder API. Do not ask the operator to type an absolute path: display the discovered scope and use Review Downloads as its deliberate metadata-only gate. Native folder selection is secondary and does not itself authorize a scan.
 - Storage may have multiple simultaneous owners/dependencies. Build and reduce the cross-domain ownership graph; never let a less-protective app/repo/toolchain classification erase a more-protective edge.
 - Entire CLI/Graph is a context accelerator for repo relationships, worktree/current-change impact, and activity evidence. It never independently declares storage legacy or disposable; absence from Entire is not evidence of dispensability. Human judgment is reserved for value/preference and exact action approval.
 - If the canonical scene script lacks a required mapping, emit `BLOCKED_JUDGMENT_GAP` with the exact missing judgment; do not author product policy locally. Independent safe lanes may continue.
