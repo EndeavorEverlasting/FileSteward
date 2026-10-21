@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import base64
 import csv
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager, ExitStack, nullcontext
 from dataclasses import asdict
 import hashlib
 import hmac
@@ -142,6 +142,30 @@ class CurrentScanScope:
                 iterator.close()
 
         return entries()
+
+
+class ScopedCurrentResolver:
+    """Keep fresh collection bound to the operator's original directory objects.
+
+    This guard preserves the original resolver and its batch protocol. It never
+    caches evidence or promotes the scan's presentation snapshot into authority.
+    Construction is inert; admission already owns the captured scope identity.
+    """
+
+    def __init__(self, delegate, scope: CurrentScanScope):
+        self.delegate, self.scope = delegate, scope
+
+    def __call__(self, path):
+        with self.scope.pinned():
+            self.scope.validate(path)
+            return self.delegate(path)
+
+    @contextmanager
+    def read_batch(self):
+        with self.scope.pinned():
+            batch = getattr(self.delegate, "read_batch", None)
+            with (batch() if callable(batch) else nullcontext()):
+                yield self
 
 
 def prepare_runtime() -> Path:
@@ -304,7 +328,7 @@ class LaunchSession:
                 # This process-owned binding cannot be reconstructed from an
                 # imported run.json or browser assertion. After restart, captured
                 # evidence remains inspectable but requires a new explicit scan.
-                self.current_runs[identifier] = (marker, root, resolver)
+                self.current_runs[identifier] = (marker, root, ScopedCurrentResolver(resolver, scope))
                 state = "PARTIAL" if partial else ("EMPTY" if not item_count else "READY")
                 self.scan_job = dict(job_id=identifier, state=state, run_id=identifier,
                     item_count=item_count, disposition_counts=dict(result.disposition_counts),
@@ -428,6 +452,7 @@ class LaunchSession:
             active = self.current_runs.get(identifier)
             if active:
                 bound, root, resolver = active
+                resolver.scope.validate()
                 metadata = json.loads((target / "run.json").read_text(encoding="utf-8"))
                 if (marker != bound or marker.get("is_sample") is True or metadata.get("root") != str(root)
                         or hashlib.sha256((target / "run.json").read_bytes()).hexdigest() != bound["run_digest"]):

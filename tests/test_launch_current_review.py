@@ -111,7 +111,7 @@ def test_explicit_metadata_scan_reaches_validated_active_bridge(current_service,
     assert opened["url"].startswith(session.origin)
     assert bridge_calls[0]["observation_only"] is False
     assert bridge_calls[0]["scan_root"] == source
-    assert bridge_calls[0]["ownership_resolver"] is unresolved_ownership
+    assert bridge_calls[0]["ownership_resolver"].delegate is unresolved_ownership
     assert important.read_text() == "Synthetic data must remain unchanged"
     assert not list(target.glob("*approval*"))
     report = session.reviews[result["run_id"]].report_path
@@ -321,7 +321,7 @@ def test_snapshot_coverage_is_visible_but_original_resolver_reaches_bridge(curre
     assert "Task enumeration unavailable" in result["coverage"][0]["gaps"][0]
     assert snapshots == [True]
     session.open_review(result["run_id"])
-    assert observed[0]["ownership_resolver"] is current
+    assert observed[0]["ownership_resolver"].delegate is current
 
 
 def test_root_parent_replaced_after_admission_aborts_before_scanner(current_service, tmp_path, monkeypatch):
@@ -484,3 +484,82 @@ def test_scope_breach_aborts_both_canonical_traversals(current_service, tmp_path
     assert not list((runtime / "runs").glob("*/inventory.csv"))
     assert not list((runtime / "runs").glob("*/.launch-run.json"))
     assert not session.current_runs
+
+
+@pytest.mark.parametrize("opened", [False, True])
+def test_completed_review_retains_admitted_root_identity_for_live_evidence(current_service, tmp_path, opened):
+    from filesteward.review_bridge import STATE_PATH
+    from filesteward.inventory.scan import stable_item_id
+    session, _, _ = current_service
+    parent = tmp_path / "original-parent"
+    source = parent / "synthetic"
+    source.mkdir(parents=True)
+    (source / "record.txt").write_text("original synthetic fixture")
+    observed = []
+
+    def provider(path):
+        observed.append(path)
+        return unresolved_ownership(path)
+
+    session.resolver_factory = lambda root: provider
+    assert start(session, source)[0] == 202
+    identifier = finished(session)["run_id"]
+    if opened:
+        session.open_review(identifier)
+        service = session.reviews[identifier]
+        assert request(service.url.rstrip("/"), "GET", STATE_PATH + "?item_id=" + stable_item_id("record.txt"))[0] == 200
+    observed.clear()
+    parent.rename(tmp_path / "preserved-original-parent")
+    source.mkdir(parents=True)
+    (source / "record.txt").write_text("outside original admission")
+    resolver = session.current_runs[identifier][2]
+    with pytest.raises(ValueError, match="ancestor changed"):
+        resolver(str(source / "record.txt"))
+    with pytest.raises(ValueError, match="ancestor changed"):
+        with resolver.read_batch():
+            resolver(str(source / "record.txt"))
+    with pytest.raises(ValueError, match="ancestor changed"):
+        session.open_review(identifier)
+    if opened:
+        status, _, state = request(service.url.rstrip("/"), "GET", STATE_PATH + "?item_id=" + stable_item_id("record.txt"))
+        assert status in {200, 400}
+        assert ("unavailable" in json.dumps(state).lower() if status == 200
+            else "ancestor changed" in state["error"])
+    assert observed == [], "Original-root replacement must not reach any live provider"
+
+
+def test_scoped_live_resolver_preserves_fresh_calls_and_delegated_batch(tmp_path):
+    from contextlib import contextmanager
+    source = tmp_path / "synthetic"
+    source.mkdir()
+    path = str(source)
+    events = []
+
+    class FreshResolver:
+        def __call__(self, raw):
+            events.append(("fresh", raw))
+            return unresolved_ownership(raw)
+
+        @contextmanager
+        def read_batch(self):
+            events.append("batch-enter")
+            try:
+                yield self
+            finally:
+                events.append("batch-exit")
+
+    original = FreshResolver()
+    wrapped = launch.ScopedCurrentResolver(original, launch.CurrentScanScope(source))
+    assert wrapped.delegate is original
+    assert events == []
+    with wrapped.read_batch() as current:
+        assert current is wrapped
+        current(path)
+        current(path)
+    assert events == ["batch-enter", ("fresh", path), ("fresh", path), "batch-exit"]
+    wrapped(path)
+    assert events[-1] == ("fresh", path), "The scope guard must not cache current evidence"
+    plain = launch.ScopedCurrentResolver(unresolved_ownership, wrapped.scope)
+    with plain.read_batch() as current:
+        assert current is plain
+        assert current(path).adapters_complete is False
