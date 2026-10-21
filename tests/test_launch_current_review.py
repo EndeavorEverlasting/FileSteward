@@ -62,19 +62,19 @@ def test_no_startup_scan_or_collector_construction(current_service):
     assert not list((runtime / "runs").iterdir())
 
 
-def test_current_result_keeps_primary_action_before_collapsed_diagnostics(current_service):
-    import re
+def test_current_result_automatically_opens_after_verified_terminal_state(current_service):
+    # Operator-approved PR68 removes the second Open step. Keep result status
+    # announced and require a verified canonical terminal state before opening.
     session, _, _ = current_service
     status, _, html = request(session.origin, "GET", "/")
     assert status == 200
-    assert re.search(r'<div[^>]*id="scan-result"[^>]*role="status"[^>]*tabindex="-1"[^>]*></div>', html)
-    assert re.search(r'<details id="ownership-checks" hidden><summary id="ownership-summary">Ownership checks</summary><ul id="ownership-gaps"></ul></details>', html)
-    assert html.index('id="open-current"') < html.index('id="ownership-checks"')
-    assert "byId('scan-result').append(gaps)" not in html
-    assert "byId('ownership-checks').open = false" in html
-    assert "String(record.domain || 'ownership').replace(/_/g, ' ')" in html
-    assert "byId('scan-result').focus()" in html
-    assert "Ownership checks \\u2014 " in html
+    assert 'id="scan-result" role="status"' in html
+    assert 'id="open-current"' not in html
+    assert "['READY','PARTIAL','EMPTY'].includes(result.state)" in html
+    assert html.index("['READY','PARTIAL','EMPTY'].includes(result.state)") < html.index("const opened = await request('/api/v1/launch/open'")
+    assert "if (result.state === 'ERROR') throw new Error(result.message)" in html
+    assert 'Opening your current review...' in html
+    assert 'A new review requires another deliberate click.' in html
 
 
 def test_explicit_metadata_scan_reaches_validated_active_bridge(current_service, tmp_path, monkeypatch):
