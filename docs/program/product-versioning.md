@@ -2,7 +2,7 @@
 
 **Authority:** `[project].version` in `pyproject.toml`
 
-**Current candidate version:** `0.16.0` (accessible Windows welcome and versioned distribution; publication requires release gates)
+**Current candidate version:** `0.17.1` (local context placement and complete scene composition; source candidate, separate from the published 0.16.0 Windows preview)
 
 
 **Status:** P130 repository versioning system established for future changes; no release tag is created by this sprint.
@@ -72,7 +72,7 @@ The first runtime v3 implementation should run:
 python scripts/versioning.py ensure-visual-bump --base origin/main --kind visual-feature
 ```
 
-At the time this example was established, the `0.1.0` base yielded `0.2.0`. These are historical example versions; the current candidate is `0.16.0`, as declared in `pyproject.toml`.
+At the time this example was established, the `0.1.0` base yielded `0.2.0`. These are historical example versions; the current candidate is the version declared in `pyproject.toml`.
 
 Accepted visual-only polish uses `visual-polish` and increments PATCH from the refreshed base, unless the candidate already advanced beyond that base. A version bump is not release or deployment proof.
 
