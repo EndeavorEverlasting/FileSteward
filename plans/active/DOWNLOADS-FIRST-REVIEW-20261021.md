@@ -91,3 +91,24 @@ The first measured browser candidate failed narrow sample visibility and long
 scope-path wrapping. Compact narrow spacing and wrap-anywhere on the existing
 review banner repaired those failures; no destination geometry assertion was
 removed. Partial and empty warnings remain visible after automatic navigation.
+
+### Exact local proof and current continuation
+
+Behavioral input floor `6594de534cccc50b594e82af6d04208bee28ef80` passed
+**1191 tests / 10 skips / 2 existing pytest deprecation warnings** in284.62s.
+All10 skips were traced to unavailable Windows symlink privilege (WinError1314).
+The retained five-mode complete synthetic cinematic journey has0failures.
+The built0.19.0 wheel was installed in a separate environment; its welcome,
+Windows adapter and11scene scripts load. The actual candidate welcome was
+observed with OS discovery and scanIDLE before/after, without review activation.
+Ignored receipts live under `var/runs/downloads-first-20261021/`.
+
+Subsequent proof-state prose/plan/handoff edits do not change runtime/test inputs.
+The only contract change is integration-state reporting plus equivalent JSON
+Unicode escaping; compare parsed contract with integration_state excluded before
+reusing proof. Do not rerun the whole suite merely for SHA movement.
+
+Native isolated-profile interaction acceptance and provider review remain named
+continuations. No merge/release or real personal scan is claimed. Entire is
+installed but not configured (`enabled:false`, not set up); repository-owned
+local proof proceeded without substituting provider Actions for it.

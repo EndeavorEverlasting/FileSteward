@@ -1,0 +1,114 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "DOWNLOADS-FIRST-REVIEW-20261021",
+  "lane_id": "downloads-first-convergence",
+  "role": "FileSteward implementation and proof coordinator",
+  "canonical_plan_ref": "plans/active/DOWNLOADS-FIRST-REVIEW-20261021.md",
+  "contract_refs": [
+    "harness/contracts/downloads-first-review.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json"
+  ],
+  "provider_base_sha_at_capture": "9bc065a853c280e34477496c9d8f972c11348aff",
+  "provider_head_sha_at_capture": "809c305061cf7002c8cd9db287a6776be1b9a17b",
+  "local_head_sha_at_capture_or_unknown": "809c305061cf7002c8cd9db287a6776be1b9a17b",
+  "completed_facts": [
+    {
+      "fact": "Downloads-first scope service, native Windows adapter and accessible one-click welcome implemented as source0.19.0",
+      "evidence": [
+        "src/filesteward/launch.py",
+        "src/filesteward/windows_folders.py",
+        "src/filesteward/web/launch.html"
+      ],
+      "proof_state": "IMPLEMENTED"
+    },
+    {
+      "fact": "Focused synthetic API/browser convergence84passed1Windowsprivilege skip; independent scopeprotocol29passed; five-mode retained cinematic journey0failures; isolated wheel includes welcome, adapter and11scenes",
+      "evidence": [
+        "var/runs/downloads-first-20261021/proof-inputs.json",
+        "var/runs/downloads-first-20261021/cinematic/downloads-first-final-results.json",
+        "var/runs/downloads-first-20261021/wheel-smoke.json"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Candidate welcome observed in Edge with actual OS discovery; scan IDLE before/after; no review click or personal scan",
+      "evidence": [
+        "var/runs/downloads-first-20261021/preview-receipt.json"
+      ],
+      "proof_state": "LIVE_OBSERVED"
+    },
+    {
+      "fact": "Exact full retained suite1191passed10Windows-symlinkprivilege skips2preexistingwarnings; nofailedtest",
+      "evidence": [
+        "var/runs/downloads-first-20261021/full-suite.log",
+        "var/runs/downloads-first-20261021/skip-reasons.log",
+        "var/runs/downloads-first-20261021/remaining-skip-reasons.log"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "native-isolated-acceptance",
+      "action": "In a supported interactive isolated Windows profile, verify actual KnownFolder default and relocated registration, native picker select/cancel on synthetic folders, separate selected-review action and no preactivation scan; never use personal Downloads as substitute",
+      "depends_on": [],
+      "acceptance": "Native isolated-profile receipt proves exact returned paths, cancel, one explicit synthetic review and no earlier scan"
+    },
+    {
+      "work_id": "exact-integration",
+      "action": "Refresh main and PR68 exact head, reconcile all material provider review, retain local full proof fingerprint, then integrate only when required gates pass and verify canonical containment/content",
+      "depends_on": [
+        "native-isolated-acceptance"
+      ],
+      "acceptance": "Exact reviewed/proven head integrated with clean canonical main; source launcher refresh observed"
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "launch onboarding/scope service",
+    "windows_folders adapter",
+    "welcome and associated tests",
+    "Downloads-first docs/contracts/plan"
+  ],
+  "forbidden_surfaces": [
+    "personal Downloads scan without click",
+    "deletion/move/quarantine/schedule",
+    "ownership judgment policy",
+    "release publication",
+    "other product repositories"
+  ],
+  "dependencies": [],
+  "external_prerequisites": [
+    "Supported native interactive Windows isolated profile/Windows Sandbox; current computer-use native surfaces disabled",
+    "Entire installed but not configured; safe local proof continues"
+  ],
+  "proof_receipts": [
+    "var/runs/downloads-first-20261021/proof-inputs.json",
+    "var/runs/downloads-first-20261021/full-suite.log",
+    "var/runs/downloads-first-20261021/cinematic.log",
+    "var/runs/downloads-first-20261021/wheel-smoke.json",
+    "var/runs/downloads-first-20261021/preview-receipt.json"
+  ],
+  "proof_ceiling": "Implemented/pushed source candidate; synthetic browser and package proof; actual default discovery welcome observed without scan. Native isolated interactive acceptance UNPROVEN. No merge/release/personal scan/reclaim claim.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [
+    "var/runs/downloads-first-20261021/",
+    "preserved isolated writer worktrees and ignored native probe receipts; prior shell-driven probe not accepted as supported interactive proof"
+  ],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": {
+    "missing_adapter": "Supported native interactive isolated Windows test surface",
+    "evidence": [
+      "Current computer-use documentation disables native APIs",
+      "Native mocks/API and prior bounded probe cannot establish isolated-profile interactive acceptance"
+    ],
+    "repair_route": "Run existing OS adapter and actual welcome in supported isolated Windows profile; retain all completed local evidence and resume exact review/integration"
+  },
+  "exact_next_action": {
+    "phase": "PROVE",
+    "action": "Complete isolated Windows native interaction acceptance; no manual user folder path required for onboarding",
+    "owner": "Windows isolated-profile runtime proof operator",
+    "can_execute_without_operator": false
+  },
+  "return_contract": "Return exact candidate SHA, native observations and receipt, zero preactivation scan, then coordinator refreshes and completes PR68 integration; no planning restart or repeated synthetic full floor absent relevant changes."
+}
