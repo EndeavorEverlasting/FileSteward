@@ -468,7 +468,8 @@
       "scan-root alone does not enable a resolver",
       "unavailable domain coverage cannot disappear from attribution",
       "read-only snapshot cannot authorize mutation",
-      "source binding drift invalidates current opening"
+      "source binding drift invalidates current opening",
+      "CLI cannot activate launcher sample/import/capture with current-evidence flag"
     ],
     "positive_controls": [
       "explicit admitted synthetic root uses canonical metadata pipeline",

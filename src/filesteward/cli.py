@@ -667,7 +667,16 @@ def _run_review(args: argparse.Namespace) -> int:
         return EXIT_INVALID
     try:
         target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
-        resolver_options = {}
+        # Launcher captures have an explicit observational provenance boundary.
+        # A CLI flag cannot recreate a process-owned current folder admission.
+        try:
+            (target / ".launch-run.json").lstat()
+            captured = True
+        except FileNotFoundError:
+            captured = False
+        if captured and args.current_evidence:
+            raise ValueError("Captured launcher evidence stays observational; start a new folder review in the local app")
+        resolver_options = {"observation_only": True} if captured else {}
         if args.current_evidence:
             from filesteward.ownership.current import make_current_resolver
             resolver_options["ownership_resolver"] = make_current_resolver(

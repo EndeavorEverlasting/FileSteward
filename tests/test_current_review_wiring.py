@@ -121,3 +121,34 @@ def test_current_cli_does_not_infer_relative_scope(monkeypatch, capsys):
     assert cli.main(["review", "unused", "--current-evidence", "--scan-root", "relative"]) == cli.EXIT_INVALID
     assert "absolute --scan-root" in capsys.readouterr().err
     called.assert_not_called()
+
+
+@pytest.mark.parametrize("source_kind,is_sample", [(None,True),(None,False),("native-current",False)])
+def test_cli_cannot_upgrade_launcher_capture(tmp_path, monkeypatch, capsys, source_kind, is_sample):
+    import json
+    import filesteward.review_bridge as bridge
+    import filesteward.ownership.current as current
+    marker = {"schema_version":"filesteward.launch-run/v1", "is_sample":is_sample}
+    if source_kind:
+        marker["source_kind"] = source_kind
+    (tmp_path / ".launch-run.json").write_text(json.dumps(marker), encoding="utf-8")
+    monkeypatch.setattr(cli, "resolve_run_dir_argument", lambda value: tmp_path)
+    monkeypatch.setattr(cli, "prove_run_dir_under_runtime", lambda value: value)
+    served, factory = Mock(), Mock()
+    monkeypatch.setattr(bridge, "run_review_until_interrupt", served)
+    monkeypatch.setattr(current, "make_current_resolver", factory)
+    assert cli.main(["review", "unused", "--scan-root", str(tmp_path), "--current-evidence"]) == cli.EXIT_INVALID
+    assert "stays observational" in capsys.readouterr().err
+    served.assert_not_called(); factory.assert_not_called()
+    assert cli.main(["review", "unused", "--scan-root", str(tmp_path)]) == cli.EXIT_OK
+    assert served.call_args.kwargs["observation_only"] is True
+
+
+def test_interrupt_wrapper_preserves_observation_boundary(tmp_path, monkeypatch):
+    import filesteward.review_bridge as bridge
+    thread = Mock(); thread.is_alive.return_value = False
+    result = SimpleNamespace(thread=thread, server=Mock())
+    serve = Mock(return_value=result)
+    monkeypatch.setattr(bridge, "serve_review", serve)
+    bridge.run_review_until_interrupt(tmp_path, observation_only=True)
+    assert serve.call_args.kwargs["observation_only"] is True

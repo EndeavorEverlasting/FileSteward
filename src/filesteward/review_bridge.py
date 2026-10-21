@@ -1316,6 +1316,7 @@ def run_review_until_interrupt(
     open_browser: bool = True,
     scan_root: str | Path | None = None,
     ownership_resolver: OwnershipResolver = unresolved_ownership,
+    observation_only: bool = False,
     on_ready: Optional[Callable[[ReviewServeResult], None]] = None,
 ) -> ReviewServeResult:
     result = serve_review(
@@ -1324,6 +1325,7 @@ def run_review_until_interrupt(
         open_browser=open_browser,
         scan_root=scan_root,
         ownership_resolver=ownership_resolver,
+        observation_only=observation_only,
     )
     try:
         if on_ready is not None:
