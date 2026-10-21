@@ -23,3 +23,48 @@ For an original validated scanner run, the CLI can explicitly request current ev
 Startup does not grant action approval, delete files, inspect file contents, call a model or register recurring tasks.
 
 If the page is already open, use **Close app** before updating, then rerun the CMD. The application can reuse a local session, but the source updater requires it to be closed so your browser observes the newly updated code. Server addresses use `http://127.0.0.1` with a locally assigned port and are printed in the console. If the browser does not open automatically, copy that printed address into it.
+
+
+## Open FileSteward from Windows Start or the desktop — no localhost bookmarks
+
+**Do not bookmark a \`127.0.0.1:<port>\` URL.** The web server exists only while the
+local application is running; its port can change on each launch. Closing the
+agent/console that hosted the server can leave a browser tab displaying
+\`ERR_CONNECTION_REFUSED\`. Browser Reload cannot start a Windows process.
+
+The supported behavior is a **Windows shortcut that launches FileSteward**, not a
+web link. From a checked-out branch/worktree, install a shortcut once (no admin
+rights) using the script in that same repository:
+
+\`\`\`powershell
+# Run from PowerShell on the Windows machine hosting FileSteward.
+$repo = Join-Path $env:USERPROFILE 'dev\worktrees\FileSteward\downloads-first-20261021'
+& (Join-Path $repo 'scripts\windows\Install-FileSteward-Shortcut.ps1')
+\`\`\`
+
+If Windows' PowerShell script policy prevents that command, report the actual
+policy message to the local agent; do not disable enterprise security settings
+or move the checkout into a forbidden directory. Git must first have the latest
+shortcut script locally, preserving unrelated work.
+
+The installer resolves its own repository/worktree root, rejects an unrelated or
+linked location, creates the isolated \`.venv\` only when absent, validates the
+installed entry point, and creates **FileSteward (Preview)** shortcuts in the
+current user's Start Menu and Desktop. Use \`-StartMenuOnly\` to skip the Desktop
+shortcut; use \`-NoLaunch\` to install without starting the app. Existing links
+pointing at a different target are preserved rather than overwritten. A
+canonical \`dev\FileSteward\` invocation creates **FileSteward** (no Preview)
+shortcuts after the approved integration becomes available on main.
+
+Clicking the shortcut runs the local \`pythonw.exe -m filesteward.cli launch\`
+entrypoint **without flashing a console**. It invokes the existing
+single-instance lock/health handshake: if the app is already alive, open its
+actual loopback URL; otherwise create a new session on a free port and open the
+browser. The browser tab does not own the process lifetime. This is a source
+preview development shortcut, not a published signed Windows installer or
+permission for automatic file scans.
+
+**Evidence boundary:** The committed script and structural tests do not prove
+that a native Windows \`.lnk\` was created or clicked. That requires an
+interactive Windows runtime acceptance test. No actual personal Downloads
+folder is scanned by installing or launching the shortcut.
