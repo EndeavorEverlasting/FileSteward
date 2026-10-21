@@ -12,8 +12,8 @@
     "harness/evals/execution-handoff-review-gates.v1.json"
   ],
   "provider_base_sha_at_capture": "772d2f18919c7a1c0ae6eea555d373fb610622c3",
-  "provider_head_sha_at_capture": "25cc6fe9324513de0d45d80ee73a19ed6997414e",
-  "local_head_sha_at_capture_or_unknown": "25cc6fe9324513de0d45d80ee73a19ed6997414e",
+  "provider_head_sha_at_capture": "ffbf166a71079808d65b264c1b3bac0de38b7284",
+  "local_head_sha_at_capture_or_unknown": "ffbf166a71079808d65b264c1b3bac0de38b7284",
   "completed_facts": [
     {
       "fact": "PR63 integrated source0.17.1 scene composition/tooltip/CMD slice; canonical launcher observed.",
@@ -38,30 +38,49 @@
         "var/runs/current-review-browser"
       ],
       "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Cinematic waypoint/physical pointer repair passed23 focused visual controls; complete five-mode synthetic journey0 failures on ffbf166. This includes declared receipt rendering, not live personal execution.",
+      "evidence": [
+        "tests/test_resolve_framing_browser.py",
+        "tests/test_context_placement_browser.py",
+        "var/runs/cinematic-browser-20261013/active-review-ffbf166-results.json"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Eight provider findings were classified. Broken-registration, root identity/traversal, forbidden CLI root, captured-root opening, missing oracle and read-response batching are implemented with regression controls. Atomic shutdown reservation returned an isolated final commit for convergence.",
+      "evidence": [
+        "tests/test_current_ownership.py",
+        "tests/test_launch_current_review.py",
+        "tests/test_current_review_wiring.py",
+        "tests/test_scene_composition_contract.py"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
     }
   ],
   "remaining_work": [
     {
-      "work_id": "resolve-framing",
-      "action": "Repair operator-observed offscreen Resolve transition and branded pointer/scrollbar regression in isolated visual lane.",
-      "depends_on": [],
-      "acceptance": "Before/after viewport/scroll evidence and retained scene/context oracles green."
-    },
-    {
       "work_id": "release",
-      "action": "Converge visual repair, exact candidate suite/browser/build/review, integrate main and observe updated canonical app.",
-      "depends_on": [
-        "resolve-framing"
-      ],
-      "acceptance": "No unresolved material review; default content/containment and0.18.0 launch proved."
+      "action": "Rejoin atomic shutdown reservation, run affected exact-candidate checks, build, refresh/resolve exact provider threads, integrate main, observe canonical source-CMD app.",
+      "depends_on": [],
+      "acceptance": "All material findings repaired/disproven, local proof current by relevance fingerprint, main content/containment and0.18.0 entry observed."
     },
     {
-      "work_id": "real-data-acceptance",
-      "action": "Operator selects exact real folder/action before live observation; unsupported evidence domains stay blocked, never inferred eligible.",
+      "work_id": "current-ownership-coverage",
+      "action": "Canonical ownership adapter owner must complete applicable native domains and exact regeneration/semantic execution proofs for an admitted target; current missing probes remain fail-closed.",
       "depends_on": [
         "release"
       ],
-      "acceptance": "Exact bounded gate precedes live observation; do not claim reclaim without canonical authorization/receipt."
+      "acceptance": "Supported root-specific ownership coverage plus canonical regeneration/semantic action proof; no guessing from absence/location or user safety assertions."
+    },
+    {
+      "work_id": "real-data-acceptance",
+      "action": "Operator selects exact real folder and metadata-only action before crossing into live storage observation; any deletion requires its distinct exact eligible scope/action lifecycle.",
+      "depends_on": [
+        "release"
+      ],
+      "acceptance": "Exact bounded root/action gate, then fresh run/current UI inspection. No reclaim claim without approval, bounded executor, receipt and capacity readback."
     }
   ],
   "owned_mutation_surfaces": [
@@ -80,7 +99,8 @@
     "harness/evals/judgment-scene-regression.v1.json",
     "plans/active/ACTIVE-REVIEW-20261021*",
     "pyproject.toml",
-    "src/filesteward/__init__.py"
+    "src/filesteward/__init__.py",
+    "src/filesteward/run.py"
   ],
   "forbidden_surfaces": [
     "personal storage observation or deletion without exact root/action",
@@ -96,7 +116,11 @@
     "tests/test_current_review_wiring.py",
     "tests/test_current_review_browser.py",
     "tests/test_launch_current_review.py",
-    "var/runs/active-review-20261021/boundaries.jsonl"
+    "var/runs/active-review-20261021/boundaries.jsonl",
+    "var/exact-candidate-inputs-ffbf166.json",
+    "var/exact-candidate-full-suite.log",
+    "var/exact-candidate-journey.log",
+    "var/runs/cinematic-browser-20261013/active-review-ffbf166-results.json"
   ],
   "proof_ceiling": "Synthetic folder metadata/browser and repository proof; native providers mocked for tests. No personal scan/delete, reclaim or published Windows release.",
   "unresolved_review_threads": [],
@@ -113,8 +137,8 @@
     "repair_route": "Use current repository execution-handoff schema and actual native lane receipts; configure Entire separately if desired."
   },
   "exact_next_action": {
-    "phase": "PROVE",
-    "action": "Converge Resolve framing repair then run exact candidate validation and integrate.",
+    "phase": "CONVERGE",
+    "action": "Rejoin shutdown reservation, validate affected exact candidate and reconcile provider threads before main integration and source-CMD observation.",
     "owner": "coordinator",
     "can_execute_without_operator": true
   },
