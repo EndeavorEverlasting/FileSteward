@@ -126,7 +126,7 @@ settles sharply, and keeps the authored physical pointer when context is dismiss
 Reduced motion arrives without travel; forced colors keeps native input fallbacks.
 The visual worker hit a usage limit before commit. Coordinator took over its idle
 isolated lane, preserved evidence, repaired callback boolean handling and no-seat
-pointer continuity, and committed only visual owners after23 focused tests passed.
+pointer continuity, and committed only visual owners after 23 focused tests passed.
 
 Provider/source review repairs preserve broken application registration when a
 scoped leaf is missing; retain captured/sample/import provenance through CLI;
