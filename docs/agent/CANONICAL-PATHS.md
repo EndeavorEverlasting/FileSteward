@@ -105,6 +105,14 @@ Rules:
 - Repository-owned local tests/validators/build commands remain the semantic proof owner. GitHub Actions, when present, are optional provider-side execution/independent proof.
 - If Entire is expected but unavailable on the current host, report `ENTIRE_STATE: UNAVAILABLE_ON_HOST`; do not silently substitute another continuity system or infer that Entire is disabled in the repository.
 
+## 4.3 Cross-repository read-only reference snapshots (placement proposal only)
+
+The FileSteward-owned locator in `harness/contracts/canonical-artifact-placement.v1.json` and `src/filesteward/placement.py` identifies a *proposed*, host-relative reference-only location at `<USERPROFILE>/dev/_shared/canonical-artifacts/<namespace>/<filename>`. It is **not** a checkout, installed application root, FileSteward runtime, backup, sync mount, or source-of-truth replacement. Its existence is **not** inferred from the tracked policy. A workstation-local `--probe` must prove the actual host path, safety and artifact provenance before claiming it exists. The normal mutable checkout and worktree paths in section 3 remain unchanged.
+
+Git-owned contracts remain at their owning repo checkout paths. Google Drive remains master for upstream research; a snapshot of its source registry can be placed in the shared read-only reference namespace by a separate, bounded, authorized source-publishing workflow (not FileSteward's locator). An exact-source sidecar/hash proves local integrity only, not provider revision freshness. The runtime-generated host placements and exact paths are private ignored FileSteward `var/` receipts. Never treat age, missing files, symlink/reparse targets, external mounts, mismatched Git origin or a guessed home directory as permission to overwrite or move data.
+
+See `docs/agent/CANONICAL-ARTIFACT-PLACEMENT.md` for the deterministic probe and outcome states.
+
 ## 5. Path relation and production state — record, never collapse
 
 Observed receipt (state as of this contract):
