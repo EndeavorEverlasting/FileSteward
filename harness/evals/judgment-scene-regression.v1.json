@@ -538,7 +538,7 @@
       "tests/test_downloads_welcome_browser.py",
       "tests/test_current_review_browser.py",
       "tests/test_launch_current_review.py",
-      "tests/test_installed_runtime.py"
+      "tests/test_installed_runtime_profile.py"
     ],
     "negative_cases": [
       "discovery or picker selection starts a scan",
