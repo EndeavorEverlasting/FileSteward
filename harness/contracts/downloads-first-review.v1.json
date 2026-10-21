@@ -73,7 +73,21 @@
       "auth": "existing Host+Origin+session-header admission",
       "effect": "interactive_native_Windows_folder_picker_only; never starts a scan",
       "return": "selected scope display + opaque session token; cancellation is no-op",
-      "failure": "NO_INTERACTIVE_DESKTOP or PICKER_UNAVAILABLE must be surfaced without guessed path"
+      "failure": "NO_INTERACTIVE_DESKTOP or PICKER_UNAVAILABLE must be surfaced without guessed path",
+      "body_keys": [
+        "intent"
+      ],
+      "intent_value": "choose",
+      "cancel_response": {
+        "state": "CANCELED",
+        "scan_started": false
+      },
+      "selection_response": {
+        "state": "SELECTED",
+        "display_path": "<server-selected-absolute-path>",
+        "scope_token": "<opaque-session-bound-token>",
+        "scan_started": false
+      }
     }
   },
   "welcome": {
