@@ -112,3 +112,21 @@ Native isolated-profile interaction acceptance and provider review remain named
 continuations. No merge/release or real personal scan is claimed. Entire is
 installed but not configured (`enabled:false`, not set up); repository-owned
 local proof proceeded without substituting provider Actions for it.
+
+### Review repair and final exact proof
+
+Provider review identified token consumption before busy reservation. Repaired
+at `4c48f5520e989961a8865789b52b6406283903b4`: token requests reserve before consuming; a busy token survives and
+can be deliberately retried. Legacy explicit-path admission retains the prior
+stop-wins boundary. The first broader ordering repair failed that retained
+control and its partial full run was stopped, preserved and never counted PASS.
+The narrowed repair passed58focused tests and independent read-only source review.
+Final full floor:1191passed10Windowsprivilege skips2existingwarnings in274.27s.
+Provider material thread PRRT_kwDOTaGtTM6u6xLY is repaired/resolved on refreshedhead.
+The final0.19wheel includes the repair; actual welcome->sample->Resolve retains
+visible subject/Chamber bounds and scanIDLE before/after. See final-proof-inputs,
+final-full-suite, final-wheel-smoke and final-preview-receipt in ignored runtime.
+
+Native isolated-profile acceptance remains the genuine external gate. Candidate
+preview is available locally; main remains9bc065a and PR68 remains draft rather
+than claiming merge, release or native interactive acceptance prematurely.
