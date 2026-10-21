@@ -343,17 +343,20 @@ class LaunchSession:
     def begin_current_scan(self, payload) -> dict:
         if not isinstance(payload, dict) or set(payload) not in ({"scan_root"}, {"scope_token"}):
             raise ValueError("Submit only one folder scope; eligibility and proof cannot be supplied by the browser")
-        if "scope_token" in payload:
-            scope = self._consume_scope(payload["scope_token"])
-            root = scope.root
-        else:
-            root = self.admit_scan_root(payload["scan_root"])
-            scope = CurrentScanScope(root)
         if not self.scan_lock.acquire(blocking=False):
             raise ValueError("A folder review is already being read. Wait for its result before starting another")
-        if self.stopping:
+        try:
+            if self.stopping:
+                raise ValueError("The local app is closing. Reopen FileSteward before starting a folder review")
+            if "scope_token" in payload:
+                scope = self._consume_scope(payload["scope_token"])
+                root = scope.root
+            else:
+                root = self.admit_scan_root(payload["scan_root"])
+                scope = CurrentScanScope(root)
+        except BaseException:
             self.scan_lock.release()
-            raise ValueError("The local app is closing. Reopen FileSteward before starting a folder review")
+            raise
         identifier = "current-" + uuid.uuid4().hex
         self.scan_job = dict(job_id=identifier, state="READING", message="Reading folder metadata and current ownership evidence")
 

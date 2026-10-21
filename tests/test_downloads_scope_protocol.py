@@ -169,8 +169,11 @@ def test_concurrent_activation_has_one_worker(current_service, synthetic_downloa
     try:
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = [pool.submit(submit, token) for token in (first, second)]
-            statuses = sorted(f.result(timeout=4) for f in futures)
-            assert statuses == [202, 400]
+            statuses = [f.result(timeout=4) for f in futures]
+            assert sorted(statuses) == [202, 400]
+            if not same_token:
+                refused = (first, second)[statuses.index(400)]
+                assert refused in session.scope_tokens
             assert entered.wait(2)
     finally:
         release.set()
@@ -198,6 +201,7 @@ def test_picker_serializes_scan_and_other_picker_without_auto_scan(
             assert request(session.origin, 'POST', '/api/v1/launch/choose-folder',
                            {'intent': 'choose'}, authorized(session))[0] == 400
             assert activate(session, token)[0] == 400
+            assert token in session.scope_tokens
             assert request(session.origin, 'POST', '/api/v1/launch/stop', {}, authorized(session))[0] == 400
             release.set()
             result = pending.result(timeout=4)
@@ -206,6 +210,11 @@ def test_picker_serializes_scan_and_other_picker_without_auto_scan(
         release.set()
     assert picker_calls == [True] and calls == [] and not session.stopping
     assert not list((runtime / 'runs').iterdir())
+    # Busy is not stale scope: the same displayed capability can be explicitly
+    # activated once the native picker releases its reservation.
+    assert activate(session, token)[0] == 202
+    assert finished(session)['state'] == 'READY'
+    assert calls == [synthetic_downloads]
 
 
 def test_selected_scope_does_not_follow_downloads_redirection(
