@@ -177,3 +177,26 @@ def test_one_click_browser_journey_needs_no_path_entry_or_second_open(
             assert (os_downloads / "synthetic-note.txt").read_bytes() == original
         finally:
             browser.close()
+
+
+@pytest.mark.parametrize("result_kind", ["cancel", "select"])
+def test_native_picker_does_not_auto_scan_on_selection_or_cancel(
+        current_service, monkeypatch, tmp_path, result_kind):
+    """Picker is a separate user gesture and must not itself authorize a scan."""
+    session, runtime, collector_calls = current_service
+    selected = tmp_path / "synthetic-other-folder"
+    selected.mkdir()
+    monkeypatch.setattr(launch, "pick_windows_folder",
+        lambda: None if result_kind == "cancel" else selected)
+    status, _, response = request(session.origin, "POST", "/api/v1/launch/choose-folder",
+        {"intent": "choose"}, authorized(session))
+    assert status == 200, response
+    if result_kind == "cancel":
+        assert response["state"] == "CANCELED"
+        assert not response.get("scope_token")
+    else:
+        assert response["state"] == "SELECTED"
+        assert response["display_path"] == str(selected)
+        assert response["scope_token"]
+    assert collector_calls == []
+    assert not list((runtime / "runs").iterdir())
