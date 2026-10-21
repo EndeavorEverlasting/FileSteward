@@ -141,10 +141,14 @@ def test_repository_provider_reuses_existing_discovery_and_reports_limits(tmp_pa
     assert "DISCOVERY_COMPLETENESS_UNPROVEN" in result.gaps
 
 
-def test_windows_registry_reads_four_views_and_retains_partial_protection(tmp_path, monkeypatch):
+@pytest.mark.parametrize("nested", [False, True])
+def test_windows_registry_reads_four_views_and_retains_partial_protection(tmp_path, monkeypatch, nested):
     if current.os.name != "nt":
         pytest.skip("Windows provider platform admission; no host registry access")
     calls = []
+    install = tmp_path / "app" if nested else tmp_path
+    if nested:
+        install.mkdir()
     class Key:
         def __init__(self, child=False):
             self.child = child
@@ -158,7 +162,7 @@ def test_windows_registry_reads_four_views_and_retains_partial_protection(tmp_pa
         calls.append((hive, access))
         return Key()
     def query(key, name):
-        values = {"DisplayName": "Synthetic App", "InstallLocation": str(tmp_path),
+        values = {"DisplayName": "Synthetic App", "InstallLocation": str(install),
                   "UninstallString": '"' + str(tmp_path.parent / "outside.exe") + '"'}
         if name not in values:
             raise FileNotFoundError()
@@ -171,7 +175,71 @@ def test_windows_registry_reads_four_views_and_retains_partial_protection(tmp_pa
     result = current._registry(tmp_path, tmp_path)
     assert len(calls) == 4
     assert len(result.edges) == 4
-    assert all(e.storage_path == str(tmp_path) for e in result.edges)
+    assert all(e.storage_path == str(install) for e in result.edges)
     assert not result.complete
     assert result.gaps == ("SERVICEABILITY_EXISTENCE_UNRESOLVED_WITHIN_SCOPE",)
     assert not result.app_records
+
+
+def test_review_snapshot_batches_probes_but_live_calls_stay_fresh(tmp_path):
+    calls = []
+    now = [time.time()]
+    providers = complete_providers()
+    def provider(root, target):
+        calls.append((root, target))
+        return current.ProbeResult(True, "synthetic", edges=(protected(target),))
+    providers["repository"] = provider
+    resolver = current.make_current_resolver(tmp_path, providers=providers, clock=lambda: now[0])
+    snapshot = resolver.review_snapshot()
+    assert calls == [(tmp_path, tmp_path)]
+    first = snapshot(str(tmp_path))
+    now[0] += 2
+    second = snapshot(str(tmp_path))
+    assert len(calls) == 1
+    assert first.observed_at_unix == second.observed_at_unix
+    assert first.digest == second.digest
+    assert not first.adapters_complete and not first.fresh()
+    assert "SNAPSHOT_NOT_MUTATION_EVIDENCE" in first.coverage[-1].gaps
+    assert not plan_owner_actions(str(tmp_path), first).raw_delete_eligible
+    assert resolver(str(tmp_path)).adapters_complete
+    assert resolver(str(tmp_path)).adapters_complete
+    assert len(calls) == 3
+
+
+def test_snapshot_expiration_never_retimestamps_or_reobserves(tmp_path):
+    now = [time.time()]
+    snapshot = current.make_current_resolver(tmp_path, providers=complete_providers(),
+        clock=lambda: now[0]).review_snapshot()
+    original = snapshot(str(tmp_path))
+    now[0] += 301
+    expired = snapshot(str(tmp_path))
+    assert expired.observed_at_unix == original.observed_at_unix
+    assert expired.coverage[-1].gaps == ("SNAPSHOT_EXPIRED_OR_FUTURE",)
+    assert not expired.adapters_complete
+
+
+def test_snapshot_revalidates_each_path_and_keeps_sibling_owners_separate(tmp_path):
+    one, two = tmp_path / "one", tmp_path / "two"
+    one.mkdir()
+    two.mkdir()
+    provider = lambda root, target: current.ProbeResult(True, "root_wide", edges=(protected(one),))
+    resolver = current.make_current_resolver(tmp_path, providers={"application_installation": provider})
+    snapshot = resolver.review_snapshot()
+    assert plan_owner_actions(str(one), snapshot(str(one))).disposition is CleanupDisposition.PROTECTED
+    assert plan_owner_actions(str(two), snapshot(str(two))).disposition is CleanupDisposition.UNKNOWN
+    outside = snapshot(str(tmp_path.parent))
+    assert not outside.graph.edges and outside.coverage[0].domain == "scope"
+    one.rmdir()
+    assert snapshot(str(one)).coverage[0].domain == "scope"
+
+
+def test_snapshot_scope_reparse_rechecked_after_capture(tmp_path, monkeypatch):
+    snapshot = current.make_current_resolver(tmp_path, providers={}).review_snapshot()
+    original = current.Path.lstat
+    def linked(path):
+        info = original(path)
+        if path == tmp_path:
+            return SimpleNamespace(st_mode=info.st_mode, st_file_attributes=0x400)
+        return info
+    monkeypatch.setattr(current.Path, "lstat", linked)
+    assert snapshot(str(tmp_path)).coverage[0].domain == "scope"

@@ -6,7 +6,7 @@ the remaining domains are explicitly unavailable, rather than empty successes.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import hashlib
 import json
 import os
@@ -129,7 +129,13 @@ def _registry(root: Path, target: Path) -> ProbeResult:
                                 # Retain affirmative registration protection even
                                 # if existence checks cannot be completed in scope.
                                 for kind, anchor in relevant:
-                                    edges.append(OwnershipEdge(kind, str(target), "APPLICATION", entry.app_id,
+                                    try:
+                                        storage = str(_bounded_path(Path(anchor), root))
+                                    except (OSError, ValueError):
+                                        # The selected ancestor must remain protected
+                                        # for missing or external serviceability.
+                                        storage = str(target)
+                                    edges.append(OwnershipEdge(kind, storage, "APPLICATION", entry.app_id,
                                         entry.display_name, "windows_uninstall_registry", "strong", "APP_ACTIVE_REQUIRED",
                                         "Registered installation/serviceability intersects the selected target"))
                                 def exists(path: str) -> bool:
@@ -157,8 +163,49 @@ def _repositories(root: Path, target: Path) -> ProbeResult:
          "ANCESTOR_REPOSITORY_CONTEXT_UNRESOLVED", "ENTIRE_RELATIONSHIPS_UNRESOLVED"), repo_records=records)
 
 
+class CurrentResolver:
+    """Fresh safety resolver with an explicitly read-only batch projection."""
+
+    def __init__(self, root: Path, collect: Callable[[str], CurrentOwnershipEvidence],
+                 clock: Callable[[], float]):
+        self._root, self._collect, self._clock = root, collect, clock
+
+    def __call__(self, path: str) -> CurrentOwnershipEvidence:
+        # Preflight and executor retain this fresh boundary for every item.
+        return self._collect(path)
+
+    def review_snapshot(self) -> OwnershipResolver:
+        """Observe root-wide facts once for one read-only inventory batch.
+
+        Providers receive (root, root), so injected providers must implement
+        root-wide evidence for this operation. A snapshot never authorizes
+        mutation: incomplete is enforced even if all providers are complete.
+        Timestamps remain original and snapshots fail closed after 300 seconds;
+        callers explicitly request another snapshot for another scan batch.
+        """
+        captured = self._collect(str(self._root))
+        presentation = ProbeCoverage("review_snapshot", False, "read_only_batch",
+                                     ("SNAPSHOT_NOT_MUTATION_EVIDENCE",))
+        captured = replace(captured, adapters_complete=False,
+                           coverage=captured.coverage + (presentation,))
+
+        def project(path: str) -> CurrentOwnershipEvidence:
+            try:
+                _bounded_path(Path(path), self._root)
+            except (OSError, ValueError) as exc:
+                return replace(captured, graph=build_ownership_graph(), coverage=(
+                    ProbeCoverage("scope", False, "bounded_lstat", (type(exc).__name__,)), presentation))
+            age = self._clock() - captured.observed_at_unix
+            if not 0 <= age <= 300:
+                return replace(captured, coverage=captured.coverage + (
+                    ProbeCoverage("snapshot_age", False, "original_observation_time", ("SNAPSHOT_EXPIRED_OR_FUTURE",)),))
+            return captured
+
+        return project
+
+
 def make_current_resolver(scan_root: Path, *, providers: Mapping[str, ProbeProvider] | None = None,
-                          clock: Callable[[], float] = time.time) -> OwnershipResolver:
+                          clock: Callable[[], float] = time.time) -> CurrentResolver:
     """Return a fresh per-call resolver; construction performs no host I/O.
 
     ``providers`` is a trusted in-process adapter injection, never client input.
@@ -211,7 +258,11 @@ def make_current_resolver(scan_root: Path, *, providers: Mapping[str, ProbeProvi
                         # Preserve scoped edges from a partially usable record.
                         for edge in build_ownership_graph(app_records=(record,)).edges:
                             if path_intersects(str(target), edge.storage_path):
-                                edges.append(OwnershipEdge(edge.edge_type, str(target), edge.owner_kind,
+                                try:
+                                    storage = str(_bounded_path(Path(edge.storage_path), root))
+                                except (OSError, ValueError):
+                                    storage = str(target)
+                                edges.append(OwnershipEdge(edge.edge_type, storage, edge.owner_kind,
                                     edge.owner_id, edge.owner_display_name, edge.evidence_source,
                                     edge.confidence, edge.lifecycle_hint, edge.detail))
                 for record in result.repo_records:
@@ -228,4 +279,4 @@ def make_current_resolver(scan_root: Path, *, providers: Mapping[str, ProbeProvi
         return CurrentOwnershipEvidence(build_ownership_graph(app_records=apps, repo_records=repos,
             extra_edges=edges), all(c.complete for c in coverage), observed, coverage=tuple(coverage))
 
-    return resolve
+    return CurrentResolver(root, resolve, clock)
