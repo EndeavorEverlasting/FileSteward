@@ -19,6 +19,9 @@ def test_explicit_folder_enters_current_attribution_scene(tmp_path, monkeypatch,
     runtime = tmp_path / "private-runtime/var"
     (runtime / "runs").mkdir(parents=True)
     monkeypatch.setattr(paths, "runtime_root", lambda: runtime)
+    # OS discovery is the sole scope source. Only this synthetic fixture may
+    # stand in for the workstation KnownFolder; no personal Downloads is read.
+    monkeypatch.setattr(launch, "windows_downloads_known_folder", lambda: root, raising=False)
     calls = []
     def factory(admitted):
         calls.append(admitted)
@@ -37,22 +40,17 @@ def test_explicit_folder_enters_current_attribution_scene(tmp_path, monkeypatch,
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(session.origin, wait_until="networkidle")
                 assert calls == []
-                page.locator("#scan-root").fill(str(root))
-                # Keyboard submission is the same explicit admission action.
-                page.locator("#scan-root").press("Enter")
-                page.locator("#open-current").wait_for(state="visible", timeout=15000)
-                assert calls == [root]
-                result = page.locator("#scan-result").inner_text()
-                page.locator("#ownership-summary").click()
-                diagnostics = page.locator("#ownership-gaps").inner_text()
-                assert "Ownership: incomplete" in result
-                assert "SYNTHETIC_COVERAGE_GAP" in diagnostics
-                assert "synthetic_service_probe" in diagnostics
-                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
-                page.screenshot(path=str(output / (mode + "-folder-result.png")), full_page=True)
-                page.locator("#open-current").click()
-                page.wait_for_url("**/", timeout=15000)
+                api.expect(page.locator("#review-downloads")).to_be_enabled()
+                api.expect(page.locator("#recommended-path")).to_contain_text(str(root))
+                assert page.locator("#scan-root").count() == 0
+                assert page.locator("#open-current").count() == 0
+                # One keyboard activation authorizes the disclosed metadata
+                # review and enters its Atlas automatically, without second-open.
+                page.locator("#review-downloads").focus()
+                page.locator("#review-downloads").press("Enter")
                 page.locator("#storage-stage").wait_for(timeout=15000)
+                assert calls == [root]
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
                 card = page.locator(".sector-card[data-node-id]").first
                 card.click()
                 page.locator('.decision-guide-step[data-guide-step="RESOLVE"]').click()
