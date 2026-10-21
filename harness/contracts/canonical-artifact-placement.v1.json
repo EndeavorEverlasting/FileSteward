@@ -1,0 +1,95 @@
+{
+  "schema_version": "filesteward.canonical-artifact-placement/v1",
+  "owner": "FileSteward",
+  "canonical_path_authority": "docs/agent/CANONICAL-PATHS.md",
+  "repository_ownership_authority": "harness/contracts/storage-ownership-evidence-graph.v1.json",
+  "purpose": "Read-only, evidence-backed placement of canonical repo contracts and replaceable cross-repo source snapshots on each personal workstation.",
+  "host_policy": {
+    "profile_key": "windows-userprofile",
+    "host_alias_must_be_explicit": true,
+    "actual_hostname_must_be_observed_separately": true,
+    "default_profile_from": "USERPROFILE on Windows; HOME on POSIX",
+    "no_inferred_mounts_or_credentials": true,
+    "no_host_location_claim_from_provider_truth": true
+  },
+  "path_policy": {
+    "repo_template": "<USERPROFILE>/dev/<repo>",
+    "shared_snapshot_template": "<USERPROFILE>/dev/_shared/canonical-artifacts/<namespace>/<filename>",
+    "private_receipts": "<canonical_FileSteward_checkout>/var/artifact-placement/<host_alias>.json",
+    "forbidden_components": ["Desktop", "Documents", "OneDrive", "Backups"],
+    "unsafe_ancestor_reparse_policy": "FAIL_CLOSED",
+    "source_snapshot_mutation": "NOT_SUPPORTED_BY_LOCATOR",
+    "noncanonical_repo_copy": "PRESERVE_AND_REPORT_NO_AUTOMOVE",
+    "snapshot_root_is_not_repo_or_app_runtime": true
+  },
+  "authority_order": ["repository_specific_governance", "git_canonical_repo_owner", "drive_original_research_master", "local_verified_snapshot_for_offline_reads", "candidate_proposal"],
+  "artifact_catalog": [
+    {
+      "id": "upstream-intelligence-source-registry",
+      "role": "READ_ONLY_SHARED_SNAPSHOT",
+      "authority": "GOOGLE_DRIVE",
+      "authority_url": "https://drive.google.com/file/d/10rjbCG0Ck_PLkvbSXElNH0oiJ3H8uXVh/view",
+      "namespace": "upstream-intelligence",
+      "filename": "source-registry.json",
+      "provenance_sidecar": "source-registry.provenance.json",
+      "consumer_env": "TC_DESIGN_UPSTREAM_REGISTRY",
+      "source_freshness": "VERIFY_WITH_PROVIDER_IN_SEPARATE_AUTHORIZED_WORKFLOW",
+      "notes": "97-record source registry export. Exact source URL is not a host-mounted path. Data may be a stale local snapshot even if hashed."
+    },
+    {
+      "id": "tokencorridor-design-source-router",
+      "role": "GIT_TRACKED_CONTRACT",
+      "authority": "GIT",
+      "owner": "EndeavorEverlasting/TokenCorridor",
+      "repo": "TokenCorridor",
+      "relative_path": "harness/contracts/design-source-routing.v1.json",
+      "requires": "PR #233 integration plus a proven current checkout",
+      "notes": "Do not make a shared editable second master."
+    },
+    {
+      "id": "tokencorridor-prompt-invocation-catalog",
+      "role": "GIT_TRACKED_CONTRACT",
+      "authority": "GIT",
+      "owner": "EndeavorEverlasting/TokenCorridor",
+      "repo": "TokenCorridor",
+      "relative_path": "harness/exports/prompt-invocation-catalog.v1.json",
+      "notes": "Prompt Kit P-number authority stays with TokenCorridor."
+    },
+    {
+      "id": "filesteward-canonical-paths",
+      "role": "GIT_TRACKED_CONTRACT",
+      "authority": "GIT",
+      "owner": "EndeavorEverlasting/FileSteward",
+      "repo": "FileSteward",
+      "relative_path": "docs/agent/CANONICAL-PATHS.md"
+    },
+    {
+      "id": "parallaxport-design-reference-index",
+      "role": "GIT_TRACKED_CONTRACT",
+      "authority": "GIT",
+      "owner": "EndeavorEverlasting/ParallaxPort",
+      "repo": "ParallaxPort",
+      "relative_path": "harness/plans/portfolio-cinema/DESIGN_UPSTREAM_REFERENCES_20261019.md"
+    },
+    {
+      "id": "parallaxport-source-first-agent-guide",
+      "role": "GIT_TRACKED_CONTRACT",
+      "authority": "GIT",
+      "owner": "EndeavorEverlasting/ParallaxPort",
+      "repo": "ParallaxPort",
+      "relative_path": "harness/workflows/DESIGN_SOURCE_FIRST.md",
+      "requires": "PR #21 integration plus a proven current checkout"
+    }
+  ],
+  "invariants": [
+    "No creation, copying, moving, cleanup or overwrite in locator mode.",
+    "Source-of-truth repo files remain in exactly one normal local checkout per host and a remote Git owner.",
+    "Shared reference snapshots are replaceable copies, never promoted to original authority.",
+    "Host alias DTop/PTop is not actual machine attestation; preserve separate hostname evidence.",
+    "An existing file without matching sidecar hash and declared source remains unverified and protected.",
+    "A matching sidecar proves local integrity only, not freshness or a live Google Drive read.",
+    "Offline source retrieval is usable without Google login only after an explicit verified local copy exists.",
+    "Real path inventories and host receipts remain local/ignored; never commit or sync personal paths into public repositories.",
+    "Mixed-owner paths and symlink/reparse ancestors fail closed."
+  ]
+}
