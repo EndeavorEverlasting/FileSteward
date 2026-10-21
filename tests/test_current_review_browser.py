@@ -43,9 +43,11 @@ def test_explicit_folder_enters_current_attribution_scene(tmp_path, monkeypatch,
                 page.locator("#open-current").wait_for(state="visible", timeout=15000)
                 assert calls == [root]
                 result = page.locator("#scan-result").inner_text()
+                page.locator("#ownership-summary").click()
+                diagnostics = page.locator("#ownership-gaps").inner_text()
                 assert "Ownership: incomplete" in result
-                assert "SYNTHETIC_COVERAGE_GAP" in result
-                assert "synthetic_service_probe" in result
+                assert "SYNTHETIC_COVERAGE_GAP" in diagnostics
+                assert "synthetic_service_probe" in diagnostics
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
                 page.screenshot(path=str(output / (mode + "-folder-result.png")), full_page=True)
                 page.locator("#open-current").click()

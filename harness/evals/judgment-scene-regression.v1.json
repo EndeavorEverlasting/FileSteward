@@ -476,5 +476,28 @@
       "protective cross-domain evidence survives incomplete collection",
       "current evidence coverage/provenance reaches existing Attribution Resolve"
     ]
+  },
+  "spatial_arrival_20261021": {
+    "operator_redesign_authority": "Operator explicitly requested cinematic traversal beyond the viewport, crisp arrival, integrated authored pointer/scrollbar; keep all judgment and collision controls.",
+    "retained_controls": [
+      "tests/test_resolve_framing_browser.py",
+      "tests/test_context_placement_browser.py",
+      "tests/test_current_review_browser.py",
+      "tests/test_cinematic_script.py"
+    ],
+    "negative_cases": [
+      "Resolve destination identity falls below viewport after animation",
+      "active Chamber remains detached from destination",
+      "no-seat context fallback removes authored fine pointer",
+      "keyboard focus relocates physical pointer",
+      "custom pointer or scrollbar destroys forced-colors/coarse-input fallback"
+    ],
+    "positive_controls": [
+      "explicit path action frames active scene and subject",
+      "perceptible SVG/world depth translation settles crisp",
+      "authored pointer remains physical when tooltip suppressed",
+      "actual scroll containers retain authored scrollbar styling",
+      "reduced motion arrives at same destination without travel"
+    ]
   }
 }
