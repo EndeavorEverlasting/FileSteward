@@ -213,6 +213,17 @@ class LaunchSession:
         self.current_runs = {}
         self.scan_job = None
         self.scan_lock = threading.Lock()
+        self.stopping = False
+
+    def reserve_stop(self):
+        # Admission and shutdown share the same reservation. Checking locked()
+        # alone would leave a gap in which a new daemon scan could begin.
+        if not self.scan_lock.acquire(blocking=False):
+            raise ValueError("Folder metadata is still being read. Wait for its result before closing the app")
+        try:
+            self.stopping = True
+        finally:
+            self.scan_lock.release()
 
     @staticmethod
     def admit_scan_root(raw) -> Path:
@@ -236,6 +247,9 @@ class LaunchSession:
         scope = CurrentScanScope(root)
         if not self.scan_lock.acquire(blocking=False):
             raise ValueError("A folder review is already being read. Wait for its result before starting another")
+        if self.stopping:
+            self.scan_lock.release()
+            raise ValueError("The local app is closing. Reopen FileSteward before starting a folder review")
         identifier = "current-" + uuid.uuid4().hex
         self.scan_job = dict(job_id=identifier, state="READING", message="Reading folder metadata and current ownership evidence")
 
@@ -551,8 +565,7 @@ def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> t
                 if path == "/api/v1/launch/open":
                     return self.send(200, {"url":session.open_review(payload.get("run_id"))})
                 if path == "/api/v1/launch/stop":
-                    if session.scan_lock.locked():
-                        raise ValueError("Folder metadata is still being read. Wait for its result before closing the app")
+                    session.reserve_stop()
                     self.send(200, {"stopped":True})
                     threading.Thread(target=session.server.shutdown, daemon=True).start()
                     return

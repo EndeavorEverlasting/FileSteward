@@ -362,6 +362,80 @@ def test_windows_scan_pin_blocks_ancestor_replacement_until_read_finishes(tmp_pa
     parent.rename(tmp_path / "replacement-destination")
 
 
+def test_stop_reservation_rejects_new_job_without_invoking_factory(current_service, tmp_path, monkeypatch):
+    session, runtime, calls = current_service
+    source = tmp_path / "synthetic"
+    source.mkdir()
+    session.reserve_stop()
+    assert session.stopping is True
+    assert not session.scan_lock.locked()
+    monkeypatch.setattr(launch, "CleanupRun", lambda *args, **kwargs: pytest.fail("Stopping app must not scan"))
+    status, _, result = start(session, source)
+    assert status == 400
+    assert "closing" in result["error"]
+    assert calls == []
+    assert session.scan_job is None
+    assert not session.scan_lock.locked()
+    assert not list((runtime / "runs").iterdir())
+
+
+def test_active_scan_rejects_stop_then_shutdown_prevents_followup_scan(current_service, tmp_path):
+    session, _, _ = current_service
+    source = tmp_path / "synthetic"
+    source.mkdir()
+    entered, release = threading.Event(), threading.Event()
+
+    def paused_factory(root):
+        entered.set()
+        assert release.wait(4)
+        return unresolved_ownership
+
+    session.resolver_factory = paused_factory
+    assert start(session, source)[0] == 202
+    assert entered.wait(2)
+    try:
+        status, _, result = request(session.origin, "POST", "/api/v1/launch/stop", {}, authorized(session))
+        assert status == 400
+        assert "still being read" in result["error"]
+        assert session.stopping is False
+    finally:
+        release.set()
+    assert finished(session)["state"] == "EMPTY"
+    session.reserve_stop()
+    assert start(session, source)[0] == 400
+
+
+def test_stop_wins_between_root_admission_and_scan_reservation(current_service, tmp_path, monkeypatch):
+    session, runtime, calls = current_service
+    source = tmp_path / "synthetic"
+    source.mkdir()
+    admitted, release = threading.Event(), threading.Event()
+    original = session.admit_scan_root
+
+    def paused_admission(raw):
+        root = original(raw)
+        admitted.set()
+        assert release.wait(4)
+        return root
+
+    monkeypatch.setattr(session, "admit_scan_root", paused_admission)
+    responses = []
+    requester = threading.Thread(target=lambda: responses.append(start(session, source)))
+    requester.start()
+    assert admitted.wait(2)
+    try:
+        session.reserve_stop()
+    finally:
+        release.set()
+    requester.join(timeout=3)
+    assert not requester.is_alive()
+    assert responses[0][0] == 400
+    assert "closing" in responses[0][2]["error"]
+    assert calls == []
+    assert session.scan_job is None
+    assert not list((runtime / "runs").iterdir())
+
+
 @pytest.mark.parametrize("traversal", ["protection", "inventory"])
 @pytest.mark.parametrize("swap_at", ["open", "next"])
 def test_scope_breach_aborts_both_canonical_traversals(current_service, tmp_path, monkeypatch, traversal, swap_at):
