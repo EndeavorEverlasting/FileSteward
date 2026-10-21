@@ -1,0 +1,122 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "ACTIVE-REVIEW-20261021",
+  "lane_id": "current-review",
+  "role": "coordinator",
+  "canonical_plan_ref": "plans/active/ACTIVE-REVIEW-20261021.md",
+  "contract_refs": [
+    "harness/contracts/scene-composition.v1.json",
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/contracts/action-scene-impact.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json"
+  ],
+  "provider_base_sha_at_capture": "772d2f18919c7a1c0ae6eea555d373fb610622c3",
+  "provider_head_sha_at_capture": "25cc6fe9324513de0d45d80ee73a19ed6997414e",
+  "local_head_sha_at_capture_or_unknown": "25cc6fe9324513de0d45d80ee73a19ed6997414e",
+  "completed_facts": [
+    {
+      "fact": "PR63 integrated source0.17.1 scene composition/tooltip/CMD slice; canonical launcher observed.",
+      "evidence": [
+        "plans/active/SCENE-CONTEXT-20261020.md"
+      ],
+      "proof_state": "MERGED"
+    },
+    {
+      "fact": "Isolated native collector and entry commits rejoined; bounded readonly snapshot cannot mint mutation authority, original resolver remains fresh. Explicit CLI and Chamber coverage projection integrated.",
+      "evidence": [
+        "tests/test_current_ownership.py",
+        "tests/test_launch_current_review.py",
+        "tests/test_current_review_wiring.py"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Actual synthetic folder submit reaches canonical Attribution Resolve in desktop/narrow/reduced-motion/forced-colors Edge; incomplete evidence cannot offer delete.",
+      "evidence": [
+        "tests/test_current_review_browser.py",
+        "var/runs/current-review-browser"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "resolve-framing",
+      "action": "Repair operator-observed offscreen Resolve transition and branded pointer/scrollbar regression in isolated visual lane.",
+      "depends_on": [],
+      "acceptance": "Before/after viewport/scroll evidence and retained scene/context oracles green."
+    },
+    {
+      "work_id": "release",
+      "action": "Converge visual repair, exact candidate suite/browser/build/review, integrate main and observe updated canonical app.",
+      "depends_on": [
+        "resolve-framing"
+      ],
+      "acceptance": "No unresolved material review; default content/containment and0.18.0 launch proved."
+    },
+    {
+      "work_id": "real-data-acceptance",
+      "action": "Operator selects exact real folder/action before live observation; unsupported evidence domains stay blocked, never inferred eligible.",
+      "depends_on": [
+        "release"
+      ],
+      "acceptance": "Exact bounded gate precedes live observation; do not claim reclaim without canonical authorization/receipt."
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "src/filesteward/ownership/current.py",
+    "src/filesteward/launch.py",
+    "src/filesteward/web/launch.html",
+    "src/filesteward/cli.py",
+    "src/filesteward/review_bridge.py",
+    "src/filesteward/visualization/judgment_script.py",
+    "src/filesteward/visualization/experience.py",
+    "src/filesteward/visualization/decision_chamber.py",
+    "tests/test_current*",
+    "tests/test_launch_current_review.py",
+    "tests/test_resolve_framing_browser.py",
+    "docs/local-start.md",
+    "harness/evals/judgment-scene-regression.v1.json",
+    "plans/active/ACTIVE-REVIEW-20261021*",
+    "pyproject.toml",
+    "src/filesteward/__init__.py"
+  ],
+  "forbidden_surfaces": [
+    "personal storage observation or deletion without exact root/action",
+    "judgment policy or new scene routes",
+    "PR64 stewardship/routing surfaces",
+    "published Windows preview assets",
+    "source updater semantics owned by integrated PR63"
+  ],
+  "dependencies": [],
+  "external_prerequisites": [],
+  "proof_receipts": [
+    "tests/test_current_ownership.py",
+    "tests/test_current_review_wiring.py",
+    "tests/test_current_review_browser.py",
+    "tests/test_launch_current_review.py",
+    "var/runs/active-review-20261021/boundaries.jsonl"
+  ],
+  "proof_ceiling": "Synthetic folder metadata/browser and repository proof; native providers mocked for tests. No personal scan/delete, reclaim or published Windows release.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [
+    "var/runs/current-review-browser",
+    "var/runs/active-review-20261021"
+  ],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": {
+    "missing_adapter": "Prompt Kit generic dispatch-manifest validation CLI/schema absent; native agents executed but generic manifest-validation proof unavailable. Entire integration disabled on this repository.",
+    "evidence": [
+      "plans/active/ACTIVE-REVIEW-20261021.md"
+    ],
+    "repair_route": "Use current repository execution-handoff schema and actual native lane receipts; configure Entire separately if desired."
+  },
+  "exact_next_action": {
+    "phase": "PROVE",
+    "action": "Converge Resolve framing repair then run exact candidate validation and integrate.",
+    "owner": "coordinator",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "Report implemented/validated/committed/pushed/merged/entrypoint-observed separately, with exact SHAs, tests, gaps and no personal-storage mutation claim."
+}

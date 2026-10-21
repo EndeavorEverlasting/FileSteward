@@ -98,3 +98,19 @@ handoff must distinguish implemented, wired, validated, integrated and observed.
 Missing generic Prompt Kit dispatch-manifest schema/CLI remains a tooling proof
 gap; actual native dispatch and FileSteward execution-handoff gates are recorded
 without inventing a replacement control plane.
+
+## Operator screenshot regression — required before integration
+
+The operator observed Resolve/04 animating a selected sector below the visible
+viewport, leaving only its boundary visible and the Chamber detached from the
+attention target. They also reported default browser cursor/scrollbar styling.
+This is an in-scope regression, not permission to flatten the immersive oracle.
+An isolated lane at resolve-framing-20261021 (base25cc6fe) owns experience.py,
+decision_chamber.py and canonical visual CSS only where necessary, plus a new
+browser regression file. Coordinator keeps judgment_script.py and all active
+entry/bridge/CLI/version/docs/ledger convergence. The lane must reproduce and
+retain viewport/scroll-position, keyboard/narrow/motion/contrast controls, visibly
+frame the selected evidence with the active decision menu, and restore authored
+pointer/scrollbar presentation without hiding the physical pointer or teleporting
+it on keyboard focus. Forced-colors/touch retain native accessibility fallbacks.
+No new scene, choice or destructive authority is introduced.
