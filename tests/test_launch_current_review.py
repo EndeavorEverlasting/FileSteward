@@ -61,6 +61,21 @@ def test_no_startup_scan_or_collector_construction(current_service):
     assert not list((runtime / "runs").iterdir())
 
 
+def test_current_result_keeps_primary_action_before_collapsed_diagnostics(current_service):
+    import re
+    session, _, _ = current_service
+    status, _, html = request(session.origin, "GET", "/")
+    assert status == 200
+    assert re.search(r'<div[^>]*id="scan-result"[^>]*role="status"[^>]*tabindex="-1"[^>]*></div>', html)
+    assert re.search(r'<details id="ownership-checks" hidden><summary id="ownership-summary">Ownership checks</summary><ul id="ownership-gaps"></ul></details>', html)
+    assert html.index('id="open-current"') < html.index('id="ownership-checks"')
+    assert "byId('scan-result').append(gaps)" not in html
+    assert "byId('ownership-checks').open = false" in html
+    assert "String(record.domain || 'ownership').replace(/_/g, ' ')" in html
+    assert "byId('scan-result').focus()" in html
+    assert "Ownership checks \\u2014 " in html
+
+
 def test_explicit_metadata_scan_reaches_validated_active_bridge(current_service, tmp_path, monkeypatch):
     session, runtime, calls = current_service
     source = tmp_path / "synthetic-folder"
