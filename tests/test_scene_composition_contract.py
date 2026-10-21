@@ -125,3 +125,22 @@ def test_composition_rejects_regression(mutation):
         contract["context_placement"]["failure_order"][-1] = "cover_hovered_target"
     with pytest.raises(AssertionError):
         validate(contract)
+
+
+def retained_controls_exist(ledger):
+    if isinstance(ledger, dict):
+        for key, value in ledger.items():
+            if key == "retained_controls":
+                assert all((ROOT / control).is_file() for control in value), value
+            else:
+                retained_controls_exist(value)
+    elif isinstance(ledger, list):
+        for value in ledger:
+            retained_controls_exist(value)
+
+
+def test_regression_ledger_cannot_claim_missing_retained_tests():
+    ledger=json.loads((ROOT/"harness/evals/judgment-scene-regression.v1.json").read_text(encoding="utf-8"))
+    retained_controls_exist(ledger)
+    with pytest.raises(AssertionError):
+        retained_controls_exist({"retained_controls":["tests/nonexistent_control.py"]})

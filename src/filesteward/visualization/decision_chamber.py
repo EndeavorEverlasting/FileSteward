@@ -148,7 +148,10 @@ def render_decision_chamber_css() -> str:
 .script-impact p{margin:.3rem 0;max-width:65ch;line-height:1.5;}
 #chamber-error{color:var(--fs-text-primary);padding:.6rem;outline:2px solid var(--fs-focus);}
 #chamber-result dl{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;}
-.chamber-chrome{display:grid;grid-template-columns:minmax(10rem,.8fr) minmax(16rem,1.4fr);gap:.8rem;}
+.chamber-chrome{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:.8rem;}
+.decision-chamber{container-type:inline-size;}
+.chamber-subject{min-width:0;overflow-wrap:anywhere;}
+@container (max-width:30rem){.chamber-chrome{grid-template-columns:minmax(0,1fr);}.chamber-evidence-row{gap:.5rem;}}
 .chamber-kicker{display:block;font:800 .66rem/1 var(--fs-font-mono);letter-spacing:.08em;color:var(--fs-text-muted);}
 .chamber-orientation strong,.chamber-subject strong{display:block;margin:.25rem 0;font-size:1.05rem;font-family:var(--fs-font-mono);letter-spacing:.04em;}
 .chamber-evidence-row{display:flex;flex-wrap:wrap;gap:.7rem;font:700 .72rem/1.3 var(--fs-font-mono);}
@@ -646,9 +649,10 @@ def render_decision_chamber_script() -> str:
   const dockChamberInView = () => {
     const box = visibleStageBox();
     chamber.dataset.docked = 'free';
+    chamber.style.width = innerWidth >= 1180 ? Math.min(640,Math.max(320,innerWidth-box.right-24))+'px' : '';
     const width = chamber.offsetWidth || 320;
     const left = Math.max(8, Math.min(innerWidth - width - 8,
-      box.left + Math.max(0, (box.right - box.left - width) * .5)));
+      innerWidth >= 1180 ? innerWidth-width-12 : box.left + Math.max(0, (box.right - box.left - width) * .5)));
     // Choose the largest unobstructed vertical band. Home, the authored path,
     // and the phone toolbar remain reachable while chamber content scrolls.
     let bands = [[8, innerHeight - 8]];
@@ -666,6 +670,7 @@ def render_decision_chamber_script() -> str:
     if (!chamber.hidden && overlapsDecisionPath()) dockChamberInView();
   }).observe(chamber);
   window.addEventListener('resize', () => { if (!chamber.hidden) dockChamberInView(); });
+  document.addEventListener('filesteward:world-framed', () => { if (!chamber.hidden) dockChamberInView(); });
   const restoreChamberPos = () => {
     try {
       const saved = JSON.parse(sessionStorage.getItem('fs.decisionChamber.pos') || 'null');

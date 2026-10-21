@@ -451,5 +451,63 @@
     "browser_receipt": "var/runs/cinematic-browser-20261013/final-context-v19-results.json",
     "proof_status": "REVIEW_REPAIRS_REQUIRE_EXACT_HEAD_REPROOF"
   },
-  "scene_composition_ref": "harness/contracts/scene-composition.v1.json"
+  "scene_composition_ref": "harness/contracts/scene-composition.v1.json",
+  "current_review_20261021": {
+    "retained_controls": [
+      "tests/test_current_ownership.py",
+      "tests/test_current_review_wiring.py",
+      "tests/test_launch_current_review.py",
+      "tests/test_context_placement_browser.py",
+      "tests/test_judgment_runtime.py",
+      "tests/test_review_bridge_http.py"
+    ],
+    "negative_cases": [
+      "startup does not observe personal storage",
+      "sample/import cannot acquire current capability",
+      "missing current CLI root fails before collection",
+      "scan-root alone does not enable a resolver",
+      "unavailable domain coverage cannot disappear from attribution",
+      "read-only snapshot cannot authorize mutation",
+      "source binding drift invalidates current opening",
+      "CLI cannot activate launcher sample/import/capture with current-evidence flag",
+      "missing registered component loses broken application protection",
+      "admitted folder parent changes before or during canonical traversal",
+      "read response cache leaks into mutation or another thread",
+      "captured CLI scan-root cannot open observational bridge",
+      "completed current review or explicit CLI observes replacement root after admission"
+    ],
+    "positive_controls": [
+      "explicit admitted synthetic root uses canonical metadata pipeline",
+      "current resolver reaches bridge without changing judgment routes",
+      "protective cross-domain evidence survives incomplete collection",
+      "current evidence coverage/provenance reaches existing Attribution Resolve",
+      "read response raw probe batch preserves path evidence digest and original timestamp",
+      "outside-batch safety calls recollect native evidence",
+      "scope race aborts before publishing trusted inventory or current marker",
+      "scope drift produces readable HTTP409 before live providers and after cached service opening"
+    ]
+  },
+  "spatial_arrival_20261021": {
+    "operator_redesign_authority": "Operator explicitly requested cinematic traversal beyond the viewport, crisp arrival, integrated authored pointer/scrollbar; keep all judgment and collision controls.",
+    "retained_controls": [
+      "tests/test_resolve_framing_browser.py",
+      "tests/test_context_placement_browser.py",
+      "tests/test_current_review_browser.py",
+      "tests/test_cinematic_script.py"
+    ],
+    "negative_cases": [
+      "Resolve destination identity falls below viewport after animation",
+      "active Chamber remains detached from destination",
+      "no-seat context fallback removes authored fine pointer",
+      "keyboard focus relocates physical pointer",
+      "custom pointer or scrollbar destroys forced-colors/coarse-input fallback"
+    ],
+    "positive_controls": [
+      "explicit path action frames active scene and subject",
+      "perceptible SVG/world depth translation settles crisp",
+      "authored pointer remains physical when tooltip suppressed",
+      "actual scroll containers retain authored scrollbar styling",
+      "reduced motion arrives at same destination without travel"
+    ]
+  }
 }

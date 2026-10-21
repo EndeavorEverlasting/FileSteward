@@ -49,6 +49,7 @@ from filesteward.deletion.regenerable import (
 from filesteward.manifest import triage_run_dir, validate_run
 from filesteward.policy.paths import (
     is_lexically_within,
+    is_under_forbidden_root,
     normalize_declared_path,
     prove_run_dir_under_runtime,
     resolve_run_dir_argument,
@@ -190,6 +191,10 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--port", type=int, default=0)
     review.add_argument("--no-browser", action="store_true")
     review.add_argument("--scan-root", default=None)
+    review.add_argument(
+        "--current-evidence", action="store_true",
+        help="collect current ownership for the explicitly supplied --scan-root; incomplete probes remain blocked",
+    )
 
     delete_manifest = subparsers.add_parser(
         "delete-manifest",
@@ -655,12 +660,38 @@ def _run_review(args: argparse.Namespace) -> int:
     if not 0 <= args.port <= 65535:
         print("filesteward review: --port must be in 0..65535", file=sys.stderr)
         return EXIT_INVALID
+    if args.current_evidence and not args.scan_root:
+        print("filesteward review: --current-evidence requires --scan-root", file=sys.stderr)
+        return EXIT_INVALID
+    if args.current_evidence and not Path(args.scan_root).is_absolute():
+        print("filesteward review: --current-evidence requires an absolute --scan-root", file=sys.stderr)
+        return EXIT_INVALID
     try:
         target = prove_run_dir_under_runtime(resolve_run_dir_argument(args.target))
+        # Launcher captures have an explicit observational provenance boundary.
+        # A CLI flag cannot recreate a process-owned current folder admission.
+        try:
+            (target / ".launch-run.json").lstat()
+            captured = True
+        except FileNotFoundError:
+            captured = False
+        if captured and args.current_evidence:
+            raise ValueError("Captured launcher evidence stays observational; start a new folder review in the local app")
+        resolver_options = {"observation_only": True} if captured else {}
+        if args.current_evidence:
+            from filesteward.ownership.current import make_current_resolver
+            if is_under_forbidden_root(args.scan_root):
+                raise ValueError("Current evidence cannot traverse Desktop, Documents, OneDrive or Backups")
+            from filesteward.launch import CurrentScanScope, LaunchSession, ScopedCurrentResolver
+            admitted = LaunchSession.admit_scan_root(args.scan_root)
+            resolver_options["ownership_resolver"] = ScopedCurrentResolver(
+                make_current_resolver(admitted), CurrentScanScope(admitted)
+            )
         run_review_until_interrupt(
             target, port=args.port, open_browser=not args.no_browser,
-            scan_root=normalize_declared_path(args.scan_root) if args.scan_root else None,
+            scan_root=normalize_declared_path(args.scan_root) if args.scan_root and not captured else None,
             on_ready=lambda result: print(f"filesteward review: {result.url}", flush=True),
+            **resolver_options,
         )
     except (ValueError, OSError, UnicodeError, TypeError, RuntimeError) as exc:
         print(f"filesteward review: {exc}", file=sys.stderr)

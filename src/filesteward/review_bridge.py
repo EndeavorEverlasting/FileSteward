@@ -8,6 +8,8 @@ tracked files or durable runtime artifacts.
 
 from __future__ import annotations
 
+from contextlib import nullcontext
+
 import csv
 import hashlib
 import json
@@ -563,7 +565,10 @@ class ReviewBridge:
         )
 
     def state_payload(self, item_id: str | None = None) -> dict[str, object]:
-        with self._lock:
+        # Share only raw native reads for this response. Safety operations keep
+        # the original per-call resolver outside this request-local batch.
+        batch = getattr(self.ownership_resolver, "read_batch", None)
+        with self._lock, (batch() if callable(batch) and not self.observation_only else nullcontext()):
             requested = item_id if item_id and item_id in self._nodes else None
             current_item_id = requested
             selected_id = requested
@@ -1183,7 +1188,10 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
                     self._reject(403, "Host must be loopback")
                     return
                 item_id = parse_qs(parsed.query).get("item_id", [None])[0]
-                self._json(200, bridge.state_payload(item_id))
+                try:
+                    self._json(200, bridge.state_payload(item_id))
+                except (ValueError, OSError, RuntimeError) as exc:
+                    self._reject(409, str(exc))
                 return
             self._reject(404, "not found")
 
@@ -1315,6 +1323,8 @@ def run_review_until_interrupt(
     port: int = 0,
     open_browser: bool = True,
     scan_root: str | Path | None = None,
+    ownership_resolver: OwnershipResolver = unresolved_ownership,
+    observation_only: bool = False,
     on_ready: Optional[Callable[[ReviewServeResult], None]] = None,
 ) -> ReviewServeResult:
     result = serve_review(
@@ -1322,6 +1332,8 @@ def run_review_until_interrupt(
         port=port,
         open_browser=open_browser,
         scan_root=scan_root,
+        ownership_resolver=ownership_resolver,
+        observation_only=observation_only,
     )
     try:
         if on_ready is not None:

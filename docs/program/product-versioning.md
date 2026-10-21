@@ -2,7 +2,7 @@
 
 **Authority:** `[project].version` in `pyproject.toml`
 
-**Current candidate version:** `0.17.1` (local context placement and complete scene composition; source candidate, separate from the published 0.16.0 Windows preview)
+**Current candidate version:** `0.18.0` (explicit current folder evidence and spatial scene arrival; source candidate, separate from the published 0.16.0 Windows preview)
 
 
 **Status:** P130 repository versioning system established for future changes; no release tag is created by this sprint.

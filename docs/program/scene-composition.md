@@ -51,6 +51,32 @@ transition policy, with their evidence retained in the trace. Value preferences 
 exact destructive authorization are never inferred by presentation. Unknown
 script mappings produce `BLOCKED_JUDGMENT_GAP`.
 
+## Spatial navigation and arrival
+
+The operator's accepted direction is a larger spatial world with crisp scene
+arrivals. SVG and CSS camera layers express position and depth; the browser is a
+viewport into that world. MAP, FOCUS, GATE and RESOLVE must produce a perceptible
+change of destination. Inactive regions recede or leave the frame. Opening every
+panel at once and scaling only a background is insufficient.
+
+The existing camera level and tutorial projection own navigation. Explicit path
+actions frame the destination in the visible viewport before the world settles.
+Arrival must reveal selected subject identity, the active scene question, legal
+continuation and current path step together. The focus target must survive page
+scroll position, narrow viewports, long evidence and resize; a moving boundary
+below the viewport is a failed arrival. The Chamber is part of that destination,
+not an unrelated overlay demanding that the user search elsewhere.
+
+The authored physical pointer, truthful action cue, context geometry, actual
+scrollbars and camera motion form one interaction system. Suppressing a colliding
+context panel must not remove the authored physical pointer on supported fine
+input. Decorative pointer identity never promises an action. Keyboard focus does
+not teleport it. Reduced motion preserves the same framing and destination with
+travel removed. Forced colors and coarse input retain native accessible fallbacks.
+
+These presentation requirements do not add choices or change scene legality. The
+canonical judgment script remains the only authority for those transitions.
+
 ## Context panel placement
 
 The cursor is a physical position, the hovered subject is an evidence identity,
@@ -67,7 +93,7 @@ Measure all rectangles in viewport CSS pixels after layout/camera transforms.
    anchor gap must be at most 48 CSS pixels. Choose the nearest legal candidate.
    Clamping after collision checking is invalid because it can reintroduce overlap.
 3. If the full explanation cannot fit, retry with a compact action label. If that
-   cannot fit either, hide the transient panel. Keep the native pointer and the
+   cannot fit either, hide the transient panel. Keep a visible physical pointer and the
    persistent subject/evidence/action text available. Never park context on the
    opposite edge of the page or cover the evidence to force a panel to remain open.
 

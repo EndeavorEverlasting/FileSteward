@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import argparse
 import base64
+import csv
+from contextlib import contextmanager, ExitStack, nullcontext
+from dataclasses import asdict
 import hashlib
 import hmac
 from html import escape
@@ -18,6 +21,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import stat
 import sys
 import threading
 import time
@@ -29,7 +33,9 @@ import webbrowser
 from filesteward import __version__
 from filesteward.manifest import validate_run
 from filesteward.policy.paths import (prove_run_dir_under_runtime, run_dir, runtime_root,
-    is_symlink_or_reparse, repository_root)
+    is_symlink_or_reparse, repository_root, is_under_forbidden_root)
+from filesteward.run import CleanupRun
+from filesteward.inventory.scan import ScanDeps
 from filesteward.review_bridge import SESSION_HEADER, serve_review
 from filesteward.sample import write_sample_run
 from filesteward.visualization.report import visualize_run_dir
@@ -39,6 +45,127 @@ IMPORT_FILES = frozenset({"inventory.csv", "human-review.csv", "cleanup-plan.csv
     "protected-exclusions.csv", "cleanup-summary.md", "run.json"})
 MAX_IMPORT_BYTES = 32 * 1024 * 1024
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+class CurrentScanScope:
+    """Bind explicit admission to directory objects, not reusable path names."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        self.identities = {}
+        for part in reversed((root, *root.parents)):
+            observed = part.lstat()
+            if is_symlink_or_reparse(part) or not stat.S_ISDIR(observed.st_mode) or not observed.st_ino:
+                raise ValueError("Folder admission requires ordinary directories with stable object identities")
+            self.identities[part] = (observed.st_dev, observed.st_ino)
+
+    def validate(self, path=None):
+        for part, expected in self.identities.items():
+            try:
+                observed = part.lstat()
+            except OSError as error:
+                raise ValueError("Admitted folder or ancestor changed; request a new folder review") from error
+            if (is_symlink_or_reparse(part) or not stat.S_ISDIR(observed.st_mode)
+                    or (observed.st_dev, observed.st_ino) != expected):
+                raise ValueError("Admitted folder or ancestor changed; request a new folder review")
+        if path is not None:
+            candidate = Path(os.path.abspath(path))
+            if candidate != self.root and self.root not in candidate.parents:
+                raise ValueError("Metadata traversal escaped the admitted folder")
+            for part in (candidate, *candidate.parents):
+                if part == self.root:
+                    break
+                if is_symlink_or_reparse(part):
+                    raise ValueError("Metadata traversal encountered a replaced linked ancestor")
+
+    @contextmanager
+    def pinned(self):
+        """Windows handles deny ancestor rename/reparse replacement during reads.
+
+        Attribute-only access, no deletion or content-read capability. Other
+        platforms retain boundary identity checks and never claim atomic pins.
+        """
+        self.validate()
+        with ExitStack() as stack:
+            if os.name == "nt":
+                import ctypes
+                import msvcrt
+                from ctypes import wintypes
+                api = ctypes.WinDLL("kernel32", use_last_error=True)
+                api.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                    ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+                api.CreateFileW.restype = wintypes.HANDLE
+                api.CloseHandle.argtypes = [wintypes.HANDLE]
+                api.CloseHandle.restype = wintypes.BOOL
+                for part, expected in self.identities.items():
+                    # FILE_READ_ATTRIBUTES; share READ only; OPEN_EXISTING;
+                    # OPEN_REPARSE_POINT | BACKUP_SEMANTICS. Pin parents first.
+                    handle = api.CreateFileW(str(part), 0x80, 1, None, 3, 0x02200000, None)
+                    if handle == ctypes.c_void_p(-1).value:
+                        raise ValueError("Cannot pin the admitted folder for a safe metadata review")
+                    try:
+                        fd = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
+                    except BaseException:
+                        api.CloseHandle(handle)
+                        raise
+                    stack.callback(os.close, fd)
+                    observed = os.fstat(fd)
+                    if (observed.st_dev, observed.st_ino) != expected:
+                        raise ValueError("Admitted folder identity changed before traversal")
+                    self.validate()
+            yield
+            self.validate()
+
+    def scandir(self, path):
+        # ValueError deliberately escapes the canonical scanner's OSError-to-
+        # incomplete conversion: a scope breach aborts, never becomes UNKNOWN.
+        self.validate(path)
+        iterator = os.scandir(path)
+        try:
+            self.validate(path)
+        except BaseException:
+            iterator.close()
+            raise
+
+        def entries():
+            try:
+                while True:
+                    self.validate(path)
+                    try:
+                        entry = next(iterator)
+                    except StopIteration:
+                        return
+                    self.validate(path)
+                    yield entry
+                    self.validate(path)
+            finally:
+                iterator.close()
+
+        return entries()
+
+
+class ScopedCurrentResolver:
+    """Keep fresh collection bound to the operator's original directory objects.
+
+    This guard preserves the original resolver and its batch protocol. It never
+    caches evidence or promotes the scan's presentation snapshot into authority.
+    Construction is inert; admission already owns the captured scope identity.
+    """
+
+    def __init__(self, delegate, scope: CurrentScanScope):
+        self.delegate, self.scope = delegate, scope
+
+    def __call__(self, path):
+        with self.scope.pinned():
+            self.scope.validate(path)
+            return self.delegate(path)
+
+    @contextmanager
+    def read_batch(self):
+        with self.scope.pinned():
+            batch = getattr(self.delegate, "read_batch", None)
+            with (batch() if callable(batch) else nullcontext()):
+                yield self
 
 
 def prepare_runtime() -> Path:
@@ -98,7 +225,7 @@ class InstanceLock:
 
 
 class LaunchSession:
-    def __init__(self, state_root: Path):
+    def __init__(self, state_root: Path, *, resolver_factory=None):
         self.state_root = state_root
         self.session_token = secrets.token_urlsafe(32)
         self.instance_id = uuid.uuid4().hex
@@ -106,6 +233,119 @@ class LaunchSession:
         self.reviews = {}
         self.lock = threading.RLock()
         self.server = None
+        self.resolver_factory = resolver_factory
+        self.current_runs = {}
+        self.scan_job = None
+        self.scan_lock = threading.Lock()
+        self.stopping = False
+
+    def reserve_stop(self):
+        # Admission and shutdown share the same reservation. Checking locked()
+        # alone would leave a gap in which a new daemon scan could begin.
+        if not self.scan_lock.acquire(blocking=False):
+            raise ValueError("Folder metadata is still being read. Wait for its result before closing the app")
+        try:
+            self.stopping = True
+        finally:
+            self.scan_lock.release()
+
+    @staticmethod
+    def admit_scan_root(raw) -> Path:
+        if not isinstance(raw, str) or not raw.strip() or not Path(raw).is_absolute():
+            raise ValueError("Enter the exact absolute path of one folder to review")
+        root = Path(os.path.abspath(raw))
+        if root == Path(root.anchor):
+            raise ValueError("Choose one folder rather than an entire drive")
+        if is_under_forbidden_root(root):
+            raise ValueError("Desktop, Documents, OneDrive and Backups are excluded by the folder safety contract")
+        if any(is_symlink_or_reparse(part) for part in (root, *root.parents)):
+            raise ValueError("Linked folders or linked ancestors cannot be scanned")
+        if not root.is_dir():
+            raise ValueError("That folder is unavailable. Check its exact path and access, then retry")
+        return root
+
+    def begin_current_scan(self, payload) -> dict:
+        if not isinstance(payload, dict) or set(payload) != {"scan_root"}:
+            raise ValueError("Submit only the exact folder path; eligibility and proof cannot be supplied by the browser")
+        root = self.admit_scan_root(payload["scan_root"])
+        scope = CurrentScanScope(root)
+        if not self.scan_lock.acquire(blocking=False):
+            raise ValueError("A folder review is already being read. Wait for its result before starting another")
+        if self.stopping:
+            self.scan_lock.release()
+            raise ValueError("The local app is closing. Reopen FileSteward before starting a folder review")
+        identifier = "current-" + uuid.uuid4().hex
+        self.scan_job = dict(job_id=identifier, state="READING", message="Reading folder metadata and current ownership evidence")
+
+        def collect():
+            try:
+                # Resolve only after this authenticated, explicit folder request.
+                scope.validate()
+                factory = self.resolver_factory
+                if factory is None:
+                    from filesteward.ownership.current import make_current_resolver
+                    factory = make_current_resolver
+                resolver = factory(root)
+                scope.validate()
+                snapshot = getattr(resolver, "review_snapshot", None)
+                # Pin the admitted name chain before any snapshot or canonical
+                # metadata/protection traversal can observe the selected tree.
+                with scope.pinned():
+                    scan_resolver = snapshot() if callable(snapshot) else resolver
+                ownership_complete, coverage = True, {}
+
+                def observe(path):
+                    nonlocal ownership_complete
+                    evidence = scan_resolver(path)
+                    ownership_complete &= evidence.adapters_complete and evidence.fresh()
+                    records = getattr(evidence, "coverage", ())
+                    for record in records:
+                        data = asdict(record)
+                        coverage[json.dumps(data, sort_keys=True)] = data
+                    if not records and not evidence.adapters_complete:
+                        data = dict(domain="ownership", complete=False, provenance="resolver",
+                            gaps=["No complete current ownership coverage was supplied for the scanned path"])
+                        coverage[json.dumps(data, sort_keys=True)] = data
+                    return evidence
+
+                target = self.candidate(identifier)
+                with scope.pinned():
+                    scope.validate()
+                    result = CleanupRun(root, target, ownership_resolver=observe,
+                        scan_deps=ScanDeps(scandir=scope.scandir)).execute()
+                errors = validate_run(target)
+                if errors:
+                    raise ValueError("Metadata review failed validation: " + "; ".join(errors[:3]))
+                item_count, partial = 0, False
+                with (target / "inventory.csv").open(encoding="utf-8", newline="") as stream:
+                    for row in csv.DictReader(stream):
+                        item_count += row.get("path") != str(root)
+                        partial |= row.get("scan_completeness") != "COMPLETE"
+                marker = dict(schema_version="filesteward.launch-run/v1", run_id=identifier,
+                    title="Current folder review", is_sample=False, source_kind="native-current",
+                    scan_root=str(root), run_digest=hashlib.sha256((target / "run.json").read_bytes()).hexdigest())
+                _write_json(target / ".launch-run.json", marker)
+                # This process-owned binding cannot be reconstructed from an
+                # imported run.json or browser assertion. After restart, captured
+                # evidence remains inspectable but requires a new explicit scan.
+                self.current_runs[identifier] = (marker, root, ScopedCurrentResolver(resolver, scope))
+                state = "PARTIAL" if partial else ("EMPTY" if not item_count else "READY")
+                self.scan_job = dict(job_id=identifier, state=state, run_id=identifier,
+                    item_count=item_count, disposition_counts=dict(result.disposition_counts),
+                    metadata_complete=not partial, ownership_complete=bool(ownership_complete),
+                    coverage=list(coverage.values()),
+                    message=("Some metadata could not be read. Review the explicit gaps; nothing was assumed absent."
+                        if partial else ("This folder has no entries to review." if not item_count else
+                        "Metadata review saved. Open it to inspect ownership and unresolved evidence.")))
+            except Exception as error:
+                logging.exception("Explicit folder metadata review failed")
+                self.scan_job = dict(job_id=identifier, state="ERROR",
+                    message="Folder review was not completed: " + str(error) + ". Check the folder and retry; no action was applied.")
+            finally:
+                self.scan_lock.release()
+
+        threading.Thread(target=collect, daemon=True).start()
+        return dict(job_id=identifier, state="READING")
 
     def candidate(self, identifier: str) -> Path:
         if not isinstance(identifier, str) or not RUN_ID.fullmatch(identifier):
@@ -125,7 +365,8 @@ class LaunchSession:
                 if not isinstance(data, dict) or data.get("schema_version") != "filesteward.launch-run/v1":
                     continue
                 result.append(dict(id=target.name, run_id=data["run_id"], title=data["title"],
-                    is_sample=data.get("is_sample") is True, saved_at=marker.stat().st_mtime_ns))
+                    is_sample=data.get("is_sample") is True,
+                    is_current=target.name in self.current_runs, saved_at=marker.stat().st_mtime_ns))
             except (OSError, ValueError, TypeError, KeyError):
                 continue
         return sorted(result, key=lambda entry: entry["saved_at"], reverse=True)[:100]
@@ -202,10 +443,21 @@ class LaunchSession:
     def open_review(self, identifier: str) -> str:
         with self.lock:
             target = self.candidate(identifier)
+            marker_path = target / ".launch-run.json"
+            if is_symlink_or_reparse(marker_path):
+                raise ValueError("Saved review marker cannot be linked")
+            marker = json.loads(marker_path.read_text(encoding="utf-8"))
+            if not isinstance(marker, dict) or marker.get("schema_version") != "filesteward.launch-run/v1":
+                raise ValueError("Saved review identity is invalid")
+            active = self.current_runs.get(identifier)
+            if active:
+                bound, root, resolver = active
+                resolver.scope.validate()
+                metadata = json.loads((target / "run.json").read_text(encoding="utf-8"))
+                if (marker != bound or marker.get("is_sample") is True or metadata.get("root") != str(root)
+                        or hashlib.sha256((target / "run.json").read_bytes()).hexdigest() != bound["run_digest"]):
+                    raise ValueError("Current review source binding changed. Request a new folder metadata review")
             if identifier not in self.reviews:
-                marker = json.loads((target / ".launch-run.json").read_text(encoding="utf-8"))
-                if not isinstance(marker, dict) or marker.get("schema_version") != "filesteward.launch-run/v1":
-                    raise ValueError("Saved review identity is invalid")
                 errors = validate_run(target)
                 if errors:
                     raise ValueError("Saved review no longer passes validation")
@@ -214,14 +466,26 @@ class LaunchSession:
                 sample = marker.get("is_sample") is True
                 label = ("Sample data - no files on this computer were scanned. Storage figures are illustrative."
                     if sample else "Imported captured evidence - not a new scan or current deletion authority.")
+                if active:
+                    label = "Current folder metadata review - " + str(root) + ". Ownership gaps remain explicit; scan is not action approval."
+                elif marker.get("source_kind") == "native-current":
+                    label = "Captured folder evidence - start a new folder review to refresh current ownership."
                 banner = '<nav style="padding:14px 24px;background:#fffaf1;border-bottom:1px solid #c8b8a4">' \
                     + '<a href="' + escape(self.origin, quote=True) + '/">Back to launch</a> &middot; ' + escape(label) + '</nav>'
                 html = html.replace("<body>", "<body>" + banner, 1)
                 if sample:
                     html = html.replace("Observed storage", "Example storage").replace("Run baseline free space", "Example free space")
                 write_report_html_atomically(result.report_path, html)
-                self.reviews[identifier] = serve_review(target, open_browser=False,
-                    regenerate_report=False, observation_only=True)
+                options = dict(open_browser=False, regenerate_report=False, observation_only=not bool(active))
+                if active:
+                    options.update(scan_root=root, ownership_resolver=resolver)
+                self.reviews[identifier] = serve_review(target, **options)
+                if active:
+                    # The bridge legitimately persists the same admitted root.
+                    # Bind that repository-owned write before any later reopen.
+                    marker = dict(bound, run_digest=hashlib.sha256((target / "run.json").read_bytes()).hexdigest())
+                    _write_json(marker_path, marker)
+                    self.current_runs[identifier] = (marker, root, resolver)
             return self.origin + "/review/" + identifier
 
     def close(self) -> None:
@@ -229,8 +493,8 @@ class LaunchSession:
             review.server.shutdown(); review.server.server_close(); review.thread.join(timeout=2)
 
 
-def start_server(state_root: Path, port: int = 0) -> tuple[LaunchSession, threading.Thread]:
-    session = LaunchSession(state_root)
+def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> tuple[LaunchSession, threading.Thread]:
+    session = LaunchSession(state_root, resolver_factory=resolver_factory)
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_args):
@@ -286,6 +550,8 @@ def start_server(state_root: Path, port: int = 0) -> tuple[LaunchSession, thread
                 return self.send(200, dict(app_id="filesteward", version=__version__, instance_id=session.instance_id))
             if path == "/api/v1/launch/state":
                 return self.send(200, dict(version=__version__, runs=session.recent(), allowedImportFiles=sorted(IMPORT_FILES)))
+            if path == "/api/v1/launch/current-scan":
+                return self.send(200, session.scan_job or dict(state="IDLE"))
             if path.startswith("/review/"):
                 identifier = path[len("/review/"):]
                 try:
@@ -315,6 +581,8 @@ def start_server(state_root: Path, port: int = 0) -> tuple[LaunchSession, thread
                 if not isinstance(payload, dict):
                     raise ValueError("A request object is required")
                 path = urlparse(self.path).path
+                if path == "/api/v1/launch/current-scan":
+                    return self.send(202, session.begin_current_scan(payload))
                 if path == "/api/v1/launch/demo":
                     return self.send(200, {"url":session.sample()})
                 if path == "/api/v1/launch/import":
@@ -322,6 +590,7 @@ def start_server(state_root: Path, port: int = 0) -> tuple[LaunchSession, thread
                 if path == "/api/v1/launch/open":
                     return self.send(200, {"url":session.open_review(payload.get("run_id"))})
                 if path == "/api/v1/launch/stop":
+                    session.reserve_stop()
                     self.send(200, {"stopped":True})
                     threading.Thread(target=session.server.shutdown, daemon=True).start()
                     return

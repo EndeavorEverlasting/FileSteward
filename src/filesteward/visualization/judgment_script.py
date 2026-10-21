@@ -100,6 +100,12 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
     fresh = evidence.fresh()
     owners = sorted({edge.owner_display_name or edge.owner_id for edge in edges})
     sources = sorted({edge.evidence_source for edge in edges if edge.evidence_source})
+    # Optional collector coverage reports technical facts, never scene policy.
+    coverage = [{"domain": item.domain, "complete": item.complete,
+                 "provenance": item.provenance, "gaps": list(item.gaps)}
+                for item in getattr(evidence, "coverage", ())]
+    unresolved_domains = [item["domain"].replace("_", " ") for item in coverage
+                          if not item["complete"]]
     qualified = bool(edges) and all(
         edge.owner_kind in {"APPLICATION", "REPOSITORY"} and edge.lifecycle_hint for edge in edges
     )
@@ -132,6 +138,12 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
         "The admitted ownership adapters have not completed" if not complete else
         "All admitted adapters completed, but no matching owner was established"
     )
+    if unresolved_domains and not complete:
+        missing_fact = "Current ownership checks remain incomplete: " + ", ".join(unresolved_domains)
+        trace[0]["finding"] += ". Unresolved checks: " + "; ".join(
+            item["domain"].replace("_", " ") + " (" + ", ".join(item["gaps"]) + ")"
+            for item in coverage if not item["complete"]
+        )
     actions = ["KEEP", "REVIEW_LATER"]
     if "APP_BROKEN_REQUIRED" in plan.consequence_classes:
         actions = ["REVIEW_LATER"]
@@ -153,7 +165,9 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
         "graph_revision_id": plan.graph_revision_id, "evidence_digest": plan.evidence_digest,
         "regeneration_digest": plan.regeneration_digest,
         "recovery_mechanism": proof.recipe if proof else None,
-        "missing_fact": missing_fact, "safe_probes_attempted": sources,
+        "missing_fact": missing_fact,
+        "safe_probes_attempted": sorted(set(sources) | {item["provenance"] for item in coverage if item["provenance"]}),
+        "probe_coverage": coverage,
         "why_it_matters": "Unresolved ownership or recovery cannot authorize a destructive action",
         "trace": trace,
     }

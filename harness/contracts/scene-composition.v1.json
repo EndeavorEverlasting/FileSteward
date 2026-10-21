@@ -400,5 +400,28 @@
       "same_subject_selector": "[data-node-id]",
       "continuation_owner": "canonical_script_after_authoritative_readback"
     }
-  ]
+  ],
+  "spatial_presentation": {
+    "authority": "existing_camera_level_and_tutorial_projection",
+    "world": "SVG_and_CSS_spatial_world_extends_beyond_viewport",
+    "navigation": "explicit_path_action_frames_destination_then_settles_crisply",
+    "arrival_must_show": [
+      "selected_subject_identity",
+      "active_scene_question",
+      "legal_continuation",
+      "current_path_step"
+    ],
+    "inactive_content": "recedes_or_leaves_frame_instead_of_competing_with_destination",
+    "pointer": "physical_authored_pointer_independent_of_transient_context_placement",
+    "no_action": "no_inviting_action_label_without_registered_effect",
+    "scrollbars": "authored_actual_scroll_containers_and_viewport",
+    "reduced_motion": "same_destination_without_travel_animation",
+    "forced_colors_and_coarse_input": "native_accessible_pointer_and_scroll_fallbacks",
+    "forbidden": [
+      "offscreen_destination_arrival",
+      "unframed_world_motion",
+      "keyboard_teleports_physical_pointer",
+      "new_presentation_judgment_routes"
+    ]
+  }
 }

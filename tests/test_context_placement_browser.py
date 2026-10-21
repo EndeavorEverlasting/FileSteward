@@ -91,12 +91,12 @@ def test_context_locality_positive_and_congested_fallback(context_browser,mode,w
         page.wait_for_timeout(80)
         state=snapshot(page)
         assert state["hidden"]
-        assert not state["custom"]
+        assert state["custom"] is (mode != "forced")
         assert state["described"]==0
-        assert not state["reticle"]
-        # Physical reticle is always absent in reduced motion/forced colors.
+        assert state["reticle"] is (mode != "forced")
+        # Reduced motion retains a static physical pointer; forced colors uses native.
         hover_card_edge(page)
-        if mode in ("reduced","forced"):
+        if mode == "forced":
             assert page.locator('#atlas-reticle').evaluate("e=>getComputedStyle(e).display") == "none"
     finally:
         page.close()
@@ -116,6 +116,8 @@ def test_context_dismissal_invalidation_and_unknown_action(context_browser):
         assert not snapshot(page)["hidden"]
         page.evaluate("document.dispatchEvent(new Event('scroll'))")
         assert snapshot(page)["hidden"]
+        assert snapshot(page)["reticle"]
+        assert snapshot(page)["label"] == ""
         page.mouse.move(5,5)
         hover_card_edge(page)
         page.set_viewport_size({"width":1400,"height":1000})
