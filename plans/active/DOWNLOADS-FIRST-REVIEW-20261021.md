@@ -38,3 +38,38 @@ Read AGENTS.md, canonical paths and new contract. Refresh the exact branch/head 
 - **DESIGNED**: deterministic user flow, token protocol, screen copy, explicit states, 16 invariant families.
 - **TESTS AUTHORED**: contract guards and intentionally RED behavioral acceptance tests (synthetic). No repo test runner or Windows host is accessible from this remote connector session, so no green verification is claimed.
 - **NOT IMPLEMENTED:** Windows resolver/API, native picker, browser one-click navigation. The PR remains draft pending implementation/validation; no real user storage was read.
+
+## Local implementation ownership and proof admission
+
+Provider refreshed at main9bc065a and design PR68 head dd9388ea; required PR66
+slice is an ancestor and its scene/current-review/runtime contracts remain present.
+Use this existing design branch as convergence owner, not a parallel replacement PR.
+
+- OS adapter writer: isolated downloads-os-20261021 worktree/branch; new
+  src/filesteward/windows_folders.py and tests/test_windows_folders.py only.
+  Expose windows_downloads_known_folder()->Path and pick_windows_folder()->Path|None.
+  OS KnownFolder/modern native picker; no guessed paths or scanning; no runtime
+  profile mutation. Use scoped synthetic providers/native dialog proof, never scan
+  real Downloads. Root reexports both seams from launch.py for acceptance injection.
+- Welcome writer: isolated downloads-welcome-20261021; web/launch.html and new
+  tests/test_downloads_welcome_browser.py, plus adapt tests/test_current_review_browser.py
+  to the explicitly redesigned first-click flow while retaining Atlas/Chamber and
+  evidence/geometry controls. No launch.py/OS adapter/acceptance contract mutation.
+- Coordinator: launch.py backend and server-bound single-use tokens, additional
+  protocol/safety tests, acceptance convergence, docs/AGENTS/version/regression ledger,
+  canonical plan/handoff. No direct sibling source edits until completed commits rejoin.
+
+All lanes fork the same pinned committed design floor and use their own virtual
+environments, ignored runtime trees and ephemeral ports. Primary owns convergence,
+provider reviews, exact proof and integration. Existing explicit scan_root API stays
+compatible; normal UI removes path entry and second-open friction. Preserve original
+CurrentScanScope instances from display through click, rather than re-capturing a
+substituted path. Scope tokens are memory-only, session-bound, one-use, expire600s;
+drift fails before factory construction. Choosing is not review authorization.
+
+Acceptance: RED baseline -> green deterministic API + native adapter tests -> real
+synthetic one-click browser navigation in supported modes -> retained full floor,
+wheel/version guard, exact review and merge. Startup/OS discovery never traverses
+Downloads or constructs ownership collectors. Actual Windows discovery/native dialog
+proof is separate from mocked API proof; report unavailable interactive proof rather
+than pretending mocked selection is live. No real Downloads scan is authorized.
