@@ -671,6 +671,7 @@ def render_cinematic_experience_script() -> str:
     lastPointer = { x: event.clientX, y: event.clientY };
     if (event.pointerType === 'touch') { clearContext(); return; }
     if (!stage.contains(event.target)) {
+      contextTarget = null;
       clearContext();
       if (reticle) reticle.classList.remove('is-visible', 'is-active');
       if (cartouche) { cartouche.hidden = true; cartouche.setAttribute('aria-hidden','true'); }
@@ -913,6 +914,7 @@ def render_cinematic_experience_script() -> str:
   app.addEventListener('pointerenter', moveReticle);
   app.addEventListener('pointermove', moveReticle);
   app.addEventListener('pointerleave', () => {
+    contextTarget = null;
     clearContext();
     if (reticle) reticle.classList.remove('is-visible', 'is-active');
     if (cartouche) {

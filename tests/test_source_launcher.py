@@ -215,13 +215,15 @@ Update-SourceCheckout $env:FS_PROOF_REPO {
     try:
         wait_ready(fetch_ready)
         assert lock_path.exists(), "Updater must create the lock even before a first app launch"
-        assert native_lock_probe().returncode != 0, "Native application entered during Git writes"
+        probe = native_lock_probe()
+        assert probe.returncode == 7 and "Traceback" not in probe.stderr, probe.stderr
         second = update(tmp_path, checkout)
         assert second.returncode != 0
         assert "wait for its update" in second.stderr
         fetch_release.write_text("continue")
         wait_ready(install_ready)
-        assert native_lock_probe().returncode != 0, "Native application entered during dependency writes"
+        probe = native_lock_probe()
+        assert probe.returncode == 7 and "Traceback" not in probe.stderr, probe.stderr
         install_release.write_text("continue")
         stdout, stderr = process.communicate(timeout=10)
         assert process.returncode == 0, stdout + stderr

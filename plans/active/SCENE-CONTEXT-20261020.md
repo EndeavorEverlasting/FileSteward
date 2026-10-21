@@ -91,3 +91,23 @@ one batch block before self-update. Actual self-replacement tests retain both
 success/failure exits; concurrent lock tests cover absent and existing lockfiles.
 The version document no longer embeds a stale current version in its historical
 example. All inline and outside-diff findings require exact-head reconciliation.
+
+Final boundary review reproduced a tooltip/reticle reappearing after the pointer
+left the browser during a hover transform. The settle callback reused its old
+target. Leaving Atlas/app now clears that target as well as the visible cue. A
+retained browser regression covers departure before transform completion. This
+compatible follow-up pass advances the source candidate to0.17.1 under the
+repository per-visual-pass versioning rule. c5569a9 predecessor proof:1020 passed,
+9 Windows symlink skips, five-mode journey0 failures; final repair needs reproof.
+
+## Final recovery checkpoint after renewed P07 execution steering
+
+BOUNDARY: pointer departure could revive context; updater-held file sharing
+raised an uncaught app-lock open error. IMPACT: final proof requires repairs.
+PROVED: c5569a9 suite1020/9 symlink skips, five-mode journey0 failures.
+RECOVERY: retain departure/re-entry control, catch lock open/init OSError, assert
+exact native denial (not any failed process), and correct non-atomic launch wording.
+NEXT: focused proof, final candidate validation, provider reconciliation, merge,
+canonical downloaded CMD startup. Root is sole tracked writer during recovery;
+remaining agents only inspect ignored runtime. Boundary vocabulary is read from
+the TokenCorridor canonical owner; FileSteward does not fork that control plane.

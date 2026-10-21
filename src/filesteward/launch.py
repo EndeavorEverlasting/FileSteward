@@ -73,12 +73,12 @@ class InstanceLock:
     def acquire(self) -> bool:
         if is_symlink_or_reparse(self.path) or is_symlink_or_reparse(self.path.parent):
             raise ValueError("Refusing a linked application lock")
-        self.stream = self.path.open("a+b")
-        self.stream.seek(0, os.SEEK_END)
-        if self.stream.tell() == 0:
-            self.stream.write(b"0"); self.stream.flush()
-        self.stream.seek(0)
         try:
+            self.stream = self.path.open("a+b")
+            self.stream.seek(0, os.SEEK_END)
+            if self.stream.tell() == 0:
+                self.stream.write(b"0"); self.stream.flush()
+            self.stream.seek(0)
             if os.name == "nt":
                 import msvcrt
                 msvcrt.locking(self.stream.fileno(), msvcrt.LK_NBLCK, 1)
@@ -86,7 +86,9 @@ class InstanceLock:
                 import fcntl
                 fcntl.flock(self.stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
-            self.stream.close(); self.stream = None
+            if self.stream:
+                self.stream.close()
+            self.stream = None
             return False
         return True
 

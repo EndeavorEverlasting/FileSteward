@@ -12,8 +12,8 @@
     "harness/evals/execution-handoff-review-gates.v1.json"
   ],
   "provider_base_sha_at_capture": "b3f96524018f5d0fac8d3d88e0932f1fd9953aee",
-  "provider_head_sha_at_capture": "e5e5860bf8713bd378a2460c0047765dfae37575",
-  "local_head_sha_at_capture_or_unknown": "e5e5860bf8713bd378a2460c0047765dfae37575",
+  "provider_head_sha_at_capture": "c5569a9cfc4727c520e712329658b0e924920e0e",
+  "local_head_sha_at_capture_or_unknown": "c5569a9cfc4727c520e712329658b0e924920e0e",
   "completed_facts": [
     {
       "fact": "Baseline reproduced distant context and wrong keyboard anchor; composition binds eleven canonical scenes without routing duplication.",
@@ -50,6 +50,16 @@
         "tests/test_context_placement_browser.py"
       ],
       "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Predecessor exact suite1020/9 and five-mode journey0 failures. Final0.17.1 departure/re-entry browser controls10 pass; canonical lock refusal and launch/source tests50 pass.",
+      "evidence": [
+        "var/exact-head-full-suite-c5569a9.log",
+        "var/exact-head-journey-c5569a9.log",
+        "var/pointer-departure-repair.log",
+        "var/clean-lock-refusal-proof.log"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
     }
   ],
   "remaining_work": [
@@ -76,7 +86,8 @@
     "pyproject.toml",
     "src/filesteward/__init__.py",
     "docs/program/product-versioning.md",
-    "plans/active/SCENE-CONTEXT-20261020*"
+    "plans/active/SCENE-CONTEXT-20261020*",
+    "src/filesteward/launch.py"
   ],
   "forbidden_surfaces": [
     "deletion/ownership policy",

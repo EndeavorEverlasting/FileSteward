@@ -157,6 +157,30 @@ def test_keyboard_context_does_not_use_old_pointer_or_teleport_reticle(context_b
         page.close()
 
 
+def test_hover_transition_cannot_revive_context_after_pointer_departure(context_browser):
+    browser, url, output = context_browser
+    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+    try:
+        page.goto(url, wait_until="networkidle")
+        card = page.locator('.sector-card[data-node-id="reclaim-1"]').first
+        card.scroll_into_view_if_needed()
+        page.wait_for_timeout(200)
+        box = card.bounding_box()
+        page.mouse.move(box["x"] + box["width"] * .02, box["y"] + box["height"] * .98)
+        page.wait_for_timeout(40)  # Depart before the authored transform ends.
+        page.mouse.move(-40, -40)
+        page.wait_for_timeout(500)
+        state = snapshot(page)
+        assert state["hidden"] and not state["reticle"] and not state["custom"]
+        # Re-entry still reveals real context; departure must not disable it.
+        hover_card_edge(page)
+        state = snapshot(page)
+        assert not state["hidden"] and state["presentation"] == "full"
+        page.screenshot(path=str(output / "context-reentry.png"))
+    finally:
+        page.close()
+
+
 def test_home_timeout_cannot_hide_replacement_scene_or_overlap_path(context_browser):
     browser, url, output = context_browser
     page = browser.new_page(viewport={"width": 1440, "height": 900})

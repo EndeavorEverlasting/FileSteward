@@ -136,10 +136,9 @@ function Start-SourceFileSteward {
       return $entry
     } finally { Pop-Location }
   }
-  # All source/dependency writes are finished before handing the same lock back
-  # to the native application. Concurrent startup is now safe and uses the
-  # application's existing single-instance admission; no updater may rewrite
-  # source while that application's lock is held.
+  # All writes finish before releasing the updater's lock. Startup then competes
+  # for the same lock through native single-instance admission; this is not an
+  # atomic handoff. A concurrent updater may win, in which case startup refuses.
   Push-Location -LiteralPath $repo
   try {
     Write-Host 'Opening FileSteward on loopback. Keep this window open; use Close app in the welcome page to stop.'
