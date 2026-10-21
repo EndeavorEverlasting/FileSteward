@@ -33,8 +33,10 @@ agent/console that hosted the server can leave a browser tab displaying
 \`ERR_CONNECTION_REFUSED\`. Browser Reload cannot start a Windows process.
 
 The supported behavior is a **Windows shortcut that launches FileSteward**, not a
-web link. From a checked-out branch/worktree, install a shortcut once (no admin
-rights) using the script in that same repository:
+web link. In the FileSteward checkout/worktree, double-click
+**`Install-FileSteward-Shortcut.cmd`** once. It safely invokes the Windows
+installer in the same checkout and opens FileSteward afterward. No admin rights
+are needed. You can alternatively run the equivalent PowerShell command:
 
 \`\`\`powershell
 # Run from PowerShell on the Windows machine hosting FileSteward.
