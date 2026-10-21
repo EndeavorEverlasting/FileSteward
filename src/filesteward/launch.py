@@ -555,7 +555,7 @@ class LaunchSession:
                             label += " This folder has no entries to review."
                 elif marker.get("source_kind") == "native-current":
                     label = "Captured folder evidence - start a new folder review to refresh current ownership."
-                banner = '<nav style="padding:14px 24px;background:#fffaf1;border-bottom:1px solid #c8b8a4">' \
+                banner = '<nav style="padding:14px 24px;background:#fffaf1;border-bottom:1px solid #c8b8a4;overflow-wrap:anywhere">' \
                     + '<a href="' + escape(self.origin, quote=True) + '/">Back to launch</a> &middot; ' + escape(label) + '</nav>'
                 html = html.replace("<body>", "<body>" + banner, 1)
                 if sample:
