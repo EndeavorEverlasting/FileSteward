@@ -469,13 +469,20 @@
       "unavailable domain coverage cannot disappear from attribution",
       "read-only snapshot cannot authorize mutation",
       "source binding drift invalidates current opening",
-      "CLI cannot activate launcher sample/import/capture with current-evidence flag"
+      "CLI cannot activate launcher sample/import/capture with current-evidence flag",
+      "missing registered component loses broken application protection",
+      "admitted folder parent changes before or during canonical traversal",
+      "read response cache leaks into mutation or another thread",
+      "captured CLI scan-root cannot open observational bridge"
     ],
     "positive_controls": [
       "explicit admitted synthetic root uses canonical metadata pipeline",
       "current resolver reaches bridge without changing judgment routes",
       "protective cross-domain evidence survives incomplete collection",
-      "current evidence coverage/provenance reaches existing Attribution Resolve"
+      "current evidence coverage/provenance reaches existing Attribution Resolve",
+      "read response raw probe batch preserves path evidence digest and original timestamp",
+      "outside-batch safety calls recollect native evidence",
+      "scope race aborts before publishing trusted inventory or current marker"
     ]
   },
   "spatial_arrival_20261021": {

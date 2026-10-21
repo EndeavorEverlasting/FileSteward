@@ -152,3 +152,76 @@ def test_interrupt_wrapper_preserves_observation_boundary(tmp_path, monkeypatch)
     monkeypatch.setattr(bridge, "serve_review", serve)
     bridge.run_review_until_interrupt(tmp_path, observation_only=True)
     assert serve.call_args.kwargs["observation_only"] is True
+
+
+@pytest.mark.parametrize("forbidden", ["Desktop","Documents","OneDrive","Backups"])
+def test_cli_current_evidence_respects_forbidden_root_floor(tmp_path, monkeypatch, capsys, forbidden):
+    import filesteward.ownership.current as current
+    monkeypatch.setattr(cli, "resolve_run_dir_argument", lambda value: tmp_path)
+    monkeypatch.setattr(cli, "prove_run_dir_under_runtime", lambda value: value)
+    factory = Mock()
+    monkeypatch.setattr(current, "make_current_resolver", factory)
+    assert cli.main(["review","unused","--current-evidence","--scan-root",str(tmp_path/forbidden)]) == cli.EXIT_INVALID
+    assert "cannot traverse" in capsys.readouterr().err
+    factory.assert_not_called()
+
+
+def test_captured_scan_root_opens_real_observational_bridge(tmp_path, monkeypatch):
+    import json, urllib.request
+    import filesteward.review_bridge as bridge
+    from filesteward.sample import write_sample_run
+    from filesteward.policy import paths
+    runtime = tmp_path / "private-runtime/var"
+    (runtime / "runs").mkdir(parents=True)
+    monkeypatch.setattr(paths,"runtime_root",lambda:runtime)
+    target = write_sample_run(runtime/"runs/captured-cli","captured-cli")
+    (target/".launch-run.json").write_text(json.dumps({"schema_version":"filesteward.launch-run/v1","is_sample":True}),encoding="utf-8")
+    real_until = bridge.run_review_until_interrupt
+    observed=[]
+    def until(run_dir, **kwargs):
+        assert kwargs["scan_root"] is None
+        def ready(result):
+            payload=json.load(urllib.request.urlopen(result.url+"api/v1/state",timeout=5))
+            observed.append(payload)
+            raise KeyboardInterrupt()
+        kwargs["on_ready"]=ready
+        return real_until(run_dir, **kwargs)
+    monkeypatch.setattr(bridge,"run_review_until_interrupt",until)
+    assert cli.main(["review",str(target),"--scan-root",str(tmp_path/"unobserved"),"--no-browser"])==cli.EXIT_OK
+    assert observed[0]["observation_only"] is True
+
+
+def test_bridge_batches_only_presentation_and_keeps_decision_checks_live(tmp_path):
+    from contextlib import contextmanager
+    from filesteward.review_bridge import ReviewBridge, DecisionRequest, DecisionBridgeIntent
+    from safe_capacity_fixtures import generated_evidence
+    from test_decision_ux_continuity import _reclaim_node
+    class Resolver:
+        active = False
+        calls = []
+        @contextmanager
+        def read_batch(self):
+            assert not self.active
+            self.active = True
+            try:
+                yield
+            finally:
+                self.active = False
+        def __call__(self,path):
+            self.calls.append(self.active)
+            return generated_evidence(path)
+    resolver = Resolver()
+    node = _reclaim_node("generated")
+    bridge = ReviewBridge(tmp_path,"run","a"*64,"token","",scan_root=tmp_path,
+        ownership_resolver=resolver,_nodes={node.node_id:node})
+    before = bridge.state_payload(node.node_id)
+    assert resolver.calls and all(resolver.calls)
+    assert before["script_scene"]["scene_id"] == "VALUE_DECISION"
+    assert not resolver.active
+    resolver.calls.clear()
+    result = bridge.record_decision(DecisionRequest("run",node.node_id,DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT))
+    assert resolver.calls[0] is False
+    assert any(resolver.calls)
+    assert result["script_scene"]["scene_id"] == "AUTHORIZATION_GATE"
+    assert not resolver.active
+    assert not (tmp_path/"delete-approval.json").exists()

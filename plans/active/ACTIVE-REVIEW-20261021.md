@@ -114,3 +114,28 @@ frame the selected evidence with the active decision menu, and restore authored
 pointer/scrollbar presentation without hiding the physical pointer or teleporting
 it on keyboard focus. Forced-colors/touch retain native accessibility fallbacks.
 No new scene, choice or destructive authority is introduced.
+
+## Rejoin and second-pass findings
+
+The collector and active-entry lanes returned isolated commits; coordinator
+cherry-picked them in dependency order. Source0.18.0 current-review previsual suite
+passed1071/9 Windows symlink skips; actual synthetic folder submit passed four Edge
+modes. Operator screenshot reproduction placed identity below the viewport;
+spatial repair now frames each waypoint, translates the SVG world with perspective,
+settles sharply, and keeps the authored physical pointer when context is dismissed.
+Reduced motion arrives without travel; forced colors keeps native input fallbacks.
+The visual worker hit a usage limit before commit. Coordinator took over its idle
+isolated lane, preserved evidence, repaired callback boolean handling and no-seat
+pointer continuity, and committed only visual owners after23 focused tests passed.
+
+Provider/source review repairs preserve broken application registration when a
+scoped leaf is missing; retain captured/sample/import provenance through CLI;
+refuse forbidden current CLI roots; bind root/ancestors through both canonical
+protection and inventory traversals; and use request-local raw native probe batches
+for presentation only. Evidence assembly/digests remain path-specific, timestamps
+stay at observation start, and mutation checks retain fresh calls. Native domains
+without complete adapters remain explicitly incomplete, without regeneration proof.
+These are technical repairs, not new judgment routes. Remaining independent work
+is final exact candidate proof, provider thread reconciliation, main integration
+and source-CMD runtime observation. Exact real-data root/action remains an operator
+gate. No personal scan/deletion or reclaim is established by synthetic evidence.

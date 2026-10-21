@@ -49,6 +49,7 @@ from filesteward.deletion.regenerable import (
 from filesteward.manifest import triage_run_dir, validate_run
 from filesteward.policy.paths import (
     is_lexically_within,
+    is_under_forbidden_root,
     normalize_declared_path,
     prove_run_dir_under_runtime,
     resolve_run_dir_argument,
@@ -679,12 +680,14 @@ def _run_review(args: argparse.Namespace) -> int:
         resolver_options = {"observation_only": True} if captured else {}
         if args.current_evidence:
             from filesteward.ownership.current import make_current_resolver
+            if is_under_forbidden_root(args.scan_root):
+                raise ValueError("Current evidence cannot traverse Desktop, Documents, OneDrive or Backups")
             resolver_options["ownership_resolver"] = make_current_resolver(
                 Path(normalize_declared_path(args.scan_root))
             )
         run_review_until_interrupt(
             target, port=args.port, open_browser=not args.no_browser,
-            scan_root=normalize_declared_path(args.scan_root) if args.scan_root else None,
+            scan_root=normalize_declared_path(args.scan_root) if args.scan_root and not captured else None,
             on_ready=lambda result: print(f"filesteward review: {result.url}", flush=True),
             **resolver_options,
         )
