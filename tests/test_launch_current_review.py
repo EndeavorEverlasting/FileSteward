@@ -1,5 +1,6 @@
 """Explicit browser admission uses the canonical scanner on synthetic folders only."""
 import json
+import os
 import threading
 import time
 from pathlib import Path
@@ -195,8 +196,11 @@ def test_partial_inventory_preserves_missing_metadata(current_service, tmp_path,
     def denied(_root):
         raise PermissionError("synthetic read gap")
 
-    monkeypatch.setattr(launch, "CleanupRun", lambda *args, **kwargs:
-        real_run(*args, **kwargs, scan_deps=ScanDeps(scandir=denied)))
+    def partial_run(*args, **kwargs):
+        kwargs["scan_deps"] = ScanDeps(scandir=denied)
+        return real_run(*args, **kwargs)
+
+    monkeypatch.setattr(launch, "CleanupRun", partial_run)
     assert start(session, source)[0] == 202
     result = finished(session)
     assert result["state"] == "PARTIAL"
@@ -318,3 +322,91 @@ def test_snapshot_coverage_is_visible_but_original_resolver_reaches_bridge(curre
     assert snapshots == [True]
     session.open_review(result["run_id"])
     assert observed[0]["ownership_resolver"] is current
+
+
+def test_root_parent_replaced_after_admission_aborts_before_scanner(current_service, tmp_path, monkeypatch):
+    session, runtime, _ = current_service
+    parent = tmp_path / "admitted-parent"
+    source = parent / "synthetic"
+    source.mkdir(parents=True)
+    (source / "original.txt").write_text("synthetic original")
+
+    def replaced_factory(root):
+        parent.rename(tmp_path / "preserved-original-parent")
+        source.mkdir(parents=True)
+        (source / "outside-scope.txt").write_text("synthetic replacement must not be observed")
+        return unresolved_ownership
+
+    session.resolver_factory = replaced_factory
+    monkeypatch.setattr(launch, "CleanupRun", lambda *args, **kwargs:
+        pytest.fail("Canonical scanner must not run against a substituted admitted root"))
+    assert start(session, source)[0] == 202
+    result = finished(session)
+    assert result["state"] == "ERROR"
+    assert "ancestor changed" in result["message"]
+    assert not list((runtime / "runs").iterdir())
+    assert not session.current_runs
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows native directory pin proof")
+def test_windows_scan_pin_blocks_ancestor_replacement_until_read_finishes(tmp_path):
+    parent = tmp_path / "synthetic-parent"
+    source = parent / "synthetic"
+    source.mkdir(parents=True)
+    scope = launch.CurrentScanScope(source)
+    with scope.pinned():
+        with pytest.raises(OSError):
+            parent.rename(tmp_path / "replacement-destination")
+        scope.validate()
+    # No leaked handles: the operator's directory becomes renameable again.
+    parent.rename(tmp_path / "replacement-destination")
+
+
+@pytest.mark.parametrize("traversal", ["protection", "inventory"])
+@pytest.mark.parametrize("swap_at", ["open", "next"])
+def test_scope_breach_aborts_both_canonical_traversals(current_service, tmp_path, monkeypatch, traversal, swap_at):
+    session, runtime, _ = current_service
+    source = tmp_path / "synthetic"
+    source.mkdir()
+    (source / "synthetic.txt").write_text("unchanged")
+    original_scandir = launch.os.scandir
+    original_link_check = launch.is_symlink_or_reparse
+    state = {"root_calls": 0, "replaced": False}
+    target_call = 1 if traversal == "protection" else 2
+
+    def link_check(path):
+        return (Path(path) == source.parent and state["replaced"]) or original_link_check(path)
+
+    class SwappingIterator:
+        def __init__(self, iterator):
+            self.iterator = iterator
+
+        def __next__(self):
+            entry = next(self.iterator)
+            state["replaced"] = True
+            return entry
+
+        def close(self):
+            self.iterator.close()
+
+    def swapping_scandir(path):
+        iterator = original_scandir(path)
+        if Path(path) == source:
+            state["root_calls"] += 1
+            if state["root_calls"] == target_call:
+                if swap_at == "open":
+                    state["replaced"] = True
+                else:
+                    return SwappingIterator(iterator)
+        return iterator
+
+    monkeypatch.setattr(launch, "is_symlink_or_reparse", link_check)
+    monkeypatch.setattr(launch.os, "scandir", swapping_scandir)
+    assert start(session, source)[0] == 202
+    result = finished(session)
+    assert state["root_calls"] == target_call
+    assert result["state"] == "ERROR", result
+    assert "ancestor changed" in result["message"]
+    assert not list((runtime / "runs").glob("*/inventory.csv"))
+    assert not list((runtime / "runs").glob("*/.launch-run.json"))
+    assert not session.current_runs

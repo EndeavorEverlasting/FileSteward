@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import base64
 import csv
+from contextlib import contextmanager, ExitStack
 from dataclasses import asdict
 import hashlib
 import hmac
@@ -20,6 +21,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import stat
 import sys
 import threading
 import time
@@ -33,6 +35,7 @@ from filesteward.manifest import validate_run
 from filesteward.policy.paths import (prove_run_dir_under_runtime, run_dir, runtime_root,
     is_symlink_or_reparse, repository_root, is_under_forbidden_root)
 from filesteward.run import CleanupRun
+from filesteward.inventory.scan import ScanDeps
 from filesteward.review_bridge import SESSION_HEADER, serve_review
 from filesteward.sample import write_sample_run
 from filesteward.visualization.report import visualize_run_dir
@@ -42,6 +45,103 @@ IMPORT_FILES = frozenset({"inventory.csv", "human-review.csv", "cleanup-plan.csv
     "protected-exclusions.csv", "cleanup-summary.md", "run.json"})
 MAX_IMPORT_BYTES = 32 * 1024 * 1024
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+class CurrentScanScope:
+    """Bind explicit admission to directory objects, not reusable path names."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        self.identities = {}
+        for part in reversed((root, *root.parents)):
+            observed = part.lstat()
+            if is_symlink_or_reparse(part) or not stat.S_ISDIR(observed.st_mode) or not observed.st_ino:
+                raise ValueError("Folder admission requires ordinary directories with stable object identities")
+            self.identities[part] = (observed.st_dev, observed.st_ino)
+
+    def validate(self, path=None):
+        for part, expected in self.identities.items():
+            try:
+                observed = part.lstat()
+            except OSError as error:
+                raise ValueError("Admitted folder or ancestor changed; request a new folder review") from error
+            if (is_symlink_or_reparse(part) or not stat.S_ISDIR(observed.st_mode)
+                    or (observed.st_dev, observed.st_ino) != expected):
+                raise ValueError("Admitted folder or ancestor changed; request a new folder review")
+        if path is not None:
+            candidate = Path(os.path.abspath(path))
+            if candidate != self.root and self.root not in candidate.parents:
+                raise ValueError("Metadata traversal escaped the admitted folder")
+            for part in (candidate, *candidate.parents):
+                if part == self.root:
+                    break
+                if is_symlink_or_reparse(part):
+                    raise ValueError("Metadata traversal encountered a replaced linked ancestor")
+
+    @contextmanager
+    def pinned(self):
+        """Windows handles deny ancestor rename/reparse replacement during reads.
+
+        Attribute-only access, no deletion or content-read capability. Other
+        platforms retain boundary identity checks and never claim atomic pins.
+        """
+        self.validate()
+        with ExitStack() as stack:
+            if os.name == "nt":
+                import ctypes
+                import msvcrt
+                from ctypes import wintypes
+                api = ctypes.WinDLL("kernel32", use_last_error=True)
+                api.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                    ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+                api.CreateFileW.restype = wintypes.HANDLE
+                api.CloseHandle.argtypes = [wintypes.HANDLE]
+                api.CloseHandle.restype = wintypes.BOOL
+                for part, expected in self.identities.items():
+                    # FILE_READ_ATTRIBUTES; share READ only; OPEN_EXISTING;
+                    # OPEN_REPARSE_POINT | BACKUP_SEMANTICS. Pin parents first.
+                    handle = api.CreateFileW(str(part), 0x80, 1, None, 3, 0x02200000, None)
+                    if handle == ctypes.c_void_p(-1).value:
+                        raise ValueError("Cannot pin the admitted folder for a safe metadata review")
+                    try:
+                        fd = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
+                    except BaseException:
+                        api.CloseHandle(handle)
+                        raise
+                    stack.callback(os.close, fd)
+                    observed = os.fstat(fd)
+                    if (observed.st_dev, observed.st_ino) != expected:
+                        raise ValueError("Admitted folder identity changed before traversal")
+                    self.validate()
+            yield
+            self.validate()
+
+    def scandir(self, path):
+        # ValueError deliberately escapes the canonical scanner's OSError-to-
+        # incomplete conversion: a scope breach aborts, never becomes UNKNOWN.
+        self.validate(path)
+        iterator = os.scandir(path)
+        try:
+            self.validate(path)
+        except BaseException:
+            iterator.close()
+            raise
+
+        def entries():
+            try:
+                while True:
+                    self.validate(path)
+                    try:
+                        entry = next(iterator)
+                    except StopIteration:
+                        return
+                    self.validate(path)
+                    yield entry
+                    self.validate(path)
+            finally:
+                iterator.close()
+
+        return entries()
 
 
 def prepare_runtime() -> Path:
@@ -133,6 +233,7 @@ class LaunchSession:
         if not isinstance(payload, dict) or set(payload) != {"scan_root"}:
             raise ValueError("Submit only the exact folder path; eligibility and proof cannot be supplied by the browser")
         root = self.admit_scan_root(payload["scan_root"])
+        scope = CurrentScanScope(root)
         if not self.scan_lock.acquire(blocking=False):
             raise ValueError("A folder review is already being read. Wait for its result before starting another")
         identifier = "current-" + uuid.uuid4().hex
@@ -141,13 +242,18 @@ class LaunchSession:
         def collect():
             try:
                 # Resolve only after this authenticated, explicit folder request.
+                scope.validate()
                 factory = self.resolver_factory
                 if factory is None:
                     from filesteward.ownership.current import make_current_resolver
                     factory = make_current_resolver
                 resolver = factory(root)
+                scope.validate()
                 snapshot = getattr(resolver, "review_snapshot", None)
-                scan_resolver = snapshot() if callable(snapshot) else resolver
+                # Pin the admitted name chain before any snapshot or canonical
+                # metadata/protection traversal can observe the selected tree.
+                with scope.pinned():
+                    scan_resolver = snapshot() if callable(snapshot) else resolver
                 ownership_complete, coverage = True, {}
 
                 def observe(path):
@@ -165,7 +271,10 @@ class LaunchSession:
                     return evidence
 
                 target = self.candidate(identifier)
-                result = CleanupRun(root, target, ownership_resolver=observe).execute()
+                with scope.pinned():
+                    scope.validate()
+                    result = CleanupRun(root, target, ownership_resolver=observe,
+                        scan_deps=ScanDeps(scandir=scope.scandir)).execute()
                 errors = validate_run(target)
                 if errors:
                     raise ValueError("Metadata review failed validation: " + "; ".join(errors[:3]))
