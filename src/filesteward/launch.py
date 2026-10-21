@@ -92,7 +92,8 @@ class CurrentScanScope:
     def pinned(self):
         """Windows handles deny ancestor rename/reparse replacement during reads.
 
-        Attribute-only access, no deletion or content-read capability. Other
+        Attribute access plus root directory-list permission, no file-content
+        or deletion capability. Other
         platforms retain boundary identity checks and never claim atomic pins.
         """
         self.validate()
@@ -108,9 +109,11 @@ class CurrentScanScope:
                 api.CloseHandle.argtypes = [wintypes.HANDLE]
                 api.CloseHandle.restype = wintypes.BOOL
                 for part, expected in self.identities.items():
-                    # FILE_READ_ATTRIBUTES; share READ only; OPEN_EXISTING;
+                    # FILE_READ_ATTRIBUTES (+ FILE_LIST_DIRECTORY on root);
+                    # share READ only; OPEN_EXISTING;
                     # OPEN_REPARSE_POINT | BACKUP_SEMANTICS. Pin parents first.
-                    handle = api.CreateFileW(str(part), 0x80, 1, None, 3, 0x02200000, None)
+                    handle = api.CreateFileW(str(part), 0x81 if part == self.root else 0x80,
+                        1, None, 3, 0x02200000, None)
                     if handle == ctypes.c_void_p(-1).value:
                         raise ValueError("Cannot pin the admitted folder for a safe metadata review")
                     try:
@@ -545,6 +548,11 @@ class LaunchSession:
                     if sample else "Imported captured evidence - not a new scan or current deletion authority.")
                 if active:
                     label = "Current folder metadata review - " + str(root) + ". Ownership gaps remain explicit; scan is not action approval."
+                    if self.scan_job and self.scan_job.get("run_id") == identifier:
+                        if self.scan_job.get("state") == "PARTIAL":
+                            label += " Some metadata could not be read; inspect the explicit gaps."
+                        elif self.scan_job.get("state") == "EMPTY":
+                            label += " This folder has no entries to review."
                 elif marker.get("source_kind") == "native-current":
                     label = "Captured folder evidence - start a new folder review to refresh current ownership."
                 banner = '<nav style="padding:14px 24px;background:#fffaf1;border-bottom:1px solid #c8b8a4">' \
@@ -636,7 +644,7 @@ def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> t
                 try:
                     session.open_review(identifier)
                     location = session.reviews[identifier].url
-                except (ValueError, OSError, TypeError, KeyError):
+                except (ValueError, OSError, TypeError, KeyError, RuntimeError):
                     return self.send(400, {"error":"This review could not be opened"})
                 self.send_response(302); self.send_header("Location", location)
                 self.send_header("Content-Length", "0"); self.end_headers(); return
@@ -676,7 +684,7 @@ def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> t
                     threading.Thread(target=session.server.shutdown, daemon=True).start()
                     return
                 return self.send(404, {"error":"Not found"})
-            except (ValueError, OSError, TypeError, KeyError) as error:
+            except (ValueError, OSError, TypeError, KeyError, RuntimeError) as error:
                 return self.send(400, {"error":str(error)})
 
         def do_OPTIONS(self):
