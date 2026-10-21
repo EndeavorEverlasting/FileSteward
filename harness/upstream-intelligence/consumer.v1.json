@@ -1,0 +1,81 @@
+{
+  "schema_version": "upstream-intelligence-consumer/v1",
+  "consumer_repository": "EndeavorEverlasting/FileSteward",
+  "consumer_name": "FileSteward",
+  "canonical_catalog": {
+    "repository": "EndeavorEverlasting/TokenCorridor",
+    "path": "harness/upstream-intelligence/catalog.v1.json",
+    "pinned_commit_sha": "2f9f27b962780fe2e37c3cc522f51ae168c6e68d",
+    "state": "MERGED_SOURCE_AVAILABLE_HOST_CONSUMPTION_UNOBSERVED"
+  },
+  "reusable_lookup": {
+    "repository": "EndeavorEverlasting/Automation",
+    "path": "capabilities/upstream-reference-discovery/lookup.py",
+    "pinned_commit_sha": "43102eb70342d1c12ed587895bc969d68bb65576",
+    "state": "MERGED_AND_CI_TESTED",
+    "required_for_basic_discovery": false
+  },
+  "original_source_workbooks": [
+    "00 - Upstream Intelligence Library — Registry.xlsx (Google Drive / research; 2026-10-20)",
+    "PS-0132 — Work & Codex Skills Radar — Inventory 2026-10-18.xlsx (Google Drive / skill and runtime inventory)"
+  ],
+  "project_boundary": "Preserve app-file ownership and deletion protections and immersive Memory Atlas/Decision Chamber scene regression requirements. No auto deletion or visual reinterpretation from research alone.",
+  "scope": "Offline public-reference seed only. No full source-workbook replication, local skill install, code/font license clearance or automatic product adoption.",
+  "resources": [
+    {
+      "id": "impeccable",
+      "name": "Impeccable",
+      "category": "product-design",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/pbakaus/impeccable",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "playwright",
+      "name": "OpenAI Playwright skill",
+      "category": "portable-agent-skill",
+      "kind": "codex_portable_candidate",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/openai/skills/blob/main/skills/.curated/playwright/SKILL.md",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "motion-layout",
+      "name": "Motion React Layout",
+      "category": "motion",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://motion.dev/docs/react-layout-group",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "view-transitions",
+      "name": "MDN View Transition API",
+      "category": "motion",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "wayfinder",
+      "name": "Matt Pocock Wayfinder",
+      "category": "planning/agent-skill",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    }
+  ]
+}
