@@ -522,9 +522,8 @@ def test_completed_review_retains_admitted_root_identity_for_live_evidence(curre
         session.open_review(identifier)
     if opened:
         status, _, state = request(service.url.rstrip("/"), "GET", STATE_PATH + "?item_id=" + stable_item_id("record.txt"))
-        assert status in {200, 400}
-        assert ("unavailable" in json.dumps(state).lower() if status == 200
-            else "ancestor changed" in state["error"])
+        assert status == 409
+        assert "ancestor changed" in state["error"]
     assert observed == [], "Original-root replacement must not reach any live provider"
 
 

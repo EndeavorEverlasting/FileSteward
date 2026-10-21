@@ -473,7 +473,8 @@
       "missing registered component loses broken application protection",
       "admitted folder parent changes before or during canonical traversal",
       "read response cache leaks into mutation or another thread",
-      "captured CLI scan-root cannot open observational bridge"
+      "captured CLI scan-root cannot open observational bridge",
+      "completed current review or explicit CLI observes replacement root after admission"
     ],
     "positive_controls": [
       "explicit admitted synthetic root uses canonical metadata pipeline",
@@ -482,7 +483,8 @@
       "current evidence coverage/provenance reaches existing Attribution Resolve",
       "read response raw probe batch preserves path evidence digest and original timestamp",
       "outside-batch safety calls recollect native evidence",
-      "scope race aborts before publishing trusted inventory or current marker"
+      "scope race aborts before publishing trusted inventory or current marker",
+      "scope drift produces readable HTTP409 before live providers and after cached service opening"
     ]
   },
   "spatial_arrival_20261021": {

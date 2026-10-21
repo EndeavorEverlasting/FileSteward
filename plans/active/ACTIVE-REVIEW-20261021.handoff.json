@@ -57,12 +57,21 @@
         "tests/test_scene_composition_contract.py"
       ],
       "proof_state": "LOCALLY_VALIDATED"
+    },
+    {
+      "fact": "Post-scan identity audit repaired both browser and explicit CLI with retained scope wrapper. Replaced-root state returns readable HTTP409 before provider invocation; focused integration50pass.",
+      "evidence": [
+        "tests/test_current_review_wiring.py",
+        "tests/test_launch_current_review.py",
+        "var/live-scope-focused-repaired.log"
+      ],
+      "proof_state": "LOCALLY_VALIDATED"
     }
   ],
   "remaining_work": [
     {
       "work_id": "release",
-      "action": "Rejoin atomic shutdown reservation, run affected exact-candidate checks, build, refresh/resolve exact provider threads, integrate main, observe canonical source-CMD app.",
+      "action": "Validate final retained-scope candidate, build, refresh/resolve exact provider threads, integrate main and observe canonical source-CMD app.",
       "depends_on": [],
       "acceptance": "All material findings repaired/disproven, local proof current by relevance fingerprint, main content/containment and0.18.0 entry observed."
     },
@@ -138,7 +147,7 @@
   },
   "exact_next_action": {
     "phase": "CONVERGE",
-    "action": "Rejoin shutdown reservation, validate affected exact candidate and reconcile provider threads before main integration and source-CMD observation.",
+    "action": "Validate final retained-scope candidate, build, refresh/resolve exact provider threads, integrate main and observe canonical source-CMD app.",
     "owner": "coordinator",
     "can_execute_without_operator": true
   },

@@ -40,7 +40,7 @@ def test_cli_resolver_is_opt_in(monkeypatch, tmp_path, explicit):
     kwargs = served.call_args.kwargs
     if explicit:
         factory.assert_called_once_with(tmp_path)
-        assert kwargs["ownership_resolver"] is resolver
+        assert kwargs["ownership_resolver"].delegate is resolver
     else:
         factory.assert_not_called()
         assert "ownership_resolver" not in kwargs
@@ -103,7 +103,7 @@ def test_default_launch_factory_is_lazy_and_uses_native_collector_seam(tmp_path,
         # Opening the service may resolve initial current scene state. The
         # important distinction is that the stored resolver is the live owner.
         original = session.current_runs[result["run_id"]][2]
-        assert isinstance(original, current.CurrentResolver)
+        assert isinstance(original.delegate, current.CurrentResolver)
         prior = len(calls)
         evidence = original(str(root / "fixture.txt"))
         assert len(calls) == prior + 2
@@ -225,3 +225,41 @@ def test_bridge_batches_only_presentation_and_keeps_decision_checks_live(tmp_pat
     assert result["script_scene"]["scene_id"] == "AUTHORIZATION_GATE"
     assert not resolver.active
     assert not (tmp_path/"delete-approval.json").exists()
+
+
+def test_live_http_root_replacement_is_readable_and_does_not_probe(tmp_path, monkeypatch):
+    import json, urllib.request, urllib.error
+    from filesteward import launch
+    from filesteward.policy import paths
+    from filesteward.ownership.current import make_current_resolver, ProbeResult
+    from test_launch_current_review import start, finished
+    runtime=tmp_path/"private-runtime/var"
+    (runtime/"runs").mkdir(parents=True)
+    root=tmp_path/"synthetic-folder";root.mkdir()
+    (root/"original.txt").write_text("synthetic",encoding="utf-8")
+    monkeypatch.setattr(paths,"runtime_root",lambda:runtime)
+    observed=[]
+    def factory(admitted):
+        def provider(root,target):
+            observed.append((root,target))
+            return ProbeResult(False,"synthetic",("INCOMPLETE",))
+        return make_current_resolver(admitted,providers={"service":provider})
+    session,thread=launch.start_server(runtime,resolver_factory=factory)
+    try:
+        assert start(session,root)[0]==202
+        identifier=finished(session)["run_id"]
+        session.open_review(identifier)
+        service=session.reviews[identifier]
+        json.load(urllib.request.urlopen(service.url+"api/v1/state",timeout=5))
+        prior=len(observed)
+        root.rename(tmp_path/"original-moved")
+        root.mkdir();(root/"outside-admission.txt").write_text("synthetic replacement",encoding="utf-8")
+        with pytest.raises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(service.url+"api/v1/state",timeout=5)
+        assert caught.value.code==409
+        assert "changed" in json.load(caught.value)["error"].lower()
+        assert len(observed)==prior
+        with pytest.raises(ValueError,match="changed"):
+            session.open_review(identifier)
+    finally:
+        session.server.shutdown();session.server.server_close();session.close();thread.join(timeout=3)

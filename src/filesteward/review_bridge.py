@@ -1188,7 +1188,10 @@ def _make_handler(bridge: ReviewBridge) -> type[BaseHTTPRequestHandler]:
                     self._reject(403, "Host must be loopback")
                     return
                 item_id = parse_qs(parsed.query).get("item_id", [None])[0]
-                self._json(200, bridge.state_payload(item_id))
+                try:
+                    self._json(200, bridge.state_payload(item_id))
+                except (ValueError, OSError, RuntimeError) as exc:
+                    self._reject(409, str(exc))
                 return
             self._reject(404, "not found")
 

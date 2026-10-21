@@ -139,3 +139,13 @@ These are technical repairs, not new judgment routes. Remaining independent work
 is final exact candidate proof, provider thread reconciliation, main integration
 and source-CMD runtime observation. Exact real-data root/action remains an operator
 gate. No personal scan/deletion or reclaim is established by synthetic evidence.
+
+The post-scan live audit proved that pathname-only resolver retention could observe
+an ordinary replacement root despite the original scope refusing it. The active
+review and explicit CLI now retain ScopedCurrentResolver(delegate, scope), holding
+the original native pins during live calls/read batches. Reopens revalidate the
+same scope; scope drift yields a readable HTTP409 and invokes no provider. This
+closes observation continuity through initial scan, subsequent evidence, and cached
+service reuse. The original fresh delegate and its raw-probe batch remain intact.
+A prior exact candidate passed1107/9 and the unchanged five-mode journey passed0
+failures; this behavior change requires affected/final candidate reproof.

@@ -682,8 +682,10 @@ def _run_review(args: argparse.Namespace) -> int:
             from filesteward.ownership.current import make_current_resolver
             if is_under_forbidden_root(args.scan_root):
                 raise ValueError("Current evidence cannot traverse Desktop, Documents, OneDrive or Backups")
-            resolver_options["ownership_resolver"] = make_current_resolver(
-                Path(normalize_declared_path(args.scan_root))
+            from filesteward.launch import CurrentScanScope, LaunchSession, ScopedCurrentResolver
+            admitted = LaunchSession.admit_scan_root(args.scan_root)
+            resolver_options["ownership_resolver"] = ScopedCurrentResolver(
+                make_current_resolver(admitted), CurrentScanScope(admitted)
             )
         run_review_until_interrupt(
             target, port=args.port, open_browser=not args.no_browser,
