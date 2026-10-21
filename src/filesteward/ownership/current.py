@@ -84,6 +84,28 @@ def _unavailable(root: Path, target: Path) -> ProbeResult:
                        gaps=("NO_COMPLETE_READ_ONLY_PROVIDER",))
 
 
+def _scoped_exists(raw: Path, root: Path) -> bool:
+    """Missing scoped components are absence; linked ancestors are refusal.
+
+    Walk from the filesystem anchor down. When a component is absent, every
+    existing ancestor has already been checked without following a link.
+    Permission and other I/O failures remain unresolved, never False absence.
+    """
+    if not raw.is_absolute() or ".." in raw.parts:
+        raise ValueError("PATH_NOT_ABSOLUTE_OR_NORMALIZED")
+    path = Path(os.path.abspath(raw))
+    if not path.is_relative_to(root):
+        raise ValueError("PATH_OUTSIDE_ADMITTED_ROOT")
+    for part in reversed((path, *path.parents)):
+        try:
+            info = part.lstat()
+        except FileNotFoundError:
+            return False
+        if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+            raise ValueError("LINK_OR_REPARSE_COMPONENT")
+    return True
+
+
 def _registry(root: Path, target: Path) -> ProbeResult:
     """Read registration metadata, then inspect serviceability only inside root.
 
@@ -139,7 +161,7 @@ def _registry(root: Path, target: Path) -> ProbeResult:
                                         entry.display_name, "windows_uninstall_registry", "strong", "APP_ACTIVE_REQUIRED",
                                         "Registered installation/serviceability intersects the selected target"))
                                 def exists(path: str) -> bool:
-                                    return _bounded_path(Path(path), root).exists()
+                                    return _scoped_exists(Path(path), root)
                                 try:
                                     records.extend(collect_app_ownership((entry,), path_exists=exists))
                                 except (OSError, ValueError):
@@ -251,7 +273,9 @@ def make_current_resolver(scan_root: Path, *, providers: Mapping[str, ProbeProvi
                 for record in result.app_records:
                     try:
                         for edge in record.edges:
-                            _bounded_path(Path(edge.storage_path), root)
+                            # A broken registered component is meaningful
+                            # missing-path evidence, not an invalid record.
+                            _scoped_exists(Path(edge.storage_path), root)
                         apps.append(record)
                     except (OSError, ValueError):
                         invalid = True

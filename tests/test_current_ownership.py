@@ -243,3 +243,89 @@ def test_snapshot_scope_reparse_rechecked_after_capture(tmp_path, monkeypatch):
         return info
     monkeypatch.setattr(current.Path, "lstat", linked)
     assert snapshot(str(tmp_path)).coverage[0].domain == "scope"
+
+
+def test_scoped_existence_missing_leaf_and_parent_are_false(tmp_path):
+    assert current._scoped_exists(tmp_path, tmp_path)
+    assert not current._scoped_exists(tmp_path / "missing.exe", tmp_path)
+    assert not current._scoped_exists(tmp_path / "missing-parent" / "missing.exe", tmp_path)
+    with pytest.raises(ValueError, match="OUTSIDE"):
+        current._scoped_exists(tmp_path.parent / "outside.exe", tmp_path)
+
+
+def test_scoped_existence_checks_junction_before_missing_leaf(tmp_path, monkeypatch):
+    linked = tmp_path / "junction"
+    linked.mkdir()
+    original = current.Path.lstat
+    def lstat(path):
+        info = original(path)
+        if path == linked:
+            return SimpleNamespace(st_mode=info.st_mode, st_file_attributes=0x400)
+        return info
+    monkeypatch.setattr(current.Path, "lstat", lstat)
+    with pytest.raises(ValueError, match="LINK_OR_REPARSE"):
+        current._scoped_exists(linked / "missing.exe", tmp_path)
+
+
+def test_scoped_existence_access_denied_is_not_missing(tmp_path, monkeypatch):
+    original = current.Path.lstat
+    def denied(path):
+        if path == tmp_path / "denied":
+            raise PermissionError()
+        return original(path)
+    monkeypatch.setattr(current.Path, "lstat", denied)
+    with pytest.raises(PermissionError):
+        current._scoped_exists(tmp_path / "denied" / "missing.exe", tmp_path)
+
+
+@pytest.mark.parametrize("junction", [False, True])
+def test_missing_registered_serviceability_retains_broken_app_projection(tmp_path, monkeypatch, junction):
+    if current.os.name != "nt":
+        pytest.skip("Windows provider platform admission; no host registry access")
+    from filesteward.visualization.judgment_script import resolve_scene_evidence
+    from filesteward.ownership.windows_app import AppLifecycleClass
+    class Key:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+    def query(key, name):
+        values = {"DisplayName": "Synthetic Broken App", "InstallLocation": str(tmp_path),
+                  "UninstallString": '"' + str(tmp_path / "missing" / "uninstall.exe") + '"'}
+        if name not in values:
+            raise FileNotFoundError()
+        return values[name], 1
+    fake = SimpleNamespace(HKEY_LOCAL_MACHINE="HKLM", HKEY_CURRENT_USER="HKCU",
+        KEY_WOW64_64KEY=256, KEY_WOW64_32KEY=512, KEY_READ=1, REG_SZ=1, REG_EXPAND_SZ=2,
+        OpenKey=lambda *args: Key(), QueryInfoKey=lambda key: (1, 0, 0),
+        EnumKey=lambda key, i: "broken-synthetic", QueryValueEx=query)
+    monkeypatch.setitem(sys.modules, "winreg", fake)
+    if junction:
+        linked = tmp_path / "missing"
+        linked.mkdir()
+        original = current.Path.lstat
+        def lstat(path):
+            info = original(path)
+            if path == linked:
+                return SimpleNamespace(st_mode=info.st_mode, st_file_attributes=0x400)
+            return info
+        monkeypatch.setattr(current.Path, "lstat", lstat)
+    result = current._registry(tmp_path, tmp_path)
+    if junction:
+        assert not result.complete and not result.app_records
+        assert "SERVICEABILITY_EXISTENCE_UNRESOLVED_WITHIN_SCOPE" in result.gaps
+        evidence = current.make_current_resolver(tmp_path,
+            providers={"application_installation": lambda *args: result})(str(tmp_path))
+        assert plan_owner_actions(str(tmp_path), evidence).disposition is CleanupDisposition.PROTECTED
+        return
+    assert result.app_records
+    assert all(r.lifecycle_class is AppLifecycleClass.BROKEN_REQUIRED for r in result.app_records)
+    assert "SERVICEABILITY_EXISTENCE_UNRESOLVED_WITHIN_SCOPE" not in result.gaps
+    evidence = current.make_current_resolver(tmp_path,
+        providers={"application_installation": lambda *args: result})(str(tmp_path))
+    assert evidence.graph.app_records
+    projection = resolve_scene_evidence(str(tmp_path), CleanupDisposition.UNKNOWN, evidence)
+    assert projection["effective_disposition"] == "PROTECTED"
+    assert "APP_BROKEN_REQUIRED" in plan_owner_actions(str(tmp_path), evidence).consequence_classes
+    assert projection["ownership_badge"] == "Broken app dependency"
+    assert not projection["raw_delete_eligible"]
