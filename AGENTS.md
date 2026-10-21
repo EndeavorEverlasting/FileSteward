@@ -20,7 +20,8 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 10. `harness/contracts/execution-handoff-loop.v1.json` and `harness/contracts/execution-handoff-packet.schema.v1.json` when receiving, dispatching, converging, or handing off execution
 11. `harness/evals/execution-handoff-review-gates.v1.json` before advancing review/merge/live-proof transitions
 12. The active plan under `plans/active/` for the requested sprint
-13. `README.md` safety, privacy, and MVP boundaries
+13. `harness/contracts/downloads-first-review.v1.json` and `docs/program/downloads-first-review.md` when changing welcome onboarding, folder discovery, picker, or one-click review admission
+14. `README.md` safety, privacy, and MVP boundaries
 
 If any required contract cannot be read, stop. Do not reconstruct it from memory.
 
