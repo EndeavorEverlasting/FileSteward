@@ -55,3 +55,12 @@ def test_application_remains_single_instance_and_selects_actual_port():
     assert '"/api/v1/launch/health"' in launch
     assert "webbrowser.open(url)" in launch
     assert "webbrowser.open(session.origin)" in launch
+
+
+def test_double_click_installer_is_relative_and_not_a_browser_bookmark():
+    cmd = (ROOT / "Install-FileSteward-Shortcut.cmd").read_text(encoding="utf-8")
+    assert "%~dp0scripts\\windows\\Install-FileSteward-Shortcut.ps1" in cmd
+    assert 'powershell.exe -NoLogo -NoProfile -File "%FS_SHORTCUT_INSTALLER%"' in cmd
+    assert "pause" in cmd
+    assert "http://127.0.0.1" not in cmd
+    assert "ExecutionPolicy Bypass" not in cmd
