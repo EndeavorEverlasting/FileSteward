@@ -35,9 +35,11 @@ Read AGENTS.md, canonical paths and new contract. Refresh the exact branch/head 
 
 ### Current progress
 
-- **DESIGNED**: deterministic user flow, token protocol, screen copy, explicit states, 16 invariant families.
-- **TESTS AUTHORED**: contract guards and intentionally RED behavioral acceptance tests (synthetic). No repo test runner or Windows host is accessible from this remote connector session, so no green verification is claimed.
-- **NOT IMPLEMENTED:** Windows resolver/API, native picker, browser one-click navigation. The PR remains draft pending implementation/validation; no real user storage was read.
+- **IMPLEMENTED:** native Windows Downloads resolver and folder picker; memory-only single-use scope tokens; original directory identities retained through activation; accessible welcome with automatic canonical Atlas continuation.
+- **LOCALLY VALIDATED:** focused convergence 84 passed / 1 Windows symlink privilege skip; independent protocol 29 passed; four-mode current review and six-mode welcome controls retained. Full exact floor and package proof are recorded in ignored runtime receipts.
+- **NOT LIVE-ACCEPTED:** supported interactive Windows dialog and relocated KnownFolder proof on an isolated Windows profile. The available computer-use surfaces disable native Windows control; mocks and the disclosed API/probe evidence do not replace that acceptance.
+- **NO PERSONAL SCAN:** actual user Downloads is not scanned by this implementation sprint. Initial discovery is not scan authorization. No deletion, move, approval or schedule is applied.
+- **PROVIDER:** continue existing PR68 and branch; no replacement PR or main mutation while required proof gates remain outstanding.
 
 ## Local implementation ownership and proof admission
 
@@ -73,3 +75,19 @@ wheel/version guard, exact review and merge. Startup/OS discovery never traverse
 Downloads or constructs ownership collectors. Actual Windows discovery/native dialog
 proof is separate from mocked API proof; report unavailable interactive proof rather
 than pretending mocked selection is live. No real Downloads scan is authorized.
+
+### Protocol test lane and retained redesign controls
+
+A third isolated writer, downloads-protocol-20261021, owns only the new
+`tests/test_downloads_scope_protocol.py`: expiry/clock rollback, cross-session
+replay, bounded memory, original-root/ancestor substitution, worker race,
+Host/Origin/header refusal, concurrent scan/picker and safe picker failures.
+Coordinator owns the explicitly redesigned static launch-result assertion in
+`tests/test_launch_current_review.py`; the former second-open assertion becomes
+a verified READY/PARTIAL/EMPTY-before-open guard. Existing active bridge,
+ownership coverage, captured-run downgrade and destination geometry tests remain.
+
+The first measured browser candidate failed narrow sample visibility and long
+scope-path wrapping. Compact narrow spacing and wrap-anywhere on the existing
+review banner repaired those failures; no destination geometry assertion was
+removed. Partial and empty warnings remain visible after automatic navigation.

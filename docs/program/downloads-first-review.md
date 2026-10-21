@@ -1,6 +1,6 @@
 # Downloads-first review — exact welcome UX (2026-10-21)
 
-Status: **contract and test-first design; not an implementation/live-proof claim**. Canonical machine-readable owner: [downloads-first-review.v1.json](../../harness/contracts/downloads-first-review.v1.json). Scope: FileSteward's *local welcome* and explicit first metadata review. Preserve [CANONICAL-PATHS](../agent/CANONICAL-PATHS.md), [LOCAL-AGENT-PROTECTIONS](../agent/LOCAL-AGENT-PROTECTIONS.md), [OPERATOR-DECISION-UX-PATH](../agent/OPERATOR-DECISION-UX-PATH.md), the existing scene workflow, and current folder-admission/scanner machinery.
+Status: **implemented source candidate 0.19.0; synthetic API/browser validation passed; isolated native interactive acceptance remains UNPROVEN**. Canonical machine-readable owner: [downloads-first-review.v1.json](../../harness/contracts/downloads-first-review.v1.json). Scope: FileSteward's *local welcome* and explicit first metadata review. Preserve [CANONICAL-PATHS](../agent/CANONICAL-PATHS.md), [LOCAL-AGENT-PROTECTIONS](../agent/LOCAL-AGENT-PROTECTIONS.md), [OPERATOR-DECISION-UX-PATH](../agent/OPERATOR-DECISION-UX-PATH.md), the existing scene workflow, and current folder-admission/scanner machinery.
 
 ## What "one click" means
 
@@ -81,7 +81,7 @@ Use `role=status`/`aria-live=polite` for progress, `role=alert` for errors, focu
 
 ## Acceptance gates
 
-The executable initial suite is `tests/test_downloads_first_review_acceptance.py`. The machine-readable contract lint is `tests/test_downloads_first_review_contract.py`. The former is **expected RED until the endpoints/UX exist**; never mask missing behavior with xfail/skip to claim a green release.
+The executable initial suite is `tests/test_downloads_first_review_acceptance.py`. The machine-readable contract lint is `tests/test_downloads_first_review_contract.py`. The initial suite reproduced RED before implementation. It now exercises the implemented endpoints and one-click UX; never mask missing behavior with xfail/skip to claim a green release.
 
 | ID | Test / proof | Pass criterion |
 | --- | --- | --- |

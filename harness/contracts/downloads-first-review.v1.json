@@ -100,7 +100,7 @@
     "secondary_element_id": "choose-folder",
     "sample_label": "Explore sample",
     "no_default_message": "Downloads is not available for a safe review. No files were scanned. Choose another folder or explore the sample.",
-    "busy_message": "Reading Downloads metadata and ownership evidence…",
+    "busy_message": "Reading Downloads metadata and ownership evidence\u2026",
     "success_transition": "automatic existing /api/v1/launch/open navigation to current review for READY/PARTIAL/EMPTY, without a second click; preserve partial/empty warnings",
     "error_transition": "remain on welcome, report cause truthfully, allow retry after fresh discovery; no false success"
   },
@@ -171,5 +171,5 @@
     "windows_live": "Windows KnownFolder discovery and native dialog proof on isolated test profile only, no personal scan",
     "safety_floor": "existing launch/current-review, runtime-profile, judgment-scene regression tests"
   },
-  "integration_state": "SPECIFICATION_AND_TEST_FIRST; new API/UI not yet implemented; do not claim live UX proof"
+  "integration_state": "IMPLEMENTED_SOURCE_CANDIDATE_0.19.0; synthetic API/browser locally validated; full proof in runtime receipts; isolated Windows native interactive acceptance UNPROVEN; not merged or released"
 }
