@@ -6,7 +6,9 @@ the remaining domains are explicitly unavailable, rather than empty successes.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import asdict, dataclass, field, replace
 import hashlib
 import json
 import os
@@ -64,6 +66,17 @@ class CurrentOwnershipEvidence(OwnershipEvidence):
 ProbeProvider = Callable[[Path, Path], ProbeResult]
 
 
+@dataclass
+class _ReadBatch:
+    root: Path
+    observed_at: float
+    registry: tuple | None = None
+    repositories: dict = field(default_factory=dict)
+
+
+_read_batch: ContextVar[_ReadBatch | None] = ContextVar("current_ownership_read_batch", default=None)
+
+
 def _bounded_path(raw: Path, root: Path) -> Path:
     if not raw.is_absolute() or ".." in raw.parts:
         raise ValueError("PATH_NOT_ABSOLUTE_OR_NORMALIZED")
@@ -106,16 +119,10 @@ def _scoped_exists(raw: Path, root: Path) -> bool:
     return True
 
 
-def _registry(root: Path, target: Path) -> ProbeResult:
-    """Read registration metadata, then inspect serviceability only inside root.
-
-    This is not runtime/process/package coverage. Registry errors are gaps and
-    already observed protective edges survive a partial registry enumeration.
-    """
-    if os.name != "nt":
-        return ProbeResult(provenance="windows_uninstall_registry", gaps=("WINDOWS_ONLY",))
+def _read_registrations() -> tuple[tuple[UninstallRegistration, ...], tuple[str, ...]]:
+    """Raw native observations only; per-target interpretation is never cached."""
     import winreg
-    edges, records, gaps = [], [], []
+    entries, gaps = [], []
     key_name = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
     fields = {"display_name": "DisplayName", "publisher": "Publisher",
               "display_version": "DisplayVersion", "install_location": "InstallLocation",
@@ -142,36 +149,47 @@ def _registry(root: Path, target: Path) -> ProbeResult:
                                     app_id=f"{hive_name}:{view_name}:{child_name}",
                                     hive=hive_name, registry_path=key_name + "\\" + child_name,
                                     **{"display_name": child_name, **values})
-                                anchors = [("INSTALLED_AT", entry.install_location)]
-                                anchors.extend(("SERVICEABILITY_REQUIRES", command_executable(command)) for command in
-                                               (entry.uninstall_string, entry.quiet_uninstall_string, entry.modify_path))
-                                relevant = [(kind, anchor) for kind, anchor in anchors if anchor and path_intersects(str(target), anchor)]
-                                if not relevant:
-                                    continue
-                                # Retain affirmative registration protection even
-                                # if existence checks cannot be completed in scope.
-                                for kind, anchor in relevant:
-                                    try:
-                                        storage = str(_bounded_path(Path(anchor), root))
-                                    except (OSError, ValueError):
-                                        # The selected ancestor must remain protected
-                                        # for missing or external serviceability.
-                                        storage = str(target)
-                                    edges.append(OwnershipEdge(kind, storage, "APPLICATION", entry.app_id,
-                                        entry.display_name, "windows_uninstall_registry", "strong", "APP_ACTIVE_REQUIRED",
-                                        "Registered installation/serviceability intersects the selected target"))
-                                def exists(path: str) -> bool:
-                                    return _scoped_exists(Path(path), root)
-                                try:
-                                    records.extend(collect_app_ownership((entry,), path_exists=exists))
-                                except (OSError, ValueError):
-                                    gaps.append("SERVICEABILITY_EXISTENCE_UNRESOLVED_WITHIN_SCOPE")
+                                entries.append(entry)
                         except OSError:
                             gaps.append(f"REGISTRATION_UNREADABLE:{hive_name}:{view_name}")
             except FileNotFoundError:
                 pass  # Absent uninstall key, not absent ownership.
             except OSError:
                 gaps.append(f"REGISTRY_VIEW_UNREADABLE:{hive_name}:{view_name}")
+    return tuple(entries), tuple(sorted(set(gaps)))
+
+
+def _registry(root: Path, target: Path) -> ProbeResult:
+    """Interpret raw registration observations for this exact scoped target."""
+    if os.name != "nt":
+        return ProbeResult(provenance="windows_uninstall_registry", gaps=("WINDOWS_ONLY",))
+    batch = _read_batch.get()
+    if batch is not None and batch.root == root:
+        if batch.registry is None:
+            batch.registry = _read_registrations()
+        entries, raw_gaps = batch.registry
+    else:
+        entries, raw_gaps = _read_registrations()
+    edges, records, gaps = [], [], list(raw_gaps)
+    for entry in entries:
+        anchors = [("INSTALLED_AT", entry.install_location)]
+        anchors.extend(("SERVICEABILITY_REQUIRES", command_executable(command)) for command in
+                       (entry.uninstall_string, entry.quiet_uninstall_string, entry.modify_path))
+        relevant = [(kind, anchor) for kind, anchor in anchors if anchor and path_intersects(str(target), anchor)]
+        if not relevant:
+            continue
+        for kind, anchor in relevant:
+            try:
+                storage = str(_bounded_path(Path(anchor), root))
+            except (OSError, ValueError):
+                storage = str(target)
+            edges.append(OwnershipEdge(kind, storage, "APPLICATION", entry.app_id,
+                entry.display_name, "windows_uninstall_registry", "strong", "APP_ACTIVE_REQUIRED",
+                "Registered installation/serviceability intersects the selected target"))
+        try:
+            records.extend(collect_app_ownership((entry,), path_exists=lambda path: _scoped_exists(Path(path), root)))
+        except (OSError, ValueError):
+            gaps.append("SERVICEABILITY_EXISTENCE_UNRESOLVED_WITHIN_SCOPE")
     return ProbeResult(not gaps, "windows_uninstall_registry_four_views", tuple(sorted(set(gaps))),
                        tuple(edges), tuple(records))
 
@@ -179,7 +197,18 @@ def _registry(root: Path, target: Path) -> ProbeResult:
 def _repositories(root: Path, target: Path) -> ProbeResult:
     # Canonical discovery, not a second directory scanner. Its current interface
     # does not return a complete traversal-error ledger or cross-repo references.
-    records = attribute_repositories_under(root)
+    batch = _read_batch.get()
+    if batch is not None and batch.root == root:
+        if root not in batch.repositories:
+            try:
+                batch.repositories[root] = attribute_repositories_under(root)
+            except Exception as exc:
+                batch.repositories[root] = exc
+        records = batch.repositories[root]
+        if isinstance(records, Exception):
+            raise records
+    else:
+        records = attribute_repositories_under(root)
     return ProbeResult(False, "ProtectionIndex.from_git_discovery+repository_adapter",
         ("DISCOVERY_COMPLETENESS_UNPROVEN", "EXTERNAL_REPOSITORY_DEPENDENCIES_UNRESOLVED",
          "ANCESTOR_REPOSITORY_CONTEXT_UNRESOLVED", "ENTIRE_RELATIONSHIPS_UNRESOLVED"), repo_records=records)
@@ -195,6 +224,20 @@ class CurrentResolver:
     def __call__(self, path: str) -> CurrentOwnershipEvidence:
         # Preflight and executor retain this fresh boundary for every item.
         return self._collect(path)
+
+    @contextmanager
+    def read_batch(self):
+        """Cache raw native probes for one read response, never across actions.
+
+        Per-path graph assembly/digests remain identical. Unsupported injected
+        providers are still called for every path. ContextVar isolation avoids
+        sharing observations with other threads, tasks or nested responses.
+        """
+        token = _read_batch.set(_ReadBatch(self._root, self._clock()))
+        try:
+            yield self
+        finally:
+            _read_batch.reset(token)
 
     def review_snapshot(self) -> OwnershipResolver:
         """Observe root-wide facts once for one read-only inventory batch.
@@ -243,7 +286,8 @@ def make_current_resolver(scan_root: Path, *, providers: Mapping[str, ProbeProvi
 
     def resolve(raw: str) -> CurrentOwnershipEvidence:
         coverage, edges, apps, repos = [], [], [], []
-        observed = clock()  # Start, not completion: slow probes cannot mint freshness.
+        batch = _read_batch.get()
+        observed = batch.observed_at if batch is not None and batch.root == root else clock()
         try:
             if not root.is_absolute() or ".." in root.parts:
                 raise ValueError("ROOT_NOT_ABSOLUTE_OR_NORMALIZED")

@@ -329,3 +329,86 @@ def test_missing_registered_serviceability_retains_broken_app_projection(tmp_pat
     assert "APP_BROKEN_REQUIRED" in plan_owner_actions(str(tmp_path), evidence).consequence_classes
     assert projection["ownership_badge"] == "Broken app dependency"
     assert not projection["raw_delete_eligible"]
+
+
+def test_native_read_batch_preserves_path_digests_and_fresh_safety_calls(tmp_path, monkeypatch):
+    if current.os.name != "nt":
+        pytest.skip("Windows provider admission; raw registry enumeration mocked")
+    from filesteward.ownership.windows_app import UninstallRegistration
+    one, two = tmp_path / "one", tmp_path / "two"
+    one.mkdir(); two.mkdir()
+    native_calls = []
+    registrations = tuple(UninstallRegistration(str(i), f"App {i}", install_location=str(path))
+                          for i, path in enumerate((one, two)))
+    def registry():
+        native_calls.append("registry")
+        return registrations, ()
+    def repositories(root):
+        native_calls.append("repository")
+        return ()
+    monkeypatch.setattr(current, "_read_registrations", registry)
+    monkeypatch.setattr(current, "attribute_repositories_under", repositories)
+    clock = [time.time()]
+    resolver = current.make_current_resolver(tmp_path, clock=lambda: clock[0])
+    outside = [resolver(str(path)) for path in (one, two)]
+    assert native_calls == ["registry", "repository"] * 2
+    native_calls.clear()
+    with resolver.read_batch():
+        first = resolver(str(one))
+        clock[0] += 3
+        second = resolver(str(two))
+        for _ in range(100):
+            assert resolver(str(one)).digest == first.digest
+        assert first.observed_at_unix == second.observed_at_unix
+        assert [first.digest, second.digest] == [e.digest for e in outside]
+        assert first.digest != second.digest
+        assert native_calls == ["registry", "repository"]
+    resolver(str(one))
+    assert native_calls == ["registry", "repository"] * 2
+    with resolver.read_batch():
+        resolver(str(one))
+    assert native_calls == ["registry", "repository"] * 3
+
+
+def test_read_batch_does_not_cache_unknown_injected_providers(tmp_path):
+    calls = []
+    def provider(root, target):
+        calls.append(target)
+        return current.ProbeResult(True, "synthetic_target_provider")
+    resolver = current.make_current_resolver(tmp_path, providers={"repository": provider})
+    with resolver.read_batch():
+        resolver(str(tmp_path)); resolver(str(tmp_path))
+    assert calls == [tmp_path, tmp_path]
+
+
+def test_read_batch_nested_context_and_thread_are_isolated(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    calls = []
+    monkeypatch.setattr(current, "attribute_repositories_under", lambda root: calls.append(root) or ())
+    resolver = current.make_current_resolver(tmp_path, providers={"repository": current._repositories})
+    with resolver.read_batch():
+        resolver(str(tmp_path))
+        with resolver.read_batch():
+            resolver(str(tmp_path)); resolver(str(tmp_path))
+        resolver(str(tmp_path))
+        with ThreadPoolExecutor(max_workers=1) as worker:
+            worker.submit(resolver, str(tmp_path)).result()
+    assert len(calls) == 3  # outer, nested, independent safety thread
+
+
+def test_read_batch_discards_cache_on_exception_and_retains_failure(tmp_path, monkeypatch):
+    calls = []
+    def failing(root):
+        calls.append(root)
+        raise PermissionError()
+    monkeypatch.setattr(current, "attribute_repositories_under", failing)
+    resolver = current.make_current_resolver(tmp_path, providers={"repository": current._repositories})
+    with pytest.raises(RuntimeError):
+        with resolver.read_batch():
+            a = resolver(str(tmp_path)); b = resolver(str(tmp_path))
+            assert a.digest == b.digest
+            assert len(calls) == 1
+            assert next(c for c in a.coverage if c.domain == "repository").gaps == ("PermissionError",)
+            raise RuntimeError("response aborted")
+    resolver(str(tmp_path))
+    assert len(calls) == 2
