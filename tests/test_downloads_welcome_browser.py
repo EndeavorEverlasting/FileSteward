@@ -128,6 +128,59 @@ def test_one_disclosed_downloads_activation_reads_once_and_enters_review(downloa
         assert not errors
 
 
+
+@pytest.mark.parametrize("mode,width", [("desktop", 1440), ("narrow", 390),
+    ("keyboard", 1440), ("touch", 390), ("reduced", 1440), ("forced", 1440)])
+def test_immersive_browser_shows_folders_only_and_never_scans_until_review(downloads_app, mode, width):
+    app = downloads_app
+    child = app.root / "Immersive Synthetic Folder"
+    child.mkdir()
+    (child / "secret-payload.txt").write_text("Synthetic; never show filename while browsing")
+    with browser_page(width, mode=mode) as (api, page, errors, scans, actions):
+        page.goto(app.session.origin, wait_until="networkidle")
+        if mode == "keyboard":
+            page.locator("#browse-folders").focus()
+            page.locator("#browse-folders").press("Enter")
+        elif mode == "touch":
+            page.locator("#browse-folders").tap()
+        else:
+            page.locator("#browse-folders").click()
+        api.expect(page.locator("#browser-panel")).to_be_visible()
+        api.expect(page.locator("#browser-path")).to_contain_text("Choose a starting location")
+        assert not app.calls and not scans
+        page.get_by_role("button", name="Downloads ›").click()
+        api.expect(page.locator("#browser-path")).to_contain_text(str(app.root))
+        assert page.get_by_role("button", name="Immersive Synthetic Folder ›").count() == 1
+        assert "synthetic-note.txt" not in page.locator("#browser-panel").inner_text()
+        assert "secret-payload.txt" not in page.locator("#browser-panel").inner_text()
+        page.get_by_role("button", name="Immersive Synthetic Folder ›").click()
+        api.expect(page.locator("#browser-path")).to_contain_text(str(child))
+        page.locator("#browser-select").click()
+        api.expect(page.locator("#chosen-path")).to_contain_text(str(child))
+        api.expect(page.locator("#browser-panel")).to_be_hidden()
+        assert not app.calls and not scans
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
+        assert page.evaluate("document.activeElement.id") == "chosen-title"
+        # One intentional activation, never navigation/selection, starts the scanner.
+        page.locator("#review-selected").click()
+        page.locator("#storage-stage").wait_for(timeout=15000)
+        assert app.calls == [child]
+        assert len(scans) == 1 and set(scans[0]) == {"scope_token"}
+        assert not any(url.endswith(("/api/v1/delete", "/api/v1/approval")) for url in actions)
+        assert not errors
+
+
+def test_browser_close_keeps_selection_inert(downloads_app):
+    app = downloads_app
+    with browser_page() as (api, page, errors, scans, _):
+        page.goto(app.session.origin, wait_until="networkidle")
+        page.locator("#browse-folders").click()
+        api.expect(page.locator("#browser-panel")).to_be_visible()
+        page.locator("#browser-close").click()
+        api.expect(page.locator("#browser-panel")).to_be_hidden()
+        assert page.evaluate("document.activeElement.id") == "browse-folders"
+        assert app.calls == [] and scans == [] and not errors
+
 def test_native_picker_cancel_is_noop_selection_waits_for_separate_review(downloads_app):
     app = downloads_app
     with browser_page() as (api, page, errors, scans, _):
