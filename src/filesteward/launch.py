@@ -339,8 +339,11 @@ class LaunchSession:
         if not isinstance(payload, dict):
             raise ValueError("Folder browser requires a request object")
         if payload == {"action": "roots"}:
-            options = [("Downloads", windows_downloads_known_folder()),
-                       ("Your profile", Path.home())]
+            options = [("Your profile", Path.home())]
+            try:
+                options.insert(0, ("Downloads", windows_downloads_known_folder()))
+            except (OSError, ValueError, RuntimeError):
+                pass
             if os.name == "nt":
                 import ctypes
                 drives = ctypes.windll.kernel32.GetLogicalDrives()
