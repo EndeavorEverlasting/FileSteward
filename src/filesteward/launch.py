@@ -252,6 +252,7 @@ class LaunchSession:
         self.scan_lock = threading.Lock()
         self.stopping = False
         self.scope_tokens = {}
+        self.browser_tokens = {}  # Session-only handles; never client-supplied paths.
         self.scope_clock = time.monotonic
 
     def _offer_scope(self, root, kind):
@@ -296,6 +297,110 @@ class LaunchSession:
                 **self._offer_scope(selected, "selected"))
         finally:
             self.scan_lock.release()
+
+    def _browser_offer(self, path):
+        """Issue a short-lived navigation handle for a checked directory identity."""
+        path = Path(os.path.abspath(path))
+        if is_under_forbidden_root(path):
+            raise ValueError("Protected locations are not available in the folder browser")
+        scope = CurrentScanScope(path)
+        scope.validate()
+        now = self.scope_clock()
+        with self.lock:
+            self.browser_tokens = {key: value for key, value in self.browser_tokens.items()
+                if 0 <= now - value[1] < 600}
+            while len(self.browser_tokens) >= 1024:
+                self.browser_tokens.pop(next(iter(self.browser_tokens)))
+            token = secrets.token_urlsafe(32)
+            self.browser_tokens[token] = (scope, now)
+        return token
+
+    def _browser_scope(self, token):
+        if not isinstance(token, str) or not 1 <= len(token) <= 256:
+            raise ValueError("A valid folder navigation token is required")
+        with self.lock:
+            binding = self.browser_tokens.get(token)
+        if binding is None or not 0 <= self.scope_clock() - binding[1] < 600:
+            raise ValueError("This folder view expired. Reopen Browse folders.")
+        scope = binding[0]
+        scope.validate()
+        if is_under_forbidden_root(scope.root):
+            raise ValueError("Protected locations cannot be browsed")
+        return scope
+
+    def folder_browser(self, payload):
+        """Directory-only browsing. A separate explicit scan remains mandatory.
+
+        The client can only send opaque server-issued handles. Folder identity,
+        path eligibility, and child enumeration are checked on the host.
+        """
+        if self.stopping or self.scan_lock.locked():
+            raise ValueError("The app is closing or a folder review is active")
+        if not isinstance(payload, dict):
+            raise ValueError("Folder browser requires a request object")
+        if payload == {"action": "roots"}:
+            options = [("Downloads", windows_downloads_known_folder()),
+                       ("Your profile", Path.home())]
+            if os.name == "nt":
+                import ctypes
+                drives = ctypes.windll.kernel32.GetLogicalDrives()
+                for index in range(26):
+                    if drives & (1 << index):
+                        letter = chr(ord("A") + index)
+                        options.append((letter + ": drive", Path(letter + ":\\")))
+            roots, seen = [], set()
+            for label, candidate in options:
+                try:
+                    normalized = Path(os.path.abspath(candidate))
+                    if normalized in seen:
+                        continue
+                    token = self._browser_offer(normalized)
+                    roots.append(dict(label=label, token=token))
+                    seen.add(normalized)
+                except (OSError, ValueError, RuntimeError):
+                    continue
+            if not roots:
+                raise ValueError("No safe folder locations were available to browse")
+            return dict(state="ROOTS", locations=roots, scan_started=False)
+        if set(payload) == {"action", "token"} and payload["action"] == "select":
+            scope = self._browser_scope(payload["token"])
+            scope.validate()
+            return dict(state="SELECTED", scan_started=False,
+                        **self._offer_scope(scope.root, "selected"))
+        if (set(payload) != {"action", "token", "page"} or payload["action"] != "open"
+                or type(payload["page"]) is not int or not 0 <= payload["page"] <= 20):
+            raise ValueError("Folder navigation requires an issued handle and a bounded page")
+        scope = self._browser_scope(payload["token"])
+        folders = []
+        with scope.pinned():
+            with os.scandir(scope.root) as iterator:
+                for entry in iterator:
+                    if not entry.is_dir(follow_symlinks=False):
+                        continue
+                    child = scope.root / entry.name
+                    if is_under_forbidden_root(child) or is_symlink_or_reparse(child):
+                        continue
+                    folders.append((entry.name, child))
+                    if len(folders) > 600:
+                        raise ValueError("Too many subfolders for the in-app browser; use the Windows picker")
+            scope.validate()
+            folders.sort(key=lambda item: (item[0].casefold(), item[0]))
+            offset, size = payload["page"] * 60, 60
+            visible = folders[offset:offset + size]
+            children = []
+            for name, child in visible:
+                try:
+                    children.append(dict(name=name, token=self._browser_offer(child)))
+                except (OSError, ValueError, RuntimeError):
+                    continue
+        try:
+            self.admit_scan_root(str(scope.root))
+            can_select = True
+        except (OSError, ValueError):
+            can_select = False
+        return dict(state="FOLDERS", path=str(scope.root), token=payload["token"],
+                    page=payload["page"], has_more=len(folders) > offset + size,
+                    can_select=can_select, folders=children, scan_started=False)
 
     def _consume_scope(self, token):
         if not isinstance(token, str) or not 1 <= len(token) <= 256:
@@ -678,6 +783,8 @@ def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> t
                     return self.send(202, session.begin_current_scan(payload))
                 if path == "/api/v1/launch/choose-folder":
                     return self.send(200, session.choose_folder(payload))
+                if path == "/api/v1/launch/folder-browser":
+                    return self.send(200, session.folder_browser(payload))
                 if path == "/api/v1/launch/demo":
                     return self.send(200, {"url":session.sample()})
                 if path == "/api/v1/launch/import":
