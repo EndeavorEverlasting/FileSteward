@@ -87,7 +87,22 @@
         "display_path": "<server-selected-absolute-path>",
         "scope_token": "<opaque-session-bound-token>",
         "scan_started": false
-      }
+      },
+      "usage": "optional OS-native fallback; not the primary alternative"
+    },
+    "browser": {
+      "method": "POST",
+      "path": "/api/v1/launch/folder-browser",
+      "auth": "existing Host+Origin+session-header admission",
+      "effect": "directory-only in-app navigation; never starts a scan",
+      "actions": [
+        "roots",
+        "open",
+        "select"
+      ],
+      "trust": "host-owned, identity-checked, opaque expiring browser handles; no client paths",
+      "selection": "reuse existing chosen scope admission; requires separate Review selected folder click",
+      "contract": "harness/contracts/immersive-folder-browser.v1.json"
     }
   },
   "welcome": {
@@ -96,13 +111,15 @@
     "scope_caption": "Folder: {display_path}",
     "primary_label": "Review Downloads",
     "primary_element_id": "review-downloads",
-    "secondary_label": "Choose another folder",
-    "secondary_element_id": "choose-folder",
+    "secondary_label": "Browse folders here",
+    "secondary_element_id": "browse-folders",
     "sample_label": "Explore sample",
-    "no_default_message": "Downloads is not available for a safe review. No files were scanned. Choose another folder or explore the sample.",
-    "busy_message": "Reading Downloads metadata and ownership evidence\u2026",
+    "no_default_message": "Downloads is not available for a safe review. No files were scanned. Browse folders here, use the optional Windows picker, or explore the sample.",
+    "busy_message": "Reading Downloads metadata and ownership evidence…",
     "success_transition": "automatic existing /api/v1/launch/open navigation to current review for READY/PARTIAL/EMPTY, without a second click; preserve partial/empty warnings",
-    "error_transition": "remain on welcome, report cause truthfully, allow retry after fresh discovery; no false success"
+    "error_transition": "remain on welcome, report cause truthfully, allow retry after fresh discovery; no false success",
+    "native_picker_label": "Windows folder picker",
+    "native_picker_element_id": "choose-folder"
   },
   "states": [
     {
