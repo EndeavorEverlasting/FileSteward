@@ -21,7 +21,8 @@ FileSteward handles potentially irreplaceable personal and project data. Local c
 11. `harness/evals/execution-handoff-review-gates.v1.json` before advancing review/merge/live-proof transitions
 12. The active plan under `plans/active/` for the requested sprint
 13. `harness/contracts/downloads-first-review.v1.json` and `docs/program/downloads-first-review.md` when changing welcome onboarding, folder discovery, picker, or one-click review admission
-14. `README.md` safety, privacy, and MVP boundaries
+14. `harness/contracts/immersive-folder-browser.v1.json` when modifying in-app folder navigation, browse tokens, folder lists, or selection UX
+15. `README.md` safety, privacy, and MVP boundaries
 
 If any required contract cannot be read, stop. Do not reconstruct it from memory.
 
@@ -31,6 +32,7 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - Judgment-bearing UX is script-owned: implement `harness/contracts/judgment-scene-workflow.v1.json`; do not invent, flatten, rename, or compress scenes/choices to bridge a gap.
 - Technical safety facts must be resolved through safe adapters/reducers before asking the operator.
 - Normal onboarding resolves Downloads through the Windows Known Folder API. Do not ask the operator to type an absolute path: display the discovered scope and use Review Downloads as its deliberate metadata-only gate. Native folder selection is secondary and does not itself authorize a scan.
+- Folder selection should stay inside FileSteward through an accessible directory-only navigator. Do not require an absolute path or invoke Windows Explorer for ordinary onboarding. Keep the native picker as an explicit fallback. Browser navigation accepts only server-issued opaque, expiring directory handles; it never publishes file names/contents, follows reparse points, scans, or approves file actions. Selecting a folder must reuse the original scope-token/current-scan boundaries and require a separate deliberate Review click.
 - Storage may have multiple simultaneous owners/dependencies. Build and reduce the cross-domain ownership graph; never let a less-protective app/repo/toolchain classification erase a more-protective edge.
 - Entire CLI/Graph is a context accelerator for repo relationships, worktree/current-change impact, and activity evidence. It never independently declares storage legacy or disposable; absence from Entire is not evidence of dispensability. Human judgment is reserved for value/preference and exact action approval.
 - If the canonical scene script lacks a required mapping, emit `BLOCKED_JUDGMENT_GAP` with the exact missing judgment; do not author product policy locally. Independent safe lanes may continue.
