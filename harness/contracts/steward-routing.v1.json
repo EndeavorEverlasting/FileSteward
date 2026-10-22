@@ -1,0 +1,242 @@
+{
+  "schema_version": "filesteward.steward-routing/v1",
+  "owner": "FileSteward domain workflow; TokenCorridor owns cross-harness dispatch adapters",
+  "task_state_machine": [
+    "DISCOVERED",
+    "FACTS_REQUIRED",
+    "ADAPTER_BLOCKED",
+    "READY_FOR_REGISTERED_ADAPTER",
+    "CLAIMED",
+    "RECEIPT_RETURNED",
+    "REVALIDATED",
+    "CLOSED",
+    "REOPENED_ON_DRIFT"
+  ],
+  "failure_states": [
+    "BLOCKED_ADAPTER",
+    "BLOCKED_AUTHORITY",
+    "BLOCKED_MISSING_EVIDENCE",
+    "BLOCKED_PRIVATE_BOUNDARY",
+    "BLOCKED_RUNTIME",
+    "STALE_EVIDENCE",
+    "OVERLAPPING_RUN",
+    "BUDGET_EXHAUSTED",
+    "FOREIGN_TASK_COLLISION"
+  ],
+  "scheduler_events": [
+    "HOURLY_INGEST",
+    "NEW_UNRESOLVED_FACET",
+    "ADAPTER_EVIDENCE_ARRIVED",
+    "POLICY_REVISION",
+    "FAILED_VALIDATOR",
+    "NEW_REPOSITORY_PR",
+    "RESOLVED_ISSUE_OR_PR",
+    "DAILY_OPERATOR_VALUE_AUDIT",
+    "WEEKLY_WORKFLOW_HEALTH"
+  ],
+  "routing_policy": {
+    "default": "OUTBOX_ONLY",
+    "launch_rule": "Match registered adapter capability, scoped authorization, host environment, privacy boundary, token budget and proof requirements. No dynamic process invocation from work order contents.",
+    "native_readonly": "Authorized FileSteward Python executor may run inventory, rules, manifest validation and local adapter read-only probes.",
+    "LLM_classification": "Requires user-configured local agent worker and explicit local-private-content consent; no file content transmitted without permission; output is advisory and cannot change action authority.",
+    "engineering_change": "A typed FileSteward issue/sprint may route through TokenCorridor's approved harness execution provider; modified code requires branch, tests, reviews, PR and integration authority.",
+    "mutation": "ONLY existing FileSteward exact-manifest operator-authorized preflight/approval/execute with receipts; scheduler may never create the operator approval.",
+    "failure": "Preserve task with typed blocker; do not invent adapter/credential/approval or retry indefinitely",
+    "idempotency": "(source_scan, policy_revision, item_id, lane) hash, duplicate attempts consolidate",
+    "recovery": "local receipt replay + fresh revalidation; no blind repetition of completed work"
+  },
+  "lanes": [
+    {
+      "lane": "INGEST_METADATA",
+      "trigger": "HOURLY_INGEST",
+      "mode": "DETERMINISTIC",
+      "owner": "filesteward.run + filesteward.steward",
+      "requires": "CANONICAL_SCAN_ROOT",
+      "writes": "private var/runs and var/steward",
+      "depends_on": [],
+      "proof": "validate_run PASS; no source mutation; output receipt",
+      "enabled": true
+    },
+    {
+      "lane": "RESOLVE_APPLICATION_EXPERIENCE",
+      "trigger": "OWNER_UNRESOLVED",
+      "mode": "DETERMINISTIC",
+      "owner": "filesteward.ownership.windows_app",
+      "requires": "verified HKLM/HKCU uninstall/service/task/package/runtime adapters",
+      "writes": "private attribution evidence",
+      "depends_on": [
+        "INGEST_METADATA"
+      ],
+      "proof": "app active/broken/cache/orphan/unknown with source and evidence completeness",
+      "enabled": false,
+      "blocker": "HOST_APP_EVIDENCE_ADAPTER_NOT_LIVE_BOUND_TO_OUTBOX"
+    },
+    {
+      "lane": "RESOLVE_REPOSITORY_DEPENDENCY",
+      "trigger": "OWNER_UNRESOLVED",
+      "mode": "DETERMINISTIC",
+      "owner": "filesteward.ownership.repository + Entire (context only)",
+      "requires": "Git status/worktree/remote/dirty/unpushed and cross-repo use",
+      "writes": "private ownership evidence",
+      "depends_on": [
+        "INGEST_METADATA"
+      ],
+      "proof": "protect unique active work; absence is not legacy",
+      "enabled": false,
+      "blocker": "GIT_ATTRIBUTION_OUTBOX_BRIDGE_NOT_IMPLEMENTED"
+    },
+    {
+      "lane": "RESOLVE_ACTIVITY_AND_DORMANCY",
+      "trigger": "LAST_MODIFIED_OLD_OR_ACTIVITY_UNRESOLVED",
+      "mode": "DETERMINISTIC",
+      "owner": "FileSteward Windows activity adapter",
+      "requires": "time-bounded activity reference receipts, not mtime alone",
+      "writes": "private usage history",
+      "depends_on": [
+        "INGEST_METADATA"
+      ],
+      "proof": "ACTIVE/NO_REFERENCE_OBSERVED/UNRESOLVED; never infer last-access timestamp",
+      "enabled": false,
+      "blocker": "HOST_ACTIVITY_OBSERVABILITY_ADAPTER_NOT_IMPLEMENTED"
+    },
+    {
+      "lane": "REVIEW_MEMORABILIA",
+      "trigger": "POTENTIAL_MEMORABILIA",
+      "mode": "OPTIONAL_LOCAL_MODEL",
+      "owner": "registered privacy-bounded inference adapter",
+      "requires": "operator enabled local semantic model + exact permitted metadata/content privacy mode",
+      "writes": "private provisional context only",
+      "depends_on": [
+        "INGEST_METADATA"
+      ],
+      "proof": "one evidence-grounded suggestion or NEEDS_OPERATOR_VALUE; no deletion nomination",
+      "enabled": false,
+      "blocker": "CONSENT_AND_MODEL_ADAPTER_NOT_REGISTERED"
+    },
+    {
+      "lane": "RESOLVE_ARCHIVE_INTENT",
+      "trigger": "DORMANCY_CANDIDATE_REVIEW",
+      "mode": "OPTIONAL_LOCAL_MODEL",
+      "owner": "FileSteward Decision Chamber + authorized local model",
+      "requires": "operator retention preference; private local context",
+      "writes": "review surface and value state",
+      "depends_on": [
+        "RESOLVE_ACTIVITY_AND_DORMANCY"
+      ],
+      "proof": "operator choice KEEP/ARCHIVE/DEFER/REVIEW, no agent-picked preference",
+      "enabled": false,
+      "blocker": "OPERATOR_VALUE_REQUIRED_AND_UI_BRIDGE_NOT_IMPLEMENTED"
+    },
+    {
+      "lane": "CONVERGE_CROSS_DOMAIN",
+      "trigger": "ADAPTER_EVIDENCE_ARRIVED",
+      "mode": "DETERMINISTIC",
+      "owner": "filesteward.ownership.graph + reducer",
+      "requires": "current app/repo/service/task/semantic evidence",
+      "writes": "private revisioned graph",
+      "depends_on": [
+        "RESOLVE_APPLICATION_EXPERIENCE",
+        "RESOLVE_REPOSITORY_DEPENDENCY"
+      ],
+      "proof": "most-protective-edge-wins and current graph revision",
+      "enabled": false,
+      "blocker": "OUTBOX_TO_OWNERSHIP_GRAPH_BRIDGE_NOT_IMPLEMENTED"
+    },
+    {
+      "lane": "CLASSIFICATION_GAP_MINER",
+      "trigger": "NEW_UNRESOLVED_FACET",
+      "mode": "OPTIONAL_AGENT",
+      "owner": "FileSteward policy maintainer",
+      "requires": "anonymized aggregate unknown pattern; cannot read private paths by default",
+      "writes": "draft policy proposal and synthetic regression fixtures",
+      "depends_on": [
+        "INGEST_METADATA"
+      ],
+      "proof": "proposal with fixture(s), no automatic policy promotion",
+      "enabled": false,
+      "blocker": "TOKENCORRIDOR_PROVIDER_ADAPTER_NOT_CONFIGURED"
+    },
+    {
+      "lane": "REPOSITORY_REGRESSION_AUDIT",
+      "trigger": "FAILED_VALIDATOR",
+      "mode": "OPTIONAL_ENGINEERING_AGENT",
+      "owner": "FileSteward local repository sprint",
+      "requires": "actual failing test and scoped branch ownership",
+      "writes": "isolated code branch/PR only",
+      "depends_on": [],
+      "proof": "test result, diff, review and merge gates; never green via deleting tests",
+      "enabled": false,
+      "blocker": "TOKENCORRIDOR_PROVIDER_ADAPTER_NOT_CONFIGURED"
+    },
+    {
+      "lane": "REPOSITORY_WORK_RECONCILIATION",
+      "trigger": "WEEKLY_WORKFLOW_HEALTH",
+      "mode": "OPTIONAL_ENGINEERING_AGENT",
+      "owner": "FileSteward GitHub issue/PR convergence",
+      "requires": "current provider state and authorized provider adapter",
+      "writes": "repo work ledger/PR reviews, not filesystem contents",
+      "depends_on": [],
+      "proof": "exact PR statuses/reviews/head/captured handoff; no fabricated merge",
+      "enabled": false,
+      "blocker": "TOKENCORRIDOR_PROVIDER_ADAPTER_NOT_CONFIGURED"
+    },
+    {
+      "lane": "OPERATOR_APPROVED_ACTION",
+      "trigger": "EXACT_APPROVAL_ARTIFACT_READY",
+      "mode": "AUTHORIZED_SEPARATE_EXECUTOR",
+      "owner": "FileSteward exact-manifest executor",
+      "requires": "distinct operator approval + fresh preflight + handle-pinned identity + receipt",
+      "writes": "only approved exact file set and private receipts",
+      "depends_on": [
+        "CONVERGE_CROSS_DOMAIN"
+      ],
+      "proof": "verified receipt and restore/reclaim, never triggered by observation alone",
+      "enabled": false,
+      "blocker": "MUST_NOT_BE_TRIGGERED_BY_TIMER_WITHOUT_EXACT_APPROVAL"
+    }
+  ],
+  "dispatch_ladder": [
+    "LOCAL_REGISTERED_DETERMINISTIC_ADAPTER",
+    "TOKENCORRIDOR_REGISTERED_AGENT_HOST",
+    "APPROVED_PROVIDER_TOOL",
+    "APPROVED_CI_WORKER_FOR_TESTS_ONLY",
+    "BLOCKED_ADAPTER"
+  ],
+  "parallelism": {
+    "safe": [
+      "independent read-only metadata and app/repo probes after source scan",
+      "synthetic regression generation independent of host-only Windows tests"
+    ],
+    "not_safe": [
+      "two writers to the same runtime receipt",
+      "parallel approvals or deletions",
+      "concurrent task registrations for same host/user"
+    ],
+    "queue_limits": {
+      "max_dispatch_inflight": 2,
+      "max_task_attempts": 3,
+      "max_agent_tasks_per_hour": 40,
+      "max_agent_tasks_per_item": 3
+    }
+  },
+  "human_owner_choices": [
+    "memorabilia_keep_or_not",
+    "archive_or_keep_value",
+    "authorize_exact_mutation_scope",
+    "connect_local_agent_provider_and_model_budget"
+  ],
+  "forbidden_auto_conclusions": [
+    "old == unwanted",
+    "metadata scan == content permission",
+    "no handles observed == unused",
+    "app missing uninstaller == orphan",
+    "clean Git == disposable repo",
+    "LLM agreed == approved deletion",
+    "cron tick == approval"
+  ],
+  "closure": {
+    "classification": "all required evidence complete OR exact unresolved facets and blocker reasons retained",
+    "job": "private receipt and status for every due lane; attempted/succeeded/blocked counts",
+    "outcome": "hourly cycles + typed agent receipts + authorized action separately verified"
+  }
+}
