@@ -249,6 +249,19 @@ All real profile records stay beneath the ignored local var/profiles tree.
 No Windows-host capture, integration or performance diagnosis is implied by
 this source-level implementation.
 
+## Canonical artifacts on local workstations (read-only locator)
+
+FileSteward can now *propose and inspect* appropriate local locations for cross-project canonical contracts and the optional Upstream Intelligence source-registry snapshot. No workstation folders are created by the default locator, and no Drive connector or installed-runtime state is assumed. From an admitted local checkout:
+
+```powershell
+python -m filesteward.placement --host-key DTop --check
+python -m filesteward.placement --host-key DTop --probe
+# On PTop, independently:
+python -m filesteward.placement --host-key PTop --probe
+```
+
+See [canonical artifact placement](docs/agent/CANONICAL-ARTIFACT-PLACEMENT.md) and [canonical path authority](docs/agent/CANONICAL-PATHS.md). Git remains master for repository contracts, Google Drive remains master for research, and local shared snapshots are read-only replaceable reference copies. A plausible path or a hash-matched copy does not prove a live host, cloud freshness, or authorization to move anything.
+
 ## Roadmap
 
 ### Phase 1 — Review queue foundation

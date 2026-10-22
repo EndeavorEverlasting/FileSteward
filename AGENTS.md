@@ -43,6 +43,10 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - Once a bounded deletion outcome is authorized, repository repair, tests, commit, PR, merge, preflight PASS, and approval-artifact creation are intermediate states. Continue through live deletion and runtime proof in the same iteration unless a genuine unrepairable external/user-only blocker remains.
 - Real workstation scans, private paths, filenames, hashes, queues, manifests, approvals, and receipts belong in ignored runtime storage, never committed fixtures.
 
+## Canonical artifact placement and aliases
+
+For `canonical artifacts`, `source registry location`, `shared reference snapshot`, `upstream design offline`, or `where should this repository's contracts live`, read `docs/agent/CANONICAL-ARTIFACT-PLACEMENT.md`, `docs/agent/CANONICAL-PATHS.md`, and `harness/contracts/canonical-artifact-placement.v1.json`. Run the read-only locator `python -m filesteward.placement --host-key <verified-host-alias> --probe` **on that workstation**, not in a GitHub/Google connector context. Paths, hostnames, sidecar hashes, repository identity, and snapshots must be independently observed per host. FileSteward owns placement evidence, not Google Drive contents, TokenCorridor prompts, repo governance, installed-app state, or transfer authority. No source copying, mount discovery or destructive action is implied by an alias.
+
 ## Execution handoff discipline
 
 A handoff is executable state, not a planning restart.
