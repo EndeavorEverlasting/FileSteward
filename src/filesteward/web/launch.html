@@ -91,11 +91,11 @@
       byId('recommended-path').textContent = scope.display_path ? 'Folder: ' + scope.display_path : 'No Downloads folder is available for review.';
       byId('recommended-state').textContent = scope.available
         ? 'Opening FileSteward never scans your files. This review reads metadata only.'
-        : 'Downloads is not available for a safe review. No files were scanned. ' + (scope.reason || '') + ' Choose another folder or explore the sample.';
+        : 'Downloads is not available for a safe review. No files were scanned. ' + (scope.reason || '') + ' Browse folders here, use the Windows picker, or explore the sample.';
       byId('refresh-scope').hidden = Boolean(scope.available);
     } catch (error) {
       byId('recommended-path').textContent = 'Downloads discovery could not be completed.';
-      byId('recommended-state').textContent = error.message + ' No files were scanned. Choose another folder or explore the sample.';
+      byId('recommended-state').textContent = error.message + ' No files were scanned. Browse folders here, use the Windows picker, or explore the sample.';
       byId('refresh-scope').hidden = false;
       throw error;
     } finally {
@@ -130,7 +130,7 @@
         try { await refreshRecommendation(); } catch (_) { /* Keep original scan failure visible. */ }
       } else {
         chosen = null;
-        byId('selected-state').textContent = 'This review could not continue. Choose the folder again to obtain a fresh review scope.';
+        byId('selected-state').textContent = 'This review could not continue. Browse to the folder again for a fresh review scope.';
       }
       throw error;
     }
@@ -225,7 +225,7 @@
   }));
   byId('review-downloads').addEventListener('click', () => review(recommended, 'Downloads', true));
   byId('refresh-scope').addEventListener('click', () => action('Checking the Downloads folder...', refreshRecommendation));
-  byId('choose-folder').addEventListener('click', () => action('Choose a folder in the Windows dialog. Choosing alone does not scan it.', async () => {
+  byId('choose-folder').addEventListener('click', () => action('Opening the optional Windows folder picker. Choosing alone does not scan it.', async () => {
     const result = await request('/api/v1/launch/choose-folder', {intent:'choose'});
     if (result.scan_started !== false) throw new Error('The folder picker did not confirm a selection-only result. No review was requested.');
     if (result.state === 'CANCELED') { notice('No folder selected. No files were scanned.'); return; }
