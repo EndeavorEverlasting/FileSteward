@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_id": "filesteward.immersive-folder-browser/v1",
+  "authority": "AGENTS.md plus harness/contracts/downloads-first-review.v1.json; this is a non-weakening UX extension",
+  "status": "IMPLEMENTED_SOURCE_CANDIDATE_RUNTIME_UNPROVEN",
+  "dependency": {
+    "stacked_pr": 68,
+    "base_ref": "design/downloads-first-review-20261021",
+    "requires_before_main_integration": "PR #68 reviewed, accepted and integrated or this feature rebased after equivalent proof"
+  },
+  "operator_objective": "Folder target selection in the FileSteward page; no mandatory path typing and no Windows/Explorer picker for standard journeys.",
+  "experience": {
+    "primary": "embedded_accessible_directory_navigator",
+    "fallback": "existing_native_Windows_folder_picker",
+    "initial_shelf": [
+      "OS-resolved Downloads",
+      "user profile",
+      "Windows logical drives"
+    ],
+    "interaction": [
+      "show locations",
+      "open one directory",
+      "navigate backward or choose another location",
+      "select current directory",
+      "display exact selected scope",
+      "explicit Review selected folder"
+    ],
+    "never_automatic": [
+      "file contents",
+      "file scanning",
+      "move",
+      "delete",
+      "quarantine",
+      "schedule",
+      "model calls"
+    ]
+  },
+  "endpoints": {
+    "route": "POST /api/v1/launch/folder-browser",
+    "admission": "same host-origin-session-header checks as current-scan",
+    "actions": [
+      {
+        "action": "roots",
+        "arguments": [
+          "action"
+        ]
+      },
+      {
+        "action": "open",
+        "arguments": [
+          "action",
+          "token",
+          "page"
+        ]
+      },
+      {
+        "action": "select",
+        "arguments": [
+          "action",
+          "token"
+        ]
+      }
+    ],
+    "no_client_absolute_paths": true,
+    "token_policy": {
+      "issuer": "server_only",
+      "entropy": "secrets.token_urlsafe(32)",
+      "ttl_seconds": 600,
+      "maximum_active_handles": 1024,
+      "bound": "CurrentScanScope path and ancestor identities"
+    },
+    "max_page": 20,
+    "page_size": 60,
+    "max_folders_per_directory": 600
+  },
+  "enforcement": {
+    "exclude_file_names": true,
+    "enumerate_only_immediate_directories": true,
+    "no_recursive_listing": true,
+    "no_symlinks_or_reparse_points": true,
+    "forbidden_roots": "reuse policy.paths.is_under_forbidden_root",
+    "revalidate_before_navigation_and_selection": true,
+    "scan_admission": "reuse LaunchSession._offer_scope and _consume_scope",
+    "selection_inert": true,
+    "scan_activation": "independent deliberate POST current-scan scope_token",
+    "incomplete_ownership_never_grants_disposal": true,
+    "safety_harness_precedence": "Existing current review / deletion contracts continue to win"
+  },
+  "acceptance_tests": [
+    "tests/test_immersive_folder_browser.py",
+    "tests/test_downloads_welcome_browser.py",
+    "tests/test_downloads_scope_protocol.py",
+    "tests/test_current_review_browser.py",
+    "tests/test_downloads_first_review_acceptance.py"
+  ],
+  "proof_ladder": [
+    "Static source and contract checks",
+    "Synthetic API regressions",
+    "Full repository tests",
+    "Six-mode Playwright browser interaction",
+    "Windows Admin Box isolated live navigator proof",
+    "Retained known-good download and sample controls",
+    "Provider review and main integration",
+    "Source launcher update and operator-observed browser"
+  ],
+  "prohibitions": [
+    "Do not change canonical source/worktree or installed app paths",
+    "Do not bypass profile or read private file contents",
+    "Do not add shell Explorer launch as primary target selection",
+    "Do not auto-open or auto-scan newly selected folder",
+    "Do not permit UI path strings to become eligibility authority",
+    "Do not merge this stacked candidate before parent PR and live regression proof",
+    "Do not claim isolated Windows runtime PASS from synthetic/CI proof"
+  ]
+}

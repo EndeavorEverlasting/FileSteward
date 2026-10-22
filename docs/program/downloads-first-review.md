@@ -17,7 +17,8 @@ Place this main card in the welcome page's first visible content region, visuall
 | Body | "Review names, sizes, dates, folders, and ownership evidence in Downloads and its subfolders. File contents stay closed. Nothing is moved or deleted." |
 | Scope label | "Folder: <OS-resolved path>" — render as text, never interpolated HTML |
 | Primary button | **Review Downloads** (`id="review-downloads"`); enabled only after safe scope discovery |
-| Secondary | **Choose another folder** (`id="choose-folder"`) |
+| Embedded alternative | **Browse folders here** (`id="browse-folders"`), opens a directory-only panel without an OS focus switch |
+| Native fallback | **Windows folder picker** (`id="choose-folder"`), explicit OS chooser remains supported |
 | Sample | Keep **Explore sample**, clearly labeled synthetic |
 | Boundary | "Opening FileSteward never scans your files. This review reads metadata only." |
 
@@ -30,7 +31,7 @@ LAUNCH app
   -> welcome page; no personal scan, no collector construction, no recurring task
   -> server resolves SHGetKnownFolderPath(FOLDERID_Downloads) and checks eligibility
   -> WELCOME_READY: visible path + Review Downloads
-     or WELCOME_UNAVAILABLE: localized, actionable reason + Choose another folder / Explore sample
+     or WELCOME_UNAVAILABLE: localized, actionable reason + Browse folders here / optional Windows picker / Explore sample
 
 USER activates Review Downloads by click, Enter, or Space
   -> one authenticated POST with opaque session-bound scope token
@@ -42,14 +43,21 @@ USER activates Review Downloads by click, Enter, or Space
        PARTIAL preserves explicit gaps; EMPTY shows a truthful empty experience
   -> ERROR: remain on welcome, show cause, offer fresh retry, never auto-retry/auto-broaden
 
-USER activates Choose another folder
-  -> Windows native directory picker (interactive desktop session), NOT browser webkitdirectory
+USER activates Browse folders here
+  -> embedded FileSteward navigator requests server-issued, expiring directory handles
+  -> Locations / open immediate folder / Back / Next folder page; show directory names only
+  -> protected/reparse locations excluded, no recursive file listing, zero scans
+  -> Use this folder: show exact selected path and "Review selected folder" button
+  -> pressing Review selected folder uses the same guarded scope-token review gate
+
+USER optionally activates Windows folder picker
+  -> Windows native directory dialog, NOT browser webkitdirectory
   -> cancel: unchanged welcome, zero scans
-  -> select: show exact chosen path, purpose and "Review selected folder" button
-  -> pressing that button uses same guarded admission/review path (the picker alone never scans)
+  -> select: show chosen path and "Review selected folder" button
+  -> pressing that button uses same guarded admission/review path (picker alone never scans)
 ```
 
-Browser file inputs and `webkitdirectory` provide selected files/relative names; **they do not grant a trusted absolute directory path**. Do not repurpose the existing evidence *import* picker for choosing a scan root. The Windows picker must be hosted by the trusted local app through a native directory-picker adapter (e.g. `IFileOpenDialog` with `FOS_PICKFOLDERS` on an appropriate STA thread); it must not create a generic, remotely callable filesystem browsing API. On a noninteractive host return PICKER_UNAVAILABLE and offer the sample; do not guess paths.
+Browser file inputs and `webkitdirectory` provide selected files/relative names; **they do not grant a trusted absolute directory path**. Do not repurpose the existing evidence *import* picker for choosing a scan root. The embedded navigator instead uses a session-authenticated loopback API with **server-issued opaque directory handles**, stable directory identities, immediate-subdirectory-only listings, bounded pagination, and protected-location exclusions; the browser never submits a path for eligibility. It does not expose a generic remotely callable filesystem browser. The optional Windows picker must remain hosted by the trusted local app through a native directory-picker adapter (e.g. `IFileOpenDialog` with `FOS_PICKFOLDERS` on an appropriate STA thread). If the native dialog is unavailable, the embedded navigator and sample remain available without guessed paths.
 
 ## API and authority, not just a button
 
@@ -57,7 +65,8 @@ The contract specifies:
 
 - `GET /api/v1/launch/recommended-scope` — **discovery only**. It returns an opaque, memory-only, single-use scope token bound to the OS-resolved path and stable directory/ancestor identity, a display path, an eligible flag, and a reason if unavailable. No run, scan, ownership collection, or source-content read.
 - `POST /api/v1/launch/current-scan` body `{"scope_token":"..."}` — admitted by the **existing Host + Origin + session-header** checks. The token is not a browser statement of eligibility. On use, verify session, expiry (<= 600 s), whether consumed, KnownFolder resolution, eligibility and identity again; then run the existing `begin_current_scan` / `CurrentScanScope` path. Do not weaken the current legacy explicit `{"scan_root":"..."}` test/CLI path while migrating UI.
-- `POST /api/v1/launch/choose-folder` — explicit request to launch **native** Windows picker; returns cancellation or a *server-derived* selected path/token for separate review activation. It must not start scanning when the picker merely closes.
+- `POST /api/v1/launch/folder-browser` — the primary **in-app** directory navigator, with strictly enumerated `roots`, `open(token,page)` and `select(token)` operations. Existing Host + Origin + session-header checks apply; server-issued browser tokens never become scan tokens. Enumeration returns directory names only; protected and reparse paths are excluded. Selection reuses the existing chosen-scope admission and does not scan.
+- `POST /api/v1/launch/choose-folder` — optional **native** Windows picker fallback; returns cancellation or a server-derived selected path/token for separate review activation. It must not start scanning when the picker merely closes.
 
 Tokens are capability-style references, not privileges to delete. The server owns path facts and observed identity. The browser owns deliberate activation and feedback. An OS known-folder change, disconnected/reparse target, changed ancestor, stale token, or failure to resolve is an actionable refusal and fresh-scope recovery—not a fallback to environment variables, `cwd`, `USERPROFILE\Downloads`, Desktop, OneDrive, or a whole drive.
 

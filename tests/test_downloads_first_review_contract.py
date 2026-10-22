@@ -43,7 +43,11 @@ def test_one_click_action_is_explicit_and_opens_review_without_second_click():
     welcome = spec["welcome"]
     assert welcome["primary_label"] == "Review Downloads"
     assert welcome["primary_element_id"] == "review-downloads"
-    assert welcome["secondary_label"] == "Choose another folder"
+    assert welcome["secondary_label"] == "Browse folders here"
+    assert welcome["secondary_element_id"] == "browse-folders"
+    assert welcome["native_picker_label"] == "Windows folder picker"
+    assert welcome["native_picker_element_id"] == "choose-folder"
+    assert contract()["api"]["browser"]["effect"].startswith("directory-only in-app navigation")
     assert "without a second click" in welcome["success_transition"]
     states = {row["id"]: row for row in spec["states"]}
     assert len(states) == 8

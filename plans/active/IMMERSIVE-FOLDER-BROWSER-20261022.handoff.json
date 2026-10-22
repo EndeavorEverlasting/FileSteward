@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0",
+  "handoff_id": "filesteward-immersive-folder-browser-20261022",
+  "timestamp": "2026-10-22",
+  "parent_objective": "Operator on Admin Box 1 should select scan target in immersive FileSteward page without typing directory paths or triggering File Explorer. Preserve all data-protection, explicit-review and accepted visual controls.",
+  "prompt_registry": "TokenCorridor src/tokencorridor/interface/promptkit/registry/base/prompts.json",
+  "invoked_prompts": {
+    "P00": "Governance Doctrine Installer",
+    "P01": "Harness Infrastructure Builder",
+    "P07": "Repo Sprint Executor",
+    "P08": "Live Runtime Proof Executor"
+  },
+  "repository": "EndeavorEverlasting/FileSteward",
+  "base_pr": 68,
+  "base_branch": "design/downloads-first-review-20261021",
+  "base_head_sha": "6408be33153b1dc01fe0ffac3f490c22c86e35e5",
+  "execution_branch": "feat/immersive-folder-browser-20261022",
+  "owner_lane": "In-page folder navigation and safety non-regression",
+  "changed": [
+    "src/filesteward/launch.py",
+    "src/filesteward/web/launch.html",
+    "tests/test_immersive_folder_browser.py",
+    "tests/test_downloads_welcome_browser.py",
+    "AGENTS.md",
+    "harness/contracts/immersive-folder-browser.v1.json",
+    "plans/active/IMMERSIVE-FOLDER-BROWSER-20261022.md",
+    "plans/active/IMMERSIVE-FOLDER-BROWSER-20261022.handoff.json",
+    "tests/test_immersive_folder_browser_contract.py",
+    "harness/contracts/downloads-first-review.v1.json",
+    "tests/test_downloads_first_review_contract.py",
+    "docs/local-start.md",
+    "docs/program/downloads-first-review.md"
+  ],
+  "forbidden": [
+    "Deletion/quarantine implementation",
+    "AI content extraction",
+    "Scheduled cleanup",
+    "Private run data",
+    "Unrelated scene rewrites",
+    "Parent PR #68 branch changes"
+  ],
+  "implemented": [
+    "Opaque short-lived navigation token endpoints (roots/open/select)",
+    "Directory-only, paginated listing with protected-root/reparse filtering",
+    "Embedded accessible welcome-page browser and explicit separate scan action",
+    "Native Windows picker preserved as fallback",
+    "API and six-mode browser regression tests"
+  ],
+  "verification": {
+    "source_readback": "PASS: GitHub saved files fetched; PR diff and branch containment checked",
+    "static_json_validation": "PASS: new immersive contract, updated parent contract and handoff parse",
+    "pytest": "NOT_RUN_REMOTE_ONLY",
+    "browser_playwright": "NOT_RUN_REMOTE_ONLY",
+    "windows_native": "NOT_RUN_HOST_INACCESSIBLE",
+    "private_file_scan": "NOT_AUTHORIZED_NOT_RUN",
+    "merge": "NOT_PERFORMED",
+    "deployment_adminbox": "NOT_PERFORMED",
+    "browser_javascript_compile": "PASS: current HTML embedded JS compiles in V8; HTML ids unique; all byId ids exist",
+    "python_compile": "UNPROVEN: no local Python runner attached to GitHub connector"
+  },
+  "hard_blockers": [
+    "PR #68 is draft and itself has pending isolated Windows native-picker and relocated KnownFolder acceptance",
+    "No accessible actual Admin Box 1 Python/Playwright/Windows runtime via GitHub connector; P08 live behavior cannot be claimed"
+  ],
+  "first_action": "On an isolated development checkout and fresh stacked PR #70 head, run `python -m pytest -q tests/test_immersive_folder_browser_contract.py tests/test_downloads_first_review_contract.py tests/test_immersive_folder_browser.py tests/test_downloads_scope_protocol.py tests/test_downloads_welcome_browser.py`, diagnose and repair all failures; then full tests and six-mode Playwright.",
+  "next_gates": [
+    "Run full repository tests and verify updated parent downloads-first contract and new immersive contract compatibility",
+    "Run 6-mode Playwright browser tests plus retained known-good reviews",
+    "Run isolated Windows/real browser synthetic-only live acceptance and capture artifacts",
+    "Reconcile parent PR #68 provider reviewer findings and merge only when independent gates are satisfied",
+    "Refresh stack on main; rerun; merge feature; close and relaunch source CMD on Admin Box 1; collect operator-live receipt"
+  ],
+  "safety_emphasis": "No scan before deliberate Review; directory browsing is metadata-only and never grants action authorization; no client absolute path trust."
+}
