@@ -82,6 +82,20 @@ class ProtectionIndex:
             for path in iter_git_roots(root, **kwargs)
         )
 
+    @classmethod
+    def from_workspace_discovery(
+        cls, root: Any, *, scandir: Any = None
+    ) -> "ProtectionIndex":
+        """Discover Git and curricular learning roots in a single no-follow walk."""
+
+        from filesteward.protect.learning import iter_workspace_protection_roots
+
+        kwargs = {} if scandir is None else {"scandir": scandir}
+        return cls(
+            ProtectedRoot(path=str(path), source=source)
+            for path, source in iter_workspace_protection_roots(root, **kwargs)
+        )
+
     def relation(self, path: Any) -> ProtectionRelation:
         candidate = _key(path)
         has_self = has_descendant = has_ancestor = False

@@ -43,6 +43,13 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - Once a bounded deletion outcome is authorized, repository repair, tests, commit, PR, merge, preflight PASS, and approval-artifact creation are intermediate states. Continue through live deletion and runtime proof in the same iteration unless a genuine unrepairable external/user-only blocker remains.
 - Real workstation scans, private paths, filenames, hashes, queues, manifests, approvals, and receipts belong in ignored runtime storage, never committed fixtures.
 
+## Learning workspaces are protected user work
+
+- Read [learning workspace protection](docs/program/learning-workspace-protection.md) before changes to scan, disposition, ownership/placement, review queues, or delete preflight.
+- Learning workspaces are recognized by curriculum *structure*, without requiring Git, a named drive, or a teaching app installation. Recognized emerging and confirmed roots and all descendants are PROTECTED; a containing parent must decompose so independent siblings remain evaluable.
+- No model or cache-contract judgment may silently promote classroom materials, research, records, notes, or upstream pins to reclaim, relocate, quarantine, or delete. SSD/HDD labeling remains observation only, not permission to move a lesson.
+- Restore protections immediately before mutation using the current discovery path. Do not substitute static chat descriptions or stale scan artifacts for that step.
+
 ## Execution handoff discipline
 
 A handoff is executable state, not a planning restart.

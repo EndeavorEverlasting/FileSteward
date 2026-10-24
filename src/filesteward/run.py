@@ -198,7 +198,7 @@ class CleanupRun:
 
         index = ProtectionIndex(
             list(self._protected_roots)
-            + list(ProtectionIndex.from_git_discovery(root,
+            + list(ProtectionIndex.from_workspace_discovery(root,
                 scandir=self._scan_deps.scandir if self._scan_deps is not None else None))
         )
 

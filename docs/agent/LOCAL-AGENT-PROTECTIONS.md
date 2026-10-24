@@ -101,6 +101,21 @@ If a candidate directory is an ancestor that contains a protected subtree, the w
 
 Protection must be rebuilt immediately before mutation. Audit-time protection evidence is not permanent authority.
 
+### Learning workspace recognition
+
+A learning workspace can exist outside Git, outside an installed teaching app,
+and on any volume. Curriculum files (MISSION.md, NOTES.md, METHOD.md,
+GUIDANCE.md, START-HERE.md) and lesson/record/upstream directories are
+structural evidence, not permission to inspect contents. Read
+[learning workspace protection](../program/learning-workspace-protection.md).
+
+A recognized emerging or confirmed learning-workspace root and every descendant
+are PROTECTED during scan and at freshly rediscovered execution time. A
+containing parent is an ANCESTOR and must decompose; independent siblings are
+not automatically blocked. Protect even when a broad regenerable cache
+contract exists. Neither a drive-type preference nor an apparent generated
+artifact authorizes automatic movement, quarantine or deletion.
+
 ## 5. Ambiguity belongs to the operator
 
 The agent's responsibility is to make operator review efficient, not to eliminate it.

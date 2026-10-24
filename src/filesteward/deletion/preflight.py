@@ -451,15 +451,15 @@ def load_run_protection_context(
 def discover_scan_protection_roots(
     scan_root: PathLike,
 ) -> tuple[ProtectedRoot, ...]:
-    """Rediscover git/worktree protection roots under ``scan_root``.
+    """Rediscover Git/worktree and learning-workspace roots under ``scan_root``.
 
     Fail closed when discovery itself raises. An empty discovery result
-    (no git roots under the scan) is allowed and returns ``()``.
+    (no recognized roots under the scan) is allowed and returns ``()``.
     """
 
     root = normalize_declared_path(scan_root)
     try:
-        return ProtectionIndex.from_git_discovery(root).roots
+        return ProtectionIndex.from_workspace_discovery(root).roots
     except OSError as exc:
         raise ValueError(
             f"protection rediscovery unavailable for scan_root {root}: {exc}"
