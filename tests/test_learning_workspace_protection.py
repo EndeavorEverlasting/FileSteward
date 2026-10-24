@@ -191,3 +191,52 @@ def test_no_drive_letter_or_teach_path_assumption(tmp_path: Path) -> None:
     assert ProtectionIndex.from_workspace_discovery(tmp_path).is_protected(
         nested / "learning-records" / "session.json"
     )
+
+
+def test_read_only_cleanup_run_persists_learning_protection_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The actual scan pipeline must report protected roots and descendants."""
+
+    import csv
+    import json
+
+    from filesteward.run import CleanupRun
+    from filesteward.policy import paths as path_policy
+    from filesteward import run as run_module
+
+    campus = tmp_path / "campus"
+    classroom = _classroom(campus, "physics", kind="tax-budget")
+    sibling = campus / "unrelated"
+    sibling.mkdir()
+    (sibling / "scratch.bin").write_bytes(b"synthetic")
+
+    private_runtime = tmp_path / "private-runtime"
+    monkeypatch.setattr(path_policy, "runtime_root", lambda: private_runtime)
+    monkeypatch.setattr(run_module, "runtime_root", lambda: private_runtime)
+
+    output = private_runtime / "runs" / "synthetic-learning"
+    CleanupRun(campus, output).execute()
+
+    metadata = json.loads((output / "run.json").read_text(encoding="utf-8"))
+    assert {
+        (row["path"], row["source"])
+        for row in metadata["protected_roots"]
+    } == {(str(classroom), "learning-workspace:confirmed")}
+
+    with (output / "protected-exclusions.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        exclusions = list(csv.DictReader(handle))
+    classroom_rows = [
+        row for row in exclusions
+        if Path(row["path"]) == classroom / "MISSION.md"
+    ]
+    assert len(classroom_rows) == 1
+    assert classroom_rows[0]["disposition"] == "PROTECTED"
+    assert "learning-workspace:confirmed" in classroom_rows[0]["protection_source"]
+    assert any(
+        row["path"] == str(campus) and row["relationship"] == "ANCESTOR"
+        for row in exclusions
+    )
+    assert not any(row["path"] == str(sibling / "scratch.bin") for row in exclusions)
