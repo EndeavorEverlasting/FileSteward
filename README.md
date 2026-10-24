@@ -232,6 +232,18 @@ FileSteward/
 
 Real inventories, filenames, hashes, extracted metadata, queue decisions, quarantine contents, and action logs belong in ignored runtime locations. Sanitized examples and synthetic test fixtures belong in version control.
 
+## Protected learning workspaces
+
+FileSteward also recognizes independent, non-Git learning curricula by
+metadata-only combinations of MISSION.md, NOTES.md, METHOD.md, GUIDANCE.md,
+START-HERE.md, and lessons/learning-records/upstreams structure. Emerging and
+confirmed learning roots are excluded from automatic cleanup; their containing
+parent is decomposed so unrelated siblings remain individually evaluable.
+Protection is rediscovered before permanent deletion. This does not move files
+or enable SSD/HDD placement actions.
+
+See [learning workspace protection](docs/program/learning-workspace-protection.md).
+
 ## Workstation performance profiles (isolated observation lane)
 
 An opt-in, local-only workstation profiling module records per-host CPU/RAM
