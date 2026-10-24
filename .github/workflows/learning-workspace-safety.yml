@@ -41,3 +41,4 @@ jobs:
           tests/test_protection.py
           tests/test_disposition.py
           tests/test_delete_preflight.py
+      - run: python -m pytest -q
