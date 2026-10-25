@@ -1,0 +1,97 @@
+{
+  "schema_version": "filesteward.local-asset-lifecycle-policy/v1",
+  "owner": "src/filesteward/ownership/local.py",
+  "scope": "Local non-Git, non-installed-app, non-classroom and otherwise unattributed user assets; read-only lifecycle evidence projection",
+  "separation": [
+    "asset_identity",
+    "owner_attribution",
+    "lifecycle",
+    "cleanup_disposition",
+    "operator_intent",
+    "action_review_route",
+    "mutation_authorization"
+  ],
+  "identities": [
+    "UNCLASSIFIED",
+    "PERSONAL_RECORD",
+    "USER_PROJECT",
+    "LEARNING",
+    "REFERENCE",
+    "GENERATED",
+    "OTHER_LOCAL"
+  ],
+  "attribution": [
+    "UNRESOLVED",
+    "VERIFIED_USER_LOCAL",
+    "OTHER_OWNER_PRESENT",
+    "CONFLICTING"
+  ],
+  "lifecycles": [
+    "ACTIVE",
+    "STABLE",
+    "DORMANT",
+    "LEGACY_CANDIDATE",
+    "UNRESOLVED"
+  ],
+  "intents": [
+    "UNDECLARED",
+    "KEEP",
+    "DORMANT",
+    "ARCHIVE_REVIEW",
+    "LEGACY_REVIEW",
+    "REMOVE_REVIEW"
+  ],
+  "dispositions": [
+    "PROTECTED",
+    "KEEP_PROVEN",
+    "HUMAN_REVIEW",
+    "UNKNOWN"
+  ],
+  "invariant_guards": [
+    "classification never assigns RECLAIM_PROVEN or mutation_authorized=true",
+    "no path, extension, size, age, last access, duplicate hash, or absent application registration alone infers legacy, disposable, or regenerable",
+    "structural protection, current use, unique unrecoverable work and conflicting attribution dominate any archive/removal intent",
+    "local verified attribution must carry provenance; complete adapter coverage is an evidence assertion requiring independent validation before decision chamber integration",
+    "dormant requires explicit user intent; not elapsed time or no activity alone",
+    "legacy candidate requires explicit operator legacy review, complete local attribution, negative current-use and uniqueness evidence, resolved dependencies, and proven recovery",
+    "removal target is review-only; any actual permanent delete requires separate existing exact-manifest fresh preflight approval execute receipt lifecycle",
+    "an unrecognized local path remains UNRESOLVED/UNKNOWN until safe adapters collect facts; no agent treats it as junk",
+    "real host path/classification evidence belongs in ignored runtime; repository fixtures must be synthetic",
+    "no arbitrary filesystem traversal or file content reads from local evidence classifier"
+  ],
+  "source_contracts": [
+    "harness/contracts/storage-ownership-evidence-graph.v1.json",
+    "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "docs/agent/LOCAL-AGENT-PROTECTIONS.md"
+  ],
+  "interface": {
+    "invocation": "python -m filesteward.ownership.local --evidence-file <ignored-runtime-json>",
+    "example": "python -m filesteward.ownership.local --example",
+    "stdin_read": false,
+    "filesystem_writes": false,
+    "source_content_reads": false,
+    "output_schema": "filesteward.local-asset-assessment/v1"
+  },
+  "proof_gates": {
+    "focused": "python -m pytest -q tests/test_local_asset_lifecycle.py tests/test_ownership_reducer.py tests/test_disposition.py",
+    "syntax": "python -m json.tool harness/contracts/local-asset-lifecycle.v1.json",
+    "actual_host": "Observe bounded local scope with current ownership adapters, review correct projection in local Decision Chamber, capture private runtime receipt; cannot infer from CI"
+  },
+  "reference_patterns": [
+    {
+      "repository": "tfeldmann/organize",
+      "tree_sha": "a736516555d0daeb83a604448fbdf5379f42f2ef",
+      "source": "organize/cli.py; organize/rule.py",
+      "decision": "ADAPT",
+      "mechanism": "typed filters and distinct sim/run control; do not adopt arbitrary shell action execution"
+    },
+    {
+      "repository": "qarmin/czkawka",
+      "tree_sha": "eb8b91dbb4d25dff416202674ee0de84ee4b5e5c",
+      "source": "czkawka_cli/src/commands.rs; czkawka_core/src/tools/duplicate/tests.rs",
+      "decision": "ADAPT",
+      "mechanism": "explicit excluded/reference targets and dry run, not deletion from duplicate finding"
+    }
+  ]
+}

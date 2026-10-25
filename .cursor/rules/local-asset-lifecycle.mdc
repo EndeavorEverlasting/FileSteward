@@ -1,0 +1,23 @@
+---
+description: FileSteward ordinary local asset classification: identity vs ownership, active/stable/dormant/legacy lifecycle, and removal-review without deletion authority.
+globs:
+  - "src/filesteward/ownership/**"
+  - "src/filesteward/classify/**"
+  - "src/filesteward/deletion/**"
+  - "docs/program/**"
+  - "docs/handoff/**"
+  - "tests/test_local_asset_lifecycle.py"
+alwaysApply: false
+---
+
+For unrecognized paths or lifecycle/reclamation questions load:
+- AGENTS.md
+- .agents/skills/local-asset-lifecycle/SKILL.md
+- harness/contracts/local-asset-lifecycle.v1.json
+- docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.md
+
+The code owner is src/filesteward/ownership/local.py. Unknown is not
+legacy; archive/removal review is not deletion authority. Never
+invent adapter coverage, negative activity/dependency claims, recoverability
+or user retention preference. Treat actual local storage as private,
+operator-bounded, and read-only without separate exact mutation authority.

@@ -1,0 +1,159 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "LOCAL-ASSET-LIFECYCLE-20261024",
+  "lane_id": "local-assets-generalized-classification",
+  "role": "coordinator",
+  "canonical_plan_ref": "docs/program/local-asset-lifecycle.md",
+  "contract_refs": [
+    "harness/contracts/local-asset-lifecycle.v1.json",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json",
+    "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json"
+  ],
+  "provider_base_sha_at_capture": "c3abf4984474b16a957f4148cf835880bfd7f93a",
+  "provider_head_sha_at_capture": "e7deb4f95766d589ea36bfd7742698feb557d2f9",
+  "local_head_sha_at_capture_or_unknown": "UNKNOWN_NOT_OBSERVED",
+  "completed_facts": [
+    {
+      "fact": "Recovered current FileSteward main code, current open PR #71 learning roots and #64 steward orchestration, native ownership/disposition/preflight contracts. No automatic local-asset lifecycle model existed in main at capture.",
+      "evidence": [
+        "src/filesteward/ownership/current.py",
+        "src/filesteward/ownership/reducer.py",
+        "harness/contracts/storage-ownership-evidence-graph.v1.json",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/71",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/64"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Committed typed non-destructive local lifecycle evaluator, synthetic regression tests, agent skill and versioned policy; local host proof not run.",
+      "evidence": [
+        "src/filesteward/ownership/local.py",
+        "tests/test_local_asset_lifecycle.py",
+        ".agents/skills/local-asset-lifecycle/SKILL.md",
+        "harness/contracts/local-asset-lifecycle.v1.json",
+        "docs/program/local-asset-lifecycle.md"
+      ],
+      "proof_state": "IMPLEMENTED"
+    },
+    {
+      "fact": "Inspected upstream organize and Czkawka code/test mechanics for simulation, exclusions and separate action semantics; adapted patterns only.",
+      "evidence": [
+        "https://github.com/tfeldmann/organize/tree/a736516555d0daeb83a604448fbdf5379f42f2ef/organize",
+        "https://github.com/qarmin/czkawka/tree/eb8b91dbb4d25dff416202674ee0de84ee4b5e5c/czkawka_cli"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Exact feature head cb93a61ea7e17b7b77b86f7e0ec5de7cd5106af1 passed targeted tests on Linux (72/72) and Windows (72/72), JSON syntax checks and execution-handoff schema validation; product authority check green.",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/actions/runs/40146995529",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/73"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Exact provider PR overlap inspection found AGENTS.md changed in open PR #64 and learning-protection PR #71; neither is included in this feature base; reconcile before merge.",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/64",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/71",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/73"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Added a scoped Cursor activation rule linked to the canonical lifecycle skill and a regression test to prevent future broken agent routing.",
+      "evidence": [
+        ".cursor/rules/local-asset-lifecycle.mdc",
+        "tests/test_local_asset_lifecycle.py"
+      ],
+      "proof_state": "IMPLEMENTED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "read-only-safe-adapters",
+      "action": "Factor safe local-user ownership/activity/unique-work/dependency/recoverability provider adapters with explicit completeness evidence and privacy controls; distinguish technical adapters from operator intent.",
+      "depends_on": [],
+      "acceptance": "No generic absence-to-negative inference; synthetic coverage matrix proves UNKNOWN whenever any required adapter is incomplete."
+    },
+    {
+      "work_id": "runtime-decision-projection",
+      "action": "Connect canonical local evaluator to existing ownership graph, scan evidence, local queue and Decision Chamber preserving original scene script and cross-domain protection precedence.",
+      "depends_on": [
+        "read-only-safe-adapters"
+      ],
+      "acceptance": "An operator-approved bounded synthetic folder appears with correct user-facing lifecycle badge, missing evidence, review-only actions and protected controls."
+    },
+    {
+      "work_id": "actual-host-proof",
+      "action": "On the selected authorized Windows host use repo-owned launcher to observe bounded local path in browser/queue; capture ignored/private receipts. Do not execute deletion.",
+      "depends_on": [
+        "runtime-decision-projection"
+      ],
+      "acceptance": "P08 actual observed input -> launch -> user-visible classification and protected control; private receipt, no user data change."
+    },
+    {
+      "work_id": "convergence",
+      "action": "Refresh origin default head, reconcile PR #71/#64 and this lane, verify required tests/reviews/dependencies, integrate validated feature changes, then prove main containment and local launch.",
+      "depends_on": [],
+      "acceptance": "PR merged only after needed repository-owned checks; provider merge readback and exact commit containment; live remains separately scoped."
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "src/filesteward/ownership/local.py",
+    "tests/test_local_asset_lifecycle.py",
+    "harness/contracts/local-asset-lifecycle.v1.json",
+    ".agents/skills/local-asset-lifecycle/SKILL.md",
+    "docs/program/local-asset-lifecycle.md",
+    "docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.md",
+    "docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.handoff.json",
+    ".github/workflows/local-asset-lifecycle.yml",
+    "AGENTS.md",
+    ".cursor/rules/local-asset-lifecycle.mdc"
+  ],
+  "forbidden_surfaces": [
+    "unapproved local user filesystem scans",
+    "deletion or relocation of actual user data",
+    "downgrading repo/app/learning protections",
+    "direct promotion to RECLAIM_PROVEN",
+    "modification of live deletion or Decision Chamber outside subsequently declared integration owner",
+    "private absolute user paths or live inventories in public commits",
+    "force-push, auth or settings changes"
+  ],
+  "dependencies": [
+    "PR #71 is open draft for learning structure recognition; separate lane, must reconcile when integrating cross-domain protection",
+    "PR #64 is open for agent/orchestration surfaces; skill/AGENTS conflicts to inspect before merge",
+    "Issue #72 tracks prior full-suite Linux portability failures; no unsupported claim of clean repository full suite"
+  ],
+  "external_prerequisites": [
+    "Actual local Windows host proof requires operator-approved bounded scope and an accessible host runtime; GitHub provider CI does not authorize real storage inspection."
+  ],
+  "proof_receipts": [
+    "src/filesteward/ownership/local.py",
+    "tests/test_local_asset_lifecycle.py",
+    "harness/contracts/local-asset-lifecycle.v1.json",
+    "docs/program/local-asset-lifecycle.md",
+    "https://github.com/EndeavorEverlasting/FileSteward/actions/runs/40146995529",
+    ".cursor/rules/local-asset-lifecycle.mdc"
+  ],
+  "proof_ceiling": "Provider validated 72 Linux + 72 Windows tests and standard JSON schema at prior tested head cb93a61. Latest feature changed only Cursor skill activation/test/handoff docs; exact latest-head revalidation required before merge. No on-host observation, no real storage mutation, no UI integration or merge.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": {
+    "missing_adapter": "No connected local Windows runtime to run a bounded on-host browser/file-tree proof from this provider-only chat.",
+    "evidence": [
+      "Current tool access: GitHub repository/provider operations and CI, no attached Windows host shell."
+    ],
+    "repair_route": "Use existing FileSteward source CMD launcher from the operator-authorized Windows clone; native agent executes scoped P08 proof and retains raw path/evidence only in ignored var/runs/."
+  },
+  "exact_next_action": {
+    "phase": "EXECUTE",
+    "action": "Implement bounded read-only local-user ownership and lifecycle adapter inputs, then feed canonical ownership graph/Decision Chamber while preserving active protection precedence; first reconcile PR #64/#71 AGENTS.md collision and refresh current default branch.",
+    "owner": "FileSteward local agent execution coordinator",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "CHANGED | PROVED | NEXT with exact branch/commit, Windows+Linux test results, no full-suite false positives, unmerged PR state, and live Windows validation explicitly marked UNPROVEN until observed."
+}

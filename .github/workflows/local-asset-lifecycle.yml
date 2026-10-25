@@ -1,0 +1,49 @@
+name: Local asset lifecycle safety
+
+on:
+  pull_request:
+    paths:
+      - "src/filesteward/ownership/local.py"
+      - "tests/test_local_asset_lifecycle.py"
+      - "harness/contracts/local-asset-lifecycle.v1.json"
+      - "docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.handoff.json"
+      - ".agents/skills/local-asset-lifecycle/SKILL.md"
+      - ".cursor/rules/local-asset-lifecycle.mdc"
+      - ".github/workflows/local-asset-lifecycle.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/filesteward/ownership/local.py"
+      - "tests/test_local_asset_lifecycle.py"
+      - ".github/workflows/local-asset-lifecycle.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-local-lifecycle:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest jsonschema
+      - run: >-
+          python -m pytest -q
+          tests/test_local_asset_lifecycle.py
+          tests/test_ownership_reducer.py
+          tests/test_disposition.py
+      - run: python -m json.tool harness/contracts/local-asset-lifecycle.v1.json
+      - run: python -m json.tool docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.handoff.json
+      - run: >-
+          python -c "import json; import jsonschema; from pathlib import Path;
+          s=json.loads(Path('harness/contracts/execution-handoff-packet.schema.v1.json').read_text());
+          d=json.loads(Path('docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.handoff.json').read_text());
+          jsonschema.validate(d,s); print('handoff schema PASS')"
