@@ -8,6 +8,7 @@ on:
       - "harness/contracts/local-asset-lifecycle.v1.json"
       - "docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.handoff.json"
       - ".agents/skills/local-asset-lifecycle/SKILL.md"
+      - ".cursor/rules/local-asset-lifecycle.mdc"
       - ".github/workflows/local-asset-lifecycle.yml"
   push:
     branches: [main]
