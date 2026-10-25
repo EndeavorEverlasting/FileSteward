@@ -67,6 +67,26 @@ REVIEW_REMOVAL, not RECLAIM_PROVEN or a manifest authority.
   user input, active/dependency protection, and evidence readback are required
   for P08 LIVE_OBSERVED. No new visual design and no deletion here.
 
+## Verified provider proof and integration collision (2026-10-24)
+
+- Exact code/test head cb93a61ea7e17b7b77b86f7e0ec5de7cd5106af1:
+  Linux 72 passed; Windows 72 passed; schema checks passed on both.
+  GitHub run https://github.com/EndeavorEverlasting/FileSteward/actions/runs/40146995529
+- Existing product authority check passed, and PR #73 had no unresolved
+  review threads at capture.
+- PR #64 and PR #71 independently change AGENTS.md. PR #73 does as
+  well. This is an identified potential textual/governance merge conflict,
+  not a reason to drop any of their still-valid rules.
+- Next EXECUTION-READY lane is safe current local-user attribution adapter
+  ingestion and proper owner graph/queue integration. The original test-first
+  gate is now PROVED at provider CI level; do not repeat it as pending merely
+  because an agent reopened this handoff. Recheck when input/head changes.
+- A real Windows host UI journey remains LIVE_UNPROVEN. No operator source
+  files were inspected, moved, deleted or exposed to GitHub.
+- PR #73 remains draft/unmerged until the product integration and collision
+  safeguards meet repository rules. A green focused matrix is insufficient
+  proof of full suite or production readiness.
+
 ## Parent outcome still open
 
 The module supplies a real deterministic classification/evaluation seam, but
