@@ -43,6 +43,28 @@ If any required contract cannot be read, stop. Do not reconstruct it from memory
 - Once a bounded deletion outcome is authorized, repository repair, tests, commit, PR, merge, preflight PASS, and approval-artifact creation are intermediate states. Continue through live deletion and runtime proof in the same iteration unless a genuine unrepairable external/user-only blocker remains.
 - Real workstation scans, private paths, filenames, hashes, queues, manifests, approvals, and receipts belong in ignored runtime storage, never committed fixtures.
 
+## Ordinary local asset lifecycle (agent trigger)
+
+When FileSteward encounters storage not conclusively owned by a repository,
+installed application, or recognized protected workspace, route to
+[local asset lifecycle](docs/program/local-asset-lifecycle.md), the
+[typed local policy](harness/contracts/local-asset-lifecycle.v1.json), and
+[agent skill](.agents/skills/local-asset-lifecycle/SKILL.md). An unrecognized
+path is not legacy or disposable.
+
+The deterministic read-only entrypoint is
+python -m filesteward.ownership.local --evidence-file <private-json-path>.
+Agents must not manufacture complete technical adapter coverage, recovery
+proof, negative dependency/activity evidence, or operator preference to
+obtain a favored classification. Even proven legacy and removal candidates
+remain HUMAN_REVIEW, never RECLAIM_PROVEN or approved-to-delete.
+No real-path observations or private evidence are committed.
+Read the active handoff at
+docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.md before modifying native
+owner adapters, Decision Chamber projection, or local runtime reporting.
+This implementation is currently an adapter-input evaluation seam, not
+an automatic user-drive scanner.
+
 ## Execution handoff discipline
 
 A handoff is executable state, not a planning restart.
