@@ -61,6 +61,14 @@
         "https://github.com/EndeavorEverlasting/FileSteward/pull/73"
       ],
       "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Added a scoped Cursor activation rule linked to the canonical lifecycle skill and a regression test to prevent future broken agent routing.",
+      "evidence": [
+        ".cursor/rules/local-asset-lifecycle.mdc",
+        "tests/test_local_asset_lifecycle.py"
+      ],
+      "proof_state": "IMPLEMENTED"
     }
   ],
   "remaining_work": [
@@ -102,7 +110,8 @@
     "docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.md",
     "docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.handoff.json",
     ".github/workflows/local-asset-lifecycle.yml",
-    "AGENTS.md"
+    "AGENTS.md",
+    ".cursor/rules/local-asset-lifecycle.mdc"
   ],
   "forbidden_surfaces": [
     "unapproved local user filesystem scans",
@@ -126,9 +135,10 @@
     "tests/test_local_asset_lifecycle.py",
     "harness/contracts/local-asset-lifecycle.v1.json",
     "docs/program/local-asset-lifecycle.md",
-    "https://github.com/EndeavorEverlasting/FileSteward/actions/runs/40146995529"
+    "https://github.com/EndeavorEverlasting/FileSteward/actions/runs/40146995529",
+    ".cursor/rules/local-asset-lifecycle.mdc"
   ],
-  "proof_ceiling": "PROVIDER_VALIDATED: synthetic Python 3.12 focused suite 72 passed on Windows and 72 on Linux, both JSON+handoff schema checks PASS at tested head cb93a61; feature is committed/pushed as draft PR #73. Not merged or deployed. No local Windows workstation UI/queue observation, no real filesystem mutation.",
+  "proof_ceiling": "Provider validated 72 Linux + 72 Windows tests and standard JSON schema at prior tested head cb93a61. Latest feature changed only Cursor skill activation/test/handoff docs; exact latest-head revalidation required before merge. No on-host observation, no real storage mutation, no UI integration or merge.",
   "unresolved_review_threads": [],
   "private_evidence_refs": [],
   "blocked_judgment_gap": "NONE",
