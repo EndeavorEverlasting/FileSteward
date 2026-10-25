@@ -44,21 +44,30 @@
         "https://github.com/qarmin/czkawka/tree/eb8b91dbb4d25dff416202674ee0de84ee4b5e5c/czkawka_cli"
       ],
       "proof_state": "CONTRACT_ENCODED"
+    },
+    {
+      "fact": "Exact feature head cb93a61ea7e17b7b77b86f7e0ec5de7cd5106af1 passed targeted tests on Linux (72/72) and Windows (72/72), JSON syntax checks and execution-handoff schema validation; product authority check green.",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/actions/runs/40146995529",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/73"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Exact provider PR overlap inspection found AGENTS.md changed in open PR #64 and learning-protection PR #71; neither is included in this feature base; reconcile before merge.",
+      "evidence": [
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/64",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/71",
+        "https://github.com/EndeavorEverlasting/FileSteward/pull/73"
+      ],
+      "proof_state": "CONTRACT_ENCODED"
     }
   ],
   "remaining_work": [
     {
-      "work_id": "focused-cross-platform",
-      "action": "Execute focused Python 3.12/Windows and Linux regression suites and JSON contract syntax validation; inspect logs, repair in-scope regressions without weakening deletion or old controls.",
-      "depends_on": [],
-      "acceptance": "Targeted test suites pass at exact current feature head on both OS runners; skipped tests accounted."
-    },
-    {
       "work_id": "read-only-safe-adapters",
       "action": "Factor safe local-user ownership/activity/unique-work/dependency/recoverability provider adapters with explicit completeness evidence and privacy controls; distinguish technical adapters from operator intent.",
-      "depends_on": [
-        "focused-cross-platform"
-      ],
+      "depends_on": [],
       "acceptance": "No generic absence-to-negative inference; synthetic coverage matrix proves UNKNOWN whenever any required adapter is incomplete."
     },
     {
@@ -80,9 +89,7 @@
     {
       "work_id": "convergence",
       "action": "Refresh origin default head, reconcile PR #71/#64 and this lane, verify required tests/reviews/dependencies, integrate validated feature changes, then prove main containment and local launch.",
-      "depends_on": [
-        "focused-cross-platform"
-      ],
+      "depends_on": [],
       "acceptance": "PR merged only after needed repository-owned checks; provider merge readback and exact commit containment; live remains separately scoped."
     }
   ],
@@ -118,9 +125,10 @@
     "src/filesteward/ownership/local.py",
     "tests/test_local_asset_lifecycle.py",
     "harness/contracts/local-asset-lifecycle.v1.json",
-    "docs/program/local-asset-lifecycle.md"
+    "docs/program/local-asset-lifecycle.md",
+    "https://github.com/EndeavorEverlasting/FileSteward/actions/runs/40146995529"
   ],
-  "proof_ceiling": "Implementation committed; synthetic tests pending CI at capture; not merged, not deployed, no live host scan or classroom/path observed; no deletion authorized.",
+  "proof_ceiling": "PROVIDER_VALIDATED: synthetic Python 3.12 focused suite 72 passed on Windows and 72 on Linux, both JSON+handoff schema checks PASS at tested head cb93a61; feature is committed/pushed as draft PR #73. Not merged or deployed. No local Windows workstation UI/queue observation, no real filesystem mutation.",
   "unresolved_review_threads": [],
   "private_evidence_refs": [],
   "blocked_judgment_gap": "NONE",
@@ -132,9 +140,9 @@
     "repair_route": "Use existing FileSteward source CMD launcher from the operator-authorized Windows clone; native agent executes scoped P08 proof and retains raw path/evidence only in ignored var/runs/."
   },
   "exact_next_action": {
-    "phase": "PROVE",
-    "action": "Run focused cross-platform synthetic tests of local asset lifecycle evaluator, inspect failures and update exact branch head; then integrate safe adapter/projection successor.",
-    "owner": "FileSteward repo execution coordinator",
+    "phase": "EXECUTE",
+    "action": "Implement bounded read-only local-user ownership and lifecycle adapter inputs, then feed canonical ownership graph/Decision Chamber while preserving active protection precedence; first reconcile PR #64/#71 AGENTS.md collision and refresh current default branch.",
+    "owner": "FileSteward local agent execution coordinator",
     "can_execute_without_operator": true
   },
   "return_contract": "CHANGED | PROVED | NEXT with exact branch/commit, Windows+Linux test results, no full-suite false positives, unmerged PR state, and live Windows validation explicitly marked UNPROVEN until observed."
