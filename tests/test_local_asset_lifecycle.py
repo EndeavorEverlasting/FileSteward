@@ -229,3 +229,18 @@ def test_synthetic_example_is_not_local_runtime_claim() -> None:
     assert sample["schema_version"] == SCHEMA_VERSION
     assert "synthetic" in sample["path"].lower()
     assert classify_local_asset(parse_local_evidence(sample)).mutation_authorized is False
+
+
+def test_cursor_agent_routing_is_linked_to_canonical_skill() -> None:
+    """The agent activation seam cannot silently lose its owning skill."""
+
+    root = Path(__file__).resolve().parents[1]
+    cursor_rule = (root / ".cursor" / "rules" /
+                   "local-asset-lifecycle.mdc").read_text(encoding="utf-8")
+    skill = (root / ".agents" / "skills" /
+             "local-asset-lifecycle" / "SKILL.md").read_text(encoding="utf-8")
+    agents = (root / "AGENTS.md").read_text(encoding="utf-8")
+    assert ".agents/skills/local-asset-lifecycle/SKILL.md" in cursor_rule
+    assert "src/filesteward/ownership/local.py" in cursor_rule
+    assert "src/filesteward/ownership/local.py" in skill
+    assert "docs/handoff/LOCAL-ASSET-LIFECYCLE-2026-10-24.md" in agents
