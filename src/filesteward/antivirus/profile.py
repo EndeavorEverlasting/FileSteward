@@ -12,6 +12,7 @@ from pathlib import Path
 
 from filesteward.models import CleanupDisposition
 from filesteward.policy.paths import is_lexically_within, runtime_root
+from filesteward.runtime_profile import initialize_installed_runtime, resolve_installed_runtime
 
 from .matcher import open_directory, regular_file, scan_directory, scope_identity
 from .signatures import DIGEST, read_bundle, verify_bundle
@@ -38,6 +39,12 @@ def state_root(*, create: bool = False) -> Path:
     runtime = runtime_root()
     state = runtime / "antivirus"
     if create:
+        if not runtime.parent.exists():
+            # A marked installation can be admitted before its first launch.
+            installed = resolve_installed_runtime()
+            if runtime != installed.runtime_root:
+                raise ValueError("Detector runtime differs from the admitted installation")
+            initialize_installed_runtime(installed.application_root)
         with open_directory(runtime.parent):
             runtime.mkdir(exist_ok=True, mode=0o700)
         with open_directory(runtime):

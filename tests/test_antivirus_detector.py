@@ -187,3 +187,49 @@ def test_scope_replaced_after_hash_cannot_name_a_new_file(detector, monkeypatch)
     monkeypatch.setattr(matcher, "digest_file", replace_after_digest)
     assert invoke("run", ref) == 10
     assert profile.review(ref) == []
+
+
+@pytest.mark.parametrize("app_id", ["filesteward", "another-app"])
+def test_configure_initializes_admitted_installed_runtime(tmp_path, monkeypatch, capsys, app_id):
+    from filesteward import runtime_profile
+    from filesteward.policy import paths
+
+    def no_checkout():
+        raise RuntimeError("an installed wheel has no development checkout")
+
+    known = tmp_path / "LocalAppData"
+    application = known / "FileSteward"
+    application.mkdir(parents=True)
+    marker = application / runtime_profile.APPLICATION_MARKER
+    marker.write_text(json.dumps({
+        "schema_version": "filesteward.application-root/v1",
+        "app_id": app_id,
+        "runtime_profile": runtime_profile.PROFILE_ID,
+    }))
+    monkeypatch.setattr(paths, "repository_root", no_checkout)
+    monkeypatch.setattr(runtime_profile, "windows_local_app_data", lambda: known)
+    monkeypatch.setattr(runtime_profile, "_wheel_identity", lambda _: None)
+    root = tmp_path / "approved"
+    root.mkdir()
+    key = Ed25519PrivateKey.generate()
+    bundle = write_bundle(tmp_path / "signed.json", key, 1)
+    args = ["antivirus", "configure", "--root", str(root),
+            "--public-key", key.public_key().public_bytes_raw().hex(), "--bundle", str(bundle)]
+
+    assert not (application / "runtime").exists()
+    assert invoke("check", "f" * 64) == 1
+    assert capsys.readouterr() == ("", "")
+    assert not (application / "runtime").exists()
+    if app_id != "filesteward":
+        assert main(args) == 1
+        assert not (application / "runtime").exists()
+        return
+    assert main(args) == 0
+    profile_id = json.loads(capsys.readouterr().out)["profile"]
+    assert invoke("run", profile_id) == 0
+    assert profile.review(profile_id) == []
+    runtime = application / "runtime" / "var"
+    assert (runtime / "antivirus" / profile_id / "detector.sqlite").is_file()
+    receipt = json.loads((runtime / "runtime-readiness.json").read_text())
+    assert receipt["startup_authority"] == "PRIVATE_RUNTIME_ONLY"
+    assert not (receipt["scan_started"] or receipt["deletion_started"] or receipt["schedule_registered"])
