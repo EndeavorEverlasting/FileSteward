@@ -234,6 +234,11 @@ Real inventories, filenames, hashes, extracted metadata, queue decisions, quaran
 
 ## Workstation performance profiles (isolated observation lane)
 
+The [local antivirus inspection mode](docs/antivirus.md) adds opt-in SHA-256
+matching against signed signature bundles. Findings enter a private FileSteward
+review queue. Host antivirus scheduling and installed providers belong to
+SysAdminSuite.
+
 An opt-in, local-only workstation profiling module records per-host CPU/RAM
 samples when psutil is available and capacity of explicitly declared volumes.
 The module never scans file contents or grants cleanup approval:
