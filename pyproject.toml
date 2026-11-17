@@ -13,6 +13,7 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.optional-dependencies]
+antivirus = ["cryptography>=44"]
 profiles = ["psutil>=6,<9"]
 
 [project.scripts]

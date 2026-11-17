@@ -6,6 +6,7 @@ Command vocabulary is owned by the active plan: ``scan`` / ``validate`` /
 invent a competing command system, and it contains no cleanup judgment:
 it only parses arguments, invokes owned run/delete seams, and maps
 outcomes to exit codes.
+The opt-in ``antivirus`` command delegates to the separate local detector.
 ``apply`` is a refusal seam — it never mutates anything. ``plan`` is
 read-only receipt triage (path-prefix buckets); it never nominates
 reclaim or grants approval. ``visualize`` is read-only report publication
@@ -30,6 +31,7 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 import filesteward
+from filesteward.antivirus.cli import add_parser as add_antivirus_parser, dispatch as dispatch_antivirus
 from filesteward.classify import CacheContract
 from filesteward.deletion import (
     DELETE_APPROVAL_FILENAME,
@@ -89,6 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    add_antivirus_parser(subparsers)
     launch = subparsers.add_parser("launch", help="open the local welcome app without scanning")
     launch.add_argument("--no-browser", action="store_true")
     launch.add_argument("--port", type=int, default=0)
@@ -703,6 +706,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
 
+    if args.command == "antivirus":
+        return dispatch_antivirus(args)
     if args.command == "launch":
         from filesteward.launch import main as launch_main
         launch_args = ["--port", str(args.port)]
