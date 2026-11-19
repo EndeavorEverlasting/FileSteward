@@ -1,0 +1,36 @@
+{
+  "schema_version": "filesteward.antivirus-detection/v1",
+  "owner": "FileSteward",
+  "inspection": {
+    "opt_in": "EXPLICIT_LOCAL_DIRECTORY",
+    "directory_binding": "DIRECTORY_IDENTITY",
+    "scope": "IMMEDIATE_ELIGIBLE_REGULAR_FILES",
+    "policy_trust": "APPROVED_ED25519_KEY",
+    "bundle_update": "VERIFIED_STRICTLY_INCREASING_SEQUENCE"
+  },
+  "review_item": {
+    "evidence": "EXACT_SHA256_MATCH",
+    "disposition": "HUMAN_REVIEW",
+    "authorization_state": "UNAPPROVED",
+    "visibility": "LOCAL_ONLY",
+    "remediation": "SEPARATE_OPERATOR_APPROVAL_REQUIRED"
+  },
+  "scheduler": {
+    "consumer": "SysAdminSuite",
+    "operations": {
+      "check": "VALIDATE_POLICY_AND_SCOPE",
+      "run": "INSPECT_APPROVED_SCOPE"
+    },
+    "transport": "EXIT_STATUS_ONLY",
+    "exit_codes": {
+      "COMPLETED": 0,
+      "LOCAL_STATE_UNAVAILABLE": 1,
+      "INCOMPLETE": 10,
+      "POLICY_REJECTED": 12,
+      "DEPENDENCY_UNAVAILABLE": 13
+    },
+    "completion_is_match_independent": true,
+    "forwards_file_evidence": false,
+    "grants_action_authority": false
+  }
+}

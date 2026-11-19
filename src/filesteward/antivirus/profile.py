@@ -10,7 +10,7 @@ from contextlib import closing, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from filesteward.models import CleanupDisposition
+from filesteward.models import AuthorizationState, CleanupDisposition
 from filesteward.policy.paths import is_lexically_within, runtime_root
 from filesteward.runtime_profile import initialize_installed_runtime, resolve_installed_runtime
 
@@ -148,6 +148,7 @@ def review(profile: str) -> list[dict]:
         )
         return [{
             "disposition": CleanupDisposition.HUMAN_REVIEW.value,
+            "authorization_state": AuthorizationState.UNAPPROVED.value,
             "evidence": "EXACT_SHA256_MATCH",
             "path": os.fsdecode(path),
             "sha256": digest,
