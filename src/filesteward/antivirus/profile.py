@@ -124,7 +124,11 @@ def run(profile: str, *, validate_only: bool = False) -> bool:
     with profile_state(profile) as (db, config, _, bundle):
         scope = Path(config["scope"])
         expected = tuple(config["identity"])
-        if scope_identity(scope) != expected:
+        try:
+            current = scope_identity(scope)
+        except (FileNotFoundError, NotADirectoryError) as exc:
+            raise ValueError("Approved directory is missing or no longer a directory") from exc
+        if current != expected:
             raise ValueError("Approved directory identity changed")
         if validate_only:
             return True
