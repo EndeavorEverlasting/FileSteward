@@ -1,7 +1,10 @@
 # Local antivirus inspection
 
 FileSteward owns the detector's scope, signature trust and human-review
-queue. The first inspection mode compares SHA-256 digests against an
+queue. SysAdminSuite owns installed antivirus providers and job scheduling.
+The [versioned detection contract](../src/filesteward/contracts/antivirus-detection.v1.json)
+defines the public interface. Read it with `filesteward antivirus contract`
+without providing a profile or accessing local evidence. The first inspection mode compares SHA-256 digests against an
 operator-approved set. Normal inventory still uses its metadata-only path.
 
 ## Approve a local profile
@@ -55,7 +58,7 @@ database as trust state when restoring backups.
 
 | FileSteward observation | Judgment |
 | --- | --- |
-| Exact hash match | Write `EXACT_SHA256_MATCH` and `HUMAN_REVIEW` with the observed path, digest, bundle version and observation time. |
+| Exact hash match | Write `EXACT_SHA256_MATCH`, `HUMAN_REVIEW` and `UNAPPROVED` with the observed path, digest, bundle version and observation time. |
 | Complete scan without a match | Coverage is complete for this scope and bundle. File safety remains undetermined. |
 | Partial scan, with or without a match | Retain observed matches while the original directory identity can be confirmed. Report incomplete coverage. |
 | A file moves, changes, or stops matching a later bundle | The previous item remains historical evidence. Check the current file and applicable signature before deciding. |
@@ -75,7 +78,11 @@ SysAdminSuite may run a FileSteward profile through its installed interpreter
 using Python isolation and `-m filesteward.cli antivirus run --profile PROFILE_ID`.
 The same invocation with `check` validates profile policy and directory
 identity before registration. Both commands are quiet for a well-formed
-invocation. Consume only the process exit status.
+invocation. Consume only the process exit status. A completed check means
+policy and scope were validated. A completed run means the scan finished.
+Neither outcome carries match evidence, a safety verdict, or action approval.
+A newer trust bundle can change future observations. Prior findings remain
+historical and retain their original review and approval states.
 
 | Exit | Meaning |
 | ---: | --- |

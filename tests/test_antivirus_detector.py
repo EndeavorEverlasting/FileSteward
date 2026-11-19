@@ -63,6 +63,7 @@ def test_exact_match_is_private_idempotent_review_only(detector, capsys):
     [finding] = profile.review(ref)
     assert finding["path"] == str(candidate)
     assert finding["disposition"] == "HUMAN_REVIEW"
+    assert finding["authorization_state"] == "UNAPPROVED"
     assert finding["evidence"] == "EXACT_SHA256_MATCH"
     assert finding["bundle_sequence"] == 1
     assert candidate.read_bytes() == CONTROL
@@ -233,3 +234,29 @@ def test_configure_initializes_admitted_installed_runtime(tmp_path, monkeypatch,
     receipt = json.loads((runtime / "runtime-readiness.json").read_text())
     assert receipt["startup_authority"] == "PRIVATE_RUNTIME_ONLY"
     assert not (receipt["scan_started"] or receipt["deletion_started"] or receipt["schedule_registered"])
+
+
+def test_published_detector_contract_is_public_and_profile_independent(detector, monkeypatch, capsys):
+    from filesteward.models import AuthorizationState, authorization_allows_mutation
+
+    root, _, _, ref = detector
+    sample = root / "match.txt"
+    sample.write_bytes(CONTROL)
+
+    assert invoke("run", ref) == 0
+    (finding,) = profile.review(ref)
+    monkeypatch.setattr(profile, "profile_state", lambda *_: pytest.fail("contract accessed private state"))
+
+    assert main(["antivirus", "contract"]) == 0
+    output = capsys.readouterr().out
+    assert str(root) not in output and ref not in output and finding["sha256"] not in output
+    metadata = json.loads(output)
+    assert metadata["schema_version"] == "filesteward.antivirus-detection/v1"
+    for key in ("evidence", "disposition", "authorization_state"):
+        assert finding[key] == metadata["review_item"][key]
+    assert not authorization_allows_mutation(AuthorizationState(finding["authorization_state"]))
+    transport = metadata["scheduler"]
+    assert transport["transport"] == "EXIT_STATUS_ONLY"
+    assert transport["completion_is_match_independent"] is True
+    assert transport["forwards_file_evidence"] is False
+    assert transport["grants_action_authority"] is False

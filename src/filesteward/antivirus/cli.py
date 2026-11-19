@@ -4,20 +4,23 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
+from functools import cache
+from importlib.resources import files
 from pathlib import Path
 
 from . import profile
 
-COMPLETED = 0
-STATE_UNAVAILABLE = 1
-INCOMPLETE = 10
-POLICY_REJECTED = 12
-DEPENDENCY_UNAVAILABLE = 13
+
+@cache
+def _detector_contract() -> dict:
+    resource = files("filesteward").joinpath("contracts", "antivirus-detection.v1.json")
+    return json.loads(resource.read_text(encoding="utf-8"))
 
 
 def add_parser(subparsers) -> None:
     antivirus = subparsers.add_parser("antivirus", help="opt in to local SHA-256 content inspection")
     actions = antivirus.add_subparsers(dest="antivirus_action", required=True)
+    actions.add_parser("contract", help="print the versioned public detector semantics")
     configure = actions.add_parser("configure", help="approve one local directory and signing key")
     configure.add_argument("--root", type=Path, required=True)
     configure.add_argument("--public-key", required=True, help="32-byte Ed25519 public key in lowercase hex")
@@ -36,6 +39,11 @@ def add_parser(subparsers) -> None:
 
 def dispatch(args: argparse.Namespace) -> int:
     action = args.antivirus_action
+    contract = _detector_contract()
+    if action == "contract":
+        print(json.dumps(contract, indent=2))
+        return 0
+    exit_codes = contract["scheduler"]["exit_codes"]
     quiet = action in {"run", "check"}
     try:
         if action == "configure":
@@ -45,19 +53,18 @@ def dispatch(args: argparse.Namespace) -> int:
         elif action == "review":
             print(json.dumps(profile.review(args.profile), indent=2))
         else:
-            return COMPLETED if profile.run(args.profile, validate_only=action == "check") else INCOMPLETE
+            complete = profile.run(args.profile, validate_only=action == "check")
+            return exit_codes["COMPLETED" if complete else "INCOMPLETE"]
     except (ValueError, RecursionError):
-        status = POLICY_REJECTED
+        status = "POLICY_REJECTED"
     except ImportError:
-        status = DEPENDENCY_UNAVAILABLE
+        status = "DEPENDENCY_UNAVAILABLE"
     except (OSError, RuntimeError, sqlite3.Error):
-        status = STATE_UNAVAILABLE
+        status = "LOCAL_STATE_UNAVAILABLE"
     else:
-        return COMPLETED
+        return exit_codes["COMPLETED"]
     if not quiet:
         print(json.dumps({"status": {
-            POLICY_REJECTED: "POLICY_REJECTED",
-            DEPENDENCY_UNAVAILABLE: "INSTALL_ANTIVIRUS_EXTRA",
-            STATE_UNAVAILABLE: "LOCAL_STATE_UNAVAILABLE",
-        }[status]}))
-    return status
+            "DEPENDENCY_UNAVAILABLE": "INSTALL_ANTIVIRUS_EXTRA",
+        }.get(status, status)}))
+    return exit_codes[status]
