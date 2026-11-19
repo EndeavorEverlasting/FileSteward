@@ -62,7 +62,8 @@ database as trust state when restoring backups.
 | Complete scan without a match | Coverage is complete for this scope and bundle. File safety remains undetermined. |
 | Partial scan, with or without a match | Retain observed matches while the original directory identity can be confirmed. Report incomplete coverage. |
 | A file moves, changes, or stops matching a later bundle | The previous item remains historical evidence. Check the current file and applicable signature before deciding. |
-| Invalid signature or changed scope | Reject the policy before reading scan contents. |
+| Invalid signature | Reject the policy before reading scan contents. |
+| Approved directory missing, replaced by a file, or changed identity | Reject the policy before reading scan contents. Prior review items stay available for the same profile. |
 
 Review items are deduplicated per profile, path and digest. `review` emits
 private evidence for the local operator. Keep this output and the profile

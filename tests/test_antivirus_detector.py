@@ -117,6 +117,39 @@ def test_scope_identity_change_invalidates_opt_in(detector, capsys):
     assert profile.review(ref) == []
 
 
+@pytest.mark.parametrize("replacement_file", [False, True], ids=["missing", "file"])
+def test_missing_approved_scope_rejects_policy_and_retains_review(
+    detector, monkeypatch, capsys, replacement_file
+):
+    root, _, _, ref = detector
+    (root / "match.txt").write_bytes(CONTROL)
+    assert invoke("run", ref) == 0
+    historical = profile.review(ref)
+    assert len(historical) == 1
+
+    root.rename(root.with_name("moved"))
+    if replacement_file:
+        root.write_bytes(CONTROL)
+    monkeypatch.setattr(profile, "scan_directory", lambda *_: pytest.fail("Invalid scope reached scanner"))
+
+    assert invoke("check", ref) == 12
+    assert invoke("run", ref) == 12
+    assert capsys.readouterr() == ("", "")
+    assert profile.review(ref) == historical
+
+
+def test_scope_read_failure_reports_unavailable_state(detector, monkeypatch, capsys):
+    _, _, _, ref = detector
+
+    def inaccessible(_):
+        raise PermissionError("Synthetic temporary access failure")
+
+    monkeypatch.setattr(profile, "scope_identity", inaccessible)
+    assert invoke("check", ref) == 1
+    assert invoke("run", ref) == 1
+    assert capsys.readouterr() == ("", "")
+
+
 def test_nested_and_linked_files_remain_out_of_scope(detector, tmp_path):
     root, _, _, ref = detector
     nested = root / "directory"
