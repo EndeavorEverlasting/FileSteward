@@ -1,0 +1,175 @@
+{
+  "schema_version": "filesteward.downloads-first-review/v1",
+  "owner": "FileSteward welcome launch workflow; scope discovery and admission are server-owned, never presentation policy",
+  "canonical_references": [
+    "docs/agent/CANONICAL-PATHS.md",
+    "src/filesteward/contracts/runtime-profile.v1.json",
+    "docs/agent/LOCAL-AGENT-PROTECTIONS.md",
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/contracts/action-scene-impact.v1.json"
+  ],
+  "operating_modes": {
+    "startup": "NO_PERSONAL_SCAN",
+    "preview": "OBSERVATION_ONLY_UNTIL_BOUND_CURRENT_REVIEW",
+    "review": "EXPLICIT_SINGLE_SCOPE_METADATA_ONLY"
+  },
+  "windows": {
+    "downloads_known_folder_guid": "374DE290-123F-4565-9164-39C4925E467B",
+    "resolver": "SHGetKnownFolderPath(FOLDERID_Downloads)",
+    "forbidden_fallbacks": [
+      "USERPROFILE/Downloads",
+      "HOME/Downloads",
+      "cwd",
+      "executable_directory",
+      "LocalAppData/FileSteward",
+      "another_disk_or_folder"
+    ],
+    "installation_profile": "windows-localappdata/v1"
+  },
+  "default_scope": {
+    "root_source": "operating_system_known_folder_only",
+    "effective_scope": "resolved_Downloads_and_descendants",
+    "preflight": "OS known-folder read plus existing admit_scan_root safety checks; no traversal/ownership collector",
+    "drift_policy": "re-resolve and compare original OS known-folder path and pinned root/ancestor identities before scan; refuse on change",
+    "eligibility_protection": "reuse existing forbidden-root, drive-root, symlink/reparse and inaccessible-directory refusal without exemption for Downloads",
+    "output_location": "existing runtime_root()/runs/<run_id>; never the reviewed Downloads folder"
+  },
+  "api": {
+    "recommend": {
+      "method": "GET",
+      "path": "/api/v1/launch/recommended-scope",
+      "effect": "DISCOVER_ONLY",
+      "success_fields": [
+        "kind",
+        "display_name",
+        "display_path",
+        "available",
+        "scope_token"
+      ],
+      "unavailable_fields": [
+        "kind",
+        "display_name",
+        "available",
+        "reason"
+      ],
+      "token_lifetime_seconds": 600,
+      "token_storage": "memory-only session-bound opaque single-use"
+    },
+    "begin": {
+      "method": "POST",
+      "path": "/api/v1/launch/current-scan",
+      "auth": "existing Host+Origin+session-header admission",
+      "default_body_keys": [
+        "scope_token"
+      ],
+      "legacy_body_keys": [
+        "scan_root"
+      ],
+      "default_root_trust": "ignore client claimed path; resolve from server-bound token; call existing begin_current_scan/CurrentScanScope machinery"
+    },
+    "choose": {
+      "method": "POST",
+      "path": "/api/v1/launch/choose-folder",
+      "auth": "existing Host+Origin+session-header admission",
+      "effect": "interactive_native_Windows_folder_picker_only; never starts a scan",
+      "return": "selected scope display + opaque session token; cancellation is no-op",
+      "failure": "NO_INTERACTIVE_DESKTOP or PICKER_UNAVAILABLE must be surfaced without guessed path",
+      "body_keys": [
+        "intent"
+      ],
+      "intent_value": "choose",
+      "cancel_response": {
+        "state": "CANCELED",
+        "scan_started": false
+      },
+      "selection_response": {
+        "state": "SELECTED",
+        "display_path": "<server-selected-absolute-path>",
+        "scope_token": "<opaque-session-bound-token>",
+        "scan_started": false
+      }
+    }
+  },
+  "welcome": {
+    "card_title": "Start with Downloads",
+    "main_text": "Review names, sizes, dates, folders, and ownership evidence in Downloads and its subfolders. File contents stay closed. Nothing is moved or deleted.",
+    "scope_caption": "Folder: {display_path}",
+    "primary_label": "Review Downloads",
+    "primary_element_id": "review-downloads",
+    "secondary_label": "Choose another folder",
+    "secondary_element_id": "choose-folder",
+    "sample_label": "Explore sample",
+    "no_default_message": "Downloads is not available for a safe review. No files were scanned. Choose another folder or explore the sample.",
+    "busy_message": "Reading Downloads metadata and ownership evidence\u2026",
+    "success_transition": "automatic existing /api/v1/launch/open navigation to current review for READY/PARTIAL/EMPTY, without a second click; preserve partial/empty warnings",
+    "error_transition": "remain on welcome, report cause truthfully, allow retry after fresh discovery; no false success"
+  },
+  "states": [
+    {
+      "id": "WELCOME_DISCOVERING",
+      "event": "startup",
+      "effect": "discover default scope only"
+    },
+    {
+      "id": "WELCOME_READY",
+      "event": "eligible known folder",
+      "effect": "show one primary review action and scope"
+    },
+    {
+      "id": "WELCOME_UNAVAILABLE",
+      "event": "missing, forbidden, inaccessible, linked or non-Windows default",
+      "effect": "no review activation; explain and offer alternate/sample"
+    },
+    {
+      "id": "FOLDER_CHOOSING",
+      "event": "explicit alternative selection",
+      "effect": "native OS picker, no scan"
+    },
+    {
+      "id": "FOLDER_SELECTED",
+      "event": "picker success",
+      "effect": "show selected scope and separate Review selected folder action; still no scan"
+    },
+    {
+      "id": "REVIEW_READING",
+      "event": "single explicit click on Review Downloads or Review selected folder",
+      "effect": "one authenticated current-scan operation; disable duplicate activation"
+    },
+    {
+      "id": "REVIEW_READY",
+      "event": "READY/PARTIAL/EMPTY",
+      "effect": "automatically open existing current-review flow"
+    },
+    {
+      "id": "REVIEW_ERROR",
+      "event": "admission/identity/collector error",
+      "effect": "fail closed, show error and retry"
+    }
+  ],
+  "invariant_ids": [
+    "D01_no_scan_on_open_or_discovery",
+    "D02_one_click_begins_and_opens_review",
+    "D03_current_scope_explicit_metadata_only",
+    "D04_os_knownfolder_not_guessed",
+    "D05_forbidden_and_linked_paths_still_refused",
+    "D06_drift_between_display_and_click_refused",
+    "D07_client_cannot_forge_scope_or_eligibility",
+    "D08_existing_local_request_auth",
+    "D09_one_job_and_no_automatic_retry",
+    "D10_sample_import_and_old_captures_remain_observational",
+    "D11_no_move_quarantine_delete_schedule_content_read_or_upload",
+    "D12_runtime_storage_stays_os_owned",
+    "D13_keyboard_touch_narrow_reduced_motion_forced_colors",
+    "D14_picker_cancel_does_not_scan",
+    "D15_partial_unknown_protected_not_promoted",
+    "D16_after_process_restart_requires_new_click"
+  ],
+  "proof_owners": {
+    "synthetic": "tests/test_downloads_first_review_acceptance.py and existing tests/test_launch_current_review.py",
+    "contract": "tests/test_downloads_first_review_contract.py",
+    "browser": "tests/test_current_review_browser.py plus new first-click journey",
+    "windows_live": "Windows KnownFolder discovery and native dialog proof on isolated test profile only, no personal scan",
+    "safety_floor": "existing launch/current-review, runtime-profile, judgment-scene regression tests"
+  },
+  "integration_state": "IMPLEMENTED_SOURCE_CANDIDATE_0.19.0; synthetic API/browser locally validated; full proof in runtime receipts; isolated Windows native interactive acceptance UNPROVEN; not merged or released"
+}

@@ -47,6 +47,16 @@ MAX_IMPORT_BYTES = 32 * 1024 * 1024
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
 
+def windows_downloads_known_folder():
+    from filesteward.windows_folders import windows_downloads_known_folder as resolve
+    return resolve()
+
+
+def pick_windows_folder():
+    from filesteward.windows_folders import pick_windows_folder as choose
+    return choose()
+
+
 class CurrentScanScope:
     """Bind explicit admission to directory objects, not reusable path names."""
 
@@ -82,7 +92,8 @@ class CurrentScanScope:
     def pinned(self):
         """Windows handles deny ancestor rename/reparse replacement during reads.
 
-        Attribute-only access, no deletion or content-read capability. Other
+        Attribute access plus root directory-list permission, no file-content
+        or deletion capability. Other
         platforms retain boundary identity checks and never claim atomic pins.
         """
         self.validate()
@@ -98,9 +109,11 @@ class CurrentScanScope:
                 api.CloseHandle.argtypes = [wintypes.HANDLE]
                 api.CloseHandle.restype = wintypes.BOOL
                 for part, expected in self.identities.items():
-                    # FILE_READ_ATTRIBUTES; share READ only; OPEN_EXISTING;
+                    # FILE_READ_ATTRIBUTES (+ FILE_LIST_DIRECTORY on root);
+                    # share READ only; OPEN_EXISTING;
                     # OPEN_REPARSE_POINT | BACKUP_SEMANTICS. Pin parents first.
-                    handle = api.CreateFileW(str(part), 0x80, 1, None, 3, 0x02200000, None)
+                    handle = api.CreateFileW(str(part), 0x81 if part == self.root else 0x80,
+                        1, None, 3, 0x02200000, None)
                     if handle == ctypes.c_void_p(-1).value:
                         raise ValueError("Cannot pin the admitted folder for a safe metadata review")
                     try:
@@ -238,6 +251,69 @@ class LaunchSession:
         self.scan_job = None
         self.scan_lock = threading.Lock()
         self.stopping = False
+        self.scope_tokens = {}
+        self.scope_clock = time.monotonic
+
+    def _offer_scope(self, root, kind):
+        root = self.admit_scan_root(str(root))
+        if not os.access(root, os.R_OK | os.X_OK):
+            raise ValueError("This folder is inaccessible. Choose another folder")
+        scope = CurrentScanScope(root)
+        with scope.pinned():
+            scope.validate()
+        now = self.scope_clock()
+        with self.lock:
+            self.scope_tokens = {key: value for key, value in self.scope_tokens.items()
+                if 0 <= now - value[2] < 600}
+            while len(self.scope_tokens) >= 64:
+                self.scope_tokens.pop(next(iter(self.scope_tokens)))
+            token = secrets.token_urlsafe(32)
+            self.scope_tokens[token] = (kind, scope, now)
+        return dict(display_path=str(root), scope_token=token)
+
+    def recommended_scope(self):
+        result = dict(kind="downloads", display_name="Downloads")
+        try:
+            if self.stopping:
+                raise ValueError("The local app is closing. Reopen FileSteward")
+            return dict(result, available=True,
+                **self._offer_scope(windows_downloads_known_folder(), "downloads"))
+        except (OSError, ValueError, RuntimeError) as error:
+            return dict(result, available=False, reason=str(error))
+
+    def choose_folder(self, payload):
+        if payload != {"intent": "choose"}:
+            raise ValueError("Submit only the folder chooser intent")
+        if not self.scan_lock.acquire(blocking=False):
+            raise ValueError("A folder review or selection is already active")
+        try:
+            if self.stopping:
+                raise ValueError("The local app is closing. Reopen FileSteward")
+            selected = pick_windows_folder()
+            if selected is None:
+                return dict(state="CANCELED", scan_started=False)
+            return dict(state="SELECTED", scan_started=False,
+                **self._offer_scope(selected, "selected"))
+        finally:
+            self.scan_lock.release()
+
+    def _consume_scope(self, token):
+        if not isinstance(token, str) or not 1 <= len(token) <= 256:
+            raise ValueError("A valid folder scope token is required")
+        with self.lock:
+            bound = self.scope_tokens.pop(token, None)
+        if bound is None:
+            raise ValueError("Folder scope expired or was already used. Review the displayed scope again")
+        kind, scope, issued = bound
+        if not 0 <= self.scope_clock() - issued < 600:
+            raise ValueError("Folder scope expired. Review the displayed scope again")
+        if kind == "downloads":
+            resolved = self.admit_scan_root(str(windows_downloads_known_folder()))
+            if resolved != scope.root:
+                raise ValueError("Downloads moved since it was displayed. Review the new scope before continuing")
+        self.admit_scan_root(str(scope.root))
+        scope.validate()
+        return scope
 
     def reserve_stop(self):
         # Admission and shutdown share the same reservation. Checking locked()
@@ -265,15 +341,25 @@ class LaunchSession:
         return root
 
     def begin_current_scan(self, payload) -> dict:
-        if not isinstance(payload, dict) or set(payload) != {"scan_root"}:
-            raise ValueError("Submit only the exact folder path; eligibility and proof cannot be supplied by the browser")
-        root = self.admit_scan_root(payload["scan_root"])
-        scope = CurrentScanScope(root)
+        if not isinstance(payload, dict) or set(payload) not in ({"scan_root"}, {"scope_token"}):
+            raise ValueError("Submit only one folder scope; eligibility and proof cannot be supplied by the browser")
+        # Preserve legacy inert path admission and its stop-wins boundary.
+        # Capabilities, unlike path validation, must not be consumed until this
+        # request owns the scan reservation.
+        if "scan_root" in payload:
+            root = self.admit_scan_root(payload["scan_root"])
+            scope = CurrentScanScope(root)
         if not self.scan_lock.acquire(blocking=False):
             raise ValueError("A folder review is already being read. Wait for its result before starting another")
-        if self.stopping:
+        try:
+            if self.stopping:
+                raise ValueError("The local app is closing. Reopen FileSteward before starting a folder review")
+            if "scope_token" in payload:
+                scope = self._consume_scope(payload["scope_token"])
+                root = scope.root
+        except BaseException:
             self.scan_lock.release()
-            raise ValueError("The local app is closing. Reopen FileSteward before starting a folder review")
+            raise
         identifier = "current-" + uuid.uuid4().hex
         self.scan_job = dict(job_id=identifier, state="READING", message="Reading folder metadata and current ownership evidence")
 
@@ -468,9 +554,14 @@ class LaunchSession:
                     if sample else "Imported captured evidence - not a new scan or current deletion authority.")
                 if active:
                     label = "Current folder metadata review - " + str(root) + ". Ownership gaps remain explicit; scan is not action approval."
+                    if self.scan_job and self.scan_job.get("run_id") == identifier:
+                        if self.scan_job.get("state") == "PARTIAL":
+                            label += " Some metadata could not be read; inspect the explicit gaps."
+                        elif self.scan_job.get("state") == "EMPTY":
+                            label += " This folder has no entries to review."
                 elif marker.get("source_kind") == "native-current":
                     label = "Captured folder evidence - start a new folder review to refresh current ownership."
-                banner = '<nav style="padding:14px 24px;background:#fffaf1;border-bottom:1px solid #c8b8a4">' \
+                banner = '<nav style="padding:14px 24px;background:#fffaf1;border-bottom:1px solid #c8b8a4;overflow-wrap:anywhere">' \
                     + '<a href="' + escape(self.origin, quote=True) + '/">Back to launch</a> &middot; ' + escape(label) + '</nav>'
                 html = html.replace("<body>", "<body>" + banner, 1)
                 if sample:
@@ -552,12 +643,14 @@ def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> t
                 return self.send(200, dict(version=__version__, runs=session.recent(), allowedImportFiles=sorted(IMPORT_FILES)))
             if path == "/api/v1/launch/current-scan":
                 return self.send(200, session.scan_job or dict(state="IDLE"))
+            if path == "/api/v1/launch/recommended-scope":
+                return self.send(200, session.recommended_scope())
             if path.startswith("/review/"):
                 identifier = path[len("/review/"):]
                 try:
                     session.open_review(identifier)
                     location = session.reviews[identifier].url
-                except (ValueError, OSError, TypeError, KeyError):
+                except (ValueError, OSError, TypeError, KeyError, RuntimeError):
                     return self.send(400, {"error":"This review could not be opened"})
                 self.send_response(302); self.send_header("Location", location)
                 self.send_header("Content-Length", "0"); self.end_headers(); return
@@ -583,6 +676,8 @@ def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> t
                 path = urlparse(self.path).path
                 if path == "/api/v1/launch/current-scan":
                     return self.send(202, session.begin_current_scan(payload))
+                if path == "/api/v1/launch/choose-folder":
+                    return self.send(200, session.choose_folder(payload))
                 if path == "/api/v1/launch/demo":
                     return self.send(200, {"url":session.sample()})
                 if path == "/api/v1/launch/import":
@@ -595,7 +690,7 @@ def start_server(state_root: Path, port: int = 0, *, resolver_factory=None) -> t
                     threading.Thread(target=session.server.shutdown, daemon=True).start()
                     return
                 return self.send(404, {"error":"Not found"})
-            except (ValueError, OSError, TypeError, KeyError) as error:
+            except (ValueError, OSError, TypeError, KeyError, RuntimeError) as error:
                 return self.send(400, {"error":str(error)})
 
         def do_OPTIONS(self):
