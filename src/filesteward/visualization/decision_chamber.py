@@ -405,7 +405,10 @@ def render_decision_chamber_script() -> str:
       label: 'Review removal options',
       explain: 'Record your choice to remove this generated output and open its exact scope. No files are changed.'
     },
-    RESCAN: { label: 'Rescan this item', explain: 'Refresh the evidence for this item without removing it.' }
+    RESCAN: {
+      label: 'Request a rescan',
+      explain: 'Save a rescan request. Start a new folder scan to refresh the evidence.'
+    }
   };
   const intentLabel = (intent) => intentCopy[intent]?.label || intent.replace(/_/g, ' ');
 
