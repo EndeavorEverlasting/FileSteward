@@ -16,6 +16,12 @@ One deliberate **DELETE PERMANENTLY** commit on an exact visible eligible scope 
 
 Quarantine approval does not authorize permanent deletion.
 
+The execution receipt is the primary outcome record. The review bridge can
+recover completed items and saved decision counts from a receipt bound to the
+current run, cleanup plan, manifest, approval, and exact item path if the
+secondary decision index could not be written. Failed and skipped items stay
+eligible for their existing residual review path.
+
 ## Pointer rule
 
 The physical-pointer reticle belongs to pointer coordinates. Keyboard/focus presentation must not teleport that reticle. Range selection is an explicit map-drag gesture, not a default consequence of ordinary non-chrome clicks.
