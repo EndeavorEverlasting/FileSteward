@@ -443,13 +443,15 @@ class ReviewBridge:
                     if node is not None:
                         node.authorization_state = AuthorizationState.APPROVED_FOR_ACTION
 
-    def _persist_decisions(self) -> None:
+    def _persist_decisions(
+        self, decisions: Mapping[str, dict[str, object]] | None = None
+    ) -> None:
         payload = {
             "schema_version": _DECISION_SCHEMA,
             "run_id": self.run_id,
             "cleanup_plan_sha256": self.cleanup_plan_sha256,
             "updated_at": _utc_now(),
-            "decisions": self._decisions,
+            "decisions": self._decisions if decisions is None else decisions,
         }
         _atomic_write_json(self.decision_state_path(), payload)
 
@@ -708,14 +710,16 @@ class ReviewBridge:
             if intent is DecisionIntent.APPROVE_QUARANTINE:
                 raise ValueError("approval must use POST /api/v1/approval")
             flow = choose_intent(session, intent)
-            self._decisions[request.item_id] = {
+            decisions = dict(self._decisions)
+            decisions[request.item_id] = {
                 "intent": request.intent.value,
                 "evidence_disposition": node.disposition.value,
                 "recorded_at": _utc_now(),
                 "label": f"Decision: {request.intent.value.replace('_', ' ')} REQUESTED",
                 "evidence_digest": resolution["evidence_digest"],
             }
-            self._persist_decisions()
+            self._persist_decisions(decisions)
+            self._decisions = decisions
             self._scene_revision += 1
             self._last_transition = flow.last_transition
             if intent is DecisionIntent.RECLAIM_GENERATED_OUTPUT:

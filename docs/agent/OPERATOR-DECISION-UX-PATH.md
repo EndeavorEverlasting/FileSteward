@@ -62,3 +62,24 @@ classify -> decide -> authorize -> reclaim -> verify
 Exploration/orientation supports that journey rather than replacing it.
 
 Classification and decision results must remain available to later filterable views and decision queues after authoritative readback.
+
+### Storage coverage
+
+The coverage denominator is the sum of measured logical bytes for regular files
+in the validated inventory snapshot. Directory totals, symbolic links, reparse points and
+cloud placeholders are excluded. Unmeasured file sizes remain visible as counts.
+Sectors group files by immediate folder under the recorded scan root and retain
+separate rows for root-level files and paths with an unavailable sector. Coverage
+must use the full inventory even when Atlas renders a bounded group view.
+
+Classified bytes have a persisted `KEEP_PROVEN`, `PROTECTED` or
+`RECLAIM_PROVEN` disposition. `HUMAN_REVIEW` and `UNKNOWN` contribute to the
+unclassified side. Sector breakdowns retain all five dispositions. A decision
+count is a separate projection of local review readback. Classification,
+operator choice, authorization, and measured reclaim are separate facts.
+Coverage renders the scan snapshot, including after a removal receipt. A new
+scan supplies a new snapshot.
+
+The Decision Chamber is the action surface. Present the exact subject, allowed
+action and consequence before the operator commits. Quarantine staging leaves
+bytes in place. Permanent deletion remains the separate bounded path above.

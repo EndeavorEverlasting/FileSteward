@@ -87,6 +87,36 @@ def test_keep_advances_to_a_different_unknown_item(tmp_path: Path) -> None:
     assert replay["selected_node_id"] == "unknown-b"
 
 
+def test_failed_decision_persistence_does_not_publish_intent(tmp_path, monkeypatch) -> None:
+    node = _unknown_node("unknown-a")
+    bridge = ReviewBridge(
+        run_dir=tmp_path,
+        run_id="continuity-run",
+        cleanup_plan_sha256="a" * 64,
+        session_token="token",
+        report_html="",
+        _nodes={node.node_id: node},
+    )
+
+    def fail_write(*args):
+        raise OSError("synthetic write failure")
+
+    request = DecisionRequest(bridge.run_id, node.node_id, DecisionBridgeIntent.KEEP)
+    with monkeypatch.context() as patch:
+        patch.setattr("filesteward.review_bridge._atomic_write_json", fail_write)
+        with pytest.raises(OSError, match="synthetic write failure"):
+            bridge.record_decision(request)
+
+    before_retry = bridge.state_payload(node.node_id)
+    assert before_retry["classification_views"]["operator_intents"] == {}
+    assert before_retry["scene_revision"] == 0
+    assert "KEEP" in before_retry["allowed_intents"]
+    result = bridge.record_decision(request)
+    assert result["classification_views"]["operator_intents"] == {"KEEP": 1}
+    assert result["scene_revision"] == 1
+    assert bridge.decision_state_path().is_file()
+
+
 def test_cue_bind_fields_are_complete() -> None:
     node = _unknown_node("unknown-a")
     cue = cue_for_map_node(node, selected=False)

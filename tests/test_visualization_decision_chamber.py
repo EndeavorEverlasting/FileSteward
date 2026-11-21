@@ -91,9 +91,9 @@ def test_unknown_status_is_operable_and_opens_gate_scene() -> None:
     assert "filesteward:atlas-home" in html
     assert "requestedScene" in html
     assert "approval_locked_no_reclaim_authority" in html
-    assert "GATE — inspect the first unresolved evidence gate" in html
-    assert "RESOLVE — only decision_flow.allowed_intents()" in html
-    assert "APPROVAL — authorize exact quarantine scope" in html
+    assert "Inspect the first unresolved evidence gate" in html
+    assert "Choose what to do with this item." in html
+    assert "Review the exact scope before choosing a removal action." in html
     assert "chamber-next-actions" in html
     assert "stage_removal_locked" in html
     assert "sceneForDispositionLabel" in html
@@ -135,4 +135,4 @@ def test_fetch_state_does_not_force_staged_over_server_approval() -> None:
     fetch_body = html.split("const fetchState =", 1)[1].split("const nextOfflineItemId", 1)[0]
     assert "state.openDecisionScene = requestedScene" not in fetch_body
     assert "runtime.scanRoot" in html or "bridge.scanRoot" in html
-    assert "delete_permanently_missing_scan_root" in html
+    assert "itemId !== state.selectedNodeId || !canDeleteSelection()" in html
