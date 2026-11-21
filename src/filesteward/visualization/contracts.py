@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Optional
 
 from filesteward.models import AuthorizationState, CleanupDisposition, ScanCompleteness
+from filesteward.visualization.storage_coverage import StorageCoverage
 
 __all__ = [
     "GateStep",
@@ -148,6 +149,7 @@ class PresentationModel:
     metrics: ShellMetrics
     root_ids: tuple[str, ...] = ()
     default_selected_id: Optional[str] = None
+    storage_coverage: StorageCoverage | None = None
 
     def __post_init__(self) -> None:
         if not self.run_id:

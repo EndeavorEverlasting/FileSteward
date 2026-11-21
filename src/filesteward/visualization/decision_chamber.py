@@ -64,16 +64,17 @@ def render_decision_chamber_markup() -> str:
 
   <section class="chamber-next-actions" id="chamber-next-actions" aria-label="Scene next actions" hidden>
     <div class="next-actions-head">
-      <strong>NEXT ACTIONS</strong>
+      <strong>YOUR OPTIONS</strong>
       <span id="chamber-blocker-line">Legal intents for this evidence state</span>
     </div>
+    <p id="chamber-delete-scope" hidden>Permanent deletion target <bdi class="mono" id="chamber-delete-path"></bdi></p>
     <div class="next-actions-row" id="chamber-next-actions-row" role="group"></div>
   </section>
 
   <div class="chamber-actions" id="chamber-actions" role="group" aria-label="Legal operator intents"></div>
 
   <section class="chamber-approval" id="chamber-approval" hidden>
-    <h3>APPROVAL SCOPE</h3>
+    <h3>Quarantine staging scope</h3>
     <dl>
       <dt>Node</dt><dd id="approval-node">—</dd>
       <dt>Path</dt><dd class="mono" id="approval-path">—</dd>
@@ -131,6 +132,8 @@ def render_decision_chamber_css() -> str:
 .chamber-next-actions{padding:.55rem;border:1px solid var(--fs-border-subtle);border-radius:4px;background:color-mix(in srgb,var(--fs-accent) 8%,var(--fs-bg-surface-1));}
 .chamber-next-actions[hidden]{display:none!important;}
 .chamber-next-actions .next-action[data-consequence="READ_ONLY"]{cursor:help;}
+#chamber-delete-scope{margin:.25rem 0 .65rem;overflow-wrap:anywhere;}
+#chamber-delete-path{display:block;margin-top:.2rem;}
 .decision-chamber[data-open-scene="GATE"]{border-color:var(--fs-state-review-edge);}
 .decision-chamber[data-open-scene="RESOLVE"]{border-color:var(--fs-accent);}
 .decision-chamber[data-open-scene="APPROVAL"],.decision-chamber[data-open-scene="STAGED"]{
@@ -395,12 +398,31 @@ def render_decision_chamber_script() -> str:
     });
   };
 
-  const intentLabel = (intent) => intent.replace(/_/g, ' ');
+  const intentCopy = {
+    KEEP: { label: 'Keep this item', explain: 'Save your choice to keep this item and continue the review.' },
+    REVIEW_LATER: { label: 'Review later', explain: 'Save this item for a later decision and continue the review.' },
+    RECLAIM_GENERATED_OUTPUT: {
+      label: 'Review removal options',
+      explain: 'Record your choice to remove this generated output and open its exact scope. No files are changed.'
+    },
+    RESCAN: {
+      label: 'Request a rescan',
+      explain: 'Save a rescan request. Start a new folder scan to refresh the evidence.'
+    }
+  };
+  const intentLabel = (intent) => intentCopy[intent]?.label || intent.replace(/_/g, ' ');
+
+  const canDeleteSelection = () =>
+    state.openDecisionScene === 'APPROVAL' &&
+    !state.error &&
+    state.allowedIntents.includes('DELETE_PERMANENTLY') &&
+    state.node?.node_id === state.selectedNodeId && Boolean(state.node.path) &&
+    Boolean(bridge?.origin && bridge.deletePath && (bridge.scanRoot || bridge.scan_root));
 
   const sceneBrief = (scene) => {
-    if (scene === 'GATE') return 'GATE — inspect the first unresolved evidence gate. No mutation. UNKNOWN/HUMAN_REVIEW stay locked from reclaim.';
-    if (scene === 'RESOLVE') return 'RESOLVE — only decision_flow.allowed_intents() are operable. Permanent deletion stays locked unless RECLAIM_PROVEN + PASS preflight.';
-    if (scene === 'APPROVAL') return 'APPROVAL — authorize exact quarantine scope (distinct from permanent delete). Eligible RECLAIM_PROVEN evidence may use one DELETE PERMANENTLY commit through the deletion package.';
+    if (scene === 'GATE') return 'Inspect the first unresolved evidence gate before choosing what to do with this item.';
+    if (scene === 'RESOLVE') return 'Choose what to do with this item. FileSteward uses the current evidence to determine which options are available.';
+    if (scene === 'APPROVAL') return 'Review the exact scope before choosing a removal action.';
     if (scene === 'STAGED') return 'STAGED — quarantine receipt recorded. NO BYTES REMOVED. Permanent delete is a separate DELETE PERMANENTLY path.';
     if (scene === 'RESULT') return 'RESULT — deletion receipt/readback. Continue with residual items or verified reclaim.';
     if (scene === 'FOCUS') return 'FOCUS — evidence is framed. Open GATE to inspect, RESOLVE to choose a legal intent.';
@@ -409,14 +431,14 @@ def render_decision_chamber_script() -> str:
   };
 
   const stageRemovalLockedExplain = () => {
-    const upper = ((state.evidence || '') + ' ' + ((state.node && state.node.reclaim_basis) || '')).toUpperCase();
-    if (upper.indexOf('UNKNOWN') >= 0) {
+    const disposition = (state.evidence || '').replace(/ /g, '_').toUpperCase();
+    if (disposition === 'UNKNOWN') {
       return 'STAGE REMOVAL LOCKED — disposition UNKNOWN. Rescan or complete evidence before quarantine. Permanent deletion stays unavailable for this disposition.';
     }
-    if (upper.indexOf('HUMAN') >= 0) {
+    if (disposition === 'HUMAN_REVIEW') {
       return 'STAGE REMOVAL LOCKED — ownership, consequence and recovery facts must be resolved by evidence adapters. Keep or review later; permanent deletion is unavailable.';
     }
-    if (upper.indexOf('PROTECTED') >= 0 || upper.indexOf('KEEP') >= 0) {
+    if (disposition === 'PROTECTED' || disposition === 'KEEP_PROVEN') {
       return 'STAGE REMOVAL LOCKED — evidence is keep/protected. No reclaim path from this state.';
     }
     return 'STAGE REMOVAL LOCKED — quarantine requires RECLAIM_PROVEN + UNAPPROVED. Permanent deletion requires the same eligible reclaim set plus PASS preflight.';
@@ -427,7 +449,12 @@ def render_decision_chamber_script() -> str:
     const row = document.getElementById('chamber-next-actions-row');
     const blocker = document.getElementById('chamber-blocker-line');
     if (!mount || !row) return;
+    const deleteScope = document.getElementById('chamber-delete-scope');
+    const deletePath = document.getElementById('chamber-delete-path');
     const scene = state.openDecisionScene;
+    const canDelete = canDeleteSelection();
+    deleteScope.hidden = !canDelete;
+    deletePath.textContent = canDelete ? state.node.path : '';
     const show = scene === 'GATE' || scene === 'RESOLVE' || scene === 'APPROVAL' || scene === 'RESULT' || scene === 'STAGED';
     mount.hidden = !show;
     if (!show) {
@@ -436,10 +463,11 @@ def render_decision_chamber_script() -> str:
     }
     row.innerHTML = '';
     const canStage = state.allowedIntents.indexOf('APPROVE_QUARANTINE') >= 0;
+    const canReviewRemoval = state.allowedIntents.includes('RECLAIM_GENERATED_OUTPUT');
+    const showLocked = scene !== 'RESULT' && scene !== 'STAGED' && !canStage && !canDelete && !canReviewRemoval;
     if (blocker) {
-      blocker.textContent = canStage
-        ? 'Delete/remove intent opens quarantine APPROVAL — NO BYTES REMOVED'
-        : stageRemovalLockedExplain();
+      blocker.textContent = canStage && !canDelete ? 'Quarantine staging records approval. No bytes are removed.'
+        : '';
     }
     const addAction = (opts) => {
       const btn = document.createElement('button');
@@ -460,9 +488,11 @@ def render_decision_chamber_script() -> str:
           applyScene();
         });
       } else if (opts.deletePermanently) {
+        const itemId = state.selectedNodeId;
         btn.setAttribute('data-decision-intent', 'DELETE_PERMANENTLY');
         btn.setAttribute('data-consequence', 'DELETE_PERMANENTLY');
-        btn.addEventListener('click', () => postDeletePermanently());
+        btn.setAttribute('aria-describedby', 'chamber-delete-scope');
+        btn.addEventListener('click', () => postDeletePermanently(itemId));
       } else if (opts.intent) {
         btn.setAttribute('data-decision-intent', opts.intent);
         btn.addEventListener('click', () => postDecision(opts.intent));
@@ -478,8 +508,8 @@ def render_decision_chamber_script() -> str:
     if (scene === 'GATE') {
       addAction({
         id: 'advance_resolve',
-        label: 'ADVANCE TO RESOLVE',
-        explain: 'Open legal intents for this evidence. Delete/remove stays locked unless RECLAIM_PROVEN.',
+        label: 'See decisions for this item',
+        explain: 'Continue to the options supported by this evidence.',
         mode: 'resolve',
         openApproval: false
       });
@@ -501,18 +531,18 @@ def render_decision_chamber_script() -> str:
           addAction({
             id: 'open_approval',
             label: 'STAGE REMOVAL PATH',
-            explain: 'Operator delete/remove intent opens exact-plan approval. Terminal truth: quarantine staging — NO BYTES REMOVED.',
+            explain: 'Open the quarantine staging scope. No bytes are removed.',
             mode: 'approve',
             openApproval: true
           });
           return;
         }
         if (intent === 'DELETE_PERMANENTLY') {
-          if (scene === 'APPROVAL') {
+          if (canDelete) {
             addAction({
               id: 'delete_permanently',
               label: 'DELETE PERMANENTLY',
-              explain: 'One deliberate DELETE PERMANENTLY commit for the exact eligible RECLAIM_PROVEN set via the deletion package.',
+              explain: 'This permanently removes the selected item if current checks pass. An execution receipt reports the result.',
               mode: 'approve',
               deletePermanently: true,
               consequence: 'DELETE_PERMANENTLY'
@@ -523,7 +553,7 @@ def render_decision_chamber_script() -> str:
         addAction({
           id: intent.toLowerCase(),
           label: intentLabel(intent),
-          explain: 'Legal operator intent. Records intent only; does not delete files.',
+          explain: intentCopy[intent]?.explain || 'Record your choice for this item.',
           mode: 'resolve',
           intent: intent
         });
@@ -547,7 +577,7 @@ def render_decision_chamber_script() -> str:
         if (home) home.focus();
       };
     }
-    if (scene !== 'RESULT' && scene !== 'STAGED' && !canStage && state.allowedIntents.indexOf('DELETE_PERMANENTLY') < 0) {
+    if (showLocked) {
       addAction({
         id: 'stage_removal_locked',
         label: 'STAGE REMOVAL PATH — LOCKED',
@@ -857,9 +887,16 @@ def render_decision_chamber_script() -> str:
     if (open && overlapsDecisionPath()) dockChamberInView();
   };
 
+  const publishDecisionReadback = (payload) => {
+    if (bridge && payload.run_id === bridge.runId) {
+      document.dispatchEvent(new CustomEvent('filesteward:decision-readback', { detail: payload }));
+    }
+  };
+
   const absorbState = (payload) => {
     const previousScriptScene = state.scriptScene && state.scriptScene.scene_id;
     if (!payload) return;
+    publishDecisionReadback(payload);
     state.nextItemId = payload.next_item_id || null;
     if (payload.selected_node_id) state.selectedNodeId = payload.selected_node_id;
     state.activeGateId = payload.active_gate_id || null;
@@ -1037,6 +1074,7 @@ def render_decision_chamber_script() -> str:
         throw new Error('The action outcome could not be read. Inspect its authoritative readback before retrying.');
       }
       if (requestEpoch !== contextEpoch || itemId !== state.selectedNodeId) {
+        publishDecisionReadback(payload);
         retainEarlierReadback(payload, itemId, null, itemName);
         return null;
       }
@@ -1059,10 +1097,6 @@ def render_decision_chamber_script() -> str:
   };
 
   const postDecision = async (intent) => {
-    if (intent === 'DELETE_PERMANENTLY') {
-      await postDeletePermanently();
-      return;
-    }
     if (!bridge || !bridge.origin) {
       state.error = 'This is an offline evidence report. Open the local review session to save a decision.';
       applyScene();
@@ -1084,29 +1118,12 @@ def render_decision_chamber_script() -> str:
     absorbState(payload);
   };
 
-  const postDeletePermanently = async () => {
-    if (!state.selectedNodeId) return;
-    if (!bridge || !bridge.origin || !bridge.deletePath) {
-      state.lastTransition = 'delete_permanently_requires_bridge';
-      if (chamberBrief) {
-        chamberBrief.textContent = 'DELETE PERMANENTLY requires the live review bridge deletion path.';
-      }
-      return;
-    }
+  const postDeletePermanently = async (itemId) => {
+    if (itemId !== state.selectedNodeId || !canDeleteSelection()) return;
     const scanRoot = bridge.scanRoot || bridge.scan_root;
-    if (!scanRoot) {
-      state.lastTransition = 'delete_permanently_missing_scan_root';
-      state.executionState = 'blocked';
-      if (chamberBrief) {
-        chamberBrief.textContent =
-          'DELETE PERMANENTLY requires runtime.scanRoot; refusing cwd default.';
-      }
-      applyScene();
-      return;
-    }
     const body = {
       run_id: bridge.runId,
-      item_id: state.selectedNodeId,
+      item_id: itemId,
       irreversible_confirmation: 'DELETE_PERMANENTLY',
       scan_root: scanRoot
     };

@@ -64,6 +64,12 @@ from filesteward.visualization.tokens import disposition_css_stem
 from filesteward.visualization.judgment_script import render_script_index
 from filesteward.visualization.readability import render_readability_css
 
+from filesteward.visualization.coverage_view import (
+    render_storage_coverage,
+    render_storage_coverage_css,
+    render_storage_coverage_script,
+)
+
 __all__ = ["render_report_shell"]
 
 _FORBIDDEN_CONTROL_MARKERS = (
@@ -1274,6 +1280,7 @@ def render_report_shell(
 {render_cinematic_experience_css()}
 {render_decision_chamber_css()}
 {render_readability_css()}
+{render_storage_coverage_css()}
 </style>
 </head>
 <body>
@@ -1284,6 +1291,7 @@ def render_report_shell(
     {_render_brand_home(title)}
     <div class="sub fs-type-meta" id="scenery-subtitle"><span id="scenery-subtitle-text">{escape_text(dynamic_sub)}</span> · v<span class="mono" id="product-version" data-product-version="{escape_attr(FILESTEWARD_VERSION)}">{escape_text(FILESTEWARD_VERSION)}</span> · run <span class="mono">{escape_text(model.run_id)}</span></div>
     <details class="evidence-guide"><summary>Evidence guide: classification and authorization</summary>{_render_classification_legend(selected)}</details>
+    {render_storage_coverage(model.storage_coverage)}
     {_render_operator_next_actions(selected)}
     <aside class="atlas-scene-panel" id="atlas-scene-panel" hidden aria-live="polite">
       <strong id="atlas-scene-panel-title">SCENE</strong>
@@ -1364,6 +1372,7 @@ def render_report_shell(
 {_selection_script()}
 {render_cinematic_script()}
 {render_cinematic_experience_script()}
+{render_storage_coverage_script()}
 {render_decision_chamber_script()}
 </body>
 </html>

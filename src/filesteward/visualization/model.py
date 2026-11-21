@@ -29,6 +29,8 @@ from filesteward.visualization.contracts import (
     ShellMetrics,
 )
 
+from filesteward.visualization.storage_coverage import summarize_inventory
+
 __all__ = ["build_presentation_model"]
 
 _NOT_PERSISTED = "UNKNOWN / NOT PERSISTED"
@@ -578,6 +580,11 @@ def build_presentation_model(run_dir: Path) -> PresentationModel:
     if not nodes:
         raise ValueError("presentation model has no nodes")
 
+    stored_root = metadata.get("root")
+    scan_root = stored_root if isinstance(stored_root, str) else None
+    with inventory_path.open(encoding="utf-8", newline="") as handle:
+        coverage = summarize_inventory(csv.DictReader(handle), scan_root)
+
     # Largest-first default selection among positive logical sizes.
     ordered = sorted(
         nodes,
@@ -593,4 +600,5 @@ def build_presentation_model(run_dir: Path) -> PresentationModel:
         nodes=tuple(nodes),
         metrics=_metrics_from_metadata(metadata),
         default_selected_id=default_id,
+        storage_coverage=coverage,
     )
