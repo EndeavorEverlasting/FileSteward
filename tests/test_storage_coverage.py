@@ -154,7 +154,11 @@ def test_coverage_shows_saved_choices_without_reclassifying_scan(tmp_path, monke
                 summary.click()
                 api.expect(counts).to_have_text("Keep 1")
                 page.set_viewport_size({"width": 390, "height": 900})
+                assert coverage.evaluate("(panel) => panel.getBoundingClientRect().right <= innerWidth")
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
+                assert coverage.locator(".coverage-table").evaluate(
+                    "(table) => table.scrollWidth > table.clientWidth"
+                )
                 assert not errors
             finally:
                 browser.close()

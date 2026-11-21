@@ -115,7 +115,7 @@ def render_storage_coverage_css() -> str:
 .coverage-key>div:nth-child(2){border-color:var(--coverage-open);}
 .coverage-dispositions{list-style:none;padding:0;margin:.55rem 0;display:flex;gap:.35rem .8rem;flex-wrap:wrap;}
 .coverage-dispositions strong{white-space:nowrap;}
-.coverage-table{overflow:auto;max-height:20rem;margin-top:.6rem;}
+.coverage-table{contain:inline-size;overflow:auto;max-height:20rem;margin-top:.6rem;}
 .coverage-table table{width:100%;border-collapse:collapse;}
 .coverage-table caption{text-align:left;margin-bottom:.3rem;}
 .coverage-table th,.coverage-table td{text-align:right;border-bottom:1px solid var(--fs-border-subtle);padding:.35rem .5rem;white-space:nowrap;}
