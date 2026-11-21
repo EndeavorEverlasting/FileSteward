@@ -101,12 +101,12 @@ def render_storage_coverage(coverage: StorageCoverage | None) -> str:
 
 def render_storage_coverage_css() -> str:
     return """
-.storage-coverage{--coverage-found:var(--fs-accent);--coverage-open:var(--fs-state-review);margin:.55rem 0 0;padding:.55rem .75rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);background:var(--fs-bg-surface-1);min-width:0;}
+.storage-coverage{--coverage-found:var(--fs-accent);--coverage-open:color-mix(in srgb,var(--fs-state-review) 20%,var(--fs-bg-surface-1));margin:.55rem 0 0;padding:.55rem .75rem;border:1px solid var(--fs-border-subtle);border-radius:var(--fs-radius-md);background:var(--fs-bg-surface-1);min-width:0;}
 .storage-coverage summary{cursor:pointer;font-weight:700;}
 .storage-coverage p,.coverage-table caption{color:var(--fs-text-muted);}
 .coverage-overview{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center;}
 .coverage-pie{background:conic-gradient(var(--coverage-found) 0 var(--coverage-share),var(--coverage-open) var(--coverage-share) 100%);}
-.coverage-pie{width:8rem;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;}
+.coverage-pie{box-shadow:inset 0 0 0 1px var(--fs-border-default);width:8rem;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;}
 .coverage-pie>span{width:76%;aspect-ratio:1;border-radius:50%;display:grid;align-content:center;text-align:center;background:var(--fs-bg-surface-1);font:700 1.2rem var(--fs-font-mono);}
 .coverage-pie small{font:normal .72rem var(--fs-font-mono);}
 .coverage-key{display:flex;gap:.65rem 1.25rem;flex-wrap:wrap;margin:.5rem 0;}
