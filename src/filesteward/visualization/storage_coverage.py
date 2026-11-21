@@ -75,7 +75,12 @@ def summarize_inventory(
         files[key] += 1
         disposition = CleanupDisposition(row["disposition"])
         raw_size = row.get("logical_size_bytes")
-        size = int(raw_size) if raw_size else None
+        try:
+            size = int(raw_size) if raw_size else None
+        except ValueError:
+            # Legacy aggregate runs can contain inventory sizes the validator
+            # did not parse. Keep the entry visible as an unmeasured file.
+            size = None
         if size is None or size < 0:
             unmeasured[key] += 1
             continue

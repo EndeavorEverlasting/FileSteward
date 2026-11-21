@@ -88,6 +88,20 @@ def test_large_map_buckets_do_not_change_the_coverage_denominator(tmp_path, monk
     html = render_storage_coverage(grouped.storage_coverage)
     assert "Immediate folders under the scan root" in html
 
+    # A legacy size cell can pass run validation. The grouped rendering still
+    # presents coverage and counts the bad cell as unmeasured.
+    legacy_row = next(row for row in inventory if row["item_id"] == "prot-1")
+    original_size = int(legacy_row["logical_size_bytes"])
+    legacy_row["logical_size_bytes"] = "unavailable"
+    write_inventory(run / "inventory.csv", inventory)
+    legacy = build_presentation_model(run)
+    assert len(legacy.nodes) == 1
+    assert legacy.storage_coverage.total.files == len(inventory)
+    assert legacy.storage_coverage.total.unmeasured == 1
+    assert legacy.storage_coverage.total.total_bytes == (
+        grouped.storage_coverage.total.total_bytes - original_size
+    )
+
 
 def test_sector_names_are_rendered_as_literal_text() -> None:
     coverage = summarize_inventory(iter([{
