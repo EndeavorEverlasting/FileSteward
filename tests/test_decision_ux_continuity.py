@@ -326,12 +326,13 @@ def test_delete_readback_survives_secondary_write_failure(
     assert receipt["failed"] == int(not successful)
     assert bridge._execution_by_item[node.node_id] is expected_state
 
-    def reopen():
+    def reopen(*, observation_only=False):
         instance = ReviewBridge(
             run_dir=run_dir, run_id=bridge.run_id,
             cleanup_plan_sha256=bridge.cleanup_plan_sha256,
             session_token="new-session", report_html="",
             scan_root=bridge.scan_root, ownership_resolver=generated_evidence,
+            observation_only=observation_only,
             _nodes={item.node_id: _reclaim_node(item.node_id) for item in (node, next_node)},
         )
         instance._load_persisted()
@@ -341,6 +342,12 @@ def test_delete_readback_survives_secondary_write_failure(
     intents = reopened.state_payload()["classification_views"]["operator_intents"]
     assert reopened._is_completed_item(node.node_id) is successful
     assert intents.get("DELETE_PERMANENTLY", 0) == int(successful)
+
+    archived = reopen(observation_only=True)
+    archived_state = archived.state_payload(node.node_id)
+    assert archived_state["classification_views"]["operator_intents"] == intents
+    assert archived_state["authorization_state"] == AuthorizationState.UNAPPROVED.value
+    assert "DELETE_PERMANENTLY" not in archived_state["allowed_intents"]
 
     if successful:
         original = result.receipt_path.read_bytes()

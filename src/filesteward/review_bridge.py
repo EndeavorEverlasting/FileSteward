@@ -443,14 +443,13 @@ class ReviewBridge:
                     node = self._nodes.get(str(item_id))
                     if node is not None:
                         node.authorization_state = AuthorizationState.APPROVED_FOR_ACTION
-        if not self.observation_only:
-            completed = completed_delete_paths(
-                self.run_dir, run_id=self.run_id, cleanup_plan_sha256=self.cleanup_plan_sha256
-            )
-            for item_id, path in completed.items():
-                node = self._nodes.get(item_id)
-                if node is not None and node.path == path:
-                    self._record_delete_completion(item_id)
+        completed = completed_delete_paths(
+            self.run_dir, run_id=self.run_id, cleanup_plan_sha256=self.cleanup_plan_sha256
+        )
+        for item_id, path in completed.items():
+            node = self._nodes.get(item_id)
+            if node is not None and node.path == path:
+                self._record_delete_completion(item_id)
 
     def _record_delete_completion(self, item_id: str) -> None:
         if self._decisions.get(item_id, {}).get("receipt_succeeded") is not True:
