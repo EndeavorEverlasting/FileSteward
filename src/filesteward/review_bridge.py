@@ -46,7 +46,7 @@ from filesteward.deletion import (
     write_preflight_receipt,
 )
 from filesteward.deletion.preflight import load_run_protection_context
-from filesteward.deletion.receipt import DELETE_RECEIPT_FILENAME
+from filesteward.deletion.receipt import DELETE_RECEIPT_FILENAME, completed_delete_paths
 from filesteward.manifest import validate_run
 from filesteward.models import AuthorizationState, CleanupDisposition
 from filesteward.ownership.actions import OwnershipEvidence, OwnershipResolver, unresolved_ownership
@@ -285,6 +285,7 @@ class ReviewBridge:
     _last_transition: str | None = field(default=None, repr=False)
     _pending_by_item: dict[str, PendingAction] = field(default_factory=dict, repr=False)
     _execution_by_item: dict[str, ExecutionState] = field(default_factory=dict, repr=False)
+    _delete_readback_needs_index: bool = field(default=False, init=False, repr=False)
 
     @classmethod
     def open(
@@ -442,6 +443,23 @@ class ReviewBridge:
                     node = self._nodes.get(str(item_id))
                     if node is not None:
                         node.authorization_state = AuthorizationState.APPROVED_FOR_ACTION
+        completed = completed_delete_paths(
+            self.run_dir, run_id=self.run_id, cleanup_plan_sha256=self.cleanup_plan_sha256
+        )
+        for item_id, path in completed.items():
+            node = self._nodes.get(item_id)
+            if node is not None and node.path == path:
+                self._record_delete_completion(item_id)
+
+    def _record_delete_completion(self, item_id: str) -> None:
+        if self._decisions.get(item_id, {}).get("receipt_succeeded") is not True:
+            self._decisions[item_id] = {
+                "intent": DELETE_ACTION, "receipt_succeeded": True,
+                "receipt_path": DELETE_RECEIPT_FILENAME, "recorded_at": _utc_now(),
+            }
+            self._delete_readback_needs_index = True
+        self._execution_by_item[item_id] = ExecutionState.COMPLETE
+        self._nodes[item_id].authorization_state = AuthorizationState.APPLIED
 
     def _persist_decisions(
         self, decisions: Mapping[str, dict[str, object]] | None = None
@@ -454,6 +472,7 @@ class ReviewBridge:
             "decisions": self._decisions if decisions is None else decisions,
         }
         _atomic_write_json(self.decision_state_path(), payload)
+        self._delete_readback_needs_index = False
 
     def _operator_intent_for(self, item_id: str) -> str | None:
         recorded = self._decisions.get(item_id) or {}
@@ -898,6 +917,9 @@ class ReviewBridge:
                     # Quarantine receipts are not delete authority; continue
                     # only through the deletion-package approval below.
                     pass
+            if self._delete_readback_needs_index:
+                # Keep completed items durable before replacing the receipt's bindings.
+                self._persist_decisions()
             emit_delete_manifest(self.run_dir)
             manifest_path = self.run_dir / DELETE_MANIFEST_FILENAME
             protection_roots, managed_paths = load_run_protection_context(self.run_dir)
@@ -953,13 +975,14 @@ class ReviewBridge:
                 if isinstance(item, dict) and item.get("status") == "SUCCEEDED":
                     item_id = str(item.get("item_id") or "")
                     if item_id in ids:
-                        self._decisions[item_id] = {
-                            "intent": "DELETE_PERMANENTLY", "receipt_succeeded": True,
-                            "receipt_path": DELETE_RECEIPT_FILENAME, "recorded_at": _utc_now(),
-                        }
-                        self._execution_by_item[item_id] = ExecutionState.COMPLETE
-                        self._nodes[item_id].authorization_state = AuthorizationState.APPLIED
-            self._persist_decisions()
+                        self._record_delete_completion(item_id)
+            try:
+                self._persist_decisions()
+            except OSError:
+                # Execution already wrote its authoritative receipt. Returning a
+                # write error here would hide the outcome and invite a retry.
+                if not receipt:
+                    raise
             self._scene_revision += 1
             focus = ids[0]
             self._pending_by_item.pop(focus, None)

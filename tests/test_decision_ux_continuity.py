@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 
+from filesteward.deletion import DELETE_ACTION, DELETE_APPROVAL_SCHEMA, DELETE_MANIFEST_SCHEMA
 from filesteward.deletion.execute import ExecutionResult, ItemExecutionResult
+from filesteward.deletion.receipt import DELETE_RECEIPT_SCHEMA
 from filesteward.models import AuthorizationState, CleanupDisposition
 from filesteward.review_bridge import (
     DecisionBridgeIntent,
@@ -217,8 +220,9 @@ def test_bridge_delete_missing_scan_root_fails_closed(tmp_path: Path) -> None:
         )
 
 
-def test_partial_delete_does_not_mark_complete(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("successful", [False, True])
+def test_delete_readback_survives_secondary_write_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, successful: bool
 ) -> None:
     import filesteward.review_bridge as bridge_mod
     from safe_capacity_fixtures import generated_evidence
@@ -226,6 +230,7 @@ def test_partial_delete_does_not_mark_complete(
     run_dir = tmp_path / "run"
     run_dir.mkdir()
     node = _reclaim_node("reclaim-a")
+    next_node = _reclaim_node("reclaim-b")
     bridge = ReviewBridge(
         run_dir=run_dir,
         run_id="continuity-run",
@@ -234,7 +239,7 @@ def test_partial_delete_does_not_mark_complete(
         report_html="",
         scan_root=tmp_path / "scan",
         ownership_resolver=generated_evidence,
-        _nodes={node.node_id: node},
+        _nodes={node.node_id: node, next_node.node_id: next_node},
     )
     (tmp_path / "scan").mkdir()
 
@@ -256,43 +261,109 @@ def test_partial_delete_does_not_mark_complete(
     monkeypatch.setattr(bridge_mod.shutil, "copy2", lambda *a, **k: None)
 
     result = ExecutionResult(
-        overall="PARTIAL",
+        overall="SUCCEEDED" if successful else "PARTIAL",
         run_dir=run_dir,
         receipt_path=run_dir / "delete-execution-receipt.json",
         items=[
             ItemExecutionResult(
                 item_id="reclaim-a",
-                path=str(tmp_path / "scan" / "a"),
-                status="FAILED",
-                reason_class="IO",
-                detail="locked",
+                path=node.path,
+                status="SUCCEEDED" if successful else "FAILED",
+                reason_class="DELETED" if successful else "IO",
+                detail="deleted" if successful else "locked",
             )
         ],
     )
-    monkeypatch.setattr(
-        bridge_mod, "execute_permanent_delete", lambda **k: result
-    )
-    monkeypatch.setattr(
-        bridge_mod,
-        "load_delete_receipt",
-        lambda p: {
-            "overall": "PARTIAL",
+    def execute_fixture(**kwargs):
+        manifest_path = kwargs["manifest"]
+        manifest_path.write_text(json.dumps({
+            "schema_version": DELETE_MANIFEST_SCHEMA,
+            "run_id": bridge.run_id,
+            "source_cleanup_plan_sha256": bridge.cleanup_plan_sha256,
+            "items": [{"item_id": node.node_id, "path": node.path}],
+        }), encoding="utf-8")
+        manifest_digest = bridge_mod.sha256_file(manifest_path)
+        approval_path = kwargs["approval"]
+        approval_path.write_text(json.dumps({
+            "schema_version": DELETE_APPROVAL_SCHEMA,
+            "run_id": bridge.run_id,
+            "action": DELETE_ACTION,
+            "authorization_state": AuthorizationState.APPROVED_FOR_ACTION.value,
+            "delete_manifest_sha256": manifest_digest,
+            "approved_item_ids": [node.node_id],
+        }), encoding="utf-8")
+        result.receipt_path.write_text(json.dumps({
+            "schema_version": DELETE_RECEIPT_SCHEMA,
+            "mode": DELETE_ACTION,
+            "run_id": bridge.run_id,
+            "overall": result.overall,
+            "delete_manifest_sha256": manifest_digest,
+            "delete_approval_sha256": bridge_mod.sha256_file(approval_path),
             "items": [result.items[0].to_dict()],
-            "reclaim": None,
-        },
-    )
+        }), encoding="utf-8")
+        return result
 
-    bridge.record_decision(DecisionRequest("continuity-run", node.node_id, DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT))
+    monkeypatch.setattr(bridge_mod, "execute_permanent_delete", execute_fixture)
+    for item in (node, next_node):
+        bridge.record_decision(DecisionRequest(
+            "continuity-run", item.node_id, DecisionBridgeIntent.RECLAIM_GENERATED_OUTPUT,
+        ))
+
+    def fail_index_write():
+        raise OSError("comparison fixture has no space for the decision index")
+
+    monkeypatch.setattr(bridge, "_persist_decisions", fail_index_write)
     payload = bridge.execute_permanent_delete_ui(
         "continuity-run",
         [node.node_id],
         scan_root=tmp_path / "scan",
         irreversible_confirmation="DELETE_PERMANENTLY",
     )
-    assert payload["execution_state"] == ExecutionState.BLOCKED.value
-    assert payload["execution_state"] != ExecutionState.COMPLETE.value
-    assert "partial" in str(payload["last_transition"]).lower()
-    assert bridge._execution_by_item[node.node_id] is ExecutionState.BLOCKED
+    receipt = payload["deletion_receipt"]
+    expected_state = ExecutionState.COMPLETE if successful else ExecutionState.BLOCKED
+    assert payload["execution_state"] == expected_state.value
+    assert receipt["succeeded"] == int(successful)
+    assert receipt["failed"] == int(not successful)
+    assert bridge._execution_by_item[node.node_id] is expected_state
+
+    def reopen(*, observation_only=False):
+        instance = ReviewBridge(
+            run_dir=run_dir, run_id=bridge.run_id,
+            cleanup_plan_sha256=bridge.cleanup_plan_sha256,
+            session_token="new-session", report_html="",
+            scan_root=bridge.scan_root, ownership_resolver=generated_evidence,
+            observation_only=observation_only,
+            _nodes={item.node_id: _reclaim_node(item.node_id) for item in (node, next_node)},
+        )
+        instance._load_persisted()
+        return instance
+
+    reopened = reopen()
+    intents = reopened.state_payload()["classification_views"]["operator_intents"]
+    assert reopened._is_completed_item(node.node_id) is successful
+    assert intents.get("DELETE_PERMANENTLY", 0) == int(successful)
+
+    archived = reopen(observation_only=True)
+    archived_state = archived.state_payload(node.node_id)
+    assert archived_state["classification_views"]["operator_intents"] == intents
+    assert archived_state["authorization_state"] == AuthorizationState.UNAPPROVED.value
+    assert "DELETE_PERMANENTLY" not in archived_state["allowed_intents"]
+
+    if successful:
+        original = result.receipt_path.read_bytes()
+        monkeypatch.setattr(reopened, "_persist_decisions", fail_index_write)
+        with pytest.raises(OSError, match="no space"):
+            reopened.execute_permanent_delete_ui(
+                bridge.run_id, [next_node.node_id], scan_root=bridge.scan_root,
+                irreversible_confirmation=DELETE_ACTION,
+            )
+        assert result.receipt_path.read_bytes() == original
+
+        # A mismatched receipt row cannot restore a completion on restart.
+        bad_receipt = json.loads(result.receipt_path.read_text(encoding="utf-8"))
+        bad_receipt["items"][0]["path"] = str(tmp_path / "other-target")
+        result.receipt_path.write_text(json.dumps(bad_receipt), encoding="utf-8")
+        assert not reopen()._is_completed_item(node.node_id)
 
 
 def test_rescan_blocks_without_claiming_success(tmp_path: Path) -> None:
