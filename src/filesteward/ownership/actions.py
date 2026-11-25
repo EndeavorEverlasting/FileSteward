@@ -100,6 +100,42 @@ _PROTECTIVE_EDGES = frozenset({
 })
 
 
+def _protective_edges(edges):
+    return tuple(e for e in edges if e.edge_type in _PROTECTIVE_EDGES
+                 or e.lifecycle_hint in {"APP_ACTIVE_REQUIRED", "APP_BROKEN_REQUIRED", "REPO_ACTIVE"})
+
+
+def dependency_summary(path: str, evidence: OwnershipEvidence, plan: ActionPlan) -> dict:
+    """Quantify observed necessity, not probability of safe deletion.
+
+    A positive protective edge is a veto even during incomplete discovery.
+    Zero edges never constitutes proof of dispensability. The plan remains
+    the only action authority; counts are read-only explanation.
+    """
+    if plan.path != path or plan.evidence_digest != evidence.digest:
+        raise ValueError("dependency summary requires the matching action plan")
+    edges = evidence.graph.edges_for_path(path)
+    protective = _protective_edges(edges)
+    app_edges = tuple(e for e in protective if e.owner_kind == "APPLICATION")
+    coverage = tuple(getattr(evidence, "coverage", ()))
+    completed = {row.domain for row in coverage if row.complete and not row.gaps}
+    unresolved = {row.domain for row in coverage if not row.complete or row.gaps}
+    return {
+        "matching_edge_count": len(edges),
+        "protective_edge_count": len(protective),
+        "application_dependency_edge_count": len(app_edges),
+        "application_owner_count": len({e.owner_id for e in app_edges if e.owner_id}),
+        "protective_edge_types": sorted({e.edge_type for e in protective}),
+        "completed_reported_domain_count": len(completed - unresolved),
+        "reported_domain_count": len(completed | unresolved),
+        "unresolved_domains": sorted(unresolved),
+        "current_evidence_complete": evidence.fresh(),
+        "raw_delete_disqualified": not plan.raw_delete_eligible,
+        "disposition": plan.disposition.value,
+        "graph_revision_id": plan.graph_revision_id,
+    }
+
+
 def plan_owner_actions(path: str, evidence: OwnershipEvidence) -> ActionPlan:
     graph = evidence.graph
     edges = graph.edges_for_path(path)
@@ -121,8 +157,7 @@ def plan_owner_actions(path: str, evidence: OwnershipEvidence) -> ActionPlan:
         return result(CleanupDisposition.PROTECTED, (ActionKind.KEEP,), ("SERVICEABILITY_DEPENDENCY_PRESENT",))
     if not (PureWindowsPath(path).is_absolute() or PurePosixPath(path).is_absolute()) or ".." in path.replace("\\", "/").split("/"):
         return result(CleanupDisposition.UNKNOWN, (ActionKind.INVESTIGATE_ORPHAN,), ("PATH_NOT_CANONICAL",))
-    protective = [e for e in edges if e.edge_type in _PROTECTIVE_EDGES
-                  or e.lifecycle_hint in {"APP_ACTIVE_REQUIRED", "APP_BROKEN_REQUIRED", "REPO_ACTIVE"}]
+    protective = _protective_edges(edges)
     if protective or (judgment and judgment.disposition is CleanupDisposition.PROTECTED):
         reasons = []
         actions = [ActionKind.KEEP]

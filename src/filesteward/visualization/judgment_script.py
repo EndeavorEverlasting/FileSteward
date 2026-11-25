@@ -6,7 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 from filesteward.models import CleanupDisposition
-from filesteward.ownership.actions import OwnershipEvidence, admit_cleanup_disposition, plan_owner_actions
+from filesteward.ownership.actions import OwnershipEvidence, admit_cleanup_disposition, dependency_summary, plan_owner_actions
 from filesteward.ownership.reducer import reduce_path_ownership
 
 from filesteward.visualization.decision_flow import DecisionFlowState
@@ -96,6 +96,9 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
     """
     plan = plan_owner_actions(path, evidence)
     effective = admit_cleanup_disposition(disposition, plan)
+    necessity = dependency_summary(path, evidence, plan)
+    # Existing disposition protection is also authoritative; the projection cannot weaken it.
+    necessity["raw_delete_disqualified"] = not (effective is CleanupDisposition.RECLAIM_PROVEN and plan.raw_delete_eligible and evidence.fresh())
     edges = evidence.graph.edges_for_path(path)
     fresh = evidence.fresh()
     owners = sorted({edge.owner_display_name or edge.owner_id for edge in edges})
@@ -122,7 +125,11 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
     if edges:
         trace.append({
             "scene_id": "CONSEQUENCE_RESOLVE", "status": "RESOLVED" if fresh else "STALE",
-            "finding": badge, "reason_codes": list(plan.reason_codes),
+            "finding": (f"{badge}: {necessity['protective_edge_count']} protective evidence edges; "
+                        f"{necessity['application_owner_count']} dependent applications identified. "
+                        + ("Raw deletion disqualified." if necessity["raw_delete_disqualified"] else
+                           "Raw deletion eligibility is not authorization.")),
+            "reason_codes": list(plan.reason_codes),
         })
     if fresh and effective is not CleanupDisposition.PROTECTED:
         trace.append({
@@ -167,7 +174,7 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
         "recovery_mechanism": proof.recipe if proof else None,
         "missing_fact": missing_fact,
         "safe_probes_attempted": sorted(set(sources) | {item["provenance"] for item in coverage if item["provenance"]}),
-        "probe_coverage": coverage,
+        "probe_coverage": coverage, "dependency_summary": necessity,
         "why_it_matters": "Unresolved ownership or recovery cannot authorize a destructive action",
         "trace": trace,
     }
