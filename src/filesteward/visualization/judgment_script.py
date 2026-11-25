@@ -112,10 +112,30 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
     qualified = bool(edges) and all(
         edge.owner_kind in {"APPLICATION", "REPOSITORY"} and edge.lifecycle_hint for edge in edges
     )
-    badge = reduce_path_ownership(path, evidence.graph).user_facing_badge if qualified else (
-        "Shared dependency" if len(plan.owner_ids) > 1 else
-        "Regenerable cache" if plan.raw_delete_eligible else "Unknown ownership"
-    )
+    if qualified:
+        badge = reduce_path_ownership(path, evidence.graph).user_facing_badge
+    elif plan.disposition is CleanupDisposition.PROTECTED:
+        # The safety planner already vetoed deletion. Reflect that positive
+        # evidence, even when other discovery domains are incomplete.
+        app = [edge for edge in edges if edge.owner_kind == "APPLICATION"]
+        if any(edge.lifecycle_hint == "APP_BROKEN_REQUIRED" for edge in app):
+            badge = "Broken app dependency"
+        elif app:
+            badge = "Required by app"
+        elif any(edge.owner_kind == "SERVICE" for edge in edges):
+            badge = "Required by service"
+        elif any(edge.owner_kind == "SCHEDULED_TASK" for edge in edges):
+            badge = "Required by scheduled task"
+        elif any(edge.owner_kind == "TOOLCHAIN" for edge in edges):
+            badge = "Required by toolchain"
+        elif any(edge.owner_kind == "REPOSITORY" for edge in edges):
+            badge = "Part of active repo"
+        else:
+            badge = "Protected dependency"
+    elif len(plan.owner_ids) > 1:
+        badge = "Shared dependency"
+    else:
+        badge = "Regenerable cache" if plan.raw_delete_eligible else "Unknown ownership"
     proof = next((proof for proof in evidence.proofs if proof.valid_for(path, plan.owner_ids)), None)
     trace = [{
         "scene_id": "ATTRIBUTION_RESOLVE", "status": "RESOLVED" if fresh else "BLOCKED",

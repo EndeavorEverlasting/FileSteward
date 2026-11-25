@@ -110,5 +110,32 @@ def test_service_reference_is_positive_only_and_path_scoped(tmp_path):
     assert plan_owner_actions(str(service), evidence).disposition is CleanupDisposition.PROTECTED
     assert plan_owner_actions(str(tmp_path), evidence).disposition is CleanupDisposition.PROTECTED
     assert plan_owner_actions(str(sibling), evidence).disposition is CleanupDisposition.UNKNOWN
+    view = resolve_scene_evidence(str(service), CleanupDisposition.RECLAIM_PROVEN, evidence)
+    assert view["ownership_badge"] == "Required by service"
+    assert view["effective_disposition"] == CleanupDisposition.PROTECTED.value
+    assert view["dependency_summary"]["protective_edge_count"] == 1
+    assert view["dependency_summary"]["raw_delete_disqualified"] is True
+    assert view["raw_delete_eligible"] is False
+    assert "Required by service" in view["trace"][1]["finding"]
     assert not current._service_projection(tmp_path, sibling, references).edges
     assert not current._service_projection(tmp_path, tmp_path, ()).complete
+
+
+def test_known_required_service_does_not_appear_unknown_when_other_domains_fail():
+    path = r"C:\\Services\\daemon.exe"
+    edge = OwnershipEdge("SERVICE_REFERENCES", path, "SERVICE", "service:daemon",
+                         "daemon", "windows_service_registry", "strong", "")
+    evidence = OwnershipEvidence(build_ownership_graph(extra_edges=(edge,)), False, time.time())
+    view = resolve_scene_evidence(path, CleanupDisposition.UNKNOWN, evidence)
+    assert view["ownership_badge"] == "Required by service"
+    assert view["effective_disposition"] == "PROTECTED"
+    assert view["scene_id"] == "ATTRIBUTION_RESOLVE"
+    assert view["raw_delete_eligible"] is False
+
+
+def test_chamber_renders_dependency_metrics_without_mutation():
+    source = (ROOT / "src/filesteward/visualization/decision_chamber.py").read_text(encoding="utf-8")
+    assert "evidence.dependency_summary" in source
+    assert "unresolved discovery domains" in source
+    assert "facts.appendChild(metrics)" in source
+    assert "Safe raw deletion has not been established." in source
