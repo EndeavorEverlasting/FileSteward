@@ -34,21 +34,33 @@ def validate_map(mapping, source_paths):
         assert feature["source_paths"] and feature["tests"]
         assert set(feature["scene_ids"]) <= set(order)
         assert all((ROOT / test).is_file() for test in feature["tests"])
+    # Feature ownership covers the executable system *and* its policy/proof sources.
+    contracted = [p for f in features for p in f.get("contract_paths", [])]
+    assert len(contracted) == len(set(contracted)), "duplicate contract ownership"
+    assert set(contracted) == inventory_scoped(mapping["scope"]["contract_roots"])
+    test_sources = {p for f in features for p in f["tests"]}
+    assert test_sources == inventory_scoped(mapping["scope"]["test_roots"], suffix=".py")
     for scene in mapping["scenes"]:
         expected = {f["id"] for f in features if scene["scene_id"] in f["scene_ids"]}
         assert expected and set(scene["feature_ids"]) == expected
 
 
-def inventory(mapping):
-    # Include new unignored source files, not editable-install/build caches.
-    scope = mapping["scope"]["roots"] + mapping["scope"]["root_files"]
+def inventory_scoped(scope, *, suffix=None):
+    # Include unignored new sources as well as tracked files; never scan host data.
     raw = subprocess.check_output(
         ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *scope],
         cwd=ROOT,
     )
     result = set(raw.decode("utf-8").split("\0")) - {""}
+    if suffix is not None:
+        result = {path for path in result if path.endswith(suffix)}
     assert all((ROOT / path).is_file() for path in result), "tracked source missing"
     return result
+
+
+def inventory(mapping):
+    scope = mapping["scope"]["roots"] + mapping["scope"]["root_files"]
+    return inventory_scoped(scope)
 
 
 def test_exact_source_and_scene_map():
@@ -63,6 +75,16 @@ def test_exact_source_and_scene_map():
         validate_map(bad, actual)
     bad = deepcopy(mapping)
     bad["features"][0]["source_paths"].append(bad["features"][1]["source_paths"][0])
+    with pytest.raises(AssertionError):
+        validate_map(bad, actual)
+    bad = deepcopy(mapping)
+    bad["features"][-1]["contract_paths"].remove("harness/contracts/feature-map.v1.json")
+    with pytest.raises(AssertionError):
+        validate_map(bad, actual)
+    bad = deepcopy(mapping)
+    for feature in bad["features"]:
+        if "tests/test_antivirus_detector.py" in feature["tests"]:
+            feature["tests"].remove("tests/test_antivirus_detector.py")
     with pytest.raises(AssertionError):
         validate_map(bad, actual)
 
