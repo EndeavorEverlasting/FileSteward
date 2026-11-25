@@ -18,7 +18,25 @@ def load_map():
     return json.loads((ROOT / "harness/contracts/feature-map.v1.json").read_text(encoding="utf-8"))
 
 
-def validate_map(mapping, source_paths):
+
+EXPECTED_SOURCE_ROOTS = {"src", "scripts", "packaging", ".github/workflows", ".agents/skills", ".cursor/rules"}
+EXPECTED_EXPLICIT_FILES = {
+    "FileSteward-source.cmd", "pyproject.toml", "AGENTS.md", "README.md",
+    "docs/assets/favicon.svg", "docs/assets/launch.css", "docs/index.html",
+    "docs/program/storage-reclaim-visualization-prototype.html",
+}
+EXPECTED_CONTRACT_ROOTS = {"harness/contracts", "harness/evals"}
+EXPECTED_TEST_ROOTS = {"tests"}
+SOURCE_SUFFIXES = (".py", ".ps1", ".cmd", ".sh", ".html", ".css", ".svg",
+                   ".js", ".jsx", ".ts", ".tsx", ".mdc", ".toml", ".yml", ".yaml")
+
+
+def validate_map(mapping, source_paths, all_files=None):
+    # A manifest cannot hide new files by removing a watched root or source type.
+    assert set(mapping["scope"]["roots"]) == EXPECTED_SOURCE_ROOTS
+    assert set(mapping["scope"]["root_files"]) == EXPECTED_EXPLICIT_FILES
+    assert set(mapping["scope"]["contract_roots"]) == EXPECTED_CONTRACT_ROOTS
+    assert set(mapping["scope"]["test_roots"]) == EXPECTED_TEST_ROOTS
     features = mapping["features"]
     ids = [feature["id"] for feature in features]
     assert len(ids) == len(set(ids))
@@ -40,6 +58,11 @@ def validate_map(mapping, source_paths):
     assert set(contracted) == inventory_scoped(mapping["scope"]["contract_roots"])
     test_sources = {p for f in features for p in f["tests"]}
     assert test_sources == inventory_scoped(mapping["scope"]["test_roots"], suffix=".py")
+    tracked = inventory_scoped(["."]) if all_files is None else set(all_files)
+    unowned = {p for p in tracked if p.endswith(SOURCE_SUFFIXES)} - (
+        set(mapped) | set(contracted) | test_sources
+    )
+    assert not unowned, "new executable or presentation source outside mapped scope: " + repr(sorted(unowned))
     for scene in mapping["scenes"]:
         expected = {f["id"] for f in features if scene["scene_id"] in f["scene_ids"]}
         assert expected and set(scene["feature_ids"]) == expected
@@ -87,6 +110,12 @@ def test_exact_source_and_scene_map():
             feature["tests"].remove("tests/test_antivirus_detector.py")
     with pytest.raises(AssertionError):
         validate_map(bad, actual)
+    bad = deepcopy(mapping)
+    bad["scope"]["roots"].remove("scripts")
+    with pytest.raises(AssertionError):
+        validate_map(bad, actual)
+    with pytest.raises(AssertionError):
+        validate_map(mapping, actual, all_files=inventory_scoped(["."]) | {"new-area/agent.py"})
 
 
 def test_app_dependency_veto_with_incomplete_discovery():

@@ -3,16 +3,24 @@
   "authority": "traceability_only_not_judgment_or_scene_policy",
   "scope": {
     "roots": [
-      "src",
-      "scripts",
+      ".agents/skills",
+      ".cursor/rules",
+      ".github/workflows",
       "packaging",
-      ".github/workflows"
+      "scripts",
+      "src"
     ],
     "root_files": [
+      "AGENTS.md",
       "FileSteward-source.cmd",
+      "README.md",
+      "docs/assets/favicon.svg",
+      "docs/assets/launch.css",
+      "docs/index.html",
+      "docs/program/storage-reclaim-visualization-prototype.html",
       "pyproject.toml"
     ],
-    "excluded": "Documentation, plans, private runtime data and generated output are outside the production/test/contract ownership denominator. Every tracked or unignored production source, harness contract/eval, and Python test source must map to a feature. Tests may verify multiple features; harness contracts have exactly one primary owner.",
+    "excluded": "Historical documents, plans, handoffs, private runtime data and generated outputs are outside production-source scope. Git-tracked/unignored executable or presentational sources outside the declared roots/explicit files fail coverage. Harness contracts/evaluations and Python test sources have separate complete feature ownership.",
     "contract_roots": [
       "harness/contracts",
       "harness/evals"
@@ -209,6 +217,10 @@
         "INCIDENT_RECOVERY"
       ],
       "source_paths": [
+        "docs/assets/favicon.svg",
+        "docs/assets/launch.css",
+        "docs/index.html",
+        "docs/program/storage-reclaim-visualization-prototype.html",
         "src/filesteward/contracts/judgment-scene-workflow.v1.json",
         "src/filesteward/contracts/storage-reclaim-visual-system.tokens.json",
         "src/filesteward/visualization/__init__.py",
@@ -371,8 +383,12 @@
       "title": "Developer validation and distribution",
       "scene_ids": [],
       "source_paths": [
+        ".agents/skills/upstream-intelligence/SKILL.md",
+        ".cursor/rules/upstream-intelligence.mdc",
         ".github/workflows/mobile-storage-policy.yml",
         ".github/workflows/product-authority.yml",
+        "AGENTS.md",
+        "README.md",
         "scripts/cinematic_browser_probe.py",
         "scripts/versioning.py"
       ],
