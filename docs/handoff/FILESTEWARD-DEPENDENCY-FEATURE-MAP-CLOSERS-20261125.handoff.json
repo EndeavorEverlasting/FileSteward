@@ -162,7 +162,7 @@
   },
   "exact_next_action": {
     "phase": "PROVE",
-    "action": "git fetch origin; git switch sixth-gear/dependency-feature-map-20261125; python -m pytest tests/test_dependency_feature_map.py tests/test_current_ownership.py tests/test_current_review_wiring.py tests/test_safe_capacity_actions.py tests/test_scene_composition_contract.py; then repair and advance to full suite",
+    "action": "Recover FileSteward canonical checkout and worktree inventory without disturbing any active writer; fetch origin; reuse the existing clean fs80 lane only when exact head/status match, otherwise create a distinct detached worktree from origin/sixth-gear/dependency-feature-map-20261125; run python -m pytest tests/test_dependency_feature_map.py tests/test_current_ownership.py tests/test_current_review_wiring.py tests/test_safe_capacity_actions.py tests/test_scene_composition_contract.py, repair and continue. On Windows, use USERPROFILE/dev and dev/worktrees/FileSteward; on isolated Linux guest use its approved own checkout path. Never reset or delete an occupied worktree.",
     "owner": "FileSteward isolated local coding agent",
     "can_execute_without_operator": true
   },

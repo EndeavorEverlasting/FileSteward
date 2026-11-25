@@ -37,12 +37,19 @@ P04 — proven provider operations were performed here; genuine independent loca
 6. **FS80-SUCCESSOR-PROVIDER-COVERAGE** — continue native discovery as a separate owned feature lane; complete at least task/serviceability positives with coverage reporting and no false deletion confidence.
 
 ## Immediate local commands (no private host mutation)
-```bash
-git fetch origin
-git switch sixth-gear/dependency-feature-map-20261125
+```powershell
+$repo = Join-Path $env:USERPROFILE 'dev\FileSteward'
+$lane = Join-Path $env:USERPROFILE 'dev\worktrees\FileSteward\dependency-feature-map-closers'
+git -C $repo status --short
+git -C $repo worktree list --porcelain
+git -C $repo fetch origin
+# Reuse an existing lane only after checking its exact head/status. Otherwise create it without disturbing the active checkout:
+git -C $repo worktree add --detach $lane origin/sixth-gear/dependency-feature-map-20261125
+Set-Location $lane
 python -m pytest tests/test_dependency_feature_map.py tests/test_current_ownership.py tests/test_current_review_wiring.py tests/test_safe_capacity_actions.py tests/test_scene_composition_contract.py
-# Repair focused failures, then run python -m pytest and exact supported browser regression commands.
+# Repair focused failures, then run python -m pytest and the repository's supported browser regression commands.
 ```
+On an isolated Linux guest, use its own approved checkout/worktree root; never use the operator desktop as an unmanaged agent execution host. Do not delete or reset an existing worktree to satisfy the command.
 
 ## Proof ceiling, risks, and safety
 **PROOF:** GitHub-provider source/contract/test mapping, branch commits and PR readback. **NOT PROVED:** local Python, desktop/narrow browser, native Windows service registry, repository-owned approval/deletion, GitHub merge/mainline or any host-cleanup effect. Maintain 20% capacity as prioritization, never as deletion authority. Keep all personal scans/paths/receipts in ignored runtime storage. No C: scan/delete authorization is inferred.
