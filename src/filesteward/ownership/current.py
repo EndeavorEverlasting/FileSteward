@@ -1,8 +1,8 @@
 """Bounded current evidence collection; incomplete probes never authorize action.
 
 Construction is inert. Calling the resolver is an explicit observation boundary.
-Native providers currently cover uninstall registration and bounded Git evidence;
-the remaining domains are explicitly unavailable, rather than empty successes.
+Native providers cover uninstall registration, bounded Git evidence and positive
+Windows service references; incomplete domains never imply absence.
 """
 from __future__ import annotations
 
@@ -71,6 +71,7 @@ class _ReadBatch:
     root: Path
     observed_at: float
     registry: tuple | None = None
+    services: tuple | None = None
     repositories: dict = field(default_factory=dict)
 
 
@@ -194,6 +195,76 @@ def _registry(root: Path, target: Path) -> ProbeResult:
                        tuple(edges), tuple(records))
 
 
+def _read_service_registrations():
+    """Read service configuration only; never start, stop or invoke a service."""
+    import winreg
+    observations, gaps = [], set()
+    key_name = r"SYSTEM\CurrentControlSet\Services"
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_name, 0, winreg.KEY_READ) as parent:
+            for i in range(winreg.QueryInfoKey(parent)[0]):
+                try:
+                    name = winreg.EnumKey(parent, i)
+                    with winreg.OpenKey(parent, name, 0, winreg.KEY_READ) as child:
+                        for subkey, field_name in (("", "ImagePath"), ("Parameters", "ServiceDll")):
+                            try:
+                                if subkey:
+                                    with winreg.OpenKey(child, subkey, 0, winreg.KEY_READ) as params:
+                                        value, kind = winreg.QueryValueEx(params, field_name)
+                                else:
+                                    value, kind = winreg.QueryValueEx(child, field_name)
+                            except FileNotFoundError:
+                                continue
+                            except OSError:
+                                gaps.add("SERVICE_VALUE_UNREADABLE")
+                                continue
+                            if kind not in (winreg.REG_SZ, winreg.REG_EXPAND_SZ) or not isinstance(value, str):
+                                gaps.add("SERVICE_VALUE_UNSUPPORTED")
+                                continue
+                            value = os.path.expandvars(value)
+                            anchor = command_executable(value) if field_name == "ImagePath" else value.strip().strip('"')
+                            if not anchor or not Path(anchor).is_absolute():
+                                gaps.add("SERVICE_REFERENCE_UNRESOLVED")
+                                continue
+                            observations.append((name, field_name, anchor))
+                except OSError:
+                    gaps.add("SERVICE_REGISTRATION_UNREADABLE")
+    except OSError:
+        gaps.add("SERVICE_REGISTRY_UNREADABLE")
+    return tuple(observations), tuple(sorted(gaps))
+
+
+def _service_projection(root: Path, target: Path, observations, raw_gaps=()) -> ProbeResult:
+    """Project exact positive references; unknown runtime dependencies stay unknown."""
+    edges, gaps = [], set(raw_gaps)
+    gaps.add("SERVICE_RUNTIME_DEPENDENCY_COMPLETENESS_UNPROVEN")
+    for name, field_name, anchor in observations:
+        if not path_intersects(str(target), anchor):
+            continue
+        try:
+            storage = str(_bounded_path(Path(anchor), root))
+        except (OSError, ValueError):
+            gaps.add("SERVICE_REFERENCE_OUTSIDE_OR_UNRESOLVED_SCOPE")
+            continue
+        edges.append(OwnershipEdge("SERVICE_REFERENCES", storage, "SERVICE",
+            f"service:{name}", name, "windows_service_registry", "strong", "",
+            f"Registered service {field_name} references this path"))
+    return ProbeResult(False, "windows_service_registry", tuple(sorted(gaps)), tuple(edges))
+
+
+def _services(root: Path, target: Path) -> ProbeResult:
+    if os.name != "nt":
+        return ProbeResult(provenance="windows_service_registry", gaps=("WINDOWS_ONLY",))
+    batch = _read_batch.get()
+    if batch is not None and batch.root == root:
+        if batch.services is None:
+            batch.services = _read_service_registrations()
+        observations, gaps = batch.services
+    else:
+        observations, gaps = _read_service_registrations()
+    return _service_projection(root, target, observations, gaps)
+
+
 def _repositories(root: Path, target: Path) -> ProbeResult:
     # Canonical discovery, not a second directory scanner. Its current interface
     # does not return a complete traversal-error ledger or cross-repo references.
@@ -279,7 +350,7 @@ def make_current_resolver(scan_root: Path, *, providers: Mapping[str, ProbeProvi
     """
     root = Path(scan_root)
     supplied = dict(providers) if providers is not None else {
-        "application_installation": _registry, "repository": _repositories,
+        "application_installation": _registry, "repository": _repositories, "service": _services,
     }
     if set(supplied) - set(DOMAINS):
         raise ValueError("UNREGISTERED_EVIDENCE_DOMAIN")

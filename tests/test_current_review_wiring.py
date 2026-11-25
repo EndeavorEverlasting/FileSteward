@@ -90,6 +90,7 @@ def test_default_launch_factory_is_lazy_and_uses_native_collector_seam(tmp_path,
         calls.append((root, target))
         return current.ProbeResult(False, "mocked_native", ("SYNTHETIC_DOMAIN_GAP",))
     monkeypatch.setattr(current, "_registry", native)
+    monkeypatch.setattr(current, "_services", native)
     monkeypatch.setattr(current, "_repositories", native)
     session, thread = launch.start_server(runtime)
     try:
@@ -98,7 +99,7 @@ def test_default_launch_factory_is_lazy_and_uses_native_collector_seam(tmp_path,
         result = finished(session)
         assert result["state"] in {"READY", "PARTIAL"}
         assert result["ownership_complete"] is False
-        assert calls == [(root, root), (root, root)]
+        assert calls == [(root, root)] * 3
         session.open_review(result["run_id"])
         # Opening the service may resolve initial current scene state. The
         # important distinction is that the stored resolver is the live owner.
@@ -106,7 +107,7 @@ def test_default_launch_factory_is_lazy_and_uses_native_collector_seam(tmp_path,
         assert isinstance(original.delegate, current.CurrentResolver)
         prior = len(calls)
         evidence = original(str(root / "fixture.txt"))
-        assert len(calls) == prior + 2
+        assert len(calls) == prior + 3
         assert not evidence.adapters_complete
         assert "review_snapshot" not in {c.domain for c in evidence.coverage}
     finally:

@@ -3,6 +3,7 @@ from copy import deepcopy
 import json
 from pathlib import Path
 import time
+import subprocess
 
 import pytest
 from filesteward.models import CleanupDisposition
@@ -39,13 +40,14 @@ def validate_map(mapping, source_paths):
 
 
 def inventory(mapping):
-    result = set(mapping["scope"]["root_files"])
-    for prefix in mapping["scope"]["roots"]:
-        for path in (ROOT / prefix).rglob("*"):
-            relative = path.relative_to(ROOT)
-            if path.is_file() and not any(part.startswith(".") or part == "__pycache__"
-                                          for part in relative.parts[1:]) and path.suffix not in {".pyc", ".pyo"}:
-                result.add(relative.as_posix())
+    # Include new unignored source files, not editable-install/build caches.
+    scope = mapping["scope"]["roots"] + mapping["scope"]["root_files"]
+    raw = subprocess.check_output(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *scope],
+        cwd=ROOT,
+    )
+    result = set(raw.decode("utf-8").split("\0")) - {""}
+    assert all((ROOT / path).is_file() for path in result), "tracked source missing"
     return result
 
 
@@ -90,3 +92,23 @@ def test_no_edges_is_not_disposability():
     assert summary["protective_edge_count"] == 0
     assert summary["raw_delete_disqualified"]
     assert not summary["current_evidence_complete"]
+
+def test_service_reference_is_positive_only_and_path_scoped(tmp_path):
+    from filesteward.ownership import current
+
+    service = tmp_path / "service.exe"
+    sibling = tmp_path / "unrelated.bin"
+    service.write_bytes(b"fixture")
+    sibling.write_bytes(b"fixture")
+    references = (("demo", "ImagePath", str(service)),)
+    result = current._service_projection(tmp_path, tmp_path, references)
+    assert not result.complete
+    assert len(result.edges) == 1
+    assert result.edges[0].storage_path == str(service)
+    assert result.edges[0].edge_type == "SERVICE_REFERENCES"
+    evidence = OwnershipEvidence(build_ownership_graph(extra_edges=result.edges), False, time.time())
+    assert plan_owner_actions(str(service), evidence).disposition is CleanupDisposition.PROTECTED
+    assert plan_owner_actions(str(tmp_path), evidence).disposition is CleanupDisposition.PROTECTED
+    assert plan_owner_actions(str(sibling), evidence).disposition is CleanupDisposition.UNKNOWN
+    assert not current._service_projection(tmp_path, sibling, references).edges
+    assert not current._service_projection(tmp_path, tmp_path, ()).complete

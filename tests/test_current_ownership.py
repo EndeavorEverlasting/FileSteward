@@ -25,6 +25,7 @@ def test_constructor_does_not_observe(monkeypatch, tmp_path):
     def forbidden(*args, **kwargs):
         raise AssertionError("constructor observed host")
     monkeypatch.setattr(current, "_registry", forbidden)
+    monkeypatch.setattr(current, "_services", forbidden)
     monkeypatch.setattr(current, "_repositories", forbidden)
     monkeypatch.setattr(current.Path, "lstat", forbidden)
     monkeypatch.setattr(current, "time", forbidden)
@@ -125,11 +126,12 @@ def test_native_defaults_are_actual_providers_but_observation_is_mocked(tmp_path
         calls.append((root, target))
         return current.ProbeResult(True, "mock_native", edges=(protected(target),))
     monkeypatch.setattr(current, "_registry", native)
+    monkeypatch.setattr(current, "_services", native)
     monkeypatch.setattr(current, "_repositories", native)
     resolver = current.make_current_resolver(tmp_path)
     assert not calls
     evidence = resolver(str(tmp_path))
-    assert len(calls) == 2 and not evidence.adapters_complete
+    assert len(calls) == 3 and not evidence.adapters_complete
     assert not evidence.proofs
 
 

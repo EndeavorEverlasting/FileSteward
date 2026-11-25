@@ -387,7 +387,7 @@
       "id": "dependency-provider-coverage",
       "owner": "dependencies",
       "status": "OPEN",
-      "description": "Native current resolver registers application_installation and repository only; repository coverage explicitly incomplete. Never interpret absent runtime/service/task/package/toolchain/user-data evidence as safe."
+      "description": "Native current resolver registers application_installation, repository and positive-only Windows service references. Repository and service coverage remain explicitly incomplete; nine other domains have no native provider. Never interpret missing dependency evidence as safe."
     },
     {
       "id": "necessity-display-live",
