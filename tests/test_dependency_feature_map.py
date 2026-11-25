@@ -190,3 +190,75 @@ def test_chamber_renders_dependency_metrics_without_mutation():
     assert "unresolved discovery domains" in source
     assert "facts.appendChild(metrics)" in source
     assert "Safe raw deletion has not been established." in source
+
+
+def test_service_registry_collector_reads_synthetic_positive_references(tmp_path, monkeypatch):
+    """Read-only Winreg fixture proves both service executable and ServiceDll."""
+    from types import SimpleNamespace
+    import sys
+    from filesteward.ownership import current
+
+    exe = tmp_path / "service.exe"
+    dll = tmp_path / "service.dll"
+    exe.write_bytes(b"executable")
+    dll.write_bytes(b"library")
+
+    class Key:
+        def __init__(self, location):
+            self.location = location
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+
+    def open_key(parent, name, *args):
+        if parent == "HKLM":
+            return Key("root")
+        if parent.location == "root" and name == "DemoSvc":
+            return Key("service")
+        if parent.location == "service" and name == "Parameters":
+            return Key("parameters")
+        raise FileNotFoundError()
+
+    def query_value(key, name):
+        if key.location == "service" and name == "ImagePath":
+            return ('"' + str(exe) + '" --service', 1)
+        if key.location == "parameters" and name == "ServiceDll":
+            return (str(dll), 1)
+        raise FileNotFoundError()
+
+    fake = SimpleNamespace(
+        HKEY_LOCAL_MACHINE="HKLM", KEY_READ=1, REG_SZ=1, REG_EXPAND_SZ=2,
+        OpenKey=open_key,
+        QueryInfoKey=lambda key: (1, 0, 0),
+        EnumKey=lambda key, i: "DemoSvc",
+        QueryValueEx=query_value,
+    )
+    monkeypatch.setitem(sys.modules, "winreg", fake)
+    observations, gaps = current._read_service_registrations()
+    assert not gaps
+    assert set(observations) == {
+        ("DemoSvc", "ImagePath", str(exe)),
+        ("DemoSvc", "ServiceDll", str(dll)),
+    }
+    projected = current._service_projection(tmp_path, tmp_path, observations)
+    assert len(projected.edges) == 2
+    assert not projected.complete
+    evidence = OwnershipEvidence(build_ownership_graph(extra_edges=projected.edges), False, time.time())
+    assert plan_owner_actions(str(exe), evidence).disposition is CleanupDisposition.PROTECTED
+    assert plan_owner_actions(str(dll), evidence).disposition is CleanupDisposition.PROTECTED
+
+
+def test_service_registry_failure_is_explicit_not_evidence_of_absence(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    from filesteward.ownership import current
+
+    def denied(*args):
+        raise PermissionError("synthetic protected message")
+    fake = SimpleNamespace(HKEY_LOCAL_MACHINE="HKLM", KEY_READ=1, OpenKey=denied)
+    monkeypatch.setitem(sys.modules, "winreg", fake)
+    observations, gaps = current._read_service_registrations()
+    assert observations == ()
+    assert gaps == ("SERVICE_REGISTRY_UNREADABLE",)
+    assert "synthetic protected message" not in repr((observations, gaps))
