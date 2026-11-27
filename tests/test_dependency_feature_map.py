@@ -262,3 +262,140 @@ def test_service_registry_failure_is_explicit_not_evidence_of_absence(monkeypatc
     assert observations == ()
     assert gaps == ("SERVICE_REGISTRY_UNREADABLE",)
     assert "synthetic protected message" not in repr((observations, gaps))
+
+
+@pytest.mark.parametrize(
+    "mode,width,height",
+    [("desktop", 1440, 1000), ("narrow", 390, 844), ("reduced", 1440, 1000), ("forced", 1440, 1000)],
+)
+def test_decision_chamber_browser_service_protection_and_reclaim_control(
+    tmp_path, monkeypatch, mode, width, height
+):
+    """Browser proof: service-required protection blocks delete while positive control stays reachable."""
+    import shutil
+
+    api = pytest.importorskip("playwright.sync_api")
+    from filesteward.ownership.actions import unresolved_ownership
+    from filesteward.ownership.current import CurrentOwnershipEvidence, ProbeCoverage
+    from filesteward.policy import paths
+    from filesteward.review_bridge import serve_review
+    from safe_capacity_fixtures import generated_evidence
+    from test_visualization_model import _write_valid_run
+
+    runtime = tmp_path / "runtime"
+    run = _write_valid_run(runtime / "runs" / "synthetic")
+    scan = tmp_path / "scan"
+    scan.mkdir()
+    sentinel = scan / "unrelated.txt"
+    sentinel.write_bytes(b"synthetic bytes")
+    monkeypatch.setattr(paths, "runtime_root", lambda: runtime)
+
+    service_target = r"C:\ExampleRestricted"
+    reclaim_target = r"C:\ProgramData\ExampleTool\RegenerableCache"
+
+    def current_evidence(path):
+        if path == service_target:
+            edge = OwnershipEdge(
+                "SERVICE_REFERENCES",
+                path,
+                "SERVICE",
+                "service:DemoSvc",
+                "DemoSvc",
+                "windows_service_registry",
+                "strong",
+                "",
+                "Registered service ImagePath references this path",
+            )
+            return CurrentOwnershipEvidence(
+                build_ownership_graph(extra_edges=(edge,)),
+                False,
+                time.time(),
+                coverage=(
+                    ProbeCoverage(
+                        "service",
+                        False,
+                        "windows_service_registry",
+                        ("SERVICE_RUNTIME_DEPENDENCY_COMPLETENESS_UNPROVEN",),
+                    ),
+                ),
+            )
+        if path == reclaim_target:
+            return generated_evidence(path)
+        return unresolved_ownership(path)
+
+    service = serve_review(
+        run, open_browser=False, scan_root=scan, ownership_resolver=current_evidence
+    )
+    output = ROOT / "var" / "runs" / "fs80-scene-browser"
+    output.mkdir(parents=True, exist_ok=True)
+    try:
+        with api.sync_playwright() as driver:
+            chromium = shutil.which("chromium")
+            browser = driver.chromium.launch(
+                **({"executable_path": chromium} if chromium else {"channel": "msedge"})
+            )
+            try:
+                page = browser.new_page(
+                    viewport={"width": width, "height": height},
+                    reduced_motion="reduce" if mode == "reduced" else "no-preference",
+                    forced_colors="active" if mode == "forced" else "none",
+                )
+                errors = []
+                page.on("pageerror", lambda error: errors.append(str(error)))
+                page.goto(service.url, wait_until="networkidle")
+
+                chamber = page.locator("#decision-chamber")
+                # Protected negative fixture: positive service edge with incomplete discovery.
+                unknown_row = page.locator('.nav-row[data-node-id="unknown-1"]')
+                if mode == "desktop":
+                    unknown_row.focus()
+                    unknown_row.press("Enter")
+                else:
+                    unknown_row.click()
+                page.locator('.decision-guide-step[data-guide-step="RESOLVE"]').click()
+                page.wait_for_function(
+                    "window.__filestewardDecisionChamber && window.__filestewardDecisionChamber.sceneEvidence"
+                )
+                evidence = page.evaluate("window.__filestewardDecisionChamber.sceneEvidence")
+                assert evidence["ownership_badge"] == "Required by service"
+                assert evidence["effective_disposition"] == "PROTECTED"
+                assert evidence["raw_delete_eligible"] is False
+                assert evidence["dependency_summary"]["protective_edge_count"] == 1
+                assert evidence["dependency_summary"]["raw_delete_disqualified"] is True
+
+                page.locator("#chamber-evidence-trace > summary").click()
+                facts = chamber.locator("#chamber-evidence-facts")
+                api.expect(facts).to_contain_text("Required by service: DemoSvc")
+                api.expect(facts).to_contain_text("1 protective dependency edges; 0 dependent applications;")
+                api.expect(facts).to_contain_text("Raw deletion excluded by positive dependency evidence.")
+                api.expect(chamber.locator('[data-decision-intent="DELETE_PERMANENTLY"]')).to_have_count(0)
+                api.expect(chamber.locator("#chamber-delete-scope")).to_be_hidden()
+                assert "DELETE PERMANENTLY" not in chamber.inner_text()
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
+                if mode in {"desktop", "narrow"}:
+                    page.screenshot(path=str(output / f"{mode}-service-protected.png"), full_page=True)
+
+                # Reclaimable positive control: fresh regenerable evidence stays reachable.
+                page.locator("#brand-home").click()
+                page.locator('.nav-row[data-node-id="reclaim-1"]').click()
+                page.locator('.decision-guide-step[data-guide-step="RESOLVE"]').click()
+                api.expect(chamber).to_have_attribute("data-script-scene", "VALUE_DECISION")
+                reclaim_facts = chamber.locator("#chamber-evidence-facts")
+                api.expect(reclaim_facts).to_contain_text("0 protective dependency edges;")
+                api.expect(reclaim_facts).to_contain_text(
+                    "Reclaim candidate only; separate operator approval required."
+                )
+                chamber.get_by_role("button", name="Review removal options", exact=False).click()
+                api.expect(chamber).to_have_attribute("data-script-scene", "AUTHORIZATION_GATE")
+                api.expect(chamber.locator("#chamber-delete-scope")).to_be_visible()
+                assert not errors
+                assert not (run / "delete-approval.json").exists()
+                assert not (run / "delete-execution-receipt.json").exists()
+                assert sentinel.read_bytes() == b"synthetic bytes"
+            finally:
+                browser.close()
+    finally:
+        service.server.shutdown()
+        service.server.server_close()
+        service.thread.join(timeout=5)
+
