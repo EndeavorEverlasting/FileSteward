@@ -1,20 +1,29 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome — FileSteward</title><style>
 :root{color-scheme:light;--paper:#f6f0e6;--ink:#29251f;--muted:#665c50;--copper:#825035;--line:#c8b8a4;--surface:#fffaf1;font-family:Segoe UI,system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);line-height:1.6}.frame{max-width:1080px;margin:auto;padding:0 32px}header{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:26px 0;border-bottom:1px solid var(--line)}.brand{font-size:21px;font-weight:750;letter-spacing:.025em}.version,.eyebrow{font:12px Consolas,monospace;letter-spacing:.08em;color:var(--copper)}.version{border:1px solid var(--line);padding:6px 10px}.skip{position:absolute;top:-6rem;background:var(--surface);padding:1rem}.skip:focus{top:1rem;z-index:30}button,input,a,summary{touch-action:manipulation}button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible,.current-output:focus-visible{outline:3px solid #244f62;outline-offset:4px}button{cursor:pointer;font:600 15px Segoe UI,system-ui,sans-serif;min-height:46px;padding:10px 18px;border:1px solid var(--line);border-radius:3px;background:transparent;color:var(--ink)}button:hover{background:#eaddcc}button:disabled{cursor:wait;opacity:.6}.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}.primary:hover{background:var(--copper)}.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:65px;padding:70px 0 50px;align-items:center}h1{font:400 clamp(40px,5.5vw,64px)/1.1 Georgia,serif;letter-spacing:-.035em;margin:16px 0 24px}h2{font:400 28px/1.25 Georgia,serif;margin:0 0 16px}h3{font-size:17px;margin:0 0 10px}p{margin:0 0 16px}.lead{font-size:18px;color:var(--muted)}.note{font-size:13px;color:var(--muted);margin-top:12px}.sample{background:var(--surface);border:1px solid var(--line);padding:28px;box-shadow:10px 10px 0 #e7ddcf}.sample:before{content:"";display:block;border-top:3px solid var(--copper);width:42px;margin-bottom:22px}.sample ol{padding-left:22px;color:var(--muted)}.sample li{padding:5px 0}.sample button{width:100%;margin-top:12px}.lower{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;border-top:1px solid var(--line);padding:38px 0 50px}.section-top{display:flex;justify-content:space-between;align-items:start;gap:18px}.section-top button{padding:6px 12px;font-size:13px;min-height:36px}.runs{list-style:none;margin:10px 0 0;padding:0}.runs li{border-top:1px solid var(--line);padding:15px 0;display:flex;align-items:center;justify-content:space-between;gap:14px}.run-title{font-weight:650;overflow-wrap:anywhere}.run-meta{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.import{border:1px solid var(--line);padding:24px;background:var(--surface)}input[type=file]{width:100%;font-size:14px;margin:14px 0;min-height:44px}input::file-selector-button{min-height:44px;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 12px;color:var(--ink);cursor:pointer}.file-summary{font-size:13px;overflow-wrap:anywhere;padding:12px 0}.status{min-height:30px;padding:14px 18px;margin:0 0 25px;border-left:3px solid var(--copper);background:#eee3d3}.status[hidden]{display:none}.status[data-error=true]{border-color:#9b2922;background:#fae8e1;color:#742119}.boundary{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding:22px 0}footer{padding:22px 0 30px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:20px;color:var(--muted);font-size:13px}details{margin-top:15px}summary{cursor:pointer;min-height:32px}details p{font-size:13px;color:var(--muted);margin-top:10px}@media(max-width:720px){.frame{padding:0 20px}.hero,.lower{grid-template-columns:1fr;gap:30px}.hero{padding:45px 0}.sample{box-shadow:5px 5px 0 #e7ddcf}header,footer{flex-wrap:wrap}.runs li{align-items:start}.lower{padding-top:30px}h1{font-size:44px}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}@media(forced-colors:active){.sample,.import,.status,.version,button{color:CanvasText;background:Canvas;border:1px solid CanvasText;box-shadow:none}.version,.eyebrow,.status[data-error=true]{color:CanvasText}.status[data-error=true]{background:Canvas}}
-.current{padding:28px;border:1px solid var(--line);background:var(--surface);margin-bottom:36px}.current form{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.current .field{flex:1 1 300px;min-width:0}.current label{display:block;font-weight:650}.current input{width:100%;min-height:46px;font:16px Segoe UI,system-ui,sans-serif;padding:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}.current .note,.current-output{overflow-wrap:anywhere}.current-output{margin-top:18px}.current-output:empty{display:none}.hero,.lower{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}@media(max-width:720px){.hero,.lower{grid-template-columns:minmax(0,1fr)}.current{padding:20px}.current form>button{width:100%}}@media(forced-colors:active){.current,.current input{background:Canvas;color:CanvasText;border-color:CanvasText}}#ownership-checks{overflow-wrap:anywhere}#ownership-gaps{padding-inline-start:22px;font-size:13px;color:var(--muted)}</style></head><body><a class="skip" href="#main">Skip to content</a><div class="frame"><header><span class="brand">FileSteward</span><span class="version">PREVIEW __FILESTEWARD_VERSION__</span></header>
-<main id="main"><section class="hero" aria-labelledby="welcome"><div><span class="eyebrow">A place to begin</span><h1 id="welcome">Your storage.<br>Your judgment.</h1><p class="lead">Meet the Memory Atlas, explore existing evidence, and keep every action tied to a deliberate choice.</p><p>Nothing is scanned or deleted when you open this app.</p><p class="note">This is an unsigned pre-alpha preview. Your local session runs on this computer.</p></div><aside class="sample" aria-labelledby="sample-title"><span class="eyebrow">Scene 01 · Synthetic sample</span><h2 id="sample-title">Find your bearings.</h2><p>Explore an example storage landscape before bringing in your own evidence.</p><ol><li>See protected and unresolved evidence.</li><li>Follow the scripted decision journey.</li><li>Understand staging and exact approval.</li></ol><button type="button" class="primary" id="demo">Explore sample</button><p class="note">Synthetic data only. This does not scan or delete your files.</p></aside></section>
-<div class="status" id="status" role="status" aria-live="polite" hidden></div><div id="error" class="status" role="alert" data-error="true" hidden></div>
-<section class="current" aria-labelledby="current-title"><span class="eyebrow">Review one folder now</span><h2 id="current-title">Bring your storage into focus.</h2><p>Read file metadata and current ownership evidence for one folder and its descendants. File contents stay closed. Nothing is moved or deleted by this scan.</p><form id="current-form"><div class="field"><label for="scan-root">Exact folder path on this computer</label><input id="scan-root" name="scan_root" type="text" autocomplete="off" spellcheck="false" required aria-describedby="scan-help scan-result"></div><button type="submit" class="primary" id="scan">Read folder metadata</button></form><p class="note" id="scan-help">Paste an absolute folder path. Linked folders and Desktop, Documents, OneDrive and Backups are excluded. Unknown ownership stays unresolved; this request grants no action approval.</p><div class="current-output" id="scan-result" role="status" aria-live="polite" tabindex="-1"></div><button type="button" id="open-current" hidden>Open current review</button><details id="ownership-checks" hidden><summary id="ownership-summary">Ownership checks</summary><ul id="ownership-gaps"></ul></details></section>
+.current{padding:28px;border:1px solid var(--line);background:var(--surface);margin-bottom:36px}.current form{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.current .field{flex:1 1 300px;min-width:0}.current label{display:block;font-weight:650}.current input{width:100%;min-height:46px;font:16px Segoe UI,system-ui,sans-serif;padding:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}.current .note,.current-output{overflow-wrap:anywhere}.current-output{margin-top:18px}.current-output:empty{display:none}.hero,.lower{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}@media(max-width:720px){.hero,.lower{grid-template-columns:minmax(0,1fr)}.current{padding:20px}.current form>button{width:100%}}@media(forced-colors:active){.current,.current input{background:Canvas;color:CanvasText;border-color:CanvasText}}#ownership-checks{overflow-wrap:anywhere}#ownership-gaps{padding-inline-start:22px;font-size:13px;color:var(--muted)}.welcome-intro{padding:30px 0 0}.welcome-intro h1{font-size:clamp(34px,4.5vw,48px);margin:0 0 10px}.welcome-intro .lead{margin:0}.hero{padding:26px 0 36px;gap:28px;align-items:start}.current{margin:0;padding:26px}.sample{padding:26px}.sample button{margin-top:4px}.scope-caption{overflow-wrap:anywhere;font:13px/1.6 Consolas,monospace;padding:12px 14px;background:var(--paper);border-inline-start:3px solid var(--copper)}.start-actions{display:flex;flex-wrap:wrap;gap:12px}.start-actions button{flex:1 1 180px}.current-output{font-size:14px}.current-output:focus-visible,#error:focus-visible{outline:3px solid #244f62;outline-offset:4px}#chosen-scope{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}#chosen-scope[hidden]{display:none}#error{margin:18px 0 0;overflow-wrap:anywhere}button:disabled{cursor:default}.current .note{margin-bottom:0}@media(max-width:720px){.welcome-intro{padding-top:24px}.hero{padding-top:20px;gap:20px}.current,.sample{padding:20px}.sample:before{margin-bottom:16px}.sample h2{font-size:25px}.sample .note{margin-bottom:0}.hero .start-actions button{flex-basis:100%}}@media(forced-colors:active){.scope-caption{background:Canvas;color:CanvasText;border-color:CanvasText}#error:focus-visible,.current-output:focus-visible{outline-color:Highlight}}
+@media(max-width:720px){header{padding:18px 0}.welcome-intro{padding-top:18px}.welcome-intro h1{font-size:30px}.welcome-intro .lead{font-size:15px;line-height:1.5}.current,.sample{padding:16px}.hero{gap:16px;padding-top:18px}.hero h2{font-size:26px}.current>p:not(.note):not(.scope-caption),.sample>p:not(.note){font-size:15px;line-height:1.5}.scope-caption{padding:10px 12px}}</style></head><body><a class="skip" href="#main">Skip to content</a><div class="frame"><header><span class="brand">FileSteward</span><span class="version">PREVIEW __FILESTEWARD_VERSION__</span></header>
+<main id="main"><section class="welcome-intro" aria-labelledby="welcome"><h1 id="welcome">Your storage. Your judgment.</h1><p class="lead">Begin with a metadata review, or find your bearings in the sample.</p></section>
+<section class="hero" aria-label="Choose where to begin"><section class="current" id="current-card" aria-labelledby="current-title"><span class="eyebrow">Your starting point</span><h2 id="current-title">Start with Downloads</h2><p>Review names, sizes, dates, folders, and ownership evidence in Downloads and its subfolders. File contents stay closed. Nothing is moved or deleted.</p><p class="scope-caption" id="recommended-path">Finding the Downloads folder...</p><div class="start-actions"><button type="button" class="primary" id="review-downloads" disabled>Finding Downloads...</button><button type="button" id="choose-folder">Choose another folder</button></div><p class="note" id="recommended-state" role="status" aria-live="polite">Opening FileSteward never scans your files. This review reads metadata only.</p><button type="button" id="refresh-scope" hidden>Check Downloads again</button><section id="chosen-scope" aria-labelledby="chosen-title" hidden><h3 id="chosen-title">Your selected folder</h3><p class="scope-caption" id="chosen-path"></p><p class="note" id="selected-state">Review names, sizes, dates and ownership evidence. File contents stay closed; nothing is moved or deleted.</p><button type="button" id="review-selected" disabled>Review selected folder</button></section><div class="current-output" id="scan-result" role="status" aria-live="polite" tabindex="-1"></div><div id="error" class="status" role="alert" data-error="true" tabindex="-1" hidden></div></section><aside class="sample" aria-labelledby="sample-title"><span class="eyebrow">Synthetic sample</span><h2 id="sample-title">Find your bearings.</h2><p>Explore an example storage landscape and follow the Memory Atlas into its decision journey.</p><button type="button" id="demo">Explore sample</button><p class="note">Synthetic data only. This does not scan or delete your files.</p></aside></section>
+<div class="status" id="status" role="status" aria-live="polite" hidden></div>
 <section class="lower" aria-label="Open your evidence"><section aria-labelledby="recent-title"><div class="section-top"><h2 id="recent-title">Recent reviews</h2><button type="button" id="refresh">Refresh</button></div><p class="note">Open a local FileSteward run already available to this session.</p><ul class="runs" id="runs"></ul><p id="empty" class="note">Loading recent reviews…</p></section><section class="import" aria-labelledby="import-title"><span class="eyebrow">Bring an existing run</span><h2 id="import-title">Evidence, not a scan.</h2><p>Choose a FileSteward run folder. Only permitted files directly inside it are imported.</p><label for="folder">Existing run folder</label><input id="folder" type="file" webkitdirectory multiple><div id="file-summary" class="file-summary" aria-live="polite">No folder selected.</div><button type="button" id="import" disabled>Import selected evidence</button><details><summary>What leaves the selected folder?</summary><p id="allowed">Loading permitted filenames…</p><p>Nested files and other private material are excluded. Importing a run does not authorize a scan or an action on its source paths.</p></details></section></section>
 <p class="boundary">Sample and imported reviews are observation-only: they never gain action authority. Current folder reviews use fresh evidence and the existing decision gates; reading metadata does not authorize any action. Classification, approval, execution, and verification remain separate. Quarantine staging removes no bytes. Permanent deletion requires the exact-manifest gates and a distinct authorization. Recurring cleanup preferences are not available in this preview.</p></main><footer><span>FileSteward · evidence before confidence</span><button type="button" id="stop">Close app</button></footer></div>
 <script type="application/json" id="launch-runtime">__FILESTEWARD_RUNTIME__</script><script>
 (() => {
   'use strict';
   const byId = id => document.getElementById(id);
-  let runtime, selected = [], busy = false, stopped = false, currentResult = null;
+  let runtime, selected = [], busy = false, stopped = false, recommended = null, chosen = null;
   const notice = message => { byId('status').hidden = !message; byId('status').textContent = message; };
   const showError = message => { byId('error').hidden = !message; byId('error').textContent = message; };
-  const controls = () => { document.querySelectorAll('button,input').forEach(el => { el.disabled = busy || stopped || (el.id === 'import' && !selected.length) || (el.id === 'open-current' && !currentResult); }); byId('main').setAttribute('aria-busy', String(busy)); };
+  const controls = () => {
+    document.querySelectorAll('button,input').forEach(el => {
+      el.disabled = busy || stopped || (el.id === 'import' && !selected.length)
+        || (el.id === 'review-downloads' && !(recommended && recommended.available && recommended.scope_token))
+        || (el.id === 'review-selected' && !(chosen && chosen.scope_token));
+    });
+    byId('main').setAttribute('aria-busy', String(busy));
+    byId('current-card').setAttribute('aria-busy', String(busy));
+  };
   try { runtime = JSON.parse(byId('launch-runtime').textContent); } catch (_) { showError('The local launch session is unavailable. Reopen FileSteward to restore it.'); stopped = true; controls(); return; }
   const whitelist = () => Array.isArray(runtime.allowedImportFiles) ? runtime.allowedImportFiles : [];
   const request = async (path, body) => {
@@ -36,8 +45,9 @@
   const action = async (message, callback) => {
     if (busy || stopped) return;
     busy = true; showError(''); notice(message); controls();
-    try { await callback(); } catch (error) { notice(''); showError(error.message || 'The local connection failed. Reopen FileSteward and retry; success is not confirmed.'); }
-    finally { busy = false; controls(); }
+    let failed = false;
+    try { await callback(); } catch (error) { failed = true; notice(''); showError(error.message || 'The local connection failed. Reopen FileSteward and retry; success is not confirmed.'); }
+    finally { busy = false; controls(); if (failed) byId('error').focus(); }
   };
   const refresh = async () => {
     const state = await request('/api/v1/launch/state');
@@ -56,55 +66,76 @@
     });
     notice('Recent reviews refreshed.');
   };
-  byId('current-form').addEventListener('submit', event => {
-    event.preventDefault();
-    action('Reading folder metadata and current ownership evidence...', async () => {
-      currentResult = null; byId('open-current').hidden = true; byId('ownership-checks').hidden = true;
-      byId('scan-root').removeAttribute('aria-invalid');
-      byId('scan-result').textContent = 'Reading metadata... This may take time for a large folder. No file contents are opened.';
-      try {
-        const started = await request('/api/v1/launch/current-scan', {scan_root:byId('scan-root').value});
-        let result;
-        do {
-          await new Promise(resolve => setTimeout(resolve, 350));
-          result = await request('/api/v1/launch/current-scan');
-          if (result.job_id !== started.job_id) throw new Error('The folder review changed. Refresh and review its current result.');
-        } while (result.state === 'READING');
-        if (result.state === 'ERROR') throw new Error(result.message);
-        if (!['READY','PARTIAL','EMPTY'].includes(result.state)) throw new Error('The folder review returned an unknown result. Retry before continuing.');
-        currentResult = result;
-        byId('scan-result').replaceChildren();
-        const summary = document.createElement('p');
-        summary.textContent = result.message + ' Entries read: ' + result.item_count + '. Metadata: ' + (result.metadata_complete ? 'complete' : 'partial') + '. Ownership: ' + (result.ownership_complete ? 'complete current coverage' : 'incomplete; review the missing checks before any action') + '.';
-        byId('scan-result').append(summary);
-        const records = result.coverage || [];
-        const incomplete = new Set(records.filter(record => !record.complete).map(record => record.domain)).size;
-        byId('ownership-summary').textContent = 'Ownership checks \u2014 ' + incomplete + ' incomplete';
-        byId('ownership-checks').hidden = records.length === 0;
-        byId('ownership-checks').open = false;
-        const gaps = byId('ownership-gaps');
-        gaps.replaceChildren();
-        records.forEach(record => {
-          const row = document.createElement('li');
-          const domain = String(record.domain || 'ownership').replace(/_/g, ' ');
-          row.textContent = domain + ': ' + (record.complete ? 'checked' : 'incomplete') + ' (' + record.provenance + '). ' + (record.gaps || []).join('; ');
-          gaps.append(row);
-        });
-        byId('open-current').hidden = false;
-        byId('scan-result').focus();
-        notice(result.state === 'PARTIAL' ? 'Partial metadata review saved. Inspect its gaps before any decision.' : 'Folder metadata review saved.');
-      } catch (error) {
-        byId('scan-result').textContent = 'Review not completed. Check the folder path and retry; no action was applied.';
-        byId('scan-root').setAttribute('aria-invalid','true');
-        byId('scan-root').disabled = false; byId('scan-root').focus();
-        throw error;
+  const refreshRecommendation = async () => {
+    recommended = null;
+    byId('review-downloads').textContent = 'Finding Downloads...';
+    controls();
+    try {
+      const scope = await request('/api/v1/launch/recommended-scope');
+      recommended = scope;
+      byId('recommended-path').textContent = scope.display_path ? 'Folder: ' + scope.display_path : 'No Downloads folder is available for review.';
+      byId('recommended-state').textContent = scope.available
+        ? 'Opening FileSteward never scans your files. This review reads metadata only.'
+        : 'Downloads is not available for a safe review. No files were scanned. ' + (scope.reason || '') + ' Choose another folder or explore the sample.';
+      byId('refresh-scope').hidden = Boolean(scope.available);
+    } catch (error) {
+      byId('recommended-path').textContent = 'Downloads discovery could not be completed.';
+      byId('recommended-state').textContent = error.message + ' No files were scanned. Choose another folder or explore the sample.';
+      byId('refresh-scope').hidden = false;
+      throw error;
+    } finally {
+      byId('review-downloads').textContent = 'Review Downloads';
+      controls();
+    }
+  };
+  const review = (scope, label, isRecommended) => action('Reading ' + label + ' metadata and ownership evidence...', async () => {
+    if (!(scope && scope.scope_token)) throw new Error('The folder recommendation is unavailable. Check Downloads again or choose another folder.');
+    const token = scope.scope_token;
+    scope.scope_token = null;
+    controls();
+    byId('scan-result').textContent = 'Reading ' + label + ' metadata and ownership evidence... File contents stay closed.';
+    try {
+      const started = await request('/api/v1/launch/current-scan', {scope_token:token});
+      let result;
+      do {
+        await new Promise(resolve => setTimeout(resolve, 350));
+        result = await request('/api/v1/launch/current-scan');
+        if (result.job_id !== started.job_id) throw new Error('The folder review changed. Check the current result before retrying.');
+      } while (result.state === 'READING');
+      if (result.state === 'ERROR') throw new Error(result.message);
+      if (!['READY','PARTIAL','EMPTY'].includes(result.state)) throw new Error('The folder review returned an unknown result. No review was opened.');
+      byId('scan-result').textContent = result.message + ' Entries read: ' + result.item_count + '. Opening your current review...';
+      const opened = await request('/api/v1/launch/open', {run_id:result.run_id});
+      navigate(opened);
+    } catch (error) {
+      byId('scan-result').textContent = 'Review not opened. No action was applied. A new review requires another deliberate click.';
+      if (isRecommended) {
+        // Discovery may refresh a consumed/stale capability. It never retries
+        // the scan or follows a changed recommendation without another click.
+        try { await refreshRecommendation(); } catch (_) { /* Keep original scan failure visible. */ }
+      } else {
+        chosen = null;
+        byId('selected-state').textContent = 'This review could not continue. Choose the folder again to obtain a fresh review scope.';
       }
-    });
+      throw error;
+    }
   });
-  byId('open-current').addEventListener('click', () => action('Opening current folder review...', async () => {
-    if (!currentResult) throw new Error('Read folder metadata before opening a current review.');
-    navigate(await request('/api/v1/launch/open', {run_id:currentResult.run_id}));
+  byId('review-downloads').addEventListener('click', () => review(recommended, 'Downloads', true));
+  byId('refresh-scope').addEventListener('click', () => action('Checking the Downloads folder...', refreshRecommendation));
+  byId('choose-folder').addEventListener('click', () => action('Choose a folder in the Windows dialog. Choosing alone does not scan it.', async () => {
+    const result = await request('/api/v1/launch/choose-folder', {intent:'choose'});
+    if (result.scan_started !== false) throw new Error('The folder picker did not confirm a selection-only result. No review was requested.');
+    if (result.state === 'CANCELED') { notice('No folder selected. No files were scanned.'); return; }
+    if (result.state !== 'SELECTED' || !result.display_path || !result.scope_token) throw new Error('The folder picker did not return an admitted folder. Choose another folder or explore the sample.');
+    chosen = result;
+    byId('chosen-path').textContent = 'Folder: ' + result.display_path;
+    byId('chosen-scope').hidden = false;
+    byId('selected-state').textContent = 'Review names, sizes, dates and ownership evidence. File contents stay closed; nothing is moved or deleted.';
+    notice('Folder selected. Review the disclosed folder when you are ready; no scan has started.');
+    byId('chosen-title').setAttribute('tabindex','-1');
+    byId('chosen-title').focus();
   }));
+  byId('review-selected').addEventListener('click', () => review(chosen, 'selected folder', false));
   byId('demo').addEventListener('click', () => action('Preparing a synthetic sample…', async () => navigate(await request('/api/v1/launch/demo', {}))));
   byId('refresh').addEventListener('click', () => action('Refreshing recent reviews…', refresh));
   byId('folder').addEventListener('change', () => {
@@ -128,6 +159,10 @@
     if (result.stopped !== true) throw new Error('The app did not confirm shutdown. Retry or close the local process.');
     stopped = true; notice('FileSteward is closed. You can close this tab. Reopen the executable for a new local session.');
   }));
-  action('Loading recent reviews…', refresh);
+  action('Finding Downloads and loading recent reviews...', async () => {
+    const results = await Promise.allSettled([refreshRecommendation(), refresh()]);
+    const failure = results.find(result => result.status === 'rejected');
+    if (failure) throw failure.reason;
+  });
 })();
 </script></body></html>
