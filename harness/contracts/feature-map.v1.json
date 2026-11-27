@@ -1,0 +1,523 @@
+{
+  "schema_version": "filesteward.feature-map/v1",
+  "authority": "traceability_only_not_judgment_or_scene_policy",
+  "scope": {
+    "roots": [
+      ".agents/skills",
+      ".cursor/rules",
+      ".github/workflows",
+      "packaging",
+      "scripts",
+      "src"
+    ],
+    "root_files": [
+      "AGENTS.md",
+      "FileSteward-source.cmd",
+      "README.md",
+      "docs/assets/favicon.svg",
+      "docs/assets/launch.css",
+      "docs/index.html",
+      "docs/program/storage-reclaim-visualization-prototype.html",
+      "pyproject.toml"
+    ],
+    "excluded": "Historical documents, plans, handoffs, private runtime data and generated outputs are outside production-source scope. Git-tracked/unignored executable or presentational sources outside the declared roots/explicit files fail coverage. Harness contracts/evaluations and Python test sources have separate complete feature ownership.",
+    "contract_roots": [
+      "harness/contracts",
+      "harness/evals"
+    ],
+    "test_roots": [
+      "tests"
+    ]
+  },
+  "workflow_ref": "harness/contracts/judgment-scene-workflow.v1.json",
+  "composition_ref": "harness/contracts/scene-composition.v1.json",
+  "features": [
+    {
+      "id": "inventory",
+      "title": "Inventory and metadata",
+      "scene_ids": [
+        "ATLAS_HOME",
+        "TARGET_FOCUS",
+        "EVIDENCE_GATE"
+      ],
+      "source_paths": [
+        "src/filesteward/inventory/__init__.py",
+        "src/filesteward/inventory/scan.py",
+        "src/filesteward/inventory/windows.py",
+        "src/filesteward/models.py",
+        "src/filesteward/sample.py"
+      ],
+      "tests": [
+        "tests/test_models.py",
+        "tests/test_scan.py",
+        "tests/test_visualization_model.py"
+      ],
+      "contract_paths": []
+    },
+    {
+      "id": "classification",
+      "title": "Disposition and protection",
+      "scene_ids": [
+        "TARGET_FOCUS",
+        "EVIDENCE_GATE",
+        "CONSEQUENCE_RESOLVE"
+      ],
+      "source_paths": [
+        "src/filesteward/classify/__init__.py",
+        "src/filesteward/classify/challenge.py",
+        "src/filesteward/classify/gates.py",
+        "src/filesteward/classify/rules.py",
+        "src/filesteward/policy/__init__.py",
+        "src/filesteward/policy/paths.py",
+        "src/filesteward/protect/__init__.py",
+        "src/filesteward/protect/git.py",
+        "src/filesteward/protect/index.py"
+      ],
+      "tests": [
+        "tests/test_challenge.py",
+        "tests/test_disposition.py",
+        "tests/test_protection.py",
+        "tests/test_safe_capacity_actions.py"
+      ],
+      "contract_paths": []
+    },
+    {
+      "id": "dependencies",
+      "title": "Application/repository dependency evidence",
+      "scene_ids": [
+        "TARGET_FOCUS",
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "RECOVERABILITY_RESOLVE",
+        "VALUE_DECISION",
+        "AUTHORIZATION_GATE"
+      ],
+      "source_paths": [
+        "scripts/windows/diagnose-wispr-install.ps1",
+        "src/filesteward/ownership/__init__.py",
+        "src/filesteward/ownership/_git_probe.py",
+        "src/filesteward/ownership/_windows_paths.py",
+        "src/filesteward/ownership/actions.py",
+        "src/filesteward/ownership/capacity.py",
+        "src/filesteward/ownership/current.py",
+        "src/filesteward/ownership/graph.py",
+        "src/filesteward/ownership/reducer.py",
+        "src/filesteward/ownership/repository.py",
+        "src/filesteward/ownership/windows_app.py"
+      ],
+      "tests": [
+        "tests/test_current_ownership.py",
+        "tests/test_dependency_feature_map.py",
+        "tests/test_ownership_graph.py",
+        "tests/test_ownership_reducer.py",
+        "tests/test_ownership_repository.py",
+        "tests/test_ownership_windows_app.py",
+        "tests/test_safe_capacity_actions.py"
+      ],
+      "contract_paths": [
+        "harness/contracts/dependency-aware-judgment-closure.v1.json",
+        "harness/contracts/storage-dependency-judgment.v1.json",
+        "harness/contracts/storage-ownership-evidence-graph.v1.json",
+        "harness/evals/judgment-closure-p82-validation-2026-10-07.json"
+      ]
+    },
+    {
+      "id": "reclaim",
+      "title": "Exact authorization, execution and verification",
+      "scene_ids": [
+        "AUTHORIZATION_GATE",
+        "RECLAIM_EXECUTION",
+        "VERIFY_RETURN",
+        "INCIDENT_RECOVERY"
+      ],
+      "source_paths": [
+        "src/filesteward/approval.py",
+        "src/filesteward/deletion/__init__.py",
+        "src/filesteward/deletion/approval.py",
+        "src/filesteward/deletion/execute.py",
+        "src/filesteward/deletion/manifest.py",
+        "src/filesteward/deletion/native.py",
+        "src/filesteward/deletion/ownership.py",
+        "src/filesteward/deletion/postcondition.py",
+        "src/filesteward/deletion/preflight.py",
+        "src/filesteward/deletion/receipt.py",
+        "src/filesteward/deletion/reclaim.py",
+        "src/filesteward/deletion/regenerable.py",
+        "src/filesteward/deletion/surface.py"
+      ],
+      "tests": [
+        "tests/safe_capacity_fixtures.py",
+        "tests/test_approval.py",
+        "tests/test_delete_approval.py",
+        "tests/test_delete_execute.py",
+        "tests/test_delete_manifest.py",
+        "tests/test_delete_preflight.py",
+        "tests/test_delete_surface.py",
+        "tests/test_native_delete.py",
+        "tests/test_operator_delete_path_contract.py",
+        "tests/test_reclaim_postcondition.py",
+        "tests/test_regenerable_cache_roots.py",
+        "tests/test_safe_capacity_actions.py",
+        "tests/test_safe_capacity_preflight.py",
+        "tests/test_safe_capacity_strategy.py"
+      ],
+      "contract_paths": [
+        "harness/evals/safe-capacity-k1-k2-proof-2026-10-07.json",
+        "harness/evals/safe-capacity-k3-k5-proof-2026-10-07.json",
+        "harness/evals/safe-capacity-k4-proof-2026-10-19.json",
+        "harness/evals/storage-reclamation-p82-corpus.v1.json"
+      ]
+    },
+    {
+      "id": "evidence",
+      "title": "Run artifacts and decision readback",
+      "scene_ids": [
+        "ATLAS_HOME",
+        "TARGET_FOCUS",
+        "EVIDENCE_GATE",
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "RECOVERABILITY_RESOLVE",
+        "VALUE_DECISION",
+        "AUTHORIZATION_GATE",
+        "RECLAIM_EXECUTION",
+        "VERIFY_RETURN",
+        "INCIDENT_RECOVERY"
+      ],
+      "source_paths": [
+        "src/filesteward/manifest/__init__.py",
+        "src/filesteward/manifest/artifacts.py",
+        "src/filesteward/manifest/triage.py",
+        "src/filesteward/review_bridge.py",
+        "src/filesteward/run.py"
+      ],
+      "tests": [
+        "tests/test_artifacts.py",
+        "tests/test_current_review_wiring.py",
+        "tests/test_review_bridge.py",
+        "tests/test_review_bridge_http.py",
+        "tests/test_triage.py"
+      ],
+      "contract_paths": []
+    },
+    {
+      "id": "atlas",
+      "title": "Immersive Atlas and judgment scene projection",
+      "scene_ids": [
+        "ATLAS_HOME",
+        "TARGET_FOCUS",
+        "EVIDENCE_GATE",
+        "ATTRIBUTION_RESOLVE",
+        "CONSEQUENCE_RESOLVE",
+        "RECOVERABILITY_RESOLVE",
+        "VALUE_DECISION",
+        "AUTHORIZATION_GATE",
+        "RECLAIM_EXECUTION",
+        "VERIFY_RETURN",
+        "INCIDENT_RECOVERY"
+      ],
+      "source_paths": [
+        "docs/assets/favicon.svg",
+        "docs/assets/launch.css",
+        "docs/index.html",
+        "docs/program/storage-reclaim-visualization-prototype.html",
+        "src/filesteward/contracts/judgment-scene-workflow.v1.json",
+        "src/filesteward/contracts/storage-reclaim-visual-system.tokens.json",
+        "src/filesteward/visualization/__init__.py",
+        "src/filesteward/visualization/camera.py",
+        "src/filesteward/visualization/cinematic.py",
+        "src/filesteward/visualization/context_geometry.py",
+        "src/filesteward/visualization/contracts.py",
+        "src/filesteward/visualization/coverage_view.py",
+        "src/filesteward/visualization/css.py",
+        "src/filesteward/visualization/decision_chamber.py",
+        "src/filesteward/visualization/decision_flow.py",
+        "src/filesteward/visualization/experience.py",
+        "src/filesteward/visualization/html.py",
+        "src/filesteward/visualization/interaction.py",
+        "src/filesteward/visualization/judgment_script.py",
+        "src/filesteward/visualization/literal.py",
+        "src/filesteward/visualization/model.py",
+        "src/filesteward/visualization/performance.py",
+        "src/filesteward/visualization/readability.py",
+        "src/filesteward/visualization/report.py",
+        "src/filesteward/visualization/scene_surface.py",
+        "src/filesteward/visualization/selection.py",
+        "src/filesteward/visualization/shell.py",
+        "src/filesteward/visualization/signals.py",
+        "src/filesteward/visualization/storage_coverage.py",
+        "src/filesteward/visualization/tokens.py",
+        "src/filesteward/visualization/treemap.py"
+      ],
+      "tests": [
+        "tests/test_cinematic_layout_regression.py",
+        "tests/test_cinematic_script.py",
+        "tests/test_context_geometry.py",
+        "tests/test_context_placement_browser.py",
+        "tests/test_current_review_browser.py",
+        "tests/test_decision_removal_browser.py",
+        "tests/test_decision_ux_continuity.py",
+        "tests/test_dependency_feature_map.py",
+        "tests/test_experience_pointer_range.py",
+        "tests/test_judgment_packaging.py",
+        "tests/test_judgment_runtime.py",
+        "tests/test_resolve_framing_browser.py",
+        "tests/test_scene_composition_contract.py",
+        "tests/test_scene_surface.py",
+        "tests/test_status_orb_context.py",
+        "tests/test_storage_coverage.py",
+        "tests/test_visualization_camera.py",
+        "tests/test_visualization_decision_chamber.py",
+        "tests/test_visualization_decision_flow.py",
+        "tests/test_visualization_f0.py",
+        "tests/test_visualization_f5.py",
+        "tests/test_visualization_html.py",
+        "tests/test_visualization_interaction.py",
+        "tests/test_visualization_material_theme.py",
+        "tests/test_visualization_model.py",
+        "tests/test_visualization_report.py",
+        "tests/test_visualization_signals.py",
+        "tests/test_visualization_treemap.py",
+        "tests/test_visualization_v3_d.py",
+        "tests/test_visualization_v3_experience.py"
+      ],
+      "contract_paths": [
+        "harness/contracts/action-scene-impact.v1.json",
+        "harness/contracts/interaction-scene-acceptance.v1.json",
+        "harness/contracts/judgment-scene-workflow.v1.json",
+        "harness/contracts/scene-composition.v1.json",
+        "harness/evals/judgment-scene-p82-validation-2026-10-07.json",
+        "harness/evals/judgment-scene-regression.v1.json"
+      ]
+    },
+    {
+      "id": "runtime",
+      "title": "Local entry, packaging and installed runtime",
+      "scene_ids": [],
+      "source_paths": [
+        "FileSteward-source.cmd",
+        "packaging/windows/FileSteward.cmd.in",
+        "packaging/windows/build-requirements.txt",
+        "packaging/windows/entrypoint.py",
+        "packaging/windows/prove_distribution.py",
+        "pyproject.toml",
+        "scripts/build_windows_distribution.py",
+        "src/filesteward/__init__.py",
+        "src/filesteward/cli.py",
+        "src/filesteward/contracts/runtime-profile.v1.json",
+        "src/filesteward/launch.py",
+        "src/filesteward/runtime_profile.py",
+        "src/filesteward/web/launch.html"
+      ],
+      "tests": [
+        "tests/test_cli.py",
+        "tests/test_installed_runtime_profile.py",
+        "tests/test_launch.py",
+        "tests/test_launch_current_review.py",
+        "tests/test_paths.py",
+        "tests/test_source_launcher.py",
+        "tests/test_versioning.py",
+        "tests/test_windows_distribution.py"
+      ],
+      "contract_paths": [
+        "harness/evals/windows-preview-publication-20261014.json"
+      ]
+    },
+    {
+      "id": "malware",
+      "title": "Read-only antivirus detection",
+      "scene_ids": [],
+      "source_paths": [
+        "src/filesteward/antivirus/__init__.py",
+        "src/filesteward/antivirus/cli.py",
+        "src/filesteward/antivirus/matcher.py",
+        "src/filesteward/antivirus/profile.py",
+        "src/filesteward/antivirus/signatures.py",
+        "src/filesteward/contracts/antivirus-detection.v1.json"
+      ],
+      "tests": [
+        "tests/test_antivirus_detector.py"
+      ],
+      "contract_paths": []
+    },
+    {
+      "id": "profiles",
+      "title": "Workstation performance and scheduling",
+      "scene_ids": [],
+      "source_paths": [
+        "scripts/windows/performance-profile-schedule.ps1",
+        "src/filesteward/profiles/__init__.py",
+        "src/filesteward/profiles/__main__.py",
+        "src/filesteward/profiles/schedule/__init__.py",
+        "src/filesteward/profiles/schedule/__main__.py",
+        "src/filesteward/profiles/windows.py"
+      ],
+      "tests": [
+        "tests/test_workstation_performance_projection.py",
+        "tests/test_workstation_profiles.py",
+        "tests/test_workstation_profiles_safety.py",
+        "tests/test_workstation_profiles_schedule.py",
+        "tests/test_workstation_profiles_windows.py"
+      ],
+      "contract_paths": [
+        "harness/evals/workstation-performance-safety.v1.json"
+      ]
+    },
+    {
+      "id": "mobile",
+      "title": "Mobile storage policy",
+      "scene_ids": [],
+      "source_paths": [
+        "src/filesteward/mobile/__init__.py",
+        "src/filesteward/mobile/policy.py"
+      ],
+      "tests": [
+        "tests/test_mobile_storage_policy.py"
+      ],
+      "contract_paths": [
+        "harness/contracts/mobile-storage-capability.v1.json"
+      ]
+    },
+    {
+      "id": "quality",
+      "title": "Developer validation and distribution",
+      "scene_ids": [],
+      "source_paths": [
+        ".agents/skills/upstream-intelligence/SKILL.md",
+        ".cursor/rules/upstream-intelligence.mdc",
+        ".github/workflows/mobile-storage-policy.yml",
+        ".github/workflows/product-authority.yml",
+        "AGENTS.md",
+        "README.md",
+        "scripts/cinematic_browser_probe.py",
+        "scripts/versioning.py"
+      ],
+      "tests": [
+        "tests/test_dependency_feature_map.py",
+        "tests/test_scene_composition_contract.py"
+      ],
+      "contract_paths": [
+        "harness/contracts/execution-handoff-loop.v1.json",
+        "harness/contracts/execution-handoff-packet.schema.v1.json",
+        "harness/contracts/feature-map.v1.json",
+        "harness/evals/execution-handoff-p82-validation-2026-10-07.json",
+        "harness/evals/execution-handoff-review-gates.v1.json"
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "scene_id": "ATLAS_HOME",
+      "feature_ids": [
+        "inventory",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "TARGET_FOCUS",
+      "feature_ids": [
+        "inventory",
+        "classification",
+        "dependencies",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "EVIDENCE_GATE",
+      "feature_ids": [
+        "inventory",
+        "classification",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "ATTRIBUTION_RESOLVE",
+      "feature_ids": [
+        "dependencies",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "CONSEQUENCE_RESOLVE",
+      "feature_ids": [
+        "classification",
+        "dependencies",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "RECOVERABILITY_RESOLVE",
+      "feature_ids": [
+        "dependencies",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "VALUE_DECISION",
+      "feature_ids": [
+        "dependencies",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "AUTHORIZATION_GATE",
+      "feature_ids": [
+        "dependencies",
+        "reclaim",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "RECLAIM_EXECUTION",
+      "feature_ids": [
+        "reclaim",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "VERIFY_RETURN",
+      "feature_ids": [
+        "reclaim",
+        "evidence",
+        "atlas"
+      ]
+    },
+    {
+      "scene_id": "INCIDENT_RECOVERY",
+      "feature_ids": [
+        "reclaim",
+        "evidence",
+        "atlas"
+      ]
+    }
+  ],
+  "known_gaps": [
+    {
+      "id": "dependency-provider-coverage",
+      "owner": "dependencies",
+      "status": "OPEN",
+      "description": "Native current resolver registers application_installation, repository and positive-only Windows service references. Repository and service coverage remain explicitly incomplete; nine other domains have no native provider. Never interpret missing dependency evidence as safe."
+    },
+    {
+      "id": "necessity-display-live",
+      "owner": "atlas",
+      "status": "UNVERIFIED",
+      "description": "Structured dependency summary projected from the owning planner into the existing evidence response and consequence trace; browser visibility and host evidence require local proof."
+    },
+    {
+      "id": "scene-live-evidence",
+      "owner": "atlas",
+      "status": "NOT_YET_PROVED",
+      "description": "The public Decision Chamber now projects measurable protective edges and missing coverage, but requires real browser/host acceptance across desktop, narrow, reduced-motion and input modalities; JSON mapping is not scene runtime proof."
+    }
+  ]
+}

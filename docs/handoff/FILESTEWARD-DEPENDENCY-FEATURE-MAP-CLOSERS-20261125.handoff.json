@@ -1,0 +1,170 @@
+{
+  "protocol_version": "filesteward.execution-handoff-packet/v1",
+  "sprint_id": "FILESTEWARD-DEPENDENCY-FEATURE-MAP-CLOSERS-20261125",
+  "lane_id": "FS80-CLOSERS-CONVERGENCE",
+  "role": "FileSteward dependency-safety and feature-map convergence coordinator",
+  "canonical_plan_ref": "plans/active/FILESTEWARD-DEPENDENCY-FEATURE-MAP-CLOSERS-20261125.md",
+  "contract_refs": [
+    "AGENTS.md",
+    "docs/agent/LOCAL-AGENT-PROTECTIONS.md",
+    "docs/agent/CANONICAL-PATHS.md",
+    "docs/agent/OPERATOR-DECISION-UX-PATH.md",
+    "harness/contracts/storage-dependency-judgment.v1.json",
+    "harness/contracts/storage-ownership-evidence-graph.v1.json",
+    "harness/contracts/judgment-scene-workflow.v1.json",
+    "harness/contracts/scene-composition.v1.json",
+    "harness/contracts/feature-map.v1.json",
+    "harness/evals/judgment-scene-regression.v1.json",
+    "harness/contracts/execution-handoff-loop.v1.json",
+    "harness/evals/execution-handoff-review-gates.v1.json"
+  ],
+  "provider_base_sha_at_capture": "9bf7f052cdeb2cae4408f511edba50082df65a5d",
+  "provider_head_sha_at_capture": "b5c25485004c295b0de3f2c721d4a843f91e61d5",
+  "local_head_sha_at_capture_or_unknown": "UNKNOWN_NOT_OBSERVED",
+  "completed_facts": [
+    {
+      "fact": "Provider PR #80 candidate includes dependency evidence summary, service-positive safety protection and honest service ownership badge",
+      "evidence": [
+        "git:FileSteward@b5c25485004c295b0de3f2c721d4a843f91e61d5",
+        "src/filesteward/ownership/actions.py",
+        "src/filesteward/ownership/current.py",
+        "src/filesteward/visualization/judgment_script.py",
+        "src/filesteward/visualization/decision_chamber.py"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Feature map tracks all provider-tree scoped files: 109 production/presentation/agent sources, 22 harness contracts/evals, 74 Python test sources, 11 scenes, 11 features",
+      "evidence": [
+        "git:FileSteward@b5c25485004c295b0de3f2c721d4a843f91e61d5",
+        "harness/contracts/feature-map.v1.json",
+        "tests/test_dependency_feature_map.py"
+      ],
+      "proof_state": "PROVIDER_VALIDATED"
+    },
+    {
+      "fact": "Independent PR diff overlap review found PR #73/#71/#70 do not edit PR #80 files; currently zero review threads",
+      "evidence": [
+        "github:FileSteward/PR#80",
+        "github:FileSteward/PR#73",
+        "github:FileSteward/PR#71",
+        "github:FileSteward/PR#70"
+      ],
+      "proof_state": "VERIFIED"
+    }
+  ],
+  "remaining_work": [
+    {
+      "work_id": "FS80-PROVE-FOCUSED",
+      "action": "In isolated FileSteward checkout at refreshed PR #80 head run the focused Python suite; repair every failing regression, preserve existing assertions.",
+      "depends_on": [],
+      "acceptance": "All focused tests actually pass on same candidate head; record command/runtime and skips."
+    },
+    {
+      "work_id": "FS80-PROVE-FULL",
+      "action": "Run complete repository-owned Python suite, validators, diff hygiene, and report exact pass/fail/skip results; repair rather than lower the floor.",
+      "depends_on": [
+        "FS80-PROVE-FOCUSED"
+      ],
+      "acceptance": "Full required suite green on exact candidate; no unaddressed failed test or baseline regression."
+    },
+    {
+      "work_id": "FS80-SCENE-BROWSER",
+      "action": "Verify Decision Chamber's service-required label, dependency counts, blocked action controls and scene continuity in real browser, including narrow/reduced-motion/keyboard/touch supported modes.",
+      "depends_on": [
+        "FS80-PROVE-FOCUSED"
+      ],
+      "acceptance": "Actual browser evidence with protected negative fixture and reclaimable positive control, all canonical scenes preserved."
+    },
+    {
+      "work_id": "FS80-NATIVE-SYNTHETIC",
+      "action": "Independently test Windows registry service ImagePath/ServiceDll parsing with synthetic winreg and stale/out-of-scope cases; then stage a safe Windows-host test only under a separately admitted read-only observation scope.",
+      "depends_on": [
+        "FS80-PROVE-FOCUSED"
+      ],
+      "acceptance": "Native service attribution does not miss known fixture references, denies raw deletion and never treats unavailable domains as absence."
+    },
+    {
+      "work_id": "FS80-P83-REVIEW",
+      "action": "Review exact candidate against accepted scene regression ledger and current GitHub PR reviews/comments; rerun invalidated proof after repairs.",
+      "depends_on": [
+        "FS80-PROVE-FULL",
+        "FS80-SCENE-BROWSER",
+        "FS80-NATIVE-SYNTHETIC"
+      ],
+      "acceptance": "All material review threads resolved and exact-head candidate tests/current runtime evidence meet applicable gate."
+    },
+    {
+      "work_id": "FS80-P07-INTEGRATE",
+      "action": "If acceptance and repo-owned integration gates pass, complete authorized default-branch landing and independently read back main; otherwise report exact blocking gate.",
+      "depends_on": [
+        "FS80-P83-REVIEW"
+      ],
+      "acceptance": "Verified mainline presence of exact accepted PR head/merge; no false claim based on draft PR."
+    },
+    {
+      "work_id": "FS80-SUCCESSOR-PROVIDER-COVERAGE",
+      "action": "In a separately owned follow-on, prioritize native task/serviceability/runtime dependencies with positive-only read-only probes and grounded coverage; do not claim 12/12 complete from 3 adapters.",
+      "depends_on": [
+        "FS80-P83-REVIEW"
+      ],
+      "acceptance": "Named domain provider and fixtures prove service/task/app necessity without deletion authorization; remaining domain gaps stay explicit."
+    }
+  ],
+  "owned_mutation_surfaces": [
+    "plans/active/FILESTEWARD-DEPENDENCY-FEATURE-MAP-CLOSERS-20261125.md",
+    "docs/handoff/FILESTEWARD-DEPENDENCY-FEATURE-MAP-CLOSERS-20261125.handoff.json",
+    "harness/contracts/feature-map.v1.json",
+    "tests/test_dependency_feature_map.py",
+    "PR #80's bounded dependency/scene files"
+  ],
+  "forbidden_surfaces": [
+    "main without exact passing integration gates",
+    "real C: scan or deletion without explicit bounded operator gate",
+    "private workstation identifiers/scan receipts in tracked artifacts",
+    "other active PR heads (#73/#71/#70)",
+    "MoonWake instruction corpus and active host custom instructions"
+  ],
+  "dependencies": [
+    "FS80-PROVE-FOCUSED precedes full proof and browser/native lanes",
+    "FS80-PROVE-FULL plus browser/native evidence precede P83 review",
+    "P83 review precedes P07 landing",
+    "successor native coverage is separate from verified candidate integration"
+  ],
+  "external_prerequisites": [
+    "Actual isolated FileSteward local checkout with Git, Python >=3.12, pytest and browser dependencies",
+    "Windows read-only native observation only after explicit scoped operator authorization"
+  ],
+  "proof_receipts": [
+    "provider-base:9bf7f052cdeb2cae4408f511edba50082df65a5d",
+    "candidate-before-handoff:b5c25485004c295b0de3f2c721d4a843f91e61d5",
+    "github:FileSteward/PR#80",
+    "source-tree:109/109",
+    "harness-contract-tree:22/22",
+    "python-test-source-tree:74/74",
+    "canonical-scene-alignment:11/11",
+    "local-test-run:NOT_OBSERVED",
+    "browser-runtime:NOT_OBSERVED",
+    "windows-host:NOT_OBSERVED"
+  ],
+  "proof_ceiling": "REMOTE_GITHUB_PROVIDER_READBACK_ONLY: source/contract/test map consistency checked against GitHub tree; no Python/test/browser/Windows runtime observed; PR open/draft/unmerged.",
+  "unresolved_review_threads": [],
+  "private_evidence_refs": [],
+  "blocked_judgment_gap": "NONE",
+  "autonomy_gap": {
+    "missing_adapter": "No local MoonWake prompt-group walker, FileSteward isolated shell, Windows host, or browser runner is callable from CURRENT_CHAT_RUNTIME; GitHub provider supports source commits, PR reads and review only.",
+    "evidence": [
+      "container git ls-remote failed DNS to github.com",
+      "MoonWake the-closers@1.0.0 release and full prompt bodies read from GitHub provider; native walker start/current/record not executed",
+      "No exact-head PR workflow run evidence on candidate at initial inspection"
+    ],
+    "repair_route": "Resume from this packet in an authorized isolated local execution guest; run repository-owned tests, then MoonWake's pinned full-contract walker; retain current PR #80 as tracked source, do not create a competing product."
+  },
+  "exact_next_action": {
+    "phase": "PROVE",
+    "action": "Recover FileSteward canonical checkout and worktree inventory without disturbing any active writer; fetch origin; reuse the existing clean fs80 lane only when exact head/status match, otherwise create a distinct detached worktree from origin/sixth-gear/dependency-feature-map-20261125; run python -m pytest tests/test_dependency_feature_map.py tests/test_current_ownership.py tests/test_current_review_wiring.py tests/test_safe_capacity_actions.py tests/test_scene_composition_contract.py, repair and continue. On Windows, use USERPROFILE/dev and dev/worktrees/FileSteward; on isolated Linux guest use its approved own checkout path. Never reset or delete an occupied worktree.",
+    "owner": "FileSteward isolated local coding agent",
+    "can_execute_without_operator": true
+  },
+  "return_contract": "Return exact PR/head SHA, focused/full test outputs, browser/Windows evidence, review-thread disposition, merge/mainline readback and all unresolved capabilities; do not label an open draft PR converged."
+}

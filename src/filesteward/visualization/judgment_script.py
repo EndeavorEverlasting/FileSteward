@@ -6,7 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 from filesteward.models import CleanupDisposition
-from filesteward.ownership.actions import OwnershipEvidence, admit_cleanup_disposition, plan_owner_actions
+from filesteward.ownership.actions import OwnershipEvidence, admit_cleanup_disposition, dependency_summary, plan_owner_actions
 from filesteward.ownership.reducer import reduce_path_ownership
 
 from filesteward.visualization.decision_flow import DecisionFlowState
@@ -96,6 +96,9 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
     """
     plan = plan_owner_actions(path, evidence)
     effective = admit_cleanup_disposition(disposition, plan)
+    necessity = dependency_summary(path, evidence, plan)
+    # Existing disposition protection is also authoritative; the projection cannot weaken it.
+    necessity["raw_delete_disqualified"] = not (effective is CleanupDisposition.RECLAIM_PROVEN and plan.raw_delete_eligible and evidence.fresh())
     edges = evidence.graph.edges_for_path(path)
     fresh = evidence.fresh()
     owners = sorted({edge.owner_display_name or edge.owner_id for edge in edges})
@@ -109,10 +112,30 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
     qualified = bool(edges) and all(
         edge.owner_kind in {"APPLICATION", "REPOSITORY"} and edge.lifecycle_hint for edge in edges
     )
-    badge = reduce_path_ownership(path, evidence.graph).user_facing_badge if qualified else (
-        "Shared dependency" if len(plan.owner_ids) > 1 else
-        "Regenerable cache" if plan.raw_delete_eligible else "Unknown ownership"
-    )
+    if qualified:
+        badge = reduce_path_ownership(path, evidence.graph).user_facing_badge
+    elif plan.disposition is CleanupDisposition.PROTECTED:
+        # The safety planner already vetoed deletion. Reflect that positive
+        # evidence, even when other discovery domains are incomplete.
+        app = [edge for edge in edges if edge.owner_kind == "APPLICATION"]
+        if any(edge.lifecycle_hint == "APP_BROKEN_REQUIRED" for edge in app):
+            badge = "Broken app dependency"
+        elif app:
+            badge = "Required by app"
+        elif any(edge.owner_kind == "SERVICE" for edge in edges):
+            badge = "Required by service"
+        elif any(edge.owner_kind == "SCHEDULED_TASK" for edge in edges):
+            badge = "Required by scheduled task"
+        elif any(edge.owner_kind == "TOOLCHAIN" for edge in edges):
+            badge = "Required by toolchain"
+        elif any(edge.owner_kind == "REPOSITORY" for edge in edges):
+            badge = "Part of active repo"
+        else:
+            badge = "Protected dependency"
+    elif len(plan.owner_ids) > 1:
+        badge = "Shared dependency"
+    else:
+        badge = "Regenerable cache" if plan.raw_delete_eligible else "Unknown ownership"
     proof = next((proof for proof in evidence.proofs if proof.valid_for(path, plan.owner_ids)), None)
     trace = [{
         "scene_id": "ATTRIBUTION_RESOLVE", "status": "RESOLVED" if fresh else "BLOCKED",
@@ -122,7 +145,11 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
     if edges:
         trace.append({
             "scene_id": "CONSEQUENCE_RESOLVE", "status": "RESOLVED" if fresh else "STALE",
-            "finding": badge, "reason_codes": list(plan.reason_codes),
+            "finding": (f"{badge}: {necessity['protective_edge_count']} protective evidence edges; "
+                        f"{necessity['application_owner_count']} dependent applications identified. "
+                        + ("Raw deletion disqualified." if necessity["raw_delete_disqualified"] else
+                           "Raw deletion eligibility is not authorization.")),
+            "reason_codes": list(plan.reason_codes),
         })
     if fresh and effective is not CleanupDisposition.PROTECTED:
         trace.append({
@@ -167,7 +194,7 @@ def resolve_scene_evidence(path: str, disposition: CleanupDisposition, evidence:
         "recovery_mechanism": proof.recipe if proof else None,
         "missing_fact": missing_fact,
         "safe_probes_attempted": sorted(set(sources) | {item["provenance"] for item in coverage if item["provenance"]}),
-        "probe_coverage": coverage,
+        "probe_coverage": coverage, "dependency_summary": necessity,
         "why_it_matters": "Unresolved ownership or recovery cannot authorize a destructive action",
         "trace": trace,
     }

@@ -795,6 +795,22 @@ def render_decision_chamber_script() -> str:
       const freshness = document.createElement('p');
       freshness.textContent = evidence.fresh ? 'Current normalized evidence' : 'Current complete evidence is unavailable';
       facts.appendChild(freshness);
+      if (evidence.dependency_summary) {
+        const deps = evidence.dependency_summary;
+        const metrics = document.createElement('p');
+        const protectiveCount = deps.protective_edge_count || 0;
+        const appCount = deps.application_owner_count || 0;
+        const unresolvedCount = (deps.unresolved_domains || []).length;
+        const conclusion = protectiveCount > 0
+          ? 'Raw deletion excluded by positive dependency evidence.'
+          : deps.raw_delete_disqualified
+            ? 'Safe raw deletion has not been established.'
+            : 'Reclaim candidate only; separate operator approval required.';
+        metrics.textContent = protectiveCount + ' protective dependency edges; '
+          + appCount + ' dependent applications; ' + unresolvedCount
+          + ' unresolved discovery domains. ' + conclusion;
+        facts.appendChild(metrics);
+      }
       if (evidence.missing_fact) {
         const missing = document.createElement('p'); missing.textContent = evidence.missing_fact + '. ' + evidence.why_it_matters;
         facts.appendChild(missing);
